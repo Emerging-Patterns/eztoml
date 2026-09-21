@@ -1,32 +1,31 @@
 # eztoml
 
+TOML for [Bend 2](https://github.com/bendlang/bend).
+
 ## Install
 
-```
-curl -fsSL https://bend-lang.com/install.sh | sh
-```
+Use with [Bend](https://github.com/bendlang/bend) or install easily with [ez](https://github.com/Emerging-Patterns/ez):
 
 ```
-import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
+ez init
+ez add Emerging-Patterns/eztoml
 ```
 
 ## Usage
 
-eztoml is the TOML slice for string-valued sectioned docs: headers,
-`key = "value"`, comments, and blanks. Headers may be quoted and dotted.
-There are no arrays, inline tables, or numbers.
-
-`parse` reads a document into sections and the first error if there was one.
-`render` writes sections back. `value` looks up a key in a table. `sects`
-is the sections a parse finished. `segments` cuts a header on unquoted dots.
-`quote` wraps a string; `key` writes a name bare when it can.
+`parse` reads text into a document. `render` writes a document back. `get`
+finds a value by key and `at` finds one by a dotted path. A hit is `Found` or
+`Miss`. `string`, `digits`, and `flag` read a string, an integer's digits, and
+a boolean. `root` is the document's table and `bad` is the first error.
+`str`, `integer`, `float`, `boolean`, `array`, `inline`, `table`, and `pair`
+build values. `key` writes a name bare or as a basic string.
 
 ```
 import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
 
 def main() -> IO(Unit):
-  +doc = Toml.parse("[package]\nname = \"app\"\n")
-  IO.print(Toml.render(Toml.sects(doc)))
+  +doc = Toml.parse("[pkg]\nname = \"app\"\nver = 1\non = true\n")
+  IO.print(Toml.render(doc))
 ```
 
 ```
