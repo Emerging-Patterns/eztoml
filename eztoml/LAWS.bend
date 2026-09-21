@@ -278,18 +278,35 @@ law toml_invalid:
 law toml_miss:
   {T.get(T.root(T.parse("a = 1")), "nope") == T.Miss{} : T.Hit}
 
-# current behavior, not yet TOML v1.0.0 / toml.abnf:
-# two pairs may share a line; `key = # no` and `key # c` at EOF have no error;
-# a space after a dot, a quoted dotted segment, and an empty quoted key are rejected;
-# a dotted table reopened by a header is kept; an integer past 2^63-1 is kept
-law toml_current:
-  {again("first = \"Tom\" last = \"Preston-Werner\"") ++ why("key = # no")
-    ++ why("key # c") ++ why("fruit. name = \"banana\"") ++ why("fruit . name = \"banana\"")
-    ++ why("site.\"google.com\" = true") ++ why("\"\" = \"blank\"")
-    ++ why("[fruit]\napple.color = \"red\"\n\n[fruit.apple]\ntexture = \"smooth\"")
-    ++ again("[fruit]\napple.color = \"red\"\n\n[fruit.apple]\ntexture = \"smooth\"")
-    ++ why("a = 9223372036854775808") ++ again("a = 9223372036854775808")
-    == "first = \"Tom\"\nlast = \"Preston-Werner\"\n" ++ "" ++ "" ++ "empty key"
-    ++ "empty key" ++ "invalid key" ++ "empty key" ++ ""
-    ++ "[fruit]\n[fruit.apple]\ncolor = \"red\"\ntexture = \"smooth\"\n" ++ ""
-    ++ "a = 9223372036854775808\n" : String}
+# TOML v1.0.0 / toml.abnf keyval: one pair to a line, and a pair needs a value
+law toml_keyval:
+  {why("first = \"Tom\" last = \"Preston-Werner\"") ++ why("key = # no")
+    ++ why("key # c") ++ again("first = \"Tom\"\nlast = \"Preston-Werner\"")
+    == "newline required" ++ "unclosed" ++ "unclosed"
+    ++ "first = \"Tom\"\nlast = \"Preston-Werner\"\n" : String}
+
+# TOML v1.0.0 / toml.abnf dot-sep and quoted-key
+law toml_dot:
+  {again("fruit. name = \"banana\"") ++ again("fruit . name = \"banana\"")
+    ++ again("site.\"google.com\" = true") ++ again("site.'google.com' = true")
+    ++ again("\"\" = \"blank\"") ++ again("'' = \"blank\"")
+    == "[fruit]\nname = \"banana\"\n" ++ "[fruit]\nname = \"banana\"\n"
+    ++ "[site]\n\"google.com\" = true\n" ++ "[site]\n\"google.com\" = true\n"
+    ++ "\"\" = \"blank\"\n" ++ "\"\" = \"blank\"\n" : String}
+
+# TOML v1.0.0: a table defined by dotted keys is not opened again; a sub-table may be
+law toml_reopen:
+  {why("[fruit]\napple.color = \"red\"\n\n[fruit.apple]\ntexture = \"smooth\"")
+    ++ again("[fruit]\napple.color = \"red\"\n\n[fruit.apple.texture]\nsmooth = true")
+    == "duplicate table"
+    ++ "[fruit]\n[fruit.apple]\ncolor = \"red\"\n[fruit.apple.texture]\nsmooth = true\n"
+    : String}
+
+# TOML v1.0.0: an integer outside signed 64-bit range is an error
+law toml_range:
+  {again("a = 9223372036854775807") ++ again("a = -9223372036854775808")
+    ++ why("a = 9223372036854775808") ++ why("a = -9223372036854775809")
+    ++ why("a = 0x8000000000000000") ++ again("a = 0x7fffffffffffffff")
+    == "a = 9223372036854775807\n" ++ "a = -9223372036854775808\n"
+    ++ "out of range" ++ "out of range" ++ "out of range"
+    ++ "a = 9223372036854775807\n" : String}

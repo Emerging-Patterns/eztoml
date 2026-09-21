@@ -50,5 +50,3 @@ bin/demo.bin
 - `inline-table`, `array`, `array-table`
 
 The datetime equalities follow [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339): `offset-date-time`, `local-date-time`, `full-date`, `partial-time`.
-
-`toml_current` records documents the library still handles differently. It is not a compliance claim.

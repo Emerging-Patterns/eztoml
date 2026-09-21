@@ -98,7 +98,9 @@ type BK is Data:
 # where the scanner is in a document
 type Lex is Data:
   LTop{}
+  LLine{}
   LKey{}
+  LKeyDot{}
   LAfter{}
   LKeyQ{}
   LKeyE{}
@@ -1568,6 +1570,69 @@ def num.go(cs: List<&2, Char>, st: Num) -> Num:
     case +h <> t:
       num.go(t, num.step(st, h))
 
+# the positive limit is 2^63-1; the negative limit is 2^63
+def i64.limit(sign: Sign) -> String:
+  match sign:
+    case Plus{}:
+      "9223372036854775807"
+    case Minus{}:
+      "9223372036854775808"
+
+# how many characters a digit string has
+def i64.count(cs: List<&2, Char>, n: U32) -> U32:
+  match cs:
+    case []:
+      n
+    case _ <> t:
+      i64.count(t, U32.add(n, 1))
+
+# equal length: digit order is numeric order
+def i64.le.fin(r: (String & String) & Cmp) -> Bool:
+  ((_a, _b), c) = r
+  Cmp.is_le(c)
+
+# equal length: the digits are at most the limit
+def i64.le(digits: String, limit: String) -> Bool:
+  i64.le.fin(String.cmp(digits, limit))
+
+# a shorter string fits; an equal one is compared
+def i64.fits.short(short: Bool, digits: String, limit: String) -> Bool:
+  match short:
+    case True{}:
+      True{}
+    case False{}:
+      i64.le(digits, limit)
+
+# a longer digit string is outside the limit
+def i64.fits.long(long: Bool, +digits: String, +limit: String) -> Bool:
+  match long:
+    case True{}:
+      False{}
+    case False{}:
+      i64.fits.short(U32.is_lt(i64.count(String.to_list(digits), 0),
+        i64.count(String.to_list(limit), 0)), digits, limit)
+
+# whether the integer fits in a signed 64-bit integer
+def i64.fits(+sign: Sign, +digits: String) -> Bool:
+  i64.fits.long(U32.is_lt(i64.count(String.to_list(i64.limit(sign)), 0),
+    i64.count(String.to_list(digits), 0)), digits, i64.limit(sign))
+
+# an integer inside the signed 64-bit range
+def num.fin.range(ok: Bool, sign: Sign, digits: String) -> Got:
+  match ok:
+    case True{}:
+      GotVal{VInt{sign, digits}}
+    case False{}:
+      GotBad{"out of range"}
+
+# a finished integer, rejected when it falls outside signed 64-bit
+def num.fin.int(saw: Bool, +sign: Sign, +digits: String) -> Got:
+  match saw:
+    case False{}:
+      GotBad{"invalid number"}
+    case True{}:
+      num.fin.range(i64.fits(sign, digits), sign, digits)
+
 # a numeral needs a digit in its last run
 def num.fin.saw(saw: Bool, val: Val) -> Got:
   match saw:
@@ -1590,7 +1655,7 @@ def num.fin.base(signed: Bool, saw: Bool, sign: Sign, ds: List<&2, U32>) -> Got:
     case True{}:
       GotBad{"invalid number"}
     case False{}:
-      num.fin.saw(saw, VInt{sign, dec.text(ds)})
+      num.fin.int(saw, sign, dec.text(ds))
 
 # the kind of numeral the scan finished in
 def num.fin.nk(nk: NK, sign: Sign, ds: List<&2, U32>, saw: Bool, why: String,
@@ -1603,7 +1668,7 @@ def num.fin.nk(nk: NK, sign: Sign, ds: List<&2, U32>, saw: Bool, why: String,
     case NZero{}:
       GotVal{VInt{sign, "0"}}
     case NDig{}:
-      num.fin.saw(saw, VInt{sign, dec.text(ds)})
+      num.fin.int(saw, sign, dec.text(ds))
     case NBase{}:
       num.fin.base(num.signed(cs), saw, sign, ds)
     case NFrac{}:
@@ -1753,6 +1818,22 @@ def heads.has(hs: List<&2, String>, +p: String) -> Bool:
       False{}
     case h <> t:
       heads.or(String.eq(h, p), heads.has(t, p))
+
+# a table defined by a dotted key is recorded once
+def heads.define.new(seen: Bool, path: String, heads: List<&2, String>) -> List<&2, String>:
+  match seen:
+    case True{}:
+      heads
+    case False{}:
+      path <> heads
+
+# a dotted key defines each table before its last segment
+def heads.define(job: Job, +path: String, +heads: List<&2, String>) -> List<&2, String>:
+  match job:
+    case JPut{_val}:
+      heads.define.new(heads.has(heads, path), path, heads)
+    case _:
+      heads
 
 # a dotted path from a prefix and one segment
 def tree.pre.go(empty: Bool, pre: String, name: String) -> String:
@@ -1944,16 +2025,26 @@ def tree.sub.aots(last: Last, +name: String, +vs: List<&2, Val>, job: Job,
     case LastNo{why}:
       Tw{vs, job, stack, why, pre, heads, inl}
 
+# a prefix of the current table is navigation; a dotted segment defines a table
+def tree.sub.job(mark: Bool, job: Job) -> Job:
+  match mark:
+    case True{}:
+      job
+    case False{}:
+      JDef{}
+
 # descend into one key, or record why it cannot be entered
-def tree.sub.look(hit: Look, +name: String, +vs: List<&2, Val>, job: Job,
-  stack: List<&2, Fr>, +pre: String, heads: List<&2, String>, +inl: Bool) -> Tw:
+def tree.sub.look(hit: Look, +name: String, +vs: List<&2, Val>, +job: Job,
+  stack: List<&2, Fr>, +pre: String, heads: List<&2, String>, +inl: Bool,
+  mark: Bool) -> Tw:
   match hit:
     case KMiss{}:
       Tw{[], job, FrNew{name, vs, tree.pre(pre, name), inl} <> stack, "",
-        tree.pre(pre, name), heads, inl}
+        tree.pre(pre, name), heads.define(tree.sub.job(mark, job), tree.pre(pre, name),
+          heads), inl}
     case KHead{path, rows}:
-      Tw{rows, job, FrRep{name, vs, path} <> stack, "", tree.pre(pre, name), heads,
-        inl}
+      Tw{rows, job, FrRep{name, vs, path} <> stack, "", tree.pre(pre, name),
+        heads.define(tree.sub.job(mark, job), tree.pre(pre, name), heads), inl}
     case KInl{}:
       Tw{vs, job, stack, "inline table is closed", pre, heads, inl}
     case KAots{+path, elems}:
@@ -1965,25 +2056,45 @@ def tree.sub.look(hit: Look, +name: String, +vs: List<&2, Val>, job: Job,
 # descend into one key when the walk is still well
 def tree.sub.bad(ok: Bool, +name: String, +vs: List<&2, Val>, job: Job,
   stack: List<&2, Fr>, bad: String, pre: String, heads: List<&2, String>,
-  inl: Bool) -> Tw:
+  inl: Bool, mark: Bool) -> Tw:
   match ok:
     case False{}:
       Tw{vs, job, stack, bad, pre, heads, inl}
     case True{}:
-      tree.sub.look(rows.look(vs, name), name, vs, job, stack, pre, heads, inl)
+      tree.sub.look(rows.look(vs, name), name, vs, job, stack, pre, heads, inl, mark)
 
 # descend into one key
-def tree.sub(name: String, tw: Tw) -> Tw:
+def tree.sub(name: String, tw: Tw, mark: Bool) -> Tw:
   Tw{+vs, job, stack, +bad, pre, heads, inl} = tw
-  tree.sub.bad(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, inl)
+  tree.sub.bad(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, inl, mark)
+
+# how many segments are already the current table
+def path.len(xs: List<&2, String>, n: U32) -> U32:
+  match xs:
+    case []:
+      n
+    case _ <> t:
+      path.len(t, U32.add(n, 1))
+
+# one fewer prefix segment, staying at zero
+def path.dec.z(z: Bool, skip: U32) -> U32:
+  match z:
+    case True{}:
+      0
+    case False{}:
+      U32.sub(skip, 1)
+
+# one fewer prefix segment, staying at zero
+def path.dec(+skip: U32) -> U32:
+  path.dec.z(U32.is_zero(skip), skip)
 
 # an empty path records an error
 def tree.walk.none(tw: Tw) -> End:
   Tw{vs, _job, stack, bad, _pre, heads, _inl} = tw
   tree.rebuild(stack, vs, err.first(bad, "empty key"), heads)
 
-# follow a key path and apply the job at its end
-def tree.walk(path: List<&2, String>, tw: Tw) -> End:
+# follow a key path and apply the job at its end. skip is the current table
+def tree.walk(path: List<&2, String>, tw: Tw, +skip: U32) -> End:
   match path:
     case []:
       tree.walk.none(tw)
@@ -1992,7 +2103,7 @@ def tree.walk(path: List<&2, String>, tw: Tw) -> End:
         case []:
           tree.leaf(name, tw)
         case _ <> _:
-          tree.walk(rest, tree.sub(name, tw))
+          tree.walk(rest, tree.sub(name, tw, U32.is_zero(skip)), path.dec(skip))
 
 # space or tab
 def ch.sp(+c: Char) -> Bool:
@@ -2170,7 +2281,7 @@ def seg.push(st: St, lex: Lex) -> St:
 def take.root(end: End, here: List<&2, String>, back: Lex, qkind: QKind, uni: U32,
   left: U32, arrtab: Bool, lead: Bool) -> St:
   End{rows, bad, heads} = end
-  St{bad, rows, heads, here, [], [], LTop{}, back, qkind, [], HNone{}, uni, left, arrtab,
+  St{bad, rows, heads, here, [], [], LLine{}, back, qkind, [], HNone{}, uni, left, arrtab,
     lead}
 
 # a finished value inside an inline table
@@ -2188,14 +2299,15 @@ def take.top(stack: List<&2, Ctx>, val: Val, bad: String, rows: List<&2, Val>,
   match stack:
     case []:
       take.root(tree.walk(path.cat(here, parts),
-        Tw{rows, JPut{val}, [], bad, "", heads, False{}}), here, back, qkind, uni, left,
-        arrtab, lead)
+        Tw{rows, JPut{val}, [], bad, "", heads, False{}}, path.len(here, 0)), here,
+        back, qkind, uni, left, arrtab, lead)
     case CArr{items, +saved, +at} <> rest:
       St{bad, rows, heads, at, saved, [], LArrC{}, back, qkind,
         CArr{val <> items, saved, at} <> rest, HNone{}, uni, left, arrtab, lead}
     case CInl{inl, +saved, +at} <> rest:
       take.inl(tree.walk(List.reverse(&2, String, parts),
-        Tw{inl, JPut{val}, [], bad, "", [], True{}}), rows, heads, at, saved, rest, back,
+        Tw{inl, JPut{val}, [], bad, "", [], True{}}, 0), rows, heads, at, saved, rest,
+        back,
         qkind, uni, left, arrtab, lead)
 
 # place a finished value
@@ -2213,10 +2325,34 @@ def bare.hold.on(st: St, c: Char) -> St:
     arrtab, lead}
 
 # hold the delimiter when the following state must see it
+# a newline that ended a root value already separates the next expression
+def bare.line.lex(lex: Lex, st: St) -> St:
+  match lex:
+    case LLine{}:
+      st.lex(st, LTop{})
+    case _:
+      st
+
+# a consumed newline returns to the top level after a root value
+def bare.line.go(st: St) -> St:
+  St{bad, rows, heads, here, parts, buf, +lex, back, qkind, stack, hold, uni, left,
+    arrtab, lead} = st
+  bare.line.lex(lex, St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack,
+    hold, uni, left, arrtab, lead})
+
+# a consumed newline returns to the top level after a root value
+def bare.line(st: St, nl: Bool) -> St:
+  match nl:
+    case True{}:
+      bare.line.go(st)
+    case False{}:
+      st
+
+# hold the delimiter when the following state must see it
 def bare.hold(st: St, c: Char, hold: Bool) -> St:
   match hold:
     case False{}:
-      st
+      bare.line(st, ch.nl(c))
     case True{}:
       bare.hold.on(st, c)
 
@@ -2240,7 +2376,7 @@ def bare.finish(st: St, c: Char, hold: Bool) -> St:
 def head.apply(end: End, segs: List<&2, String>, back: Lex, qkind: QKind, uni: U32,
   left: U32, lead: Bool) -> St:
   End{rows, bad, heads} = end
-  St{bad, rows, heads, segs, [], [], LTop{}, back, qkind, [], HNone{}, uni, left,
+  St{bad, rows, heads, segs, [], [], LLine{}, back, qkind, [], HNone{}, uni, left,
     False{}, lead}
 
 # an array-of-tables header, or a table header
@@ -2249,10 +2385,12 @@ def head.job(arr: Bool, bad: String, rows: List<&2, Val>, heads: List<&2, String
   -> St:
   match arr:
     case True{}:
-      head.apply(tree.walk(segs, Tw{rows, JAot{}, [], bad, "", heads, False{}}), segs,
+      head.apply(tree.walk(segs, Tw{rows, JAot{}, [], bad, "", heads, False{}}, 0),
+        segs,
         back, qkind, uni, left, lead)
     case False{}:
-      head.apply(tree.walk(segs, Tw{rows, JDef{}, [], bad, "", heads, False{}}), segs,
+      head.apply(tree.walk(segs, Tw{rows, JDef{}, [], bad, "", heads, False{}}, 0),
+        segs,
         back, qkind, uni, left, lead)
 
 # open the table or the array of tables named by the header
@@ -2678,11 +2816,11 @@ def lex.key.eq(eq: Bool, hash: Bool, nl: Bool, st: St, +c: Char) -> St:
     case False{}:
       lex.key.hash(hash, nl, st, c)
 
-# a dot ends the segment
+# a dot ends the segment and skips whitespace before the next one
 def lex.key.dot(dot: Bool, eq: Bool, hash: Bool, nl: Bool, st: St, c: Char) -> St:
   match dot:
     case True{}:
-      lex.key.end(st, LKey{})
+      lex.key.end(st, LKeyDot{})
     case False{}:
       lex.key.eq(eq, hash, nl, st, c)
 
@@ -2733,11 +2871,11 @@ def lex.after.eq(eq: Bool, hash: Bool, nl: Bool, st: St, c: Char) -> St:
     case False{}:
       lex.after.hash(hash, nl, st, c)
 
-# a dot starts the next segment
+# a dot starts the next segment, after any whitespace
 def lex.after.dot(dot: Bool, eq: Bool, hash: Bool, nl: Bool, st: St, c: Char) -> St:
   match dot:
     case True{}:
-      st.lex(st, LKey{})
+      st.lex(st, LKeyDot{})
     case False{}:
       lex.after.eq(eq, hash, nl, st, c)
 
@@ -3438,12 +3576,16 @@ def lex.kq.bs(bs: Bool, basic: Bool, nl: Bool, st: St, c: Char, stay: Lex) -> St
     case False{}:
       lex.kq.nl(nl, st, c, stay)
 
+# a quoted segment may be empty
+def lex.qkey.end(st: St, next: Lex) -> St:
+  seg.push(st, next)
+
 # the closer, an escape, or a character
 def lex.kq.go(quote: Bool, bs: Bool, basic: Bool, nl: Bool, st: St, c: Char, back: Lex,
   stay: Lex) -> St:
   match quote:
     case True{}:
-      lex.key.end(st, back)
+      lex.qkey.end(st, back)
     case False{}:
       lex.kq.bs(bs, basic, nl, st, c, stay)
 
@@ -3690,6 +3832,88 @@ def lex.inlc(st: St, +c: Char) -> St:
 def lex.sink(st: St, _c: Char) -> St:
   st
 
+# anything else on the same line is another expression
+def lex.line.nl(nl: Bool, st: St) -> St:
+  match nl:
+    case True{}:
+      st.lex(st, LTop{})
+    case False{}:
+      st.err(st, "newline required")
+
+# a comment may follow an expression
+def lex.line.hash(hash: Bool, nl: Bool, st: St, _c: Char) -> St:
+  match hash:
+    case True{}:
+      com.enter(st, LLine{})
+    case False{}:
+      lex.line.nl(nl, st)
+
+# whitespace, a comment, or a newline after an expression
+def lex.line.go(sp: Bool, hash: Bool, nl: Bool, st: St, c: Char) -> St:
+  match sp:
+    case True{}:
+      st
+    case False{}:
+      lex.line.hash(hash, nl, st, c)
+
+# after an expression, the rest of the line is whitespace or a comment
+def lex.line(st: St, +c: Char) -> St:
+  lex.line.go(ch.sp(c), Char.is_eq(c, '#'), ch.nl(c), st, c)
+
+# a newline in a dotted key is rejected
+def lex.kdot.nl(nl: Bool, st: St) -> St:
+  match nl:
+    case True{}:
+      st.err(st, "newline in key")
+    case False{}:
+      st.err(st, "invalid key")
+
+# a second dot is an empty segment
+def lex.kdot.dot(dot: Bool, nl: Bool, st: St) -> St:
+  match dot:
+    case True{}:
+      st.err(st, "empty key")
+    case False{}:
+      lex.kdot.nl(nl, st)
+
+# a bare character starts the segment
+def lex.kdot.bare(bare: Bool, dot: Bool, nl: Bool, st: St, c: Char) -> St:
+  match bare:
+    case True{}:
+      st.push(st, c, LKey{})
+    case False{}:
+      lex.kdot.dot(dot, nl, st)
+
+# a literal quote starts the segment
+def lex.kdot.lit(lit: Bool, dot: Bool, nl: Bool, st: St, +c: Char) -> St:
+  match lit:
+    case True{}:
+      lex.qkey(st, QLit{}, LKeyQ{})
+    case False{}:
+      lex.kdot.bare(bare.at(c), dot, nl, st, c)
+
+# a quote starts the segment
+def lex.kdot.q(q: Bool, lit: Bool, dot: Bool, nl: Bool, st: St, c: Char) -> St:
+  match q:
+    case True{}:
+      lex.qkey(st, QBasic{}, LKeyQ{})
+    case False{}:
+      lex.kdot.lit(lit, dot, nl, st, c)
+
+# whitespace or the next segment
+def lex.kdot.go(sp: Bool, q: Bool, lit: Bool, dot: Bool, nl: Bool, st: St, c: Char)
+  -> St:
+  match sp:
+    case True{}:
+      st
+    case False{}:
+      lex.kdot.q(q, lit, dot, nl, st, c)
+
+# after a dot, whitespace and then a segment
+def lex.kdot(st: St, +c: Char) -> St:
+  lex.kdot.go(ch.sp(c), Char.is_eq(c, '"'), Char.is_eq(c, '\''), Char.is_eq(c, '.'),
+    ch.nl(c), st, c)
+
 # a quoted header segment
 def lex.hq(st: St, +c: Char) -> St:
   lex.kq(st, c, LHeadGap{}, LHeadQ{})
@@ -3699,8 +3923,12 @@ def read.on(lex: Lex, st: St, c: Char) -> St:
   match lex:
     case LTop{}:
       lex.top(st, c)
+    case LLine{}:
+      lex.line(st, c)
     case LKey{}:
       lex.key(st, c)
+    case LKeyDot{}:
+      lex.kdot(st, c)
     case LAfter{}:
       lex.after(st, c)
     case LKeyQ{}:
@@ -3842,19 +4070,52 @@ def read.fin.doc(st: St) -> Doc:
     _arr, _lead} = st
   read.fin.stack(stack, bad, rows)
 
-# any other state is unfinished
-def read.fin.bad(st: St) -> Doc:
+# an unfinished document keeps the first error
+def read.fin.unclosed(st: St) -> Doc:
   St{bad, rows, _heads, _here, _parts, _buf, _lex, _back, _q, _stack, _hold, _uni,
     _left, _arr, _lead} = st
   Doc{err.first(bad, "unclosed"), rows}
+
+# a comment may end a document only where the line already could
+def read.fin.end(lex: Lex) -> Bool:
+  match lex:
+    case LTop{}:
+      True{}
+    case LLine{}:
+      True{}
+    case LSink{}:
+      True{}
+    case _:
+      False{}
+
+# a comment at the end is unfinished when it interrupted a key or a value
+def read.fin.com(ok: Bool, st: St) -> Doc:
+  match ok:
+    case True{}:
+      read.fin.doc(st)
+    case False{}:
+      read.fin.unclosed(st)
+
+# a comment at the end is unfinished when it interrupted a key or a value
+def read.fin.com.st(st: St) -> Doc:
+  St{bad, rows, heads, here, parts, buf, lex, +back, qkind, stack, hold, uni, left,
+    arrtab, lead} = st
+  read.fin.com(read.fin.end(back), St{bad, rows, heads, here, parts, buf, lex, back,
+    qkind, stack, hold, uni, left, arrtab, lead})
+
+# any other state is unfinished
+def read.fin.bad(st: St) -> Doc:
+  read.fin.unclosed(st)
 
 # the states that may end a document
 def read.fin.ok(lex: Lex, st: St) -> Doc:
   match lex:
     case LTop{}:
       read.fin.doc(st)
-    case LCom{}:
+    case LLine{}:
       read.fin.doc(st)
+    case LCom{}:
+      read.fin.com.st(st)
     case LSink{}:
       read.fin.doc(st)
     case _:

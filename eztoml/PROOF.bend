@@ -113,5 +113,14 @@ def Laws.toml_invalid():
 def Laws.toml_miss():
   {==}
 
-def Laws.toml_current():
+def Laws.toml_keyval():
+  {==}
+
+def Laws.toml_dot():
+  {==}
+
+def Laws.toml_reopen():
+  {==}
+
+def Laws.toml_range():
   {==}
