@@ -2,10 +2,15 @@
 import Base
 import ../../eztoml/main.bend as Toml
 
-def main() -> IO(Unit):
-  +text = "[package]\nname = \"app\"\n\n[deps.\"0x0a\"]\nhash = \"ab\"\n"
+# the fixture document, parsed and shown
+def shown() -> String:
+  +text = "[package]\nname = " ++ Toml.quote("app") ++ "\n"
   +doc = Toml.parse(text)
-  IO.print(Toml.render(Toml.sects(doc)))
-  IO.print(String.join(Toml.segments("packages.\"0x0a\".files"), "|"))
-  IO.print(Toml.key("my-key"))
-  IO.print(Toml.quote("value"))
+  Toml.render(Toml.sects(doc)) ++
+    String.join(Toml.segments("packages." ++ Toml.quote("0x0a") ++ ".files"),
+      "|") ++ "\n" ++
+    Toml.key("my-key") ++ "\n" ++
+    Toml.quote("value")
+
+def main() -> IO(Unit):
+  IO.print(shown())
