@@ -2205,9 +2205,17 @@ def date.eq(cs: List<&2, Char>, pat: List<&2, Char>) -> Bool:
 def date.shaped(buf: List<&2, Char>) -> Bool:
   date.eq(List.reverse(&2, Char, buf), String.to_list("DDDD-DD-DD"))
 
+# the buffer is reversed, so each head goes on the front of the text
+def buf.str.go(buf: List<&2, Char>, acc: String) -> String:
+  match buf:
+    case []:
+      acc
+    case +h <> t:
+      buf.str.go(t, SCon{h, acc})
+
 # the buffer, in order
 def buf.str(buf: List<&2, Char>) -> String:
-  String.from_list(List.reverse(&2, Char, buf))
+  buf.str.go(buf, "")
 
 # the key path, document table then this key
 def path.cat(here: List<&2, String>, parts: List<&2, String>) -> List<&2, String>:
@@ -4133,11 +4141,11 @@ def read.fin(st: St) -> Doc:
   read.fin2(read.fin.close(st))
 
 # one character at a time
-def doc.read(cs: List<&2, Char>, st: St) -> Doc:
-  match cs:
-    case []:
+def doc.read(text: String, st: St) -> Doc:
+  match text:
+    case SNil{}:
       read.fin(read.once2(st))
-    case +h <> t:
+    case SCon{+h, t}:
       doc.read(t, read.once(read.once2(st), h))
 
 # a scanner at the start of a document
@@ -4428,4 +4436,4 @@ def render(doc: Doc) -> String:
 
 # a document read from TOML text
 def parse(text: String) -> Doc:
-  doc.read(String.to_list(text), st.start())
+  doc.read(text, st.start())
