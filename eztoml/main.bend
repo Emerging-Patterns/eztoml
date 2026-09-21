@@ -1,51 +1,92 @@
-# eztoml: the TOML slice for string-valued sectioned docs. A line is blank, a
-# comment, a `[section]` header, or a `key = "value"` pair. A header is a
-# dotted path whose segments may be quoted, and a key may be quoted, so a file
-# path can be one. No arrays, no inline tables, no numbers.
+# eztoml reads and writes TOML documents. Values are strings, integers, floats,
+# booleans, datetimes, arrays, inline tables, tables, and arrays of tables.
 #
-# parse, render, value, sects, segments, quote, key
-# types: Kv, Sect, Toml
+# parse, render, get, at, value, root, bad, string, digits, flag
+# str, integer, float, boolean, array, inline, table, pair
+# segments, quote, key
 import Base
 import ./toml.bend as T
 
-# a key and the string written for it
-def Kv(+key: String, +val: String) -> T.Kv:
-  T.Kv{key, val}
-
-# a section header and the pairs under it, in the order they were written
-def Sect(+name: String, pairs: List<&2, T.Kv>) -> T.Sect:
-  T.Sect{name, pairs}
-
-# the sections read so far, and the first error if there was one
-def toml(bad: String, name: String, pairs: List<&2, T.Kv>,
-  done: List<&2, T.Sect>) -> T.Toml:
-  T.Toml{bad, name, pairs, done}
-
-# the sections of a document, and the first error if there was one
-def parse(text: String) -> T.Toml:
+# a document read from TOML text
+def parse(text: String) -> T.Doc:
   T.parse(text)
 
-# a document of tables, one blank line between them
-def render(ss: List<&2, T.Sect>) -> String:
-  T.render(ss)
+# a document written back as TOML
+def render(doc: T.Doc) -> String:
+  T.render(doc)
 
-# the value written for a key in a table, or "" when it is absent
-def value(pairs: List<&2, T.Kv>, +key: String) -> String:
-  T.value(pairs, key)
+# the value written for a key, or Miss
+def get(rows: List<&2, T.Val>, +name: String) -> T.Hit:
+  T.get(rows, name)
 
-# the sections a parse found, in the order they were written
-def sects(t: T.Toml) -> List<&2, T.Sect>:
-  T.sects(t)
+# the value at a dotted path
+def at(rows: List<&2, T.Val>, path: List<&2, String>) -> T.Hit:
+  T.at(rows, path)
 
-# a header's segments, unquoted. `packages."0x0a".files` is three of them
+# the string written for a key, or "" when the key is absent or not a string
+def value(rows: List<&2, T.Val>, +name: String) -> String:
+  T.value(rows, name)
+
+# the root table
+def root(doc: T.Doc) -> List<&2, T.Val>:
+  T.root(doc)
+
+# the first error, or "" when the document is well formed
+def bad(doc: T.Doc) -> String:
+  T.bad(doc)
+
+# the text of a string value
+def string(v: T.Val) -> String:
+  T.string(v)
+
+# the digits of an integer value
+def digits(v: T.Val) -> String:
+  T.digits(v)
+
+# the bit of a boolean value
+def flag(v: T.Val) -> Bool:
+  T.flag(v)
+
+# a string value
+def str(text: String) -> T.Val:
+  T.str(text)
+
+# an integer value
+def integer(sign: T.Sign, text: String) -> T.Val:
+  T.integer(sign, text)
+
+# a float value
+def float(sign: T.Sign, text: String) -> T.Val:
+  T.float(sign, text)
+
+# a boolean value
+def boolean(bit: Bool) -> T.Val:
+  T.boolean(bit)
+
+# an array value
+def array(items: List<&2, T.Val>) -> T.Val:
+  T.array(items)
+
+# an inline table
+def inline(rows: List<&2, T.Val>) -> T.Val:
+  T.inline(rows)
+
+# a table
+def table(path: String, rows: List<&2, T.Val>) -> T.Val:
+  T.table(path, rows)
+
+# a key and a value
+def pair(name: String, val: T.Val) -> T.Val:
+  T.pair(name, val)
+
+# a dotted key's segments, quotes removed
 def segments(s: String) -> List<&2, String>:
   T.segments(s)
 
-# a string in quotes, which is how a segment or a key that is not bare is
-# written, and how every value is
+# a string wrapped in double quotes
 def quote(+s: String) -> String:
   T.quote(s)
 
-# a key as it is written: bare when it can be, quoted when it must be
+# a key as TOML writes it
 def key(+s: String) -> String:
   T.key(s)

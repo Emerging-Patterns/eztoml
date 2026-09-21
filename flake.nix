@@ -1,5 +1,5 @@
 {
-  description = "eztoml: TOML slice for string-valued sectioned docs in Bend 2";
+  description = "eztoml: TOML for Bend 2";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.bend = {
@@ -46,7 +46,7 @@
           cp demo.bin $out/bin/demo
         '';
         meta = {
-          description = "Fixture for the eztoml TOML slice";
+          description = "Fixture for eztoml";
           license = pkgs.lib.licenses.mit;
           mainProgram = "demo";
         };
