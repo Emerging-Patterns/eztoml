@@ -36,3 +36,19 @@ bin/demo.bin
 ```
 
 `nix build` builds the same fixture to `result/bin/demo`.
+
+## Compliance
+
+`nix flake check` proves `eztoml/LAWS.bend` in `eztoml/PROOF.bend`. Those laws are closed parse and render equalities for these productions of [TOML v1.0.0](https://toml.io/en/v1.0.0) / [toml.abnf](https://github.com/toml-lang/toml/blob/1.0.0/toml.abnf):
+
+- `comment`
+- `boolean`
+- `basic-string`, `literal-string`, `ml-basic-string`, `ml-literal-string`
+- `dec-int`, `hex-int`, `oct-int`, `bin-int`
+- `float`, `special-float`
+- `std-table`, `dotted-key`, `quoted-key`
+- `inline-table`, `array`, `array-table`
+
+The datetime equalities follow [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339): `offset-date-time`, `local-date-time`, `full-date`, `partial-time`.
+
+`toml_current` records documents the library still handles differently. It is not a compliance claim.
