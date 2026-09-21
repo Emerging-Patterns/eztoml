@@ -729,7 +729,7 @@ def clock.with(c: Clock, frac: String) -> Clock:
   Clock{h, mi, s, frac}
 
 # a finished local datetime, or one with a zone still to read
-def when.done(date: Date, clock: Clock, w: When) -> WhenOut:
+def when.done(_date: Date, _clock: Clock, w: When) -> WhenOut:
   WSome{w}
 
 # Z ends the token
@@ -1281,11 +1281,11 @@ def num.start() -> Num:
   Num{NLead{}, Plus{}, 10, [], False{}, False{}, ""}
 
 # a scan that has failed
-def num.bad(st: Num, why: String) -> Num:
+def num.bad(_st: Num, why: String) -> Num:
   Num{NBad{}, Plus{}, 10, [], False{}, False{}, why}
 
 # set the sign and wait for a digit
-def num.sign(st: Num, sign: Sign) -> Num:
+def num.sign(_st: Num, sign: Sign) -> Num:
   Num{NLead{}, sign, 10, [], False{}, False{}, ""}
 
 # a digit that fits the base
@@ -1462,7 +1462,7 @@ def num.zero(st: Num, +c: Char) -> Num:
     Char.is_eq(c, '.'), Char.is_eq(c, 'e'), Char.is_eq(c, 'E'), st, c)
 
 # a capital exponent, or a rejected character
-def num.digs.exp2(ee: Bool, st: Num, +c: Char) -> Num:
+def num.digs.exp2(ee: Bool, st: Num, _c: Char) -> Num:
   match ee:
     case True{}:
       num.exp(st)
@@ -1520,7 +1520,7 @@ def num.based(st: Num, +c: Char) -> Num:
   num.based.go(Char.is_eq(c, '_'), st, c)
 
 # a capital exponent, or a rejected character
-def num.frac.exp2(ee: Bool, st: Num, +c: Char) -> Num:
+def num.frac.exp2(ee: Bool, st: Num, _c: Char) -> Num:
   match ee:
     case True{}:
       num.exp(st)
@@ -1590,7 +1590,7 @@ def num.expon(st: Num, +c: Char) -> Num:
   num.expon.go(Char.is_eq(c, '+'), Char.is_eq(c, '-'), Char.is_digit(c), st, c)
 
 # an underscore in an exponent
-def num.edig.us(us: Bool, st: Num, +c: Char) -> Num:
+def num.edig.us(us: Bool, st: Num, _c: Char) -> Num:
   match us:
     case True{}:
       num.us(st)
