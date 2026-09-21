@@ -1,21 +1,20 @@
 # eztoml
 
+TOML reader and writer for [Bend 2](https://github.com/bendlang/bend). Values
+are strings, integers, floats, booleans, datetimes, arrays, and inline tables.
+Tables and arrays of tables are headers. Comments and blank lines are passed
+over. Laws and proofs live in `eztoml/LAWS.bend` and `eztoml/PROOF.bend`.
+
 ## Install
 
-Install with [ez](https://github.com/Emerging-Patterns/ez):
+Use with [Bend](https://github.com/bendlang/bend) or install easily with [ez](https://github.com/Emerging-Patterns/ez):
 
 ```
 ez init
 ez add Emerging-Patterns/eztoml
 ```
 
-Requires [Bend](https://github.com/bendlang/bend).
-
 ## Usage
-
-eztoml reads and writes TOML. Values are strings, integers, floats, booleans,
-datetimes, arrays, and inline tables. Tables and arrays of tables are headers.
-Comments and blank lines are passed over.
 
 `parse` reads text into a document. `render` writes a document back. `get`
 finds a value by key and `at` finds one by a dotted path. A hit is `Found` or
