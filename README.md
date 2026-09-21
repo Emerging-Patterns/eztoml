@@ -22,10 +22,6 @@ build values. `key` writes a name bare or as a basic string.
 
 ```
 import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
-```
-
-```
-import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
 
 def main() -> IO(Unit):
   +doc = Toml.parse("[pkg]\nname = \"app\"\nver = 1\non = true\n")
