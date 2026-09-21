@@ -2,9 +2,14 @@
 
 ## Install
 
+Install with [ez](https://github.com/Emerging-Patterns/ez):
+
 ```
-curl -fsSL https://bend-lang.com/install.sh | sh
+ez init
+ez add Emerging-Patterns/eztoml
 ```
+
+Use with [Bend](https://github.com/bendlang/bend):
 
 ```
 import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
