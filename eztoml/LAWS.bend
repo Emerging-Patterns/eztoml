@@ -161,19 +161,19 @@ def bit_at(+text: String, +name: String) -> String:
 def path_at(+text: String, +a: String, +b: String) -> String:
   T.string(read(T.at(T.root(T.parse(text)), a <> (b <> []))))
 
-# TOML v1.0.0 §Comment: a comment line is ignored and the key is kept
+# TOML v1.0.0 / toml.abnf comment: a comment line is ignored and the key is kept
 law toml_comment:
   {again("# comment\nkey = \"v\"") ++ again("key = \"v\" # tail")
     ++ again("hash = \"# not\"") ++ str_at("# comment\nkey = \"v\"", "key")
     == "key = \"v\"\n" ++ "key = \"v\"\n" ++ "hash = \"# not\"\n" ++ "v" : String}
 
-# TOML v1.0.0 §Boolean: true and false, and True is not a boolean
+# TOML v1.0.0 / toml.abnf boolean: true and false, and True is not a boolean
 law toml_bool:
   {again("a = true\nb = false") ++ bit_at("a = true", "a") ++ bit_at("a = false", "a")
     ++ why("a = True")
     == "a = true\nb = false\n" ++ "T" ++ "F" ++ "invalid number" : String}
 
-# TOML v1.0.0 §String: basic escapes, a literal backslash, and the four forms
+# TOML v1.0.0 / toml.abnf basic-string, literal-string, ml-basic-string, ml-literal-string
 law toml_string:
   {str_at("s = \"A\\nB\\tC\\\"D\\\\E\\u0041\"", "s") ++ str_at("s = 'A\\nB\\\\C'", "s")
     ++ again("s = \"\\b\\f\\r\"") ++ again("s = \"\\u00E9\"") ++ again("s = \"\\U00000041\"")
@@ -187,7 +187,7 @@ law toml_string:
     ++ "s = \"Roses are red\\nViolets are blue\"\n" ++ "s = \"abc\"\n"
     ++ "invalid escape" : String}
 
-# TOML v1.0.0 §Integer: signs, underscores, bases, and the rejected forms
+# TOML v1.0.0 / toml.abnf dec-int, hex-int, oct-int, and bin-int
 law toml_integer:
   {again("a = +99\nb = 42\nc = 0\nd = -17\ne = -0\nf = +0")
     ++ again("a = 1_000\nb = 1_2_3") ++ dig_at("a = 1_000", "a")
@@ -202,7 +202,7 @@ law toml_integer:
     ++ "invalid underscore" ++ "invalid number" ++ "invalid number"
     ++ "invalid number" ++ "invalid number" ++ "invalid number" : String}
 
-# TOML v1.0.0 §Float: fractions, exponents, inf, nan, and the rejected forms
+# TOML v1.0.0 / toml.abnf float and special-float
 law toml_float:
   {again("a = +1.0\nb = -0.01\nc = 5e+22\nd = 6.626e-34\ne = -2E-2\nf = 1e06\ng = 1_0.5_0")
     ++ again("a = inf\nb = +inf\nc = -inf\nd = nan\ne = +nan\nf = -nan")
@@ -212,7 +212,7 @@ law toml_float:
     ++ "invalid number" ++ "invalid number" ++ "invalid exponent"
     ++ "invalid number" : String}
 
-# TOML v1.0.0 §Table and §Keys: headers, dotted keys, and a super-table
+# TOML v1.0.0 / toml.abnf std-table, dotted-key, and quoted-key
 law toml_table:
   {again("[pkg]\nname = \"eztoml\"") ++ path_at("[pkg]\nname = \"eztoml\"", "pkg", "name")
     ++ again("a.b = 1") ++ again("fruit .name = \"banana\"") ++ again("[a.b]\nc = 1")
@@ -227,7 +227,7 @@ law toml_table:
     ++ "[fruit]\n[fruit.apple]\ncolor = \"red\"\n[fruit.apple.texture]\nsmooth = true\n"
     : String}
 
-# TOML v1.0.0 §Inline Table: braces, a nested dotted key, and the rejected forms
+# TOML v1.0.0 / toml.abnf inline-table
 law toml_inline:
   {again("p = { x = 1, y = 2 }") ++ again("animal = { type.name = \"pug\" }")
     ++ again("p = {}") ++ why("p = { x = 1, }") ++ why("p = { x = 1\n}")
@@ -235,14 +235,14 @@ law toml_inline:
     == "p = {x = 1, y = 2}\n" ++ "animal = {type = {name = \"pug\"}}\n" ++ "p = {}\n"
     ++ "invalid key" ++ "newline in inline table" ++ "duplicate key" : String}
 
-# TOML v1.0.0 §Array: commas, a trailing comma, and a comment between values
+# TOML v1.0.0 / toml.abnf array
 law toml_array:
   {again("a = [1, 2]") ++ again("a = [1, 2,]\nb = []\nc = [[1], [2, 3]]")
     ++ again("a = [\n  1, # c\n  2,\n]")
     == "a = [1, 2]\n" ++ "a = [1, 2]\nb = []\nc = [[1], [2, 3]]\n" ++ "a = [1, 2]\n"
     : String}
 
-# TOML v1.0.0 §Array of Tables: headers, an empty element, and a table conflict
+# TOML v1.0.0 / toml.abnf array-table
 law toml_aot:
   {again("[[fruit]]\nname = \"apple\"\n\n[[fruit]]\nname = \"banana\"")
     ++ again("[[fruit]]\nname = \"apple\"\n\n[[fruit]]")
@@ -252,7 +252,7 @@ law toml_aot:
     ++ "[[fruit]]\nname = \"apple\"\n[[fruit]]\n" ++ "not a table" ++ "not a table"
     : String}
 
-# TOML v1.0.0 §Offset Date-Time, §Local Date-Time, §Local Date, §Local Time
+# TOML v1.0.0 / toml.abnf date-time; RFC 3339 offset-date-time, local-date-time, full-date, partial-time
 law toml_datetime:
   {again("a = 1979-05-27T07:32:00Z\nb = 1979-05-27T00:32:00-07:00\nc = 1979-05-27T00:32:00.999999-07:00")
     ++ again("a = 1979-05-27T07:32:00\nb = 1979-05-27\nc = 07:32:00\nd = 00:32:00.999999")
@@ -265,7 +265,7 @@ law toml_datetime:
     ++ "a = 1979-05-27T07:32:00Z\n" ++ "a = 1979-05-27T07:32:00Z\n"
     ++ "a = 1979-05-27T07:32:00Z\n" ++ "invalid time" : String}
 
-# TOML v1.0.0 §Key/Value Pair, §Keys, §String, §Table: rejected documents
+# TOML v1.0.0 / toml.abnf keyval, string, and std-table: rejected documents
 law toml_invalid:
   {why("= \"x\"") ++ why("key =") ++ why("k = \"abc") ++ why("name = \"a\"\nname = \"b\"")
     ++ why("spelling = \"a\"\n\"spelling\" = \"b\"")
@@ -278,7 +278,7 @@ law toml_invalid:
 law toml_miss:
   {T.get(T.root(T.parse("a = 1")), "nope") == T.Miss{} : T.Hit}
 
-# current behavior, not yet TOML v1.0.0:
+# current behavior, not yet TOML v1.0.0 / toml.abnf:
 # two pairs may share a line; `key = # no` and `key # c` at EOF have no error;
 # a space after a dot, a quoted dotted segment, and an empty quoted key are rejected;
 # a dotted table reopened by a header is kept; an integer past 2^63-1 is kept
