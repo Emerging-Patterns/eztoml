@@ -76,3 +76,42 @@ def Laws.table_builds(_path, _rows):
 
 def Laws.pair_builds(_name, _val):
   {==}
+
+def Laws.toml_comment():
+  {==}
+
+def Laws.toml_bool():
+  {==}
+
+def Laws.toml_string():
+  {==}
+
+def Laws.toml_integer():
+  {==}
+
+def Laws.toml_float():
+  {==}
+
+def Laws.toml_table():
+  {==}
+
+def Laws.toml_inline():
+  {==}
+
+def Laws.toml_array():
+  {==}
+
+def Laws.toml_aot():
+  {==}
+
+def Laws.toml_datetime():
+  {==}
+
+def Laws.toml_invalid():
+  {==}
+
+def Laws.toml_miss():
+  {==}
+
+def Laws.toml_current():
+  {==}

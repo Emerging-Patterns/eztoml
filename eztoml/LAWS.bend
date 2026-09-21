@@ -120,3 +120,176 @@ law pair_builds:
   for name: String
   for val: T.Val
   {T.pair(name, val) == T.VPair{name, val} : T.Val}
+
+# the document written back
+def again(text: String) -> String:
+  T.render(T.parse(text))
+
+# the first error, empty when the document is well formed
+def why(text: String) -> String:
+  T.bad(T.parse(text))
+
+# the value at a hit, or an empty string when it missed
+def read(h: T.Hit) -> T.Val:
+  match h:
+    case T.Found{v}:
+      v
+    case T.Miss{}:
+      T.VStr{""}
+
+# the string at a root key
+def str_at(+text: String, +name: String) -> String:
+  T.string(read(T.get(T.root(T.parse(text)), name)))
+
+# the digits at a root key
+def dig_at(+text: String, +name: String) -> String:
+  T.digits(read(T.get(T.root(T.parse(text)), name)))
+
+# T when the boolean is true
+def bit_at.go(bit: Bool) -> String:
+  match bit:
+    case True{}:
+      "T"
+    case False{}:
+      "F"
+
+# T or F for the boolean at a root key
+def bit_at(+text: String, +name: String) -> String:
+  bit_at.go(T.flag(read(T.get(T.root(T.parse(text)), name))))
+
+# the string at a two-key path
+def path_at(+text: String, +a: String, +b: String) -> String:
+  T.string(read(T.at(T.root(T.parse(text)), a <> (b <> []))))
+
+# TOML v1.0.0 / toml.abnf comment: a comment line is ignored and the key is kept
+law toml_comment:
+  {again("# comment\nkey = \"v\"") ++ again("key = \"v\" # tail")
+    ++ again("hash = \"# not\"") ++ str_at("# comment\nkey = \"v\"", "key")
+    == "key = \"v\"\n" ++ "key = \"v\"\n" ++ "hash = \"# not\"\n" ++ "v" : String}
+
+# TOML v1.0.0 / toml.abnf boolean: true and false, and True is not a boolean
+law toml_bool:
+  {again("a = true\nb = false") ++ bit_at("a = true", "a") ++ bit_at("a = false", "a")
+    ++ why("a = True")
+    == "a = true\nb = false\n" ++ "T" ++ "F" ++ "invalid number" : String}
+
+# TOML v1.0.0 / toml.abnf basic-string, literal-string, ml-basic-string, ml-literal-string
+law toml_string:
+  {str_at("s = \"A\\nB\\tC\\\"D\\\\E\\u0041\"", "s") ++ str_at("s = 'A\\nB\\\\C'", "s")
+    ++ again("s = \"\\b\\f\\r\"") ++ again("s = \"\\u00E9\"") ++ again("s = \"\\U00000041\"")
+    ++ again("s = '''I [dw]on't need \\d{2} apples'''")
+    ++ again("s = \"\"\"\nRoses are red\nViolets are blue\"\"\"")
+    ++ again("s = \"\"\"\\\n  ab\\\n  c\"\"\"")
+    ++ why("s = \"\\q\"")
+    == "A\nB\tC\"D\\EA" ++ "A\\nB\\\\C"
+    ++ "s = \"\\b\\f\\r\"\n" ++ "s = \"é\"\n" ++ "s = \"A\"\n"
+    ++ "s = \"I [dw]on't need \\\\d{2} apples\"\n"
+    ++ "s = \"Roses are red\\nViolets are blue\"\n" ++ "s = \"abc\"\n"
+    ++ "invalid escape" : String}
+
+# TOML v1.0.0 / toml.abnf dec-int, hex-int, oct-int, and bin-int
+law toml_integer:
+  {again("a = +99\nb = 42\nc = 0\nd = -17\ne = -0\nf = +0")
+    ++ again("a = 1_000\nb = 1_2_3") ++ dig_at("a = 1_000", "a")
+    ++ again("a = 0x10\nb = 0o10\nc = 0b10\nd = 0xDEAD\ne = 0b1101_0110")
+    ++ why("a = 01") ++ why("a = -01") ++ why("a = 1_") ++ why("a = 1__2")
+    ++ why("a = _1") ++ why("a = +0x10") ++ why("a = -0x10") ++ why("a = +0o7")
+    ++ why("a = +0b1")
+    == "a = 99\nb = 42\nc = 0\nd = -17\ne = -0\nf = 0\n"
+    ++ "a = 1000\nb = 123\n" ++ "1000"
+    ++ "a = 16\nb = 8\nc = 2\nd = 57005\ne = 214\n"
+    ++ "invalid number" ++ "invalid number" ++ "invalid underscore"
+    ++ "invalid underscore" ++ "invalid number" ++ "invalid number"
+    ++ "invalid number" ++ "invalid number" ++ "invalid number" : String}
+
+# TOML v1.0.0 / toml.abnf float and special-float
+law toml_float:
+  {again("a = +1.0\nb = -0.01\nc = 5e+22\nd = 6.626e-34\ne = -2E-2\nf = 1e06\ng = 1_0.5_0")
+    ++ again("a = inf\nb = +inf\nc = -inf\nd = nan\ne = +nan\nf = -nan")
+    ++ why("a = .7") ++ why("a = 7.") ++ why("a = 3.e+20") ++ why("a = Inf")
+    == "a = 1.0\nb = -0.01\nc = 5e+22\nd = 6.626e-34\ne = -2E-2\nf = 1e06\ng = 10.50\n"
+    ++ "a = inf\nb = inf\nc = -inf\nd = nan\ne = nan\nf = -nan\n"
+    ++ "invalid number" ++ "invalid number" ++ "invalid exponent"
+    ++ "invalid number" : String}
+
+# TOML v1.0.0 / toml.abnf std-table, dotted-key, and quoted-key
+law toml_table:
+  {again("[pkg]\nname = \"eztoml\"") ++ path_at("[pkg]\nname = \"eztoml\"", "pkg", "name")
+    ++ again("a.b = 1") ++ again("fruit .name = \"banana\"") ++ again("[a.b]\nc = 1")
+    ++ again("3.14159 = \"pi\"") ++ again("\"127.0.0.1\" = \"value\"")
+    ++ again("'key2' = \"value\"") ++ again("1234 = \"v\"")
+    ++ again("[fruit.apple]\ncolor = \"red\"\n\n[fruit]\norange = 2")
+    ++ again("[fruit.apple]\ncolor = \"red\"\n\n[fruit.apple.texture]\nsmooth = true")
+    == "[pkg]\nname = \"eztoml\"\n" ++ "eztoml" ++ "[a]\nb = 1\n"
+    ++ "[fruit]\nname = \"banana\"\n" ++ "[a]\n[a.b]\nc = 1\n"
+    ++ "[3]\n14159 = \"pi\"\n" ++ "\"127.0.0.1\" = \"value\"\n" ++ "key2 = \"value\"\n"
+    ++ "1234 = \"v\"\n" ++ "[fruit]\norange = 2\n[fruit.apple]\ncolor = \"red\"\n"
+    ++ "[fruit]\n[fruit.apple]\ncolor = \"red\"\n[fruit.apple.texture]\nsmooth = true\n"
+    : String}
+
+# TOML v1.0.0 / toml.abnf inline-table
+law toml_inline:
+  {again("p = { x = 1, y = 2 }") ++ again("animal = { type.name = \"pug\" }")
+    ++ again("p = {}") ++ why("p = { x = 1, }") ++ why("p = { x = 1\n}")
+    ++ why("p = { x = 1, x = 2 }")
+    == "p = {x = 1, y = 2}\n" ++ "animal = {type = {name = \"pug\"}}\n" ++ "p = {}\n"
+    ++ "invalid key" ++ "newline in inline table" ++ "duplicate key" : String}
+
+# TOML v1.0.0 / toml.abnf array
+law toml_array:
+  {again("a = [1, 2]") ++ again("a = [1, 2,]\nb = []\nc = [[1], [2, 3]]")
+    ++ again("a = [\n  1, # c\n  2,\n]")
+    == "a = [1, 2]\n" ++ "a = [1, 2]\nb = []\nc = [[1], [2, 3]]\n" ++ "a = [1, 2]\n"
+    : String}
+
+# TOML v1.0.0 / toml.abnf array-table
+law toml_aot:
+  {again("[[fruit]]\nname = \"apple\"\n\n[[fruit]]\nname = \"banana\"")
+    ++ again("[[fruit]]\nname = \"apple\"\n\n[[fruit]]")
+    ++ why("[[fruit]]\nn = 1\n\n[fruit]\nx = 2")
+    ++ why("[fruit]\nn = 1\n\n[[fruit]]\nx = 2")
+    == "[[fruit]]\nname = \"apple\"\n[[fruit]]\nname = \"banana\"\n"
+    ++ "[[fruit]]\nname = \"apple\"\n[[fruit]]\n" ++ "not a table" ++ "not a table"
+    : String}
+
+# TOML v1.0.0 / toml.abnf date-time; RFC 3339 offset-date-time, local-date-time, full-date, partial-time
+law toml_datetime:
+  {again("a = 1979-05-27T07:32:00Z\nb = 1979-05-27T00:32:00-07:00\nc = 1979-05-27T00:32:00.999999-07:00")
+    ++ again("a = 1979-05-27T07:32:00\nb = 1979-05-27\nc = 07:32:00\nd = 00:32:00.999999")
+    ++ again("a = 1979-05-27T07:32:00+00:00\nb = 1979-05-27T07:32:60Z")
+    ++ again("a = 1979-05-27 07:32:00Z") ++ again("a = 1979-05-27T07:32:00z")
+    ++ again("a = 1979-05-27t07:32:00Z") ++ why("a = 07:32:00Z")
+    == "a = 1979-05-27T07:32:00Z\nb = 1979-05-27T00:32:00-07:00\nc = 1979-05-27T00:32:00.999999-07:00\n"
+    ++ "a = 1979-05-27T07:32:00\nb = 1979-05-27\nc = 07:32:00\nd = 00:32:00.999999\n"
+    ++ "a = 1979-05-27T07:32:00+00:00\nb = 1979-05-27T07:32:60Z\n"
+    ++ "a = 1979-05-27T07:32:00Z\n" ++ "a = 1979-05-27T07:32:00Z\n"
+    ++ "a = 1979-05-27T07:32:00Z\n" ++ "invalid time" : String}
+
+# TOML v1.0.0 / toml.abnf keyval, string, and std-table: rejected documents
+law toml_invalid:
+  {why("= \"x\"") ++ why("key =") ++ why("k = \"abc") ++ why("name = \"a\"\nname = \"b\"")
+    ++ why("spelling = \"a\"\n\"spelling\" = \"b\"")
+    ++ why("[fruit]\na = 1\n\n[fruit]\nb = 2")
+    ++ why("[fruit]\na = 1\n\n[fruit.a]\nb = 2") ++ why("key = # no\n")
+    == "invalid key" ++ "unclosed" ++ "unclosed" ++ "duplicate key" ++ "duplicate key"
+    ++ "duplicate table" ++ "not a table" ++ "unclosed" : String}
+
+# a missing key is Miss
+law toml_miss:
+  {T.get(T.root(T.parse("a = 1")), "nope") == T.Miss{} : T.Hit}
+
+# current behavior, not yet TOML v1.0.0 / toml.abnf:
+# two pairs may share a line; `key = # no` and `key # c` at EOF have no error;
+# a space after a dot, a quoted dotted segment, and an empty quoted key are rejected;
+# a dotted table reopened by a header is kept; an integer past 2^63-1 is kept
+law toml_current:
+  {again("first = \"Tom\" last = \"Preston-Werner\"") ++ why("key = # no")
+    ++ why("key # c") ++ why("fruit. name = \"banana\"") ++ why("fruit . name = \"banana\"")
+    ++ why("site.\"google.com\" = true") ++ why("\"\" = \"blank\"")
+    ++ why("[fruit]\napple.color = \"red\"\n\n[fruit.apple]\ntexture = \"smooth\"")
+    ++ again("[fruit]\napple.color = \"red\"\n\n[fruit.apple]\ntexture = \"smooth\"")
+    ++ why("a = 9223372036854775808") ++ again("a = 9223372036854775808")
+    == "first = \"Tom\"\nlast = \"Preston-Werner\"\n" ++ "" ++ "" ++ "empty key"
+    ++ "empty key" ++ "invalid key" ++ "empty key" ++ ""
+    ++ "[fruit]\n[fruit.apple]\ncolor = \"red\"\ntexture = \"smooth\"\n" ++ ""
+    ++ "a = 9223372036854775808\n" : String}

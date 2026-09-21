@@ -737,8 +737,8 @@ def when.zone(cs: List<&2, Char>, clock: Clock, date: Date) -> WhenOut:
     case []:
       WSome{WLocal{date, clock}}
     case +c <> t:
-      when.zone.go(Char.is_eq(c, 'Z'), Char.is_eq(c, '+'), Char.is_eq(c, '-'), t,
-        clock, date)
+      when.zone.go(Bool.or(Char.is_eq(c, 'Z'), Char.is_eq(c, 'z')),
+        Char.is_eq(c, '+'), Char.is_eq(c, '-'), t, clock, date)
 
 # the fraction must hold a digit
 def when.frac.end.go(some: Bool, rev: List<&2, Char>, clock: Clock, date: Date,
@@ -897,7 +897,8 @@ def when.after.date(date: Date, cs: List<&2, Char>) -> WhenOut:
     case []:
       WSome{WDate{date}}
     case +c <> t:
-      when.after.sep(Char.is_eq(c, 'T'), Char.is_eq(c, ' '), date, t)
+      when.after.sep(Bool.or(Char.is_eq(c, 'T'), Char.is_eq(c, 't')),
+        Char.is_eq(c, ' '), date, t)
 
 # the day is in range, then the rest of the token is a time or nothing
 def when.date.ok.d(d_ok: Bool, y: U32, mo: U32, d: U32,
@@ -1054,6 +1055,26 @@ def word.colon(cs: List<&2, Char>) -> Bool:
       False{}
     case +c <> t:
       word.or(Char.is_eq(c, ':'), word.colon(t))
+
+# e or E: an exponent, so the token is a numeral rather than a datetime
+def word.ee.hit(+c: Char) -> Bool:
+  Bool.or(Char.is_eq(c, 'e'), Char.is_eq(c, 'E'))
+
+# whether the token holds an exponent marker
+def word.ee(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      False{}
+    case +c <> t:
+      word.or(word.ee.hit(c), word.ee(t))
+
+# a datetime scan only when the token is not an exponent numeral
+def word.as_date(date: Bool, exp: Bool) -> Bool:
+  match exp:
+    case True{}:
+      False{}
+    case False{}:
+      date
 
 # a dash after the first character
 def word.dash(cs: List<&2, Char>, first: Bool) -> Bool:
@@ -1555,6 +1576,22 @@ def num.fin.saw(saw: Bool, val: Val) -> Got:
     case True{}:
       GotVal{val}
 
+# a prefixed integer may not carry a sign
+def num.signed(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      False{}
+    case +c <> _:
+      Bool.or(Char.is_eq(c, '+'), Char.is_eq(c, '-'))
+
+# a prefixed integer, rejected when a sign was written
+def num.fin.base(signed: Bool, saw: Bool, sign: Sign, ds: List<&2, U32>) -> Got:
+  match signed:
+    case True{}:
+      GotBad{"invalid number"}
+    case False{}:
+      num.fin.saw(saw, VInt{sign, dec.text(ds)})
+
 # the kind of numeral the scan finished in
 def num.fin.nk(nk: NK, sign: Sign, ds: List<&2, U32>, saw: Bool, why: String,
   cs: List<&2, Char>) -> Got:
@@ -1568,7 +1605,7 @@ def num.fin.nk(nk: NK, sign: Sign, ds: List<&2, U32>, saw: Bool, why: String,
     case NDig{}:
       num.fin.saw(saw, VInt{sign, dec.text(ds)})
     case NBase{}:
-      num.fin.saw(saw, VInt{sign, dec.text(ds)})
+      num.fin.base(num.signed(cs), saw, sign, ds)
     case NFrac{}:
       num.fin.saw(saw, VFlo{sign, word.body(cs)})
     case NExp{}:
@@ -1603,12 +1640,12 @@ def word.route.date(date: Bool, cs: List<&2, Char>) -> Got:
       word.num(cs)
 
 # a special word, or a numeral
-def word.route(g: Got, date: Bool, cs: List<&2, Char>) -> Got:
+def word.route(g: Got, date: Bool, +cs: List<&2, Char>) -> Got:
   match g:
     case GotVal{val}:
       GotVal{val}
     case GotBad{_}:
-      word.route.date(date, cs)
+      word.route.date(word.as_date(date, word.ee(cs)), cs)
 
 # a bare word: a special, a datetime, or a numeral
 def word.val(+cs: List<&2, Char>) -> Got:

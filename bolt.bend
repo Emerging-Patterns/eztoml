@@ -17,3 +17,7 @@ def style() -> String:
 # a pure def named by no law
 def laws() -> String:
   "error"
+
+# a closed equality is a computed document, which is what these laws are
+def closed() -> String:
+  "off"
