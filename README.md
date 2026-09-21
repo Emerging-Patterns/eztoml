@@ -17,11 +17,11 @@ datetimes, arrays, and inline tables. Tables and arrays of tables are headers.
 Comments and blank lines are passed over.
 
 `parse` reads text into a document. `render` writes a document back. `get`
-finds a value by key and `at` finds one by a dotted path. `value` reads the
-string at a key. `string`, `digits`, and `flag` read a string, an integer's
-digits, and a boolean. `root` is the document's table and `bad` is the first
-error. `segments` splits a dotted key, `quote` wraps a string in double quotes,
-and `key` writes a name bare or as a basic string.
+finds a value by key and `at` finds one by a dotted path. A hit is `Found` or
+`Miss`. `string`, `digits`, and `flag` read a string, an integer's digits, and
+a boolean. `root` is the document's table and `bad` is the first error.
+`str`, `integer`, `float`, `boolean`, `array`, `inline`, `table`, and `pair`
+build values. `key` writes a name bare or as a basic string.
 
 ```
 import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
