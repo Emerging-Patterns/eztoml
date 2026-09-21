@@ -9,11 +9,7 @@ ez init
 ez add Emerging-Patterns/eztoml
 ```
 
-Use with [Bend](https://github.com/bendlang/bend):
-
-```
-import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
-```
+Requires [Bend](https://github.com/bendlang/bend).
 
 ## Usage
 
@@ -27,6 +23,10 @@ finds a value by key and `at` finds one by a dotted path. A hit is `Found` or
 a boolean. `root` is the document's table and `bad` is the first error.
 `str`, `integer`, `float`, `boolean`, `array`, `inline`, `table`, and `pair`
 build values. `key` writes a name bare or as a basic string.
+
+```
+import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
+```
 
 ```
 import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
