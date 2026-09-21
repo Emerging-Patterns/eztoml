@@ -12,21 +12,23 @@ import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
 
 ## Usage
 
-eztoml is the TOML slice for string-valued sectioned docs: headers,
-`key = "value"`, comments, and blanks. Headers may be quoted and dotted.
-There are no arrays, inline tables, or numbers.
+`parse` reads a TOML document into a table and keeps the first error.
+`render` writes a value back as TOML. `root` is the table a parse built.
+`err` is that error, or empty. `get` reads a key of a table. `at` reads a
+cell of an array. `str`, `integer`, `float`, `boolean` and `datetime` read
+a value of that kind.
 
-`parse` reads a document into sections and the first error if there was one.
-`render` writes sections back. `value` looks up a key in a table. `sects`
-is the sections a parse finished. `segments` cuts a header on unquoted dots.
-`quote` wraps a string; `key` writes a name bare when it can.
+`string`, `int`, `num`, `flag`, `offset`, `local`, `day`, `time`, `array`,
+`table`, `pair`, `cons` and `nil` build values. `segments` cuts a dotted
+name on unquoted dots. `quote` writes a basic string. `key` writes a name
+bare when it can.
 
 ```
 import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
 
 def main() -> IO(Unit):
-  +doc = Toml.parse("[package]\nname = \"app\"\n")
-  IO.print(Toml.render(Toml.sects(doc)))
+  +doc = Toml.parse("name = \"app\"\nversion = 1\n")
+  IO.print(Toml.render(Toml.root(doc)))
 ```
 
 ```
