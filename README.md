@@ -1,9 +1,6 @@
 # eztoml
 
-TOML reader and writer for [Bend 2](https://github.com/bendlang/bend). Values
-are strings, integers, floats, booleans, datetimes, arrays, and inline tables.
-Tables and arrays of tables are headers. Comments and blank lines are passed
-over. Laws and proofs live in `eztoml/LAWS.bend` and `eztoml/PROOF.bend`.
+TOML for [Bend 2](https://github.com/bendlang/bend).
 
 ## Install
 
