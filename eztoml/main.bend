@@ -1594,44 +1594,32 @@ def i64.limit(sign: Sign) -> String:
     case Minus{}:
       "9223372036854775808"
 
-# how many characters a digit string has
-def i64.count(cs: List<&2, Char>, n: U32) -> U32:
-  match cs:
-    case []:
+# the first differing digit stands; a tie takes the new order
+def i64.ord(seen: Cmp, now: Cmp) -> Cmp:
+  match seen now:
+    case EQ{} n:
       n
-    case _ <> t:
-      i64.count(t, U32.add(n, 1))
+    case LT{} _n:
+      LT{}
+    case GT{} _n:
+      GT{}
 
-# equal length: digit order is numeric order
-def i64.le.fin(r: (String & String) & Cmp) -> Bool:
-  ((_a, _b), c) = r
-  Cmp.is_le(c)
-
-# equal length: the digits are at most the limit
-def i64.le(digits: String, limit: String) -> Bool:
-  i64.le.fin(String.cmp(digits, limit))
-
-# a shorter string fits; an equal one is compared
-def i64.fits.short(short: Bool, digits: String, limit: String) -> Bool:
-  match short:
-    case True{}:
+# a shorter digit string fits and a longer one does not. equal length uses
+# digit order. the walk does not rebuild either string
+def i64.step(+digits: String, +limit: String, ord: Cmp) -> Bool:
+  match digits limit:
+    case SNil{} SNil{}:
+      Cmp.is_le(ord)
+    case SNil{} SCon{_h, _t}:
       True{}
-    case False{}:
-      i64.le(digits, limit)
-
-# a longer digit string is outside the limit
-def i64.fits.long(long: Bool, +digits: String, +limit: String) -> Bool:
-  match long:
-    case True{}:
+    case SCon{_h, _t} SNil{}:
       False{}
-    case False{}:
-      i64.fits.short(U32.is_lt(i64.count(String.to_list(digits), 0),
-        i64.count(String.to_list(limit), 0)), digits, limit)
+    case SCon{x, xt} SCon{y, yt}:
+      i64.step(xt, yt, i64.ord(ord, U32.cmp(Char.to_u32(x), Char.to_u32(y))))
 
 # whether the integer fits in a signed 64-bit integer
 def i64.fits(+sign: Sign, +digits: String) -> Bool:
-  i64.fits.long(U32.is_lt(i64.count(String.to_list(i64.limit(sign)), 0),
-    i64.count(String.to_list(digits), 0)), digits, i64.limit(sign))
+  i64.step(digits, i64.limit(sign), EQ{})
 
 # an integer inside the signed 64-bit range
 def num.fin.range(ok: Bool, sign: Sign, digits: String) -> Got:
