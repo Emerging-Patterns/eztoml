@@ -4140,13 +4140,265 @@ def read.fin2(st: St) -> Doc:
 def read.fin(st: St) -> Doc:
   read.fin2(read.fin.close(st))
 
+# one scanner state, with the hold cleared and the first character already taken
+def read.fast.st(bad: String, rows: List<&2, Val>, heads: List<&2, String>,
+  here: List<&2, String>, parts: List<&2, String>, buf: List<&2, Char>, lex: Lex,
+  back: Lex, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool)
+  -> St:
+  St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, HNone{}, uni, left,
+    arrtab, False{}}
+
+# the character joins the buffer and the state stays
+def read.fast.cons(bad: String, rows: List<&2, Val>, heads: List<&2, String>,
+  here: List<&2, String>, parts: List<&2, String>, buf: List<&2, Char>, lex: Lex,
+  back: Lex, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool,
+  +c: Char) -> St:
+  read.fast.st(bad, rows, heads, here, parts, c <> buf, lex, back, qkind, stack, uni,
+    left, arrtab)
+
+# a quote, an escape, or a state this step does not special-case
+def read.fast.old(bad: String, rows: List<&2, Val>, heads: List<&2, String>,
+  here: List<&2, String>, parts: List<&2, String>, buf: List<&2, Char>, lex: Lex,
+  back: Lex, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool,
+  +c: Char) -> St:
+  read.once2(read.on.st(read.fast.st(bad, rows, heads, here, parts, buf, lex, back,
+    qkind, stack, uni, left, arrtab), c))
+
+# a forbidden control takes the full step; a plain character is stored
+def read.fast.push(ctrl: Bool, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, lex: Lex, back: Lex, qkind: QKind, stack: List<&2, Ctx>,
+  uni: U32, left: U32, arrtab: Bool, +c: Char) -> St:
+  match ctrl:
+    case False{}:
+      read.fast.cons(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
+        left, arrtab, c)
+    case True{}:
+      read.fast.old(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
+        left, arrtab, c)
+
+# a basic-string character that is not a quote
+def read.fast.basic.bs(bs: Bool, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool, +c: Char) -> St:
+  match bs:
+    case True{}:
+      read.fast.old(bad, rows, heads, here, parts, buf, LStr{}, back, QBasic{}, stack,
+        uni, left, arrtab, c)
+    case False{}:
+      read.fast.push(str.bad(Char.to_u32(c), False{}), bad, rows, heads, here, parts,
+        buf, LStr{}, back, QBasic{}, stack, uni, left, arrtab, c)
+
+# a basic-string character: a quote or a backslash still takes the full step
+def read.fast.basic(quote: Bool, bs: Bool, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool, +c: Char) -> St:
+  match quote:
+    case True{}:
+      read.fast.old(bad, rows, heads, here, parts, buf, LStr{}, back, QBasic{}, stack,
+        uni, left, arrtab, c)
+    case False{}:
+      read.fast.basic.bs(bs, bad, rows, heads, here, parts, buf, back, stack, uni, left,
+        arrtab, c)
+
+# a literal-string character: a quote still takes the full step
+def read.fast.lit(quote: Bool, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool, +c: Char) -> St:
+  match quote:
+    case True{}:
+      read.fast.old(bad, rows, heads, here, parts, buf, LStr{}, back, QLit{}, stack,
+        uni, left, arrtab, c)
+    case False{}:
+      read.fast.push(str.bad(Char.to_u32(c), False{}), bad, rows, heads, here, parts,
+        buf, LStr{}, back, QLit{}, stack, uni, left, arrtab, c)
+
+# one character of a string
+def read.fast.str(qkind: QKind, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool, +c: Char) -> St:
+  match qkind:
+    case QBasic{}:
+      read.fast.basic(Char.is_eq(c, '"'), Char.is_eq(c, '\\'), bad, rows, heads, here,
+        parts, buf, back, stack, uni, left, arrtab, c)
+    case QLit{}:
+      read.fast.lit(Char.is_eq(c, '\''), bad, rows, heads, here, parts, buf, back,
+        stack, uni, left, arrtab, c)
+    case other:
+      read.fast.old(bad, rows, heads, here, parts, buf, LStr{}, back, other, stack,
+        uni, left, arrtab, c)
+
+# one character of a bare key
+def read.fast.key(ok: Bool, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, qkind: QKind, stack: List<&2, Ctx>, uni: U32,
+  left: U32, arrtab: Bool, +c: Char) -> St:
+  match ok:
+    case True{}:
+      read.fast.cons(bad, rows, heads, here, parts, buf, LKey{}, back, qkind, stack,
+        uni, left, arrtab, c)
+    case False{}:
+      read.fast.old(bad, rows, heads, here, parts, buf, LKey{}, back, qkind, stack,
+        uni, left, arrtab, c)
+
+# one character of a bare value
+def read.fast.bare(delim: Bool, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, qkind: QKind, stack: List<&2, Ctx>, uni: U32,
+  left: U32, arrtab: Bool, +c: Char) -> St:
+  match delim:
+    case False{}:
+      read.fast.cons(bad, rows, heads, here, parts, buf, LBare{}, back, qkind, stack,
+        uni, left, arrtab, c)
+    case True{}:
+      read.fast.old(bad, rows, heads, here, parts, buf, LBare{}, back, qkind, stack,
+        uni, left, arrtab, c)
+
+# one character of a comment
+def read.fast.com(nl: Bool, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, qkind: QKind, stack: List<&2, Ctx>, uni: U32,
+  left: U32, arrtab: Bool, +c: Char) -> St:
+  match nl:
+    case False{}:
+      read.fast.st(bad, rows, heads, here, parts, buf, LCom{}, back, qkind, stack,
+        uni, left, arrtab)
+    case True{}:
+      read.fast.old(bad, rows, heads, here, parts, buf, LCom{}, back, qkind, stack,
+        uni, left, arrtab, c)
+
+# whitespace that this state ignores. keep is true when a newline is also ignored
+def read.fast.ws.keep(keep: Bool, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, lex: Lex, back: Lex, qkind: QKind, stack: List<&2, Ctx>,
+  uni: U32, left: U32, arrtab: Bool, +c: Char) -> St:
+  match keep:
+    case True{}:
+      read.fast.st(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
+        left, arrtab)
+    case False{}:
+      read.fast.old(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
+        left, arrtab, c)
+
+# a newline this state ignores, or the full step
+def read.fast.ws.nl(nl: Bool, keep: Bool, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, lex: Lex, back: Lex, qkind: QKind, stack: List<&2, Ctx>,
+  uni: U32, left: U32, arrtab: Bool, +c: Char) -> St:
+  match nl:
+    case True{}:
+      read.fast.ws.keep(keep, bad, rows, heads, here, parts, buf, lex, back, qkind,
+        stack, uni, left, arrtab, c)
+    case False{}:
+      read.fast.old(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
+        left, arrtab, c)
+
+# space stays in this state; a newline stays only when keep is set
+def read.fast.ws(sp: Bool, nl: Bool, keep: Bool, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, lex: Lex, back: Lex, qkind: QKind, stack: List<&2, Ctx>,
+  uni: U32, left: U32, arrtab: Bool, +c: Char) -> St:
+  match sp:
+    case True{}:
+      read.fast.st(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
+        left, arrtab)
+    case False{}:
+      read.fast.ws.nl(nl, keep, bad, rows, heads, here, parts, buf, lex, back, qkind,
+        stack, uni, left, arrtab, c)
+
+# the states whose plain characters do not change the scanner
+def read.fast.lex(lex: Lex, qkind: QKind, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool, +c: Char) -> St:
+  match lex:
+    case LStr{}:
+      read.fast.str(qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left,
+        arrtab, c)
+    case LKey{}:
+      read.fast.key(bare.at(c), bad, rows, heads, here, parts, buf, back, qkind,
+        stack, uni, left, arrtab, c)
+    case LBare{}:
+      read.fast.bare(ch.delim(c), bad, rows, heads, here, parts, buf, back, qkind,
+        stack, uni, left, arrtab, c)
+    case LCom{}:
+      read.fast.com(ch.nl(c), bad, rows, heads, here, parts, buf, back, qkind, stack,
+        uni, left, arrtab, c)
+    case LTop{}:
+      read.fast.ws(ch.sp(c), ch.nl(c), True{}, bad, rows, heads, here, parts, buf,
+        LTop{}, back, qkind, stack, uni, left, arrtab, c)
+    case LArr{}:
+      read.fast.ws(ch.sp(c), ch.nl(c), True{}, bad, rows, heads, here, parts, buf,
+        LArr{}, back, qkind, stack, uni, left, arrtab, c)
+    case LArrC{}:
+      read.fast.ws(ch.sp(c), ch.nl(c), True{}, bad, rows, heads, here, parts, buf,
+        LArrC{}, back, qkind, stack, uni, left, arrtab, c)
+    case LLine{}:
+      read.fast.ws(ch.sp(c), ch.nl(c), False{}, bad, rows, heads, here, parts, buf,
+        LLine{}, back, qkind, stack, uni, left, arrtab, c)
+    case LVal{}:
+      read.fast.ws(ch.sp(c), ch.nl(c), False{}, bad, rows, heads, here, parts, buf,
+        LVal{}, back, qkind, stack, uni, left, arrtab, c)
+    case LAfter{}:
+      read.fast.ws(ch.sp(c), ch.nl(c), False{}, bad, rows, heads, here, parts, buf,
+        LAfter{}, back, qkind, stack, uni, left, arrtab, c)
+    case LInl{}:
+      read.fast.ws(ch.sp(c), ch.nl(c), False{}, bad, rows, heads, here, parts, buf,
+        LInl{}, back, qkind, stack, uni, left, arrtab, c)
+    case LInlK{}:
+      read.fast.ws(ch.sp(c), ch.nl(c), False{}, bad, rows, heads, here, parts, buf,
+        LInlK{}, back, qkind, stack, uni, left, arrtab, c)
+    case LInlC{}:
+      read.fast.ws(ch.sp(c), ch.nl(c), False{}, bad, rows, heads, here, parts, buf,
+        LInlC{}, back, qkind, stack, uni, left, arrtab, c)
+    case other:
+      read.fast.old(bad, rows, heads, here, parts, buf, other, back, qkind, stack,
+        uni, left, arrtab, c)
+
+# the first character may be a byte-order mark; later characters take the fast step
+def read.fast.lead(lead: Bool, lex: Lex, qkind: QKind, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool, +c: Char) -> St:
+  match lead:
+    case True{}:
+      read.once(St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack,
+        HNone{}, uni, left, arrtab, True{}}, c)
+    case False{}:
+      read.fast.lex(lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni,
+        left, arrtab, c)
+
+# a held character is still read by the full step, then this character
+def read.fast.hold(hold: Hold, lead: Bool, lex: Lex, qkind: QKind, bad: String,
+  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
+  parts: List<&2, String>, buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>,
+  uni: U32, left: U32, arrtab: Bool, +c: Char) -> St:
+  match hold:
+    case HChar{held}:
+      read.once(read.once2(St{bad, rows, heads, here, parts, buf, lex, back, qkind,
+        stack, HChar{held}, uni, left, arrtab, lead}), c)
+    case HNone{}:
+      read.fast.lead(lead, lex, qkind, bad, rows, heads, here, parts, buf, back,
+        stack, uni, left, arrtab, c)
+
+# one source character
+def read.fast(st: St, +c: Char) -> St:
+  St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
+    arrtab, lead} = st
+  read.fast.hold(hold, lead, lex, qkind, bad, rows, heads, here, parts, buf, back,
+    stack, uni, left, arrtab, c)
+
 # one character at a time
 def doc.read(text: String, st: St) -> Doc:
   match text:
     case SNil{}:
       read.fin(read.once2(st))
     case SCon{+h, t}:
-      doc.read(t, read.once(read.once2(st), h))
+      doc.read(t, read.fast(st, h))
 
 # a scanner at the start of a document
 def st.start() -> St:
