@@ -11,7 +11,7 @@
 #   nested keys, strings/datetimes/floats). LAWS edge cases stay in correctness.
 # - IO.now is 1 ms. If MS is 0, N is raised; if still unresolved, wall/n is
 #   reported honestly without claiming a vs-Rust ratio.
-# - ratio = eztoml_ms / rust_ms (>1 ⇒ eztoml slower).
+# - ratio = eztoml_ms / rust_ms (>1 => eztoml slower).
 { drvBin ? "eztoml-bench", refBin ? "eztoml-rust-ref" }:
 ''
 import os, subprocess, sys, time, traceback
@@ -24,6 +24,8 @@ os.makedirs(WORK, exist_ok=True)
 
 lines, cases, speed_rows = [], [], []
 fails = 0
+Q = chr(34)
+SQ = chr(39)
 
 def log(msg=""):
     print(msg, flush=True)
@@ -64,8 +66,8 @@ def parse_bench(out):
 def add_case(group, name, status, detail, hard=True):
     global fails
     cases.append({"group": group, "name": name, "status": status, "detail": detail, "hard": hard})
-    log(f"[{status}] {group} | {name}")
-    log(f"    {detail}")
+    log("[%s] %s | %s" % (status, group, name))
+    log("    %s" % detail)
     if hard and status != "PASS":
         fails += 1
 
@@ -76,170 +78,165 @@ def write_fix(name, text):
 
 # --- TOML v1.0.0 fixtures (correctness cites toml.io/en/v1.0.0 / toml.abnf) ---
 
-# Closed equalities mirrored from eztoml/LAWS.bend where possible.
 VALID_LAWS = [
-    ("toml_comment", '# comment\nkey = "v"\n'),
+    ("toml_comment", "# comment\nkey = " + Q + "v" + Q + "\n"),
     ("toml_bool", "a = true\nb = false\n"),
-    ("toml_string_basic", 's = "A\\nB\\tC\\"D\\\\E"\n'),
-    ("toml_string_literal", "s = 'A\\\\nB'\n"),
+    ("toml_string_basic", "s = " + Q + "A\\nB\\tC\\" + Q + "D\\\\E" + Q + "\n"),
+    ("toml_string_literal", "s = " + SQ + "A\\\\nB" + SQ + "\n"),
     ("toml_integer", "a = +99\nb = 42\nc = 0\nd = -17\ne = 1_000\n"),
     ("toml_integer_hex", "a = 0x10\nb = 0o10\nc = 0b10\n"),
     ("toml_float", "a = +1.0\nb = -0.01\nc = 5e+22\nd = 6.626e-34\n"),
     ("toml_float_special", "a = inf\nb = -inf\nc = nan\n"),
-    ("toml_table", '[pkg]\nname = "eztoml"\n'),
-    ("toml_dotted", "a.b = 1\nfruit.name = \"banana\"\n"),
-    ("toml_inline", "p = { x = 1, y = 2 }\nanimal = { type.name = \"pug\" }\n"),
+    ("toml_table", "[pkg]\nname = " + Q + "eztoml" + Q + "\n"),
+    ("toml_dotted", "a.b = 1\nfruit.name = " + Q + "banana" + Q + "\n"),
+    ("toml_inline", "p = { x = 1, y = 2 }\nanimal = { type.name = " + Q + "pug" + Q + " }\n"),
     ("toml_array", "a = [1, 2,]\nb = []\nc = [[1], [2, 3]]\n"),
-    ("toml_aot", '[[fruit]]\nname = "apple"\n\n[[fruit]]\nname = "banana"\n'),
+    ("toml_aot", "[[fruit]]\nname = " + Q + "apple" + Q + "\n\n[[fruit]]\nname = " + Q + "banana" + Q + "\n"),
     ("toml_datetime", "a = 1979-05-27T07:32:00Z\nb = 1979-05-27T00:32:00-07:00\nc = 1979-05-27\nd = 07:32:00\n"),
-    ("toml_keyval", 'first = "Tom"\nlast = "Preston-Werner"\n'),
-    ("toml_quoted_key", '"127.0.0.1" = "value"\n\'key2\' = "value"\n'),
+    ("toml_keyval", "first = " + Q + "Tom" + Q + "\nlast = " + Q + "Preston-Werner" + Q + "\n"),
+    ("toml_quoted_key", Q + "127.0.0.1" + Q + " = " + Q + "value" + Q + "\n" + SQ + "key2" + SQ + " = " + Q + "value" + Q + "\n"),
 ]
 
-# Rejected by TOML v1.0.0 / LAWS (eztoml must surface a non-empty bad).
 INVALID_LAWS = [
     ("true_capital", "a = True\n"),
     ("leading_zero", "a = 01\n"),
-    ("bad_escape", 's = "\\q"\n'),
+    ("bad_escape", "s = " + Q + "\\q" + Q + "\n"),
     ("inline_trailing_comma", "p = { x = 1, }\n"),
     ("inline_newline", "p = { x = 1\n}\n"),
-    ("duplicate_key", 'name = "a"\nname = "b"\n'),
+    ("duplicate_key", "name = " + Q + "a" + Q + "\nname = " + Q + "b" + Q + "\n"),
     ("duplicate_table", "[fruit]\na = 1\n\n[fruit]\nb = 2\n"),
     ("aot_then_table", "[[fruit]]\nn = 1\n\n[fruit]\nx = 2\n"),
-    ("empty_keyval", 'key =\n'),
-    ("two_pairs_one_line", 'first = "Tom" last = "Preston-Werner"\n'),
+    ("empty_keyval", "key =\n"),
+    ("two_pairs_one_line", "first = " + Q + "Tom" + Q + " last = " + Q + "Preston-Werner" + Q + "\n"),
     ("i64_overflow", "a = 9223372036854775808\n"),
 ]
 
 def package_manifest(n_deps=40):
-    # Product-shaped Cargo/app-style manifest: nested tables, arrays of tables,
-    # strings, floats, datetimes — multi-KB, not empty / [a]\\nb=1.
     lines = [
-        'name = "wavebench"',
-        'version = "1.4.2"',
+        "name = " + Q + "wavebench" + Q,
+        "version = " + Q + "1.4.2" + Q,
         "edition = 2021",
         "publish = false",
-        "authors = [" + ", ".join(f'"author-{i}@example.com"' for i in range(8)) + "]",
+        "authors = [" + ", ".join(Q + "author-%d@example.com" % i + Q for i in range(8)) + "]",
         "",
         "[package.metadata.release]",
         "sign-commit = true",
-        'pre-release-commit-message = "chore: release v{{version}}"',
+        "pre-release-commit-message = " + Q + "chore: release vX" + Q,
         "rate = 0.0125",
-        'shipped = 2024-06-15T18:30:00Z',
+        "shipped = 2024-06-15T18:30:00Z",
         "",
         "[dependencies]",
     ]
     for i in range(n_deps):
         opt = "true" if (i % 2 == 0) else "false"
         lines.append(
-            f'dep-{i:02d} = {{ version = "={i}.{i % 10}.{i % 7}", '
-            f'optional = {opt}, features = ["a", "b-{i}"] }}'
+            "dep-%02d = { version = %s=%d.%d.%d%s, optional = %s, features = [%sa%s, %sb-%d%s] }"
+            % (i, Q, i, i % 10, i % 7, Q, opt, Q, Q, Q, i, Q)
         )
     lines += [
         "",
         "[features]",
-        'default = ["std", "serde"]',
-        'std = []',
-        'serde = ["dep-00"]',
+        "default = [" + Q + "std" + Q + ", " + Q + "serde" + Q + "]",
+        "std = []",
+        "serde = [" + Q + "dep-00" + Q + "]",
         "",
         "[profile.release]",
         "lto = true",
         "codegen-units = 1",
         "opt-level = 3",
-        "panic = \"abort\"",
+        "panic = " + Q + "abort" + Q,
         "",
     ]
     for i in range(12):
         lines += [
             "[[bin]]",
-            f'name = "tool-{i:02d}"',
-            f'path = "src/bin/tool_{i:02d}.rs"',
-            f"required-features = [\"std\"]",
+            "name = " + Q + ("tool-%02d" % i) + Q,
+            "path = " + Q + ("src/bin/tool_%02d.rs" % i) + Q,
+            "required-features = [" + Q + "std" + Q + "]",
             "",
         ]
     for i in range(6):
+        # Literal dotted key uses single quotes so the cfg string may hold doubles.
         lines += [
-            f"[target.'cfg(target_os = \"linux\")'.dependencies.os-dep-{i}]",
-            f'version = "1.{i}.0"',
+            "[target." + SQ + "cfg(target_os = " + Q + "linux" + Q + ")" + SQ + ".dependencies.os-dep-%d]" % i,
+            "version = " + Q + ("1.%d.0" % i) + Q,
             "default-features = false",
             "",
         ]
-    # Nested workspace-ish tables + mixed scalars
     lines += [
         "[workspace.package]",
-        'license = "MIT"',
-        'repository = "https://example.com/wavebench"',
+        "license = " + Q + "MIT" + Q,
+        "repository = " + Q + "https://example.com/wavebench" + Q,
         "",
         "[workspace.dependencies]",
-        'shared = { path = "../shared", version = "0.1.0" }',
+        "shared = { path = " + Q + "../shared" + Q + ", version = " + Q + "0.1.0" + Q + " }",
         "",
-        "[[workspace.members]]",
-        'path = "crates/core"',
-        "",
-        "[[workspace.members]]",
-        'path = "crates/cli"',
+        "members = [" + Q + "crates/core" + Q + ", " + Q + "crates/cli" + Q + "]",
         "",
     ]
     return "\n".join(lines) + "\n"
 
 def app_config():
-    # App/runtime config: deep nesting, AoT servers, mixed types.
     servers = []
     for i in range(20):
-        servers.append(
-            f'[[servers]]\n'
-            f'name = "svc-{i:02d}"\n'
-            f'host = "10.0.{i//256}.{i%256}"\n'
-            f"port = {8000+i}\n"
-            f"weight = {0.5 + (i%10)*0.05}\n"
-            f"enabled = {str(i%3!=0).lower()}\n"
-            f'started = 2023-{(i%12)+1:02d}-{(i%28)+1:02d}T12:00:00Z\n'
-            f'tags = ["prod", "tier-{i%4}", "az-{(i%3)+1}"]\n'
-            f"[servers.tls]\n"
-            f'cert = "/etc/certs/svc-{i:02d}.pem"\n'
-            f"alpn = [\"h2\", \"http/1.1\"]\n"
-        )
-    head = (
-        "[app]\n"
-        'name = "wave-gateway"\n'
-        'env = "production"\n'
-        "workers = 16\n"
-        "timeout_ms = 2500\n"
-        "ratio = 0.875\n"
-        'boot = 2022-01-01T00:00:00Z\n'
-        "\n"
-        "[app.logging]\n"
-        'level = "info"\n"
-        'format = "json"\n'
-        "\n"
-        "[app.logging.targets.stdout]\n"
-        "enabled = true\n"
-        "\n"
-        "[database]\n"
-        'url = "postgres://user:pass@db.internal:5432/app"\n'
-        "pool = 32\n"
-        "\n"
-        "[database.read_replicas]\n"
-        'hosts = ["r1.internal", "r2.internal", "r3.internal"]\n'
-        "\n"
-    )
-    return head + "\n".join(servers)
+        en = "true" if (i % 3 != 0) else "false"
+        mo = (i % 12) + 1
+        dy = (i % 28) + 1
+        servers.append("\n".join([
+            "[[servers]]",
+            "name = " + Q + ("svc-%02d" % i) + Q,
+            "host = " + Q + ("10.0.%d.%d" % (i // 256, i % 256)) + Q,
+            "port = %d" % (8000 + i),
+            "weight = %.2f" % (0.5 + (i % 10) * 0.05),
+            "enabled = %s" % en,
+            "started = 2023-%02d-%02dT12:00:00Z" % (mo, dy),
+            "tags = [" + Q + "prod" + Q + ", " + Q + ("tier-%d" % (i % 4)) + Q + ", " + Q + ("az-%d" % ((i % 3) + 1)) + Q + "]",
+            "[servers.tls]",
+            "cert = " + Q + ("/etc/certs/svc-%02d.pem" % i) + Q,
+            "alpn = [" + Q + "h2" + Q + ", " + Q + "http/1.1" + Q + "]",
+            "",
+        ]))
+    head = "\n".join([
+        "[app]",
+        "name = " + Q + "wave-gateway" + Q,
+        "env = " + Q + "production" + Q,
+        "workers = 16",
+        "timeout_ms = 2500",
+        "ratio = 0.875",
+        "boot = 2022-01-01T00:00:00Z",
+        "",
+        "[app.logging]",
+        "level = " + Q + "info" + Q,
+        "format = " + Q + "json" + Q,
+        "",
+        "[app.logging.targets.stdout]",
+        "enabled = true",
+        "",
+        "[database]",
+        "url = " + Q + "postgres://user:pass@db.internal:5432/app" + Q,
+        "pool = 32",
+        "",
+        "[database.read_replicas]",
+        "hosts = [" + Q + "r1.internal" + Q + ", " + Q + "r2.internal" + Q + ", " + Q + "r3.internal" + Q + "]",
+        "",
+    ])
+    return head + "\n" + "\n".join(servers)
 
 def cargo_lockish(n=80):
-    # Lockfile-shaped: many [[package]] AoT entries with nested tables.
-    chunks = ['# This file is automatically @generated.\nversion = 3\n']
+    chunks = ["# This file is automatically @generated.\nversion = 3\n"]
     for i in range(n):
-        chunks.append(
-            f"[[package]]\n"
-            f'name = "crate-{i:03d}"\n'
-            f'version = "1.{i%20}.{i%7}"\n'
-            f'source = "registry+https://github.com/rust-lang/crates.io-index"\n'
-            f'checksum = "{"a"*64}"\n'
-            f"dependencies = [\n"
-            f'  "crate-{(i+1)%n:03d}",\n'
-            f'  "crate-{(i+7)%n:03d} 2.0",\n'
-            f"]\n"
-        )
+        chunks.append("\n".join([
+            "[[package]]",
+            "name = " + Q + ("crate-%03d" % i) + Q,
+            "version = " + Q + ("1.%d.%d" % (i % 20, i % 7)) + Q,
+            "source = " + Q + "registry+https://github.com/rust-lang/crates.io-index" + Q,
+            "checksum = " + Q + ("a" * 64) + Q,
+            "dependencies = [",
+            "  " + Q + ("crate-%03d" % ((i + 1) % n)) + Q + ",",
+            "  " + Q + ("crate-%03d 2.0" % ((i + 7) % n)) + Q + ",",
+            "]",
+            "",
+        ]))
     return "\n".join(chunks)
 
 SPEED_FIXTURES = [
@@ -252,52 +249,37 @@ SPEED_FIXTURES = [
 
 def correct_laws():
     log("\n== Correctness (TOML v1.0.0 / toml.abnf; LAWS-shaped) ==")
-    log("Cite: https://toml.io/en/v1.0.0 — valid docs parse; invalid docs reject.")
+    log("Cite: https://toml.io/en/v1.0.0 - valid docs parse; invalid docs reject.")
     for name, text in VALID_LAWS:
         path = write_fix("ok_" + name + ".toml", text)
-        # A: Rust reference accepts
         rr = rust(["parse", path], 30)
         rust_ok = (not rr["timeout"]) and rr["rc"] == 0 and rr["out"].startswith("OK")
         add_case("A rust parse", name, "PASS" if rust_ok else "FAIL",
-                 f"rc={rr['rc']} out={rr['out'][:120]!r} err={rr['err'][:80]!r}")
-
-        # B: eztoml accepts (BAD empty → OK line)
+                 "rc=%s out=%r err=%r" % (rr["rc"], rr["out"][:120], rr["err"][:80]))
         er = ez(["parse", path], 60)
         ez_ok = (not er["timeout"]) and er["rc"] == 0 and er["out"].startswith("OK")
         add_case("B eztoml parse", name, "PASS" if ez_ok else "FAIL",
-                 f"rc={er['rc']} out={er['out'][:120]!r} err={er['err'][:80]!r}")
-
-        # C: eztoml round-trip → Rust re-parse
+                 "rc=%s out=%r err=%r" % (er["rc"], er["out"][:120], er["err"][:80]))
         dst = path + ".rt.toml"
         rt = ez(["rt", path, dst], 60)
         if rt["timeout"] or rt["rc"] != 0 or not os.path.exists(dst):
-            add_case("C eztoml→rust rt", name, "FAIL", f"rt rc={rt['rc']} err={rt['err'][:120]}")
+            add_case("C eztoml->rust rt", name, "FAIL", "rt rc=%s err=%s" % (rt["rc"], rt["err"][:120]))
         else:
             rp = rust(["parse", dst], 30)
             ok = (not rp["timeout"]) and rp["rc"] == 0 and rp["out"].startswith("OK")
-            add_case("C eztoml→rust rt", name, "PASS" if ok else "FAIL",
-                     f"rendered {os.path.getsize(dst)}B → rust {rp['out'][:100]!r}")
-
+            add_case("C eztoml->rust rt", name, "PASS" if ok else "FAIL",
+                     "rendered %dB -> rust %r" % (os.path.getsize(dst), rp["out"][:100]))
     for name, text in INVALID_LAWS:
         path = write_fix("bad_" + name + ".toml", text)
         er = ez(["parse", path], 60)
-        # eztoml must report BAD (non-empty why) on the OK/BAD line, or die.
         out = er["out"].strip()
-        ez_reject = (not er["timeout"]) and (
-            out.startswith("BAD ") and len(out) > 4
-            or er["rc"] not in (0, None) and "BAD" not in out  # die path also OK
-            or out.startswith("BAD")
-        )
-        # Prefer explicit BAD line from parse command
         ez_reject = (not er["timeout"]) and er["rc"] == 0 and out.startswith("BAD ") and len(out) > 4
         add_case("D eztoml reject", name, "PASS" if ez_reject else "FAIL",
-                 f"rc={er['rc']} out={out[:140]!r}")
-
+                 "rc=%s out=%r" % (er["rc"], out[:140]))
         rr = rust(["parse", path], 30)
         rust_reject = (not rr["timeout"]) and rr["rc"] == 0 and rr["out"].startswith("ERR")
         add_case("D rust reject", name, "PASS" if rust_reject else "FAIL",
-                 f"rc={rr['rc']} out={rr['out'][:140]!r}",
-                 hard=True)
+                 "rc=%s out=%r" % (rr["rc"], rr["out"][:140]), hard=True)
 
 def correct_product():
     log("\n== Correctness (product-shaped fixtures) ==")
@@ -306,20 +288,20 @@ def correct_product():
         rr = rust(["parse", path], 60)
         rust_ok = (not rr["timeout"]) and rr["rc"] == 0 and rr["out"].startswith("OK")
         add_case("E rust product", name, "PASS" if rust_ok else "FAIL",
-                 f"bytes={len(text)} out={rr['out'][:100]!r}")
+                 "bytes=%d out=%r" % (len(text), rr["out"][:100]))
         er = ez(["parse", path], 120)
         ez_ok = (not er["timeout"]) and er["rc"] == 0 and er["out"].startswith("OK")
         add_case("E eztoml product", name, "PASS" if ez_ok else "FAIL",
-                 f"bytes={len(text)} out={er['out'][:100]!r}")
+                 "bytes=%d out=%r" % (len(text), er["out"][:100]))
         dst = path + ".rt.toml"
         rt = ez(["rt", path, dst], 120)
         if rt["timeout"] or rt["rc"] != 0 or not os.path.exists(dst):
-            add_case("E eztoml product rt", name, "FAIL", f"rc={rt['rc']}")
+            add_case("E eztoml product rt", name, "FAIL", "rc=%s" % rt["rc"])
         else:
             rp = rust(["parse", dst], 60)
             ok = (not rp["timeout"]) and rp["rc"] == 0 and rp["out"].startswith("OK")
-            add_case("E eztoml product rt→rust", name, "PASS" if ok else "FAIL",
-                     f"rt {os.path.getsize(dst)}B → {rp['out'][:100]!r}")
+            add_case("E eztoml product rt->rust", name, "PASS" if ok else "FAIL",
+                     "rt %dB -> %r" % (os.path.getsize(dst), rp["out"][:100]))
 
 def ms_per(parsed, wall, n):
     if parsed is None:
@@ -330,7 +312,6 @@ def ms_per(parsed, wall, n):
     return (wall * 1000.0 / float(n)), "MS=0; wall/n"
 
 def run_bench_bump(bin_run, args_prefix, n0, timeout, max_n=8192):
-    # Raise N until MS>0 or max_n (IO.now / Instant both 1ms granularity).
     n = n0
     last = None
     while True:
@@ -346,46 +327,41 @@ def run_bench_bump(bin_run, args_prefix, n0, timeout, max_n=8192):
 def speed():
     log("\n== Speed (printable; does not fail the check) ==")
     log("FAIR: in-memory vs in-memory. Rust toml crate loops N inside one process.")
-    log("FAIR: eztoml parse/render timed via IO.now; load (and render's parse) outside.")
+    log("FAIR: eztoml parse/render timed via IO.now; load (and render parse) outside.")
     log("NOT a speed ref: Python tomllib, toml CLI, per-op process spawn, disk open/write.")
     log("Fixtures: product-shaped multi-KB configs (manifest / app / lockfile-shaped).")
-    log("ratio = eztoml/rust (>1 ⇒ eztoml slower). If MS=0 after bumping N, no vs-rust claim.")
-
+    log("ratio = eztoml/rust (>1 => eztoml slower). If MS=0 after bumping N, no vs-rust claim.")
     jobs = []
     for name, text in SPEED_FIXTURES:
         path = write_fix("spd_" + name + ".toml", text)
         jobs.append((name, path, len(text)))
-
     log("\n-- Decode / parse (in-memory vs in-memory) --")
-    log(f"{'fixture':<22} {'bytes':>7} {'N':>5} {'eztoml ms/op':>14} {'rust ms/op':>12} {'ratio':>8}")
+    log("%-22s %7s %5s %14s %12s %8s" % ("fixture", "bytes", "N", "eztoml ms/op", "rust ms/op", "ratio"))
     for name, path, nbytes in jobs:
         n0 = 4 if nbytes > 12000 else (8 if nbytes > 4000 else 20)
         er, ep, en = run_bench_bump(ez, ["bench-parse", path], n0, 300)
         rr, rp, rn = run_bench_bump(rust, ["bench-parse", path], en, 300)
-        # Use the same N for ratio when both resolved; prefer max N that both ran.
         n = max(en, rn)
         if en != rn:
-            # Re-run both at shared N for an apples-to-apples ratio.
             er = ez(["bench-parse", path, str(n)], 300)
             ep = parse_bench(er["out"]) if not er["timeout"] else None
             rr = rust(["bench-parse", path, str(n)], 300)
             rp = parse_bench(rr["out"]) if not rr["timeout"] else None
         if er["timeout"] or rr["timeout"] or ep is None or rp is None:
-            row = f"ERROR parse {name} ez={er.get('rc')} rust={rr.get('rc')}"
+            row = "ERROR parse %s ez=%s rust=%s" % (name, er.get("rc"), rr.get("rc"))
             log(row); speed_rows.append(row); continue
         ez_per, ez_note = ms_per(ep, er["wall"], n)
         ru_per, ru_note = ms_per(rp, rr["wall"], n)
         if ep.get("MS", 0) > 0 and rp.get("MS", 0) > 0 and ru_per > 0:
             ratio = ez_per / ru_per
-            row = (f"{name:<22} {nbytes:7d} {n:5d} {ez_per:14.4f} {ru_per:12.4f} {ratio:7.1f}x"
-                   f"  ({ez_note}/{ru_note})")
+            row = "%-22s %7d %5d %14.4f %12.4f %7.1fx  (%s/%s)" % (
+                name, nbytes, n, ez_per, ru_per, ratio, ez_note, ru_note)
         else:
-            row = (f"{name:<22} {nbytes:7d} {n:5d} {ez_per:14.4f} {ru_per:12.4f}    n/a"
-                   f"  ({ez_note}/{ru_note}; no vs-rust claim)")
+            row = "%-22s %7d %5d %14.4f %12.4f    n/a  (%s/%s; no vs-rust claim)" % (
+                name, nbytes, n, ez_per, ru_per, ez_note, ru_note)
         log(row); speed_rows.append("parse " + row)
-
     log("\n-- Encode / render (in-memory vs in-memory) --")
-    log(f"{'fixture':<22} {'bytes':>7} {'N':>5} {'eztoml ms/op':>14} {'rust ms/op':>12} {'ratio':>8}")
+    log("%-22s %7s %5s %14s %12s %8s" % ("fixture", "bytes", "N", "eztoml ms/op", "rust ms/op", "ratio"))
     for name, path, nbytes in jobs:
         n0 = 4 if nbytes > 12000 else (8 if nbytes > 4000 else 20)
         er, ep, en = run_bench_bump(ez, ["bench-render", path], n0, 300)
@@ -397,24 +373,24 @@ def speed():
             rr = rust(["bench-render", path, str(n)], 300)
             rp = parse_bench(rr["out"]) if not rr["timeout"] else None
         if er["timeout"] or rr["timeout"] or ep is None or rp is None:
-            row = f"ERROR render {name} ez={er.get('rc')} rust={rr.get('rc')}"
+            row = "ERROR render %s ez=%s rust=%s" % (name, er.get("rc"), rr.get("rc"))
             log(row); speed_rows.append(row); continue
         ez_per, ez_note = ms_per(ep, er["wall"], n)
         ru_per, ru_note = ms_per(rp, rr["wall"], n)
         if ep.get("MS", 0) > 0 and rp.get("MS", 0) > 0 and ru_per > 0:
             ratio = ez_per / ru_per
-            row = (f"{name:<22} {nbytes:7d} {n:5d} {ez_per:14.4f} {ru_per:12.4f} {ratio:7.1f}x"
-                   f"  ({ez_note}/{ru_note})")
+            row = "%-22s %7d %5d %14.4f %12.4f %7.1fx  (%s/%s)" % (
+                name, nbytes, n, ez_per, ru_per, ratio, ez_note, ru_note)
         else:
-            row = (f"{name:<22} {nbytes:7d} {n:5d} {ez_per:14.4f} {ru_per:12.4f}    n/a"
-                   f"  ({ez_note}/{ru_note}; no vs-rust claim)")
+            row = "%-22s %7d %5d %14.4f %12.4f    n/a  (%s/%s; no vs-rust claim)" % (
+                name, nbytes, n, ez_per, ru_per, ez_note, ru_note)
         log(row); speed_rows.append("render " + row)
 
 def main():
     log("eztoml vs Rust toml crate bench (Nix-embedded harness)")
-    log(f"driver={DRV}")
-    log(f"ref={REF}")
-    log(f"mode={MODE}")
+    log("driver=%s" % DRV)
+    log("ref=%s" % REF)
+    log("mode=%s" % MODE)
     log("Decode+encode ref: Rust toml 0.5 Value in-process. Timing never fails the check.")
     ping = ez(["ping"], 10)
     if ping["out"].strip() != "pong":
@@ -431,10 +407,10 @@ def main():
             speed()
     except Exception:
         log("HARNESS EXCEPTION"); log(traceback.format_exc()); sys.exit(2)
-    log(f"\n== Summary: {fails} hard failure(s) of {len(cases)} cases ==")
+    log("\n== Summary: %d hard failure(s) of %d cases ==" % (fails, len(cases)))
     for c in cases:
         if c["status"] != "PASS" and c["hard"]:
-            log(f"  FAIL {c['group']} | {c['name']}")
+            log("  FAIL %s | %s" % (c["group"], c["name"]))
     if fails:
         sys.exit(1)
     log("ALL HARD CHECKS PASSED")
