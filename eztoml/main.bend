@@ -4807,6 +4807,62 @@ def st.start() -> St:
   St{"", [], [], [], [], [], LTop{}, LTop{}, QBasic{}, [], HNone{}, 0, 0, False{},
     True{}}
 
+# a span walked for quoting. SqOk is the body reversed, with the closing quote already on
+type Sq is Data:
+  SqOk{rev: List<&2, Char>}
+  SqNo{}
+
+# the reversed body while a span is still plain. SqStop means an escape was seen
+type SqAcc is Data:
+  SqRun{rev: List<&2, Char>}
+  SqStop{}
+
+# quote, backslash, or a control. those still take the escaping writer
+def span.esc(+u: U32) -> Bool:
+  Bool.or(U32.is_lt(u, 32), Bool.or(U32.is_eq(u, 34), Bool.or(U32.is_eq(u, 92),
+    U32.is_eq(u, 127))))
+
+# cons one plain character. an escape, or a stop already seen, stays stopped
+def span.quote.push(esc: Bool, acc: SqAcc, +h: Char) -> SqAcc:
+  match esc acc:
+    case True{} _a:
+      SqStop{}
+    case False{} SqStop{}:
+      SqStop{}
+    case False{} SqRun{rev}:
+      SqRun{h <> rev}
+
+# the reversed body, or a stop, as the quoting result
+def span.quote.end(acc: SqAcc) -> Sq:
+  match acc:
+    case SqStop{}:
+      SqNo{}
+    case SqRun{rev}:
+      SqOk{rev}
+
+# the first n characters, reversed onto acc. a character that needs an escape stops
+def span.quote.go(src: String, +n: U32, z: Bool, acc: SqAcc) -> Sq:
+  match src z:
+    case _s True{}:
+      span.quote.end(acc)
+    case SNil{} False{}:
+      span.quote.end(acc)
+    case SCon{+h, t} False{}:
+      span.quote.go(t, U32.sub(n, 1), U32.is_zero(U32.sub(n, 1)),
+        span.quote.push(span.esc(Char.to_u32(h)), acc, h))
+
+# quotes around a plain span, or the escaping writer when a character needs it
+def span.quote.fin(hit: Sq, src: String, +n: U32) -> String:
+  match hit:
+    case SqNo{}:
+      key.basic(span.str(src, n, U32.is_zero(n)))
+    case SqOk{rev}:
+      String.from_list(List.reverse(&2, Char, '"' <> rev))
+
+# a plain string span, quoted without rebuilding an escaped copy
+def span.quote(+src: String, +n: U32) -> String:
+  span.quote.fin(span.quote.go(src, n, U32.is_zero(n), SqRun{'"' <> []}), src, n)
+
 # true or false
 def render.bool(bit: Bool) -> String:
   match bit:
@@ -4821,7 +4877,7 @@ def render.atom(v: Val) -> String:
     case VStr{text}:
       key.basic(text)
     case VSpan{src, +n}:
-      key.basic(span.str(src, n, U32.is_zero(n)))
+      span.quote(src, n)
     case VInt{sign, digits}:
       sign.text(sign) ++ digits
     case VFlo{sign, text}:
