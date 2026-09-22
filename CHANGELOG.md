@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/Emerging-Patterns/eztoml/compare/v0.2.1...v0.2.2) (2026-09-22)
+
+
+### Performance Improvements
+
+* quote plain string spans without the escape walk ([#22](https://github.com/Emerging-Patterns/eztoml/issues/22)) ([0b1bf3e](https://github.com/Emerging-Patterns/eztoml/commit/0b1bf3e8f4cb2b8e8b178a884c45c41261ac269a))
+
 ## [0.2.1](https://github.com/Emerging-Patterns/eztoml/compare/v0.2.0...v0.2.1) (2026-09-22)
 
 
