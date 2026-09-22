@@ -4,3 +4,5 @@ bin/
 .gate/
 *.gpu
 .claude/
+bench/ref/target/
+**/target/
