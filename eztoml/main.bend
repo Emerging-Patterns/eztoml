@@ -1950,34 +1950,30 @@ def rows.look(rows: List<&2, Val>, +name: String) -> Look:
     case _ <> t:
       rows.look(t, name)
 
-# the last element, when the list has run out on a value
-def look.last.one(v: Val, path: String, pre: List<&2, Val>) -> Last:
+# the newest element. rows stay newest-first until the document is sealed
+def look.last.one(v: Val, path: String, older: List<&2, Val>) -> Last:
   match v:
     case VAot{_p, rows}:
-      LastSome{path, List.reverse(&2, Val, pre), rows}
+      LastSome{path, older, rows}
     case _:
       LastNo{"not a table"}
 
-# the last element of an array of tables, and the elements before it
-def look.last(elems: List<&2, Val>, path: String, pre: List<&2, Val>) -> Last:
+# the newest element of an array of tables, and the older elements behind it
+def look.last(elems: List<&2, Val>, path: String) -> Last:
   match elems:
     case []:
       LastNo{"empty array of tables"}
-    case +h <> t:
-      match t:
-        case []:
-          look.last.one(h, path, pre)
-        case _ <> _:
-          look.last(t, path, h <> pre)
+    case h <> t:
+      look.last.one(h, path, t)
 
-# a new implicit table, inline or standard
+# a new implicit table, inline or standard. the pair is consed, not copied on
 def tree.wrap.new(inl: Bool, name: String, parent: List<&2, Val>, path: String,
   child: List<&2, Val>) -> List<&2, Val>:
   match inl:
     case True{}:
-      List.append(&2, Val, parent, [VPair{name, VInl{child}}])
+      VPair{name, VInl{child}} <> parent
     case False{}:
-      List.append(&2, Val, parent, [VPair{name, VHead{path, child}}])
+      VPair{name, VHead{path, child}} <> parent
 
 # put the child rows back into the parent table
 def tree.wrap(fr: Fr, child: List<&2, Val>) -> List<&2, Val>:
@@ -1987,8 +1983,7 @@ def tree.wrap(fr: Fr, child: List<&2, Val>) -> List<&2, Val>:
     case FrRep{name, parent, path}:
       rows.repl(parent, name, VHead{path, child})
     case FrAot{name, parent, pre, +path}:
-      rows.repl(parent, name,
-        VAots{path, List.append(&2, Val, pre, [VAot{path, child}])})
+      rows.repl(parent, name, VAots{path, VAot{path, child} <> pre})
 
 # walk the frames back to the root
 def tree.rebuild(stack: List<&2, Fr>, vs: List<&2, Val>, bad: String,
@@ -2006,7 +2001,7 @@ def tree.leaf.put(hit: Hit, name: String, vs: List<&2, Val>, val: Val,
     case Found{_v}:
       tree.rebuild(stack, vs, err.first(bad, "duplicate key"), heads)
     case Miss{}:
-      tree.rebuild(stack, List.append(&2, Val, vs, [VPair{name, val}]), bad, heads)
+      tree.rebuild(stack, VPair{name, val} <> vs, bad, heads)
 
 # an explicit header for a table that already exists
 def tree.leaf.def.head(seen: Bool, name: String, vs: List<&2, Val>,
@@ -2023,8 +2018,7 @@ def tree.leaf.def.hit(hit: Look, name: String, vs: List<&2, Val>,
   stack: List<&2, Fr>, bad: String, +path: String, +heads: List<&2, String>) -> End:
   match hit:
     case KMiss{}:
-      tree.rebuild(stack,
-        List.append(&2, Val, vs, [VPair{name, VHead{path, []}}]), bad, path <> heads)
+      tree.rebuild(stack, VPair{name, VHead{path, []}} <> vs, bad, path <> heads)
     case KHead{_p, rows}:
       tree.leaf.def.head(heads.has(heads, path), name, vs, rows, stack, bad, path,
         heads)
@@ -2045,11 +2039,10 @@ def tree.leaf.aot.hit(hit: Look, name: String, vs: List<&2, Val>,
   stack: List<&2, Fr>, bad: String, +path: String, heads: List<&2, String>) -> End:
   match hit:
     case KMiss{}:
-      tree.rebuild(stack, List.append(&2, Val, vs,
-        [VPair{name, VAots{path, [VAot{path, []}]}}]), bad, heads)
+      tree.rebuild(stack, VPair{name, VAots{path, [VAot{path, []}]}} <> vs, bad, heads)
     case KAots{_p, elems}:
-      tree.rebuild(stack, rows.repl(vs, name,
-        VAots{path, List.append(&2, Val, elems, [VAot{path, []}])}), bad, heads)
+      tree.rebuild(stack, rows.repl(vs, name, VAots{path, VAot{path, []} <> elems}),
+        bad, heads)
     case KHead{_p, _rows}:
       tree.rebuild(stack, vs, err.first(bad, "not a table"), heads)
     case KInl{}:
@@ -2121,7 +2114,7 @@ def tree.sub.look(hit: Look, +name: String, +vs: List<&2, Val>, +job: Job,
     case KInl{}:
       Tw{vs, job, stack, "inline table is closed", pre, heads, inl}
     case KAots{+path, elems}:
-      tree.sub.aots(look.last(elems, path, []), name, vs, job, stack, pre, heads, inl,
+      tree.sub.aots(look.last(elems, path), name, vs, job, stack, pre, heads, inl,
         path)
     case KNo{why}:
       Tw{vs, job, stack, why, pre, heads, inl}
@@ -4165,13 +4158,50 @@ def read.fin.close(st: St) -> St:
   read.fin.lex(lex, St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold,
     uni, left, arrtab, lead})
 
+# builder order is newest-first. a kept list is reversed back; a builder list is not
+def rows.seal.fin(rev: Bool, acc: List<&2, Val>) -> List<&2, Val>:
+  match rev:
+    case True{}:
+      acc
+    case False{}:
+      List.reverse(&2, Val, acc)
+
+# put every table back in insertion order. one pass, no append along the way
+def rows.seal.go(vs: List<&2, Val>, rev: Bool, acc: List<&2, Val>) -> List<&2, Val>:
+  match vs:
+    case []:
+      rows.seal.fin(rev, acc)
+    case VPair{name, VHead{path, rows}} <> t:
+      rows.seal.go(t, rev, VPair{name, VHead{path, rows.seal.go(rows, True{}, [])}} <> acc)
+    case VPair{name, VAots{path, elems}} <> t:
+      rows.seal.go(t, rev,
+        VPair{name, VAots{path, rows.seal.go(elems, True{}, [])}} <> acc)
+    case VPair{name, VInl{rows}} <> t:
+      rows.seal.go(t, rev, VPair{name, VInl{rows.seal.go(rows, True{}, [])}} <> acc)
+    case VPair{name, VArr{items}} <> t:
+      rows.seal.go(t, rev, VPair{name, VArr{rows.seal.go(items, False{}, [])}} <> acc)
+    case VAot{path, rows} <> t:
+      rows.seal.go(t, rev, VAot{path, rows.seal.go(rows, True{}, [])} <> acc)
+    case VAots{path, elems} <> t:
+      rows.seal.go(t, rev, VAots{path, rows.seal.go(elems, True{}, [])} <> acc)
+    case VInl{rows} <> t:
+      rows.seal.go(t, rev, VInl{rows.seal.go(rows, True{}, [])} <> acc)
+    case VArr{items} <> t:
+      rows.seal.go(t, rev, VArr{rows.seal.go(items, False{}, [])} <> acc)
+    case h <> t:
+      rows.seal.go(t, rev, h <> acc)
+
+# insertion order of a table built newest-first
+def rows.seal(rows: List<&2, Val>) -> List<&2, Val>:
+  rows.seal.go(rows, True{}, [])
+
 # an open frame at the end is an error
 def read.fin.stack(stack: List<&2, Ctx>, bad: String, rows: List<&2, Val>) -> Doc:
   match stack:
     case []:
-      Doc{bad, rows}
+      Doc{bad, rows.seal(rows)}
     case _ <> _:
-      Doc{err.first(bad, "unclosed"), rows}
+      Doc{err.first(bad, "unclosed"), rows.seal(rows)}
 
 # the document from a finished state
 def read.fin.doc(st: St) -> Doc:
@@ -4183,7 +4213,7 @@ def read.fin.doc(st: St) -> Doc:
 def read.fin.unclosed(st: St) -> Doc:
   St{bad, rows, _heads, _here, _parts, _buf, _lex, _back, _q, _stack, _hold, _uni,
     _left, _arr, _lead} = st
-  Doc{err.first(bad, "unclosed"), rows}
+  Doc{err.first(bad, "unclosed"), rows.seal(rows)}
 
 # a comment may end a document only where the line already could
 def read.fin.end(lex: Lex) -> Bool:
