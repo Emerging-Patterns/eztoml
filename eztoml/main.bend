@@ -34,9 +34,11 @@ type When is Data:
 
 # one TOML value. Tables remember the dotted path they were opened under.
 # An inline table is VInl. An array of tables is VAots, and each element is
-# VAot. VPair is a key in a table.
+# VAot. VPair is a key in a table. VSpan is a plain string: the first n
+# characters of a source suffix.
 type Val is Data:
   VStr{text: String}
+  VSpan{src: String, n: U32}
   VInt{sign: Sign, digits: String}
   VFlo{sign: Sign, text: String}
   VBool{bit: Bool}
@@ -2217,6 +2219,34 @@ def buf.str.go(buf: List<&2, Char>, acc: String) -> String:
 def buf.str(buf: List<&2, Char>) -> String:
   buf.str.go(buf, "")
 
+# the first n characters of a source span
+def span.str(src: String, +n: U32, z: Bool) -> String:
+  match src z:
+    case _s True{}:
+      ""
+    case SNil{} False{}:
+      ""
+    case SCon{+h, t} False{}:
+      SCon{h, span.str(t, U32.sub(n, 1), U32.is_zero(U32.sub(n, 1)))}
+
+# the first n characters, reversed, so an escape can keep copying
+def span.rev(src: String, +n: U32, z: Bool, acc: List<&2, Char>) -> List<&2, Char>:
+  match src z:
+    case _s True{}:
+      acc
+    case SNil{} False{}:
+      acc
+    case SCon{h, t} False{}:
+      span.rev(t, U32.sub(n, 1), U32.is_zero(U32.sub(n, 1)), h <> acc)
+
+# the unread suffix of a span that will not be stored
+def span.drop(src: String) -> Unit:
+  match src:
+    case SNil{}:
+      Unit{}
+    case SCon{_h, t}:
+      span.drop(t)
+
 # the key path, document table then this key
 def path.cat(here: List<&2, String>, parts: List<&2, String>) -> List<&2, String>:
   List.append(&2, String, here, List.reverse(&2, String, parts))
@@ -4392,13 +4422,284 @@ def read.fast(st: St, +c: Char) -> St:
   read.fast.hold(hold, lead, lex, qkind, bad, rows, heads, here, parts, buf, back,
     stack, uni, left, arrtab, c)
 
-# one character at a time
-def doc.read(text: String, st: St) -> Doc:
-  match text:
-    case SNil{}:
+# where the next source character is read. MEat is the body of a plain string
+type Mode is Data:
+  MScan{st: St}
+  MOpen{basic: Bool, q: Char, qkind: QKind, bad: String, rows: List<&2, Val>,
+    heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+    buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+    arrtab: Bool}
+  MEat{basic: Bool, q: Char, cut: String, n: U32, bad: String, rows: List<&2, Val>,
+    heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+    qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool}
+
+# an unclosed string
+def eat.fin(_n: U32, _u: Unit, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool) -> Doc:
+  read.fin.unclosed(St{bad, rows, heads, here, parts, [], LStr{}, LStr{}, qkind, stack,
+    HNone{}, uni, left, arrtab, False{}})
+
+# a plain string is the first n characters of the source suffix
+def eat.close(cut: String, n: U32, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool) -> St:
+  val.take(St{bad, rows, heads, here, parts, [], LStr{}, LStr{}, qkind, stack, HNone{},
+    uni, left, arrtab, False{}}, VSpan{cut, n})
+
+# an escape or a forbidden control copies the span so far and continues
+def eat.copy(+c: Char, cut: String, +n: U32, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool) -> Mode:
+  MScan{lex.str(St{bad, rows, heads, here, parts, span.rev(cut, n, U32.is_zero(n), []),
+    LStr{}, LStr{}, qkind, stack, HNone{}, uni, left, arrtab, False{}}, c)}
+
+# a forbidden control leaves the span; a plain character extends it
+def eat.ctrl(badc: Bool, basic: Bool, q: Char, c: Char, cut: String, n: U32,
+  bad: String, rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
+  parts: List<&2, String>, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool) -> Mode:
+  match badc:
+    case True{}:
+      eat.copy(c, cut, n, bad, rows, heads, here, parts, qkind, stack, uni, left,
+        arrtab)
+    case False{}:
+      MEat{basic, q, cut, U32.add(n, 1), bad, rows, heads, here, parts, qkind, stack,
+        uni, left, arrtab}
+
+# a backslash in a basic string leaves the span
+def eat.bs(bs: Bool, basic: Bool, q: Char, +c: Char, cut: String, n: U32, bad: String,
+  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
+  parts: List<&2, String>, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool) -> Mode:
+  match bs:
+    case True{}:
+      eat.copy(c, cut, n, bad, rows, heads, here, parts, qkind, stack, uni, left,
+        arrtab)
+    case False{}:
+      eat.ctrl(str.bad(Char.to_u32(c), False{}), basic, q, c, cut, n, bad, rows, heads,
+        here, parts, qkind, stack, uni, left, arrtab)
+
+# a literal string keeps a backslash; a basic string does not
+def eat.basic(basic: Bool, q: Char, +c: Char, cut: String, n: U32, bad: String,
+  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
+  parts: List<&2, String>, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool) -> Mode:
+  match basic:
+    case False{}:
+      eat.ctrl(str.bad(Char.to_u32(c), False{}), False{}, q, c, cut, n, bad, rows, heads,
+        here, parts, qkind, stack, uni, left, arrtab)
+    case True{}:
+      eat.bs(Char.is_eq(c, '\\'), True{}, q, c, cut, n, bad, rows, heads, here, parts,
+        qkind, stack, uni, left, arrtab)
+
+# a quote closes the span
+def eat.feed.q(quote: Bool, basic: Bool, q: Char, c: Char, cut: String, n: U32,
+  bad: String, rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
+  parts: List<&2, String>, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool) -> Mode:
+  match quote:
+    case True{}:
+      MScan{eat.close(cut, n, bad, rows, heads, here, parts, qkind, stack, uni, left,
+        arrtab)}
+    case False{}:
+      eat.basic(basic, q, c, cut, n, bad, rows, heads, here, parts, qkind, stack, uni,
+        left, arrtab)
+
+# one character of a plain string. cut is the suffix where the text began
+def eat.feed(basic: Bool, +q: Char, cut: String, n: U32, bad: String,
+  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
+  parts: List<&2, String>, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool, +c: Char) -> Mode:
+  eat.feed.q(Char.is_eq(c, q), basic, q, c, cut, n, bad, rows, heads, here, parts,
+    qkind, stack, uni, left, arrtab)
+
+# the opening quote's back state is not kept on the span
+def doc.open.eat(_back: Lex, mode: Mode) -> Mode:
+  mode
+
+# a suffix the span does not keep
+def doc.drop(_tail: String, mode: Mode) -> Mode:
+  mode
+
+# an empty buffer starts a span; a buffer already in use stays on the old path
+def doc.open.buf(basic: Bool, q: Char, qkind: QKind, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool, c: Char, tail: String) -> Mode:
+  match buf:
+    case []:
+      doc.open.eat(back, MEat{basic, q, SCon{c, tail}, 1, bad, rows, heads, here, parts,
+        qkind, stack, uni, left, arrtab})
+    case h <> t:
+      doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, bad, rows, heads, here, parts,
+        h <> t, back, stack, uni, left, arrtab, c)})
+
+# a forbidden control leaves the span
+def doc.open.ok(badc: Bool, basic: Bool, q: Char, qkind: QKind, bad: String,
+  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
+  parts: List<&2, String>, buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>,
+  uni: U32, left: U32, arrtab: Bool, c: Char, tail: String) -> Mode:
+  match badc:
+    case True{}:
+      doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, bad, rows, heads, here, parts,
+        buf, back, stack, uni, left, arrtab, c)})
+    case False{}:
+      doc.open.buf(basic, q, qkind, bad, rows, heads, here, parts, buf, back, stack,
+        uni, left, arrtab, c, tail)
+
+# a backslash in a basic string leaves the span
+def doc.open.bs(bs: Bool, q: Char, qkind: QKind, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool, +c: Char, tail: String) -> Mode:
+  match bs:
+    case True{}:
+      doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, bad, rows, heads, here, parts,
+        buf, back, stack, uni, left, arrtab, c)})
+    case False{}:
+      doc.open.ok(str.bad(Char.to_u32(c), False{}), True{}, q, qkind, bad, rows, heads,
+        here, parts, buf, back, stack, uni, left, arrtab, c, tail)
+
+# a literal string keeps a backslash; a basic string does not
+def doc.open.b(basic: Bool, q: Char, qkind: QKind, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool, +c: Char, tail: String) -> Mode:
+  match basic:
+    case False{}:
+      doc.open.ok(str.bad(Char.to_u32(c), False{}), False{}, q, qkind, bad, rows, heads,
+        here, parts, buf, back, stack, uni, left, arrtab, c, tail)
+    case True{}:
+      doc.open.bs(Char.is_eq(c, '\\'), q, qkind, bad, rows, heads, here, parts, buf,
+        back, stack, uni, left, arrtab, c, tail)
+
+# a second quote is an empty string or the start of a multiline string
+def doc.open.q(same: Bool, basic: Bool, q: Char, qkind: QKind, bad: String,
+  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
+  parts: List<&2, String>, buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>,
+  uni: U32, left: U32, arrtab: Bool, c: Char, tail: String) -> Mode:
+  match same:
+    case True{}:
+      doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, bad, rows, heads, here, parts,
+        buf, back, stack, uni, left, arrtab, c)})
+    case False{}:
+      doc.open.b(basic, q, qkind, bad, rows, heads, here, parts, buf, back, stack, uni,
+        left, arrtab, c, tail)
+
+# the character after an opening quote
+def doc.open(basic: Bool, +q: Char, qkind: QKind, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool, +c: Char, tail: String) -> Mode:
+  doc.open.q(Char.is_eq(c, q), basic, q, qkind, bad, rows, heads, here, parts, buf,
+    back, stack, uni, left, arrtab, c, tail)
+
+# a one-line string may be a span; a multiline string stays on the old path
+def doc.scan.kind(qkind: QKind, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool) -> Mode:
+  match qkind:
+    case QBasic{}:
+      MOpen{True{}, '"', QBasic{}, bad, rows, heads, here, parts, buf, back, stack,
+        uni, left, arrtab}
+    case QLit{}:
+      MOpen{False{}, '\'', QLit{}, bad, rows, heads, here, parts, buf, back, stack,
+        uni, left, arrtab}
+    case other:
+      MScan{St{bad, rows, heads, here, parts, buf, LQ{}, back, other, stack, HNone{},
+        uni, left, arrtab, False{}}}
+
+# the first character of the file is still the old step
+def doc.scan.lead(lead: Bool, qkind: QKind, bad: String, rows: List<&2, Val>,
+  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
+  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
+  arrtab: Bool) -> Mode:
+  match lead:
+    case True{}:
+      MScan{St{bad, rows, heads, here, parts, buf, LQ{}, back, qkind, stack, HNone{},
+        uni, left, arrtab, True{}}}
+    case False{}:
+      doc.scan.kind(qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left,
+        arrtab)
+
+# a held character is not the start of a span
+def doc.scan.hold(hold: Hold, lead: Bool, qkind: QKind, bad: String,
+  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
+  parts: List<&2, String>, buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>,
+  uni: U32, left: U32, arrtab: Bool) -> Mode:
+  match hold:
+    case HChar{held}:
+      MScan{St{bad, rows, heads, here, parts, buf, LQ{}, back, qkind, stack,
+        HChar{held}, uni, left, arrtab, lead}}
+    case HNone{}:
+      doc.scan.lead(lead, qkind, bad, rows, heads, here, parts, buf, back, stack, uni,
+        left, arrtab)
+
+# a quote opened a one-line string, or the state is rebuilt around that quote
+def doc.wrap.lex(lex: Lex, bad: String, rows: List<&2, Val>, heads: List<&2, String>,
+  here: List<&2, String>, parts: List<&2, String>, buf: List<&2, Char>, back: Lex,
+  qkind: QKind, stack: List<&2, Ctx>, hold: Hold, uni: U32, left: U32, arrtab: Bool,
+  lead: Bool) -> Mode:
+  match lex:
+    case LQ{}:
+      doc.scan.hold(hold, lead, qkind, bad, rows, heads, here, parts, buf, back, stack,
+        uni, left, arrtab)
+    case other:
+      MScan{St{bad, rows, heads, here, parts, buf, other, back, qkind, stack, hold,
+        uni, left, arrtab, lead}}
+
+# a quote may have opened a string
+def doc.wrap(st: St) -> Mode:
+  St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
+    arrtab, lead} = st
+  doc.wrap.lex(lex, bad, rows, heads, here, parts, buf, back, qkind, stack, hold,
+    uni, left, arrtab, lead)
+
+# an apostrophe may open a literal string
+def doc.scan.sq(sq: Bool, st: St, c: Char) -> Mode:
+  match sq:
+    case True{}:
+      doc.wrap(read.fast(st, c))
+    case False{}:
+      MScan{read.fast(st, c)}
+
+# a quote may open a basic string. any other character is the old step
+def doc.scan.q(dq: Bool, sq: Bool, st: St, c: Char) -> Mode:
+  match dq:
+    case True{}:
+      doc.wrap(read.fast(st, c))
+    case False{}:
+      doc.scan.sq(sq, st, c)
+
+# one source character outside a plain string
+def doc.scan(st: St, +c: Char) -> Mode:
+  doc.scan.q(Char.is_eq(c, '"'), Char.is_eq(c, '\''), st, c)
+
+# one character at a time. a plain string keeps a span of this suffix
+def doc.read(text: String, mode: Mode) -> Doc:
+  match text mode:
+    case SNil{} MScan{st}:
       read.fin(read.once2(st))
-    case SCon{+h, t}:
-      doc.read(t, read.fast(st, h))
+    case SNil{} MOpen{_basic, _q, qkind, bad, rows, heads, here, parts, buf, back,
+      stack, uni, left, arrtab}:
+      read.fin(read.once2(St{bad, rows, heads, here, parts, buf, LQ{}, back, qkind,
+        stack, HNone{}, uni, left, arrtab, False{}}))
+    case SNil{} MEat{_basic, _q, cut, n, bad, rows, heads, here, parts, qkind, stack,
+      uni, left, arrtab}:
+      eat.fin(n, span.drop(cut), bad, rows, heads, here, parts, qkind, stack, uni,
+        left, arrtab)
+    case SCon{+h, +t} MOpen{basic, q, qkind, bad, rows, heads, here, parts, buf, back,
+      stack, uni, left, arrtab}:
+      doc.read(t, doc.open(basic, q, qkind, bad, rows, heads, here, parts, buf, back,
+        stack, uni, left, arrtab, h, t))
+    case SCon{+h, t} MEat{basic, q, cut, n, bad, rows, heads, here, parts, qkind,
+      stack, uni, left, arrtab}:
+      doc.read(t, eat.feed(basic, q, cut, n, bad, rows, heads, here, parts, qkind,
+        stack, uni, left, arrtab, h))
+    case SCon{+h, t} MScan{st}:
+      doc.read(t, doc.scan(st, h))
 
 # a scanner at the start of a document
 def st.start() -> St:
@@ -4418,6 +4719,8 @@ def render.atom(v: Val) -> String:
   match v:
     case VStr{text}:
       key.basic(text)
+    case VSpan{src, +n}:
+      key.basic(span.str(src, n, U32.is_zero(n)))
     case VInt{sign, digits}:
       sign.text(sign) ++ digits
     case VFlo{sign, text}:
@@ -4584,6 +4887,8 @@ def string(v: Val) -> String:
   match v:
     case VStr{text}:
       text
+    case VSpan{src, +n}:
+      span.str(src, n, U32.is_zero(n))
     case _:
       ""
 
@@ -4688,4 +4993,4 @@ def render(doc: Doc) -> String:
 
 # a document read from TOML text
 def parse(text: String) -> Doc:
-  doc.read(text, st.start())
+  doc.read(text, MScan{st.start()})
