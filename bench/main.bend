@@ -92,29 +92,37 @@ def text.len(s: String) -> U32:
   text.len.go(s, 0)
 
 # print BAD line for a document (empty why means well-formed)
-def show.bad(doc: Toml.Doc) -> String:
+def show.bad(+doc: Toml.Doc) -> String:
   "BAD " ++ Toml.bad(doc)
 
 # print OK line with checksum of the rendered document
-def show.ok(doc: Toml.Doc) -> String:
+def show.ok(+doc: Toml.Doc) -> String:
   +out = Toml.render(doc)
   "OK SUM " ++ U32.show(text.sum(out)) ++ " BYTES " ++ U32.show(text.len(out))
 
-# status line for a parsed document
-def show.doc(doc: Toml.Doc) -> String:
-  match String.is_empty(Toml.bad(doc)):
+# choose OK or BAD once emptiness is known
+def show.doc.at(ok: Bool, +doc: Toml.Doc) -> String:
+  match ok:
     case True{}:
       show.ok(doc)
     case False{}:
       show.bad(doc)
 
-# write rendered document, or die on the first error
-def write.render(path: String, doc: Toml.Doc) -> IO(Unit):
-  match String.is_empty(Toml.bad(doc)):
+# status line for a parsed document
+def show.doc(+doc: Toml.Doc) -> String:
+  show.doc.at(String.is_empty(Toml.bad(doc)), doc)
+
+# write when the document is well-formed; else die
+def write.render.at(ok: Bool, +path: String, +doc: Toml.Doc) -> IO(Unit):
+  match ok:
     case False{}:
       die.msg(Toml.bad(doc))
     case True{}:
       write.file(path, Toml.render(doc))
+
+# write rendered document, or die on the first error
+def write.render(+path: String, +doc: Toml.Doc) -> IO(Unit):
+  write.render.at(String.is_empty(Toml.bad(doc)), path, doc)
 
 # parse a TOML file and print OK/BAD status
 def cmd.parse(src: String) -> IO(Unit):
@@ -132,14 +140,18 @@ def cmd.render(src: String, dst: String) -> IO(Unit):
 def cmd.rt(src: String, dst: String) -> IO(Unit):
   cmd.render(src, dst)
 
-# fold one parse into a checksum of the rendered length
-def step.parse(+sum: U32, +text: String) -> U32:
-  +doc = Toml.parse(text)
-  match String.is_empty(Toml.bad(doc)):
+# fold a well-formed or rejected parse into the checksum
+def step.parse.at(ok: Bool, +sum: U32, +doc: Toml.Doc) -> U32:
+  match ok:
     case False{}:
       (sum + 1 : U32)
     case True{}:
       (sum + text.len(Toml.render(doc)) : U32)
+
+# fold one parse into a checksum of the rendered length
+def step.parse(+sum: U32, +text: String) -> U32:
+  +doc = Toml.parse(text)
+  step.parse.at(String.is_empty(Toml.bad(doc)), sum, doc)
 
 # repeat parse n times
 def loop.parse(+text: String, n: Nat, +sum: U32) -> U32:
@@ -166,19 +178,25 @@ def show.ms(t0: Nat, t1: Nat, +sum: U32, +bytes: U32, +n: U32) -> String:
   "MS " ++ Nat.show(Nat.sub(t1, t0)) ++ " SUM " ++ U32.show(sum) ++ " N " ++ U32.show(n)
     ++ " BYTES " ++ U32.show(bytes)
 
+# timed parse body once the file text is loaded
+def bench.parse.after(+text: String, +n: U32, +k: Nat) -> IO(Unit):
+  +bytes = text.len(text)
+  do IO<Unit>:
+    t0 : Nat <- IO.now()
+    sum : U32 = loop.parse(text, k, 0)
+    t1 : Nat <- IO.now()
+    IO.print(show.ms(t0, t1, sum, bytes, n))
+
 # timed parse bench: load outside IO.now; loop only parse(+render checksum)
 def bench.parse(path: String, +n: U32) -> IO(Unit):
   +k = U32.to_nat(n)
   do IO<Unit>:
     text : String <- read.file(path)
-    t0 : Nat <- IO.now()
-    sum : U32 = loop.parse(text, k, 0)
-    t1 : Nat <- IO.now()
-    IO.print(show.ms(t0, t1, sum, text.len(text), n))
+    bench.parse.after(text, n, k)
 
-# timed render bench: load+parse outside IO.now; loop only render
-def bench.render.go(+doc: Toml.Doc, +bytes: U32, +n: U32) -> IO(Unit):
-  match String.is_empty(Toml.bad(doc)):
+# time render when the document is well-formed; else die
+def bench.render.at(ok: Bool, +doc: Toml.Doc, +bytes: U32, +n: U32) -> IO(Unit):
+  match ok:
     case False{}:
       die.msg(Toml.bad(doc))
     case True{}:
@@ -189,11 +207,19 @@ def bench.render.go(+doc: Toml.Doc, +bytes: U32, +n: U32) -> IO(Unit):
         t1 : Nat <- IO.now()
         IO.print(show.ms(t0, t1, sum, bytes, n))
 
+# timed render bench: load+parse outside IO.now; loop only render
+def bench.render.go(+doc: Toml.Doc, +bytes: U32, +n: U32) -> IO(Unit):
+  bench.render.at(String.is_empty(Toml.bad(doc)), doc, bytes, n)
+
+# after loading text, parse then time render
+def bench.render.after(+text: String, +n: U32) -> IO(Unit):
+  bench.render.go(Toml.parse(text), text.len(text), n)
+
 # load+parse then time render only
 def bench.render(path: String, +n: U32) -> IO(Unit):
   do IO<Unit>:
     text : String <- read.file(path)
-    bench.render.go(Toml.parse(text), text.len(text), n)
+    bench.render.after(text, n)
 
 # fallthrough for unknown commands
 def run.e.at(z: Bool, +cmd: String, _a: String, _b: String, _c: String) -> IO(Unit):
