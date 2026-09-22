@@ -1112,13 +1112,27 @@ def word.spec.nan(a: Bool, b: Bool, c: Bool) -> Got:
     case False{}:
       word.spec.nan2(b, c)
 
+# character-for-character equality. a mismatch drops the rest and stops
+def str.eq.step(a: String, b: String, same: Bool) -> Bool:
+  match a b same:
+    case SNil{} SNil{} True{}:
+      True{}
+    case SCon{x, xt} SCon{y, yt} True{}:
+      str.eq.step(xt, yt, Char.is_eq(x, y))
+    case _a _b _s:
+      False{}
+
+# the search only needs the bool, not a rebuilt copy of either string
+def str.eq(a: String, b: String) -> Bool:
+  str.eq.step(a, b, True{})
+
 # a negative inf, or nan
 def word.spec.inf3(c: Bool, +s: String) -> Got:
   match c:
     case True{}:
       GotVal{VFlo{Minus{}, "inf"}}
     case False{}:
-      word.spec.nan(String.eq(s, "nan"), String.eq(s, "+nan"), String.eq(s, "-nan"))
+      word.spec.nan(str.eq(s, "nan"), str.eq(s, "+nan"), str.eq(s, "-nan"))
 
 # a signed inf, or nan
 def word.spec.inf2(b: Bool, c: Bool, +s: String) -> Got:
@@ -1142,7 +1156,7 @@ def word.spec.f(hit: Bool, +s: String) -> Got:
     case True{}:
       GotVal{VBool{False{}}}
     case False{}:
-      word.spec.inf(String.eq(s, "inf"), String.eq(s, "+inf"), String.eq(s, "-inf"), s)
+      word.spec.inf(str.eq(s, "inf"), str.eq(s, "+inf"), str.eq(s, "-inf"), s)
 
 # true, or the rest of the specials
 def word.spec.t(hit: Bool, other: Bool, +s: String) -> Got:
@@ -1154,7 +1168,7 @@ def word.spec.t(hit: Bool, other: Bool, +s: String) -> Got:
 
 # true, false, inf, and nan, including a sign on inf and nan
 def word.spec(+s: String) -> Got:
-  word.spec.t(String.eq(s, "true"), String.eq(s, "false"), s)
+  word.spec.t(str.eq(s, "true"), str.eq(s, "false"), s)
 
 # a datetime result as a value
 def word.from.when(w: WhenOut) -> Got:
@@ -1714,10 +1728,79 @@ def word.route(g: Got, date: Bool, +cs: List<&2, Char>) -> Got:
     case GotBad{_}:
       word.route.date(word.as_date(date, word.ee(cs)), cs)
 
+# '-' can start a signed inf or nan
+def word.special.minus(+c: Char) -> Bool:
+  Char.is_eq(c, '-')
+
+# '+' or '-'
+def word.special.plus(hit: Bool, +c: Char) -> Bool:
+  match hit:
+    case True{}:
+      True{}
+    case False{}:
+      word.special.minus(c)
+
+# 'n', or a sign
+def word.special.n(hit: Bool, +c: Char) -> Bool:
+  match hit:
+    case True{}:
+      True{}
+    case False{}:
+      word.special.plus(Char.is_eq(c, '+'), c)
+
+# 'i', or nan, or a sign
+def word.special.i(hit: Bool, +c: Char) -> Bool:
+  match hit:
+    case True{}:
+      True{}
+    case False{}:
+      word.special.n(Char.is_eq(c, 'n'), c)
+
+# 'f', or inf, or nan, or a sign
+def word.special.f(hit: Bool, +c: Char) -> Bool:
+  match hit:
+    case True{}:
+      True{}
+    case False{}:
+      word.special.i(Char.is_eq(c, 'i'), c)
+
+# 't', or false, or inf, or nan, or a sign
+def word.special.t(hit: Bool, +c: Char) -> Bool:
+  match hit:
+    case True{}:
+      True{}
+    case False{}:
+      word.special.f(Char.is_eq(c, 'f'), c)
+
+# whether this character can start a special bare word
+def word.special(+c: Char) -> Bool:
+  word.special.t(Char.is_eq(c, 't'), c)
+
+# the first character, when the word has one
+def word.lead(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      False{}
+    case +h <> _t:
+      word.special(h)
+
+# a numeral or a datetime. the token cannot be a keyword
+def word.val.num(+cs: List<&2, Char>) -> Got:
+  word.route(GotBad{""}, word.or(word.colon(cs), word.dash(cs, True{})), cs)
+
+# a special word, or a numeral. a digit does not build a string to compare
+def word.val.pick(special: Bool, +cs: List<&2, Char>) -> Got:
+  match special:
+    case True{}:
+      word.route(word.spec(String.from_list(cs)),
+        word.or(word.colon(cs), word.dash(cs, True{})), cs)
+    case False{}:
+      word.val.num(cs)
+
 # a bare word: a special, a datetime, or a numeral
 def word.val(+cs: List<&2, Char>) -> Got:
-  word.route(word.spec(String.from_list(cs)),
-    word.or(word.colon(cs), word.dash(cs, True{})), cs)
+  word.val.pick(word.lead(cs), cs)
+
 # a change applied at the end of a key path
 type Job is Data:
   JPut{val: Val}
@@ -1778,7 +1861,7 @@ def rows.find(rows: List<&2, Val>, +name: String) -> Hit:
     case []:
       Miss{}
     case VPair{n, v} <> t:
-      find.step(String.eq(n, name), v, _u => rows.find(t, name))
+      find.step(str.eq(n, name), v, _u => rows.find(t, name))
     case _ <> t:
       rows.find(t, name)
 
@@ -1801,7 +1884,7 @@ def rows.repl(rows: List<&2, Val>, +name: String, +val: Val) -> List<&2, Val>:
     case []:
       []
     case VPair{+n, old} <> t:
-      rows.repl.step(String.eq(n, name), n, old, val, _u => rows.repl(t, name, val))
+      rows.repl.step(str.eq(n, name), n, old, val, _u => rows.repl(t, name, val))
     case h <> t:
       h <> rows.repl(t, name, val)
 
@@ -1819,7 +1902,7 @@ def heads.has(hs: List<&2, String>, +p: String) -> Bool:
     case []:
       False{}
     case h <> t:
-      heads.or(String.eq(h, p), heads.has(t, p))
+      heads.or(str.eq(h, p), heads.has(t, p))
 
 # a table defined by a dotted key is recorded once
 def heads.define.new(seen: Bool, path: String, heads: List<&2, String>) -> List<&2, String>:
@@ -1875,7 +1958,7 @@ def rows.look(rows: List<&2, Val>, +name: String) -> Look:
     case []:
       KMiss{}
     case VPair{n, v} <> t:
-      look.step(String.eq(n, name), v, _u => rows.look(t, name))
+      look.step(str.eq(n, name), v, _u => rows.look(t, name))
     case _ <> t:
       rows.look(t, name)
 
