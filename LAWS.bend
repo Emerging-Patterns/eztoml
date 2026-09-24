@@ -626,3 +626,72 @@ law value_on_key_line_crlf:
   {String.is_empty(T.bad(T.doc.read(SCon{'\r', SCon{'\n', t}}, T.MScan{T.St{bad, rows,
     heads, here, parts, buf, T.LVal{}, back, qkind, stack, T.HNone{}, uni, left, arrtab,
     False{}}}))) == False{} : Bool}
+
+# a character a multi-line string of either kind holds as itself: not a
+# control (U+0000 to U+001F, U+007F), and not a quote, an apostrophe or a
+# backslash
+def ml.plain(+cc: Char) -> Bool:
+  Bool.and(Bool.not(Bool.or(U32.is_lt(Char.to_u32(cc), 32), U32.is_eq(Char.to_u32(cc), 127))),
+    Bool.not(Bool.or(Char.is_eq(cc, '"'), Bool.or(Char.is_eq(cc, '\''),
+      Char.is_eq(cc, '\\')))))
+
+# a text of such characters
+def ml.text(ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      True{}
+    case SCon{+hh, tt}:
+      Bool.and(ml.plain(hh), ml.text(tt))
+
+# LAW: one quote right before a multi-line basic string's closing delimiter
+# is part of the string (toml.abnf's mlb-quotes): for every text x of plain
+# characters, a = """x"""" and a newline reads x and a quote
+# TOML-STR-1
+law ml_basic_one_quote:
+  for +x: String
+  for e: {ml.text(x) == True{} : Bool}
+  {T.parse(String.append("a = \"\"\"", String.append(x, "\"\"\"\"\n")))
+    == T.Doc{"", [T.VPair{"a", T.VStr{String.append(x, "\"")}}]} : T.Doc}
+
+# LAW: and so are two, with the text ending right after the delimiter:
+# a = """x""""" reads x and two quotes
+# TOML-STR-1
+law ml_basic_two_quotes:
+  for +x: String
+  for e: {ml.text(x) == True{} : Bool}
+  {T.parse(String.append("a = \"\"\"", String.append(x, "\"\"\"\"\"")))
+    == T.Doc{"", [T.VPair{"a", T.VStr{String.append(x, "\"\"")}}]} : T.Doc}
+
+# LAW: one apostrophe right before a multi-line literal string's closing
+# delimiter is part of the string (mll-quotes): a = '''x'''' and a newline
+# reads x and an apostrophe
+# TOML-STR-1
+law ml_literal_one_quote:
+  for +x: String
+  for e: {ml.text(x) == True{} : Bool}
+  {T.parse(String.append("a = '''", String.append(x, "''''\n")))
+    == T.Doc{"", [T.VPair{"a", T.VStr{String.append(x, "'")}}]} : T.Doc}
+
+# LAW: and so are two, with the text ending right after the delimiter:
+# a = '''x''''' reads x and two apostrophes
+# TOML-STR-1
+law ml_literal_two_quotes:
+  for +x: String
+  for e: {ml.text(x) == True{} : Bool}
+  {T.parse(String.append("a = '''", String.append(x, "'''''")))
+    == T.Doc{"", [T.VPair{"a", T.VStr{String.append(x, "''")}}]} : T.Doc}
+
+# LAW: an empty basic string may end the text: for every bare key k, k=""
+# with nothing after it reads k as the empty string
+# TOML-STR-1
+law empty_basic_at_end:
+  for +k: String
+  for e: {T.bare(k) == True{} : Bool}
+  {T.parse(String.append(k, "=\"\"")) == T.Doc{"", [T.VPair{k, T.VStr{""}}]} : T.Doc}
+
+# LAW: and so may an empty literal string: k='' reads k as the empty string
+# TOML-STR-1
+law empty_literal_at_end:
+  for +k: String
+  for e: {T.bare(k) == True{} : Bool}
+  {T.parse(String.append(k, "=''")) == T.Doc{"", [T.VPair{k, T.VStr{""}}]} : T.Doc}

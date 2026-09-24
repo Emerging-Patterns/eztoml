@@ -116,6 +116,7 @@ type Lex is Data:
   LUni{}
   LFold{}
   LMq{}
+  LMqEnd{}
   LTrim{}
   LTrim2{}
   LBare{}
@@ -3423,13 +3424,20 @@ def lex.str(st: St, +cc: Char) -> St:
     St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
       arrtab, lead}, cc, qkind)
 
-# the second quote waits; the third closes
+# a closing delimiter has been read. up to two more quotes are still the string's
+def lex.mq.shut(st: St) -> St:
+  St{bad, rows, heads, here, parts, buf, _lex, back, qkind, stack, hold, uni, _left,
+    arrtab, lead} = st
+  St{bad, rows, heads, here, parts, buf, LMqEnd{}, back, qkind, stack, hold, uni, 0,
+    arrtab, lead}
+
+# the second quote waits; the third is a closing delimiter
 def lex.mq.one(one: Bool, st: St) -> St:
   match one:
     case True{}:
       lex.mq(st, 2)
     case False{}:
-      str.fin(st)
+      lex.mq.shut(st)
 
 # quotes that were not a closer return to the string, and the character is held
 def lex.mq.back(st: St, cc: Char, buf: List<&2, Char>) -> St:
@@ -3453,6 +3461,41 @@ def lex.mq.step(st: St, +cc: Char) -> St:
   lex.mq.go(Char.is_eq(cc, q.char(qkind)), U32.is_eq(left, 1),
     St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
       arrtab, lead}, cc, buf, qkind, left)
+
+# a quote after the closing delimiter: the delimiter moves one quote on
+def lex.mq.more(st: St, cc: Char) -> St:
+  St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left, arrtab,
+    lead} = st
+  St{bad, rows, heads, here, parts, cc <> buf, lx, back, qkind, stack, hold, uni,
+    U32.add(left, 1), arrtab, lead}
+
+# the string ends before this character, which the next state reads
+def lex.mq.fin(st: St, cc: Char) -> St:
+  bare.hold(str.fin(st), cc, True{})
+
+# a third quote after the delimiter would make three in the string
+def lex.mq.room(room: Bool, st: St, cc: Char) -> St:
+  match room:
+    case True{}:
+      lex.mq.more(st, cc)
+    case False{}:
+      lex.mq.fin(st, cc)
+
+# a quote may still belong to the string; anything else follows it
+def lex.mq.end.go(quote: Bool, room: Bool, st: St, cc: Char) -> St:
+  match quote:
+    case True{}:
+      lex.mq.room(room, st, cc)
+    case False{}:
+      lex.mq.fin(st, cc)
+
+# one character after a multiline string's closing delimiter
+def lex.mq.end(st: St, +cc: Char) -> St:
+  St{bad, rows, heads, here, parts, buf, lx, back, +qkind, stack, hold, uni, +left,
+    arrtab, lead} = st
+  lex.mq.end.go(Char.is_eq(cc, q.char(qkind)), U32.is_lt(left, 2),
+    St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
+      arrtab, lead}, cc)
 
 # one escaped character
 def lex.esc(st: St, +cc: Char) -> St:
@@ -4276,6 +4319,8 @@ def read.on(lex: Lex, st: St, cc: Char) -> St:
       lex.fold(st, cc)
     case LMq{}:
       lex.mq.step(st, cc)
+    case LMqEnd{}:
+      lex.mq.end(st, cc)
     case LTrim{}:
       lex.trim(st, cc)
     case LTrim2{}:
@@ -4362,13 +4407,17 @@ def read.once2(st: St) -> St:
 def read.once(st: St, cc: Char) -> St:
   read.once2(read.step(st, cc))
 
-# a bare token still open at the end is closed
+# a bare token, an empty string or a closed multiline string still open at the end
 def read.fin.lex(lex: Lex, st: St) -> St:
   match lex:
     case LBare{}:
       bare.finish(st, ' ', False{})
     case LDate{}:
       bare.finish(st, ' ', False{})
+    case LQ2{}:
+      val.take(st, VStr{""})
+    case LMqEnd{}:
+      str.fin(st)
     case _:
       st
 

@@ -1532,3 +1532,810 @@ def Laws.value_on_key_line_crlf(
   t
 ):
   val.crlf(stack, bad, rows, heads, here, parts, buf, back, qkind, uni, left, arrtab, t)
+
+# Multi-line strings. A body character a law calls plain is pushed onto the
+# buffer, whichever kind the string is; the closing quotes are then read as
+# plain text, since they are the same five or six characters for every body.
+
+# the kind of a multi-line string: literal or basic
+def mk(lit: Bool) -> T.QKind:
+  match lit:
+    case True{}:
+      T.QMultiLit{}
+    case False{}:
+      T.QMulti{}
+
+# a scanner inside a multi-line string, its body so far reversed in buf
+def ms(
+  lit: Bool,
+  buf: List<&2, Char>,
+  back: T.Lex,
+  bad: String,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  stack: List<&2, T.Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> T.St:
+  T.St{bad, rows, heads, here, parts, buf, T.LStr{}, back, mk(lit), stack, T.HNone{}, uni,
+    left, arrtab, False{}}
+
+# the characters of a text pushed one by one onto a buffer
+def rev.onto(xs: String, acc: List<&2, Char>) -> List<&2, Char>:
+  match xs:
+    case SNil{}:
+      acc
+    case SCon{hh, tt}:
+      rev.onto(tt, hh <> acc)
+
+# a buffer the body was pushed onto reads back as the body, then what follows
+def ml.rev(
+  xs: String,
+  acc: List<&2, Char>,
+  tail: String
+) -> {T.buf.str.go(rev.onto(xs, acc), tail) == T.buf.str.go(acc, String.append(xs, tail))
+  : String}:
+  match xs:
+    case SNil{}:
+      {==}
+    case SCon{hh, tt}:
+      ml.rev(tt, hh <> acc, tail)
+
+# a code point that is one of two a predicate fails fails it too
+def or2.no(
+  +xx: U32,
+  +k1: U32,
+  +k2: U32,
+  aa: Bool,
+  bb: Bool,
+  ea: {U32.is_eq(xx, k1) == aa : Bool},
+  eb: {U32.is_eq(xx, k2) == bb : Bool},
+  ee: {Bool.or(aa, bb) == True{} : Bool},
+  pp: Char -> Bool,
+  yes: {pp(Chr{xx}) == True{} : Bool},
+  n1: {pp(Chr{k1}) == False{} : Bool},
+  n2: {pp(Chr{k2}) == False{} : Bool}
+) -> Empty:
+  match aa:
+    case True{}:
+      Eq.refute_char(Chr{xx}, Chr{k1}, pp, ea, yes, n1)
+    case False{}:
+      Eq.refute_char(Chr{xx}, Chr{k2}, pp, Equal.trans(Bool, U32.is_eq(xx, k2), bb, True{},
+        eb, ee), yes, n2)
+
+# a raw character that is no control is pushed
+def ml.ctl(
+  ctrl: Bool,
+  st: T.St,
+  +xx: U32,
+  ectl: {Bool.or(U32.is_lt(xx, 32), U32.is_eq(xx, 127)) == ctrl : Bool},
+  noctl: {Bool.or(U32.is_lt(xx, 32), U32.is_eq(xx, 127)) == False{} : Bool}
+) -> {T.lex.str.char.go(T.str.bad.go(ctrl, U32.is_eq(xx, 9), Bool.or(U32.is_eq(xx, 10),
+  U32.is_eq(xx, 13)), True{}), st, Chr{xx}) == T.st.push(st, Chr{xx}, T.LStr{}) : T.St}:
+  match ctrl:
+    case True{}:
+      clash(&2, {T.lex.str.char.go(T.str.bad.go(True{}, U32.is_eq(xx, 9),
+        Bool.or(U32.is_eq(xx, 10), U32.is_eq(xx, 13)), True{}), st, Chr{xx})
+        == T.st.push(st, Chr{xx}, T.LStr{}) : T.St},
+        Equal.trans(Bool, False{}, Bool.or(U32.is_lt(xx, 32), U32.is_eq(xx, 127)), True{},
+          Equal.sym(Bool, Bool.or(U32.is_lt(xx, 32), U32.is_eq(xx, 127)), False{}, noctl),
+          ectl))
+    case False{}:
+      {==}
+
+# no backslash in a basic string: the character is raw
+def ml.bbs(
+  bs: Bool,
+  st: T.St,
+  +xx: U32,
+  ebs: {Char.is_eq(Chr{xx}, '\\') == bs : Bool},
+  pp: Char -> Bool,
+  yes: {pp(Chr{xx}) == True{} : Bool},
+  nb: {pp('\\') == False{} : Bool},
+  noctl: {Bool.or(U32.is_lt(xx, 32), U32.is_eq(xx, 127)) == False{} : Bool}
+) -> {T.lex.str.bs(bs, True{}, st, Chr{xx}, T.QMulti{}) == T.st.push(st, Chr{xx}, T.LStr{})
+  : T.St}:
+  match bs:
+    case True{}:
+      Eq.bit.gone(&2, {T.lex.str.bs(True{}, True{}, st, Chr{xx}, T.QMulti{})
+        == T.st.push(st, Chr{xx}, T.LStr{}) : T.St},
+        Eq.refute_char(Chr{xx}, '\\', pp, ebs, yes, nb))
+    case False{}:
+      ml.ctl(Bool.or(U32.is_lt(xx, 32), U32.is_eq(xx, 127)), st, xx, {==}, noctl)
+
+# no quote in a multi-line basic string: the character is not the closer
+def ml.bq(
+  quote: Bool,
+  st: T.St,
+  +xx: U32,
+  eq: {Char.is_eq(Chr{xx}, '"') == quote : Bool},
+  pp: Char -> Bool,
+  +yes: {pp(Chr{xx}) == True{} : Bool},
+  nq: {pp('"') == False{} : Bool},
+  nb: {pp('\\') == False{} : Bool},
+  noctl: {Bool.or(U32.is_lt(xx, 32), U32.is_eq(xx, 127)) == False{} : Bool}
+) -> {T.lex.str.go(quote, True{}, True{}, st, Chr{xx}, T.QMulti{})
+  == T.st.push(st, Chr{xx}, T.LStr{}) : T.St}:
+  match quote:
+    case True{}:
+      Eq.bit.gone(&2, {T.lex.str.go(True{}, True{}, True{}, st, Chr{xx}, T.QMulti{})
+        == T.st.push(st, Chr{xx}, T.LStr{}) : T.St},
+        Eq.refute_char(Chr{xx}, '"', pp, eq, yes, nq))
+    case False{}:
+      ml.bbs(Char.is_eq(Chr{xx}, '\\'), st, xx, {==}, pp, yes, nb, noctl)
+
+# no apostrophe in a multi-line literal string: the character is not the closer
+def ml.lq(
+  quote: Bool,
+  st: T.St,
+  +xx: U32,
+  eq: {Char.is_eq(Chr{xx}, '\'') == quote : Bool},
+  pp: Char -> Bool,
+  yes: {pp(Chr{xx}) == True{} : Bool},
+  nq: {pp('\'') == False{} : Bool},
+  noctl: {Bool.or(U32.is_lt(xx, 32), U32.is_eq(xx, 127)) == False{} : Bool}
+) -> {T.lex.str.go(quote, True{}, False{}, st, Chr{xx}, T.QMultiLit{})
+  == T.st.push(st, Chr{xx}, T.LStr{}) : T.St}:
+  match quote:
+    case True{}:
+      Eq.bit.gone(&2, {T.lex.str.go(True{}, True{}, False{}, st, Chr{xx}, T.QMultiLit{})
+        == T.st.push(st, Chr{xx}, T.LStr{}) : T.St},
+        Eq.refute_char(Chr{xx}, '\'', pp, eq, yes, nq))
+    case False{}:
+      ml.ctl(Bool.or(U32.is_lt(xx, 32), U32.is_eq(xx, 127)), st, xx, {==}, noctl)
+
+# the controls a plain character is not
+def ml.noctl(
+  +xx: U32,
+  ee: {Laws.ml.plain(Chr{xx}) == True{} : Bool}
+) -> {Bool.or(U32.is_lt(xx, 32), U32.is_eq(xx, 127)) == False{} : Bool}:
+  Eq.not.true(Bool.or(U32.is_lt(xx, 32), U32.is_eq(xx, 127)),
+    Eq.and.left(Bool.not(Bool.or(U32.is_lt(xx, 32), U32.is_eq(xx, 127))),
+      Bool.not(Bool.or(Char.is_eq(Chr{xx}, '"'), Bool.or(Char.is_eq(Chr{xx}, '\''),
+        Char.is_eq(Chr{xx}, '\\')))), ee))
+
+# a plain character inside a multi-line string of either kind is pushed
+def ml.char(
+  lit: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lx: T.Lex,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +hold: T.Hold,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +lead: Bool,
+  +xx: U32,
+  +ee: {Laws.ml.plain(Chr{xx}) == True{} : Bool}
+) -> {T.lex.str(T.St{bad, rows, heads, here, parts, buf, lx, back, mk(lit), stack, hold,
+  uni, left, arrtab, lead}, Chr{xx}) == T.st.push(T.St{bad, rows, heads, here, parts, buf,
+  lx, back, mk(lit), stack, hold, uni, left, arrtab, lead}, Chr{xx}, T.LStr{}) : T.St}:
+  match lit:
+    case False{}:
+      ml.bq(Char.is_eq(Chr{xx}, '"'), T.St{bad, rows, heads, here, parts, buf, lx, back,
+        T.QMulti{}, stack, hold, uni, left, arrtab, lead}, xx, {==},
+        ch => Laws.ml.plain(ch), ee, {==}, {==}, ml.noctl(xx, ee))
+    case True{}:
+      ml.lq(Char.is_eq(Chr{xx}, '\''), T.St{bad, rows, heads, here, parts, buf, lx, back,
+        T.QMultiLit{}, stack, hold, uni, left, arrtab, lead}, xx, {==},
+        ch => Laws.ml.plain(ch), ee, {==}, ml.noctl(xx, ee))
+
+# the fast path sends a multi-line string's character to the full step
+def ml.fast(
+  lit: Bool,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +xx: U32,
+  +ee: {Laws.ml.plain(Chr{xx}) == True{} : Bool}
+) -> {T.read.fast(ms(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left,
+  arrtab), Chr{xx}) == ms(lit, Chr{xx} <> buf, back, bad, rows, heads, here, parts, stack,
+  uni, left, arrtab) : T.St}:
+  match lit:
+    case False{}:
+      Equal.cong(T.St, T.St, s => T.read.once2(s),
+        T.lex.str(T.St{bad, rows, heads, here, parts, buf, T.LStr{}, back, mk(False{}),
+          stack, T.HNone{}, uni, left, arrtab, False{}}, Chr{xx}),
+        T.st.push(T.St{bad, rows, heads, here, parts, buf, T.LStr{}, back, mk(False{}),
+          stack, T.HNone{}, uni, left, arrtab, False{}}, Chr{xx}, T.LStr{}),
+        ml.char(False{}, bad, rows, heads, here, parts, buf, T.LStr{}, back, stack,
+          T.HNone{}, uni, left, arrtab, False{}, xx, ee))
+    case True{}:
+      Equal.cong(T.St, T.St, s => T.read.once2(s),
+        T.lex.str(T.St{bad, rows, heads, here, parts, buf, T.LStr{}, back, mk(True{}),
+          stack, T.HNone{}, uni, left, arrtab, False{}}, Chr{xx}),
+        T.st.push(T.St{bad, rows, heads, here, parts, buf, T.LStr{}, back, mk(True{}),
+          stack, T.HNone{}, uni, left, arrtab, False{}}, Chr{xx}, T.LStr{}),
+        ml.char(True{}, bad, rows, heads, here, parts, buf, T.LStr{}, back, stack,
+          T.HNone{}, uni, left, arrtab, False{}, xx, ee))
+
+# one plain character of a multi-line string, from the scan mode
+def ml.step(
+  +lit: Bool,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +xx: U32,
+  +ee: {Laws.ml.plain(Chr{xx}) == True{} : Bool}
+) -> {T.doc.scan(ms(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left,
+  arrtab), Chr{xx}) == T.MScan{ms(lit, Chr{xx} <> buf, back, bad, rows, heads, here,
+  parts, stack, uni, left, arrtab)} : T.Mode}:
+  Equal.trans(T.Mode,
+    T.doc.scan(ms(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left, arrtab),
+      Chr{xx}),
+    T.MScan{T.read.fast(ms(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left,
+      arrtab), Chr{xx})},
+    T.MScan{ms(lit, Chr{xx} <> buf, back, bad, rows, heads, here, parts, stack, uni, left,
+      arrtab)},
+    scan.other(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), U32.is_eq(xx, 13),
+      ms(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left, arrtab), Chr{xx},
+      {==}, {==}, {==}, ch => Laws.ml.plain(ch), ee, {==}, {==}, {==}),
+    Equal.cong(T.St, T.Mode, s => T.MScan{s},
+      T.read.fast(ms(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left,
+        arrtab), Chr{xx}),
+      ms(lit, Chr{xx} <> buf, back, bad, rows, heads, here, parts, stack, uni, left, arrtab),
+      ml.fast(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left, arrtab, xx,
+        ee)))
+
+# a body of plain characters is pushed onto the buffer, whatever follows it
+def ml.body(
+  xs: String,
+  +rr: String,
+  +lit: Bool,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +ee: {Laws.ml.text(xs) == True{} : Bool}
+) -> {T.doc.read(String.append(xs, rr), T.MScan{ms(lit, buf, back, bad, rows, heads, here,
+  parts, stack, uni, left, arrtab)}) == T.doc.read(rr, T.MScan{ms(lit, rev.onto(xs, buf),
+  back, bad, rows, heads, here, parts, stack, uni, left, arrtab)}) : T.Doc}:
+  match xs:
+    case SNil{}:
+      {==}
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          Equal.trans(T.Doc,
+            T.doc.read(String.append(tt, rr), T.doc.scan(ms(lit, buf, back, bad, rows, heads,
+              here, parts, stack, uni, left, arrtab), Chr{xx})),
+            T.doc.read(String.append(tt, rr), T.MScan{ms(lit, Chr{xx} <> buf, back, bad,
+              rows, heads, here, parts, stack, uni, left, arrtab)}),
+            T.doc.read(rr, T.MScan{ms(lit, rev.onto(tt, Chr{xx} <> buf), back, bad, rows,
+              heads, here, parts, stack, uni, left, arrtab)}),
+            Equal.cong(T.Mode, T.Doc, m => T.doc.read(String.append(tt, rr), m),
+              T.doc.scan(ms(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left,
+                arrtab), Chr{xx}),
+              T.MScan{ms(lit, Chr{xx} <> buf, back, bad, rows, heads, here, parts, stack, uni,
+                left, arrtab)},
+              ml.step(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left, arrtab,
+                xx, Eq.and.left(Laws.ml.plain(Chr{xx}), Laws.ml.text(tt), ee))),
+            ml.body(tt, rr, lit, Chr{xx} <> buf, back, bad, rows, heads, here, parts, stack,
+              uni, left, arrtab, Eq.and.right(Laws.ml.plain(Chr{xx}), Laws.ml.text(tt), ee)))
+
+# a multi-line string about to trim one opening newline
+def mt(
+  lit: Bool,
+  buf: List<&2, Char>,
+  back: T.Lex,
+  bad: String,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  stack: List<&2, T.Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> T.St:
+  T.St{bad, rows, heads, here, parts, buf, T.LTrim{}, back, mk(lit), stack, T.HNone{}, uni,
+    left, arrtab, False{}}
+
+# a plain first character is no newline to trim: it is held, then pushed
+def ml.tgo(
+  cr: Bool,
+  nl: Bool,
+  +lit: Bool,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +xx: U32,
+  ecr: {U32.is_eq(xx, 13) == cr : Bool},
+  enl: {T.ch.nl(Chr{xx}) == nl : Bool},
+  +ee: {Laws.ml.plain(Chr{xx}) == True{} : Bool}
+) -> {T.read.once2(T.lex.trim.go(cr, nl, mt(lit, buf, back, bad, rows, heads, here, parts,
+  stack, uni, left, arrtab), Chr{xx})) == ms(lit, Chr{xx} <> buf, T.LStr{}, bad, rows,
+  heads, here, parts, stack, uni, left, arrtab) : T.St}:
+  match cr:
+    case True{}:
+      Eq.bit.gone(&2, {T.read.once2(T.lex.trim.go(True{}, nl, mt(lit, buf, back, bad, rows,
+        heads, here, parts, stack, uni, left, arrtab), Chr{xx})) == ms(lit, Chr{xx} <> buf,
+        T.LStr{}, bad, rows, heads, here, parts, stack, uni, left, arrtab) : T.St},
+        Eq.refute_char(Chr{xx}, Chr{13}, ch => Laws.ml.plain(ch), ecr, ee, {==}))
+    case False{}:
+      match nl:
+        case True{}:
+          Eq.bit.gone(&2, {T.read.once2(T.lex.trim.go(False{}, True{}, mt(lit, buf, back,
+            bad, rows, heads, here, parts, stack, uni, left, arrtab), Chr{xx}))
+            == ms(lit, Chr{xx} <> buf, T.LStr{}, bad, rows, heads, here, parts, stack, uni,
+            left, arrtab) : T.St},
+            or2.no(xx, 10, 13, U32.is_eq(xx, 10), U32.is_eq(xx, 13), {==}, {==}, enl,
+              ch => Laws.ml.plain(ch), ee, {==}, {==}))
+        case False{}:
+          ml.char(lit, bad, rows, heads, here, parts, buf, T.LStr{}, T.LStr{}, stack,
+            T.HNone{}, uni, left, arrtab, False{}, xx, ee)
+
+# the first plain character of a multi-line string, from the scan mode
+def ml.first(
+  +lit: Bool,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +xx: U32,
+  +ee: {Laws.ml.plain(Chr{xx}) == True{} : Bool}
+) -> {T.doc.scan(mt(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left,
+  arrtab), Chr{xx}) == T.MScan{ms(lit, Chr{xx} <> buf, T.LStr{}, bad, rows, heads, here,
+  parts, stack, uni, left, arrtab)} : T.Mode}:
+  Equal.trans(T.Mode,
+    T.doc.scan(mt(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left, arrtab),
+      Chr{xx}),
+    T.MScan{T.read.fast(mt(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left,
+      arrtab), Chr{xx})},
+    T.MScan{ms(lit, Chr{xx} <> buf, T.LStr{}, bad, rows, heads, here, parts, stack, uni,
+      left, arrtab)},
+    scan.other(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), U32.is_eq(xx, 13),
+      mt(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left, arrtab), Chr{xx},
+      {==}, {==}, {==}, ch => Laws.ml.plain(ch), ee, {==}, {==}, {==}),
+    Equal.cong(T.St, T.Mode, s => T.MScan{s},
+      T.read.fast(mt(lit, buf, back, bad, rows, heads, here, parts, stack, uni, left,
+        arrtab), Chr{xx}),
+      ms(lit, Chr{xx} <> buf, T.LStr{}, bad, rows, heads, here, parts, stack, uni, left,
+        arrtab),
+      ml.tgo(U32.is_eq(xx, 13), T.ch.nl(Chr{xx}), lit, buf, back, bad, rows, heads, here,
+        parts, stack, uni, left, arrtab, xx, {==}, {==}, ee)))
+
+# the document of one key `a` holding a string
+def doc.a(ss: String) -> T.Doc:
+  T.Doc{"", [T.VPair{"a", T.VStr{ss}}]}
+
+# the closing quotes after a body pushed onto the buffer: the string closes
+# with the quotes before the delimiter as its last characters
+def ml.ends(
+  lit: Bool,
+  tail: String,
+  extra: String,
+  bb: List<&2, Char>
+) -> Type:
+  {T.doc.read(tail, T.MScan{ms(lit, bb, T.LStr{}, "", [], [], [], ["a"], [], 0, 0,
+    False{})}) == doc.a(T.buf.str.go(bb, extra)) : T.Doc}
+
+# a key `a` and a multi-line string of plain characters, from the character
+# after the opening delimiter: the first character, the body, and then the
+# closing quotes the law names, which `ends` reads
+def ml.law(
+  +lit: Bool,
+  +tail: String,
+  +extra: String,
+  +xx: U32,
+  +tt: String,
+  +ee: {Bool.and(Laws.ml.plain(Chr{xx}), Laws.ml.text(tt)) == True{} : Bool},
+  ends: ml.ends(lit, tail, extra, rev.onto(tt, [Chr{xx}]))
+) -> {T.doc.read(String.append(tt, tail), T.doc.scan(mt(lit, [], T.LTop{}, "", [], [], [],
+  ["a"], [], 0, 0, False{}), Chr{xx})) == T.Doc{"", [T.VPair{"a", T.VStr{SCon{Chr{xx},
+  String.append(tt, extra)}}}]} : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(String.append(tt, tail), T.doc.scan(mt(lit, [], T.LTop{}, "", [], [], [],
+      ["a"], [], 0, 0, False{}), Chr{xx})),
+    T.doc.read(String.append(tt, tail), T.MScan{ms(lit, [Chr{xx}], T.LStr{}, "", [], [], [],
+      ["a"], [], 0, 0, False{})}),
+    T.Doc{"", [T.VPair{"a", T.VStr{SCon{Chr{xx}, String.append(tt, extra)}}}]},
+    Equal.cong(T.Mode, T.Doc, m => T.doc.read(String.append(tt, tail), m),
+      T.doc.scan(mt(lit, [], T.LTop{}, "", [], [], [], ["a"], [], 0, 0, False{}), Chr{xx}),
+      T.MScan{ms(lit, [Chr{xx}], T.LStr{}, "", [], [], [], ["a"], [], 0, 0, False{})},
+      ml.first(lit, [], T.LTop{}, "", [], [], [], ["a"], [], 0, 0, False{}, xx,
+        Eq.and.left(Laws.ml.plain(Chr{xx}), Laws.ml.text(tt), ee))),
+    Equal.trans(T.Doc,
+      T.doc.read(String.append(tt, tail), T.MScan{ms(lit, [Chr{xx}], T.LStr{}, "", [], [],
+        [], ["a"], [], 0, 0, False{})}),
+      T.doc.read(tail, T.MScan{ms(lit, rev.onto(tt, [Chr{xx}]), T.LStr{}, "", [], [], [],
+        ["a"], [], 0, 0, False{})}),
+      T.Doc{"", [T.VPair{"a", T.VStr{SCon{Chr{xx}, String.append(tt, extra)}}}]},
+      ml.body(tt, tail, lit, [Chr{xx}], T.LStr{}, "", [], [], [], ["a"], [], 0, 0, False{},
+        Eq.and.right(Laws.ml.plain(Chr{xx}), Laws.ml.text(tt), ee)),
+      Equal.trans(T.Doc,
+        T.doc.read(tail, T.MScan{ms(lit, rev.onto(tt, [Chr{xx}]), T.LStr{}, "", [], [], [],
+          ["a"], [], 0, 0, False{})}),
+        T.Doc{"", [T.VPair{"a", T.VStr{T.buf.str.go(rev.onto(tt, [Chr{xx}]), extra)}}]},
+        T.Doc{"", [T.VPair{"a", T.VStr{SCon{Chr{xx}, String.append(tt, extra)}}}]},
+        ends,
+        Equal.cong(String, T.Doc, s => doc.a(s),
+          T.buf.str.go(rev.onto(tt, [Chr{xx}]), extra),
+          SCon{Chr{xx}, String.append(tt, extra)},
+          ml.rev(tt, [Chr{xx}], extra)))))
+
+def Laws.ml_basic_one_quote(x, e):
+  match x:
+    case SNil{}:
+      {==}
+    case SCon{hh, tt}:
+      match hh:
+        case Chr{xx}:
+          ml.law(False{}, "\"\"\"\"\n", "\"", xx, tt, e, {==})
+
+def Laws.ml_basic_two_quotes(x, e):
+  match x:
+    case SNil{}:
+      {==}
+    case SCon{hh, tt}:
+      match hh:
+        case Chr{xx}:
+          ml.law(False{}, "\"\"\"\"\"", "\"\"", xx, tt, e, {==})
+
+def Laws.ml_literal_one_quote(x, e):
+  match x:
+    case SNil{}:
+      {==}
+    case SCon{hh, tt}:
+      match hh:
+        case Chr{xx}:
+          ml.law(True{}, "''''\n", "'", xx, tt, e, {==})
+
+def Laws.ml_literal_two_quotes(x, e):
+  match x:
+    case SNil{}:
+      {==}
+    case SCon{hh, tt}:
+      match hh:
+        case Chr{xx}:
+          ml.law(True{}, "'''''", "''", xx, tt, e, {==})
+
+# Bare keys. A text of bare-key characters at the start of a document is
+# pushed onto the buffer of a key; the first character comes through the
+# byte-order-mark check and the top-level dispatch, every later one through
+# the key's fast path.
+
+# a scanner reading the first key of an empty document
+def ky(buf: List<&2, Char>) -> T.St:
+  T.St{"", [], [], [], [], buf, T.LKey{}, T.LTop{}, T.QBasic{}, [], T.HNone{}, 0, 0,
+    False{}, False{}}
+
+# the top-level dispatch sends a bare-key character to a new key
+def key.top(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  br: Bool,
+  qq: Bool,
+  lit: Bool,
+  bare: Bool,
+  st: T.St,
+  +xx: U32,
+  esp: {T.ch.sp(Chr{xx}) == sp : Bool},
+  enl: {T.ch.nl(Chr{xx}) == nl : Bool},
+  ehash: {Char.is_eq(Chr{xx}, '#') == hash : Bool},
+  ebr: {Char.is_eq(Chr{xx}, '[') == br : Bool},
+  eqq: {Char.is_eq(Chr{xx}, '"') == qq : Bool},
+  elit: {Char.is_eq(Chr{xx}, '\'') == lit : Bool},
+  ebare: {T.bare.at(Chr{xx}) == bare : Bool},
+  +ee: {T.bare.at(Chr{xx}) == True{} : Bool}
+) -> {T.lex.top.go(sp, nl, hash, br, qq, lit, bare, st, Chr{xx})
+  == T.st.push(st, Chr{xx}, T.LKey{}) : T.St}:
+  match sp:
+    case True{}:
+      Eq.bit.gone(&2, {T.lex.top.go(True{}, nl, hash, br, qq, lit, bare, st, Chr{xx})
+        == T.st.push(st, Chr{xx}, T.LKey{}) : T.St},
+        or2.no(xx, 32, 9, U32.is_eq(xx, 32), U32.is_eq(xx, 9), {==}, {==}, esp,
+          ch => T.bare.at(ch), ee, {==}, {==}))
+    case False{}:
+      match nl:
+        case True{}:
+          Eq.bit.gone(&2, {T.lex.top.go(False{}, True{}, hash, br, qq, lit, bare, st,
+            Chr{xx}) == T.st.push(st, Chr{xx}, T.LKey{}) : T.St},
+            or2.no(xx, 10, 13, U32.is_eq(xx, 10), U32.is_eq(xx, 13), {==}, {==}, enl,
+              ch => T.bare.at(ch), ee, {==}, {==}))
+        case False{}:
+          match hash:
+            case True{}:
+              Eq.bit.gone(&2, {T.lex.top.go(False{}, False{}, True{}, br, qq, lit, bare,
+                st, Chr{xx}) == T.st.push(st, Chr{xx}, T.LKey{}) : T.St},
+                Eq.refute_char(Chr{xx}, '#', ch => T.bare.at(ch), ehash, ee, {==}))
+            case False{}:
+              match br:
+                case True{}:
+                  Eq.bit.gone(&2, {T.lex.top.go(False{}, False{}, False{}, True{}, qq, lit,
+                    bare, st, Chr{xx}) == T.st.push(st, Chr{xx}, T.LKey{}) : T.St},
+                    Eq.refute_char(Chr{xx}, '[', ch => T.bare.at(ch), ebr, ee, {==}))
+                case False{}:
+                  match qq:
+                    case True{}:
+                      Eq.bit.gone(&2, {T.lex.top.go(False{}, False{}, False{}, False{},
+                        True{}, lit, bare, st, Chr{xx}) == T.st.push(st, Chr{xx},
+                        T.LKey{}) : T.St},
+                        Eq.refute_char(Chr{xx}, '"', ch => T.bare.at(ch), eqq, ee, {==}))
+                    case False{}:
+                      match lit:
+                        case True{}:
+                          Eq.bit.gone(&2, {T.lex.top.go(False{}, False{}, False{}, False{},
+                            False{}, True{}, bare, st, Chr{xx}) == T.st.push(st, Chr{xx},
+                            T.LKey{}) : T.St},
+                            Eq.refute_char(Chr{xx}, '\'', ch => T.bare.at(ch), elit, ee,
+                              {==}))
+                        case False{}:
+                          match bare:
+                            case True{}:
+                              {==}
+                            case False{}:
+                              clash(&2, {T.lex.top.go(False{}, False{}, False{}, False{},
+                                False{}, False{}, False{}, st, Chr{xx})
+                                == T.st.push(st, Chr{xx}, T.LKey{}) : T.St},
+                                Equal.trans(Bool, False{}, T.bare.at(Chr{xx}), True{},
+                                  Equal.sym(Bool, T.bare.at(Chr{xx}), False{}, ebare), ee))
+
+# the first character of the document: no byte-order mark, so a new key
+def key.bom(
+  bom: Bool,
+  +xx: U32,
+  ebom: {U32.is_eq(xx, 65279) == bom : Bool},
+  +ee: {T.bare.at(Chr{xx}) == True{} : Bool}
+) -> {T.read.once2(T.read.step.bom(bom, T.St{"", [], [], [], [], [], T.LTop{}, T.LTop{},
+  T.QBasic{}, [], T.HNone{}, 0, 0, False{}, False{}}, Chr{xx})) == ky([Chr{xx}]) : T.St}:
+  match bom:
+    case True{}:
+      Eq.bit.gone(&2, {T.read.once2(T.read.step.bom(True{}, T.St{"", [], [], [], [], [],
+        T.LTop{}, T.LTop{}, T.QBasic{}, [], T.HNone{}, 0, 0, False{}, False{}}, Chr{xx}))
+        == ky([Chr{xx}]) : T.St},
+        Eq.refute_char(Chr{xx}, Chr{65279}, ch => T.bare.at(ch), ebom, ee, {==}))
+    case False{}:
+      Equal.cong(T.St, T.St, s => T.read.once2(s),
+        T.lex.top.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'),
+          Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''),
+          T.bare.at(Chr{xx}), T.St{"", [], [], [], [], [], T.LTop{}, T.LTop{}, T.QBasic{},
+          [], T.HNone{}, 0, 0, False{}, False{}}, Chr{xx}),
+        T.st.push(T.St{"", [], [], [], [], [], T.LTop{}, T.LTop{}, T.QBasic{}, [],
+          T.HNone{}, 0, 0, False{}, False{}}, Chr{xx}, T.LKey{}),
+        key.top(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'),
+          Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''),
+          T.bare.at(Chr{xx}), T.St{"", [], [], [], [], [], T.LTop{}, T.LTop{}, T.QBasic{},
+          [], T.HNone{}, 0, 0, False{}, False{}}, xx, {==}, {==}, {==}, {==}, {==}, {==},
+          {==}, ee))
+
+# the first character of the document starts a key
+def key.first(
+  +xx: U32,
+  +ee: {T.bare.at(Chr{xx}) == True{} : Bool}
+) -> {T.doc.scan(T.st.start(), Chr{xx}) == T.MScan{ky([Chr{xx}])} : T.Mode}:
+  Equal.trans(T.Mode,
+    T.doc.scan(T.st.start(), Chr{xx}),
+    T.MScan{T.read.fast(T.st.start(), Chr{xx})},
+    T.MScan{ky([Chr{xx}])},
+    scan.other(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), U32.is_eq(xx, 13),
+      T.st.start(), Chr{xx}, {==}, {==}, {==}, ch => T.bare.at(ch), ee, {==}, {==}, {==}),
+    Equal.cong(T.St, T.Mode, s => T.MScan{s},
+      T.read.fast(T.st.start(), Chr{xx}), ky([Chr{xx}]),
+      key.bom(U32.is_eq(xx, 65279), xx, {==}, ee)))
+
+# a later bare-key character stays on the key's fast path
+def key.fast(
+  ok: Bool,
+  +buf: List<&2, Char>,
+  +xx: U32,
+  eok: {T.bare.at(Chr{xx}) == ok : Bool},
+  ee: {T.bare.at(Chr{xx}) == True{} : Bool}
+) -> {T.read.fast.key(ok, "", [], [], [], [], buf, T.LTop{}, T.QBasic{}, [], 0, 0, False{},
+  Chr{xx}) == ky(Chr{xx} <> buf) : T.St}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      clash(&2, {T.read.fast.key(False{}, "", [], [], [], [], buf, T.LTop{}, T.QBasic{}, [],
+        0, 0, False{}, Chr{xx}) == ky(Chr{xx} <> buf) : T.St},
+        Equal.trans(Bool, False{}, T.bare.at(Chr{xx}), True{},
+          Equal.sym(Bool, T.bare.at(Chr{xx}), False{}, eok), ee))
+
+# one later character of the key, from the scan mode
+def key.step(
+  +buf: List<&2, Char>,
+  +xx: U32,
+  +ee: {T.bare.at(Chr{xx}) == True{} : Bool}
+) -> {T.doc.scan(ky(buf), Chr{xx}) == T.MScan{ky(Chr{xx} <> buf)} : T.Mode}:
+  Equal.trans(T.Mode,
+    T.doc.scan(ky(buf), Chr{xx}),
+    T.MScan{T.read.fast(ky(buf), Chr{xx})},
+    T.MScan{ky(Chr{xx} <> buf)},
+    scan.other(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), U32.is_eq(xx, 13),
+      ky(buf), Chr{xx}, {==}, {==}, {==}, ch => T.bare.at(ch), ee, {==}, {==}, {==}),
+    Equal.cong(T.St, T.Mode, s => T.MScan{s},
+      T.read.fast(ky(buf), Chr{xx}), ky(Chr{xx} <> buf),
+      key.fast(T.bare.at(Chr{xx}), buf, xx, {==}, ee)))
+
+# the head of a bare-key walk that answered True answered True
+def ball.head(
+  here: Bool,
+  tt: List<&2, Char>,
+  ee: {T.bare.all.step(here, _u => T.bare.all(tt)) == True{} : Bool}
+) -> {here == True{} : Bool}:
+  match here:
+    case True{}:
+      {==}
+    case False{}:
+      ee
+
+# and so did the rest of it
+def ball.tail(
+  here: Bool,
+  tt: List<&2, Char>,
+  ee: {T.bare.all.step(here, _u => T.bare.all(tt)) == True{} : Bool}
+) -> {T.bare.all(tt) == True{} : Bool}:
+  match here:
+    case True{}:
+      ee
+    case False{}:
+      Eq.bit.absurd(&2, {T.bare.all(tt) == True{} : Bool}, ee)
+
+# a key of bare characters is pushed onto the buffer, whatever follows it
+def key.body(
+  ks: String,
+  +rr: String,
+  +buf: List<&2, Char>,
+  +ee: {T.bare.all(String.to_list(ks)) == True{} : Bool}
+) -> {T.doc.read(String.append(ks, rr), T.MScan{ky(buf)})
+  == T.doc.read(rr, T.MScan{ky(rev.onto(ks, buf))}) : T.Doc}:
+  match ks:
+    case SNil{}:
+      {==}
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          Equal.trans(T.Doc,
+            T.doc.read(String.append(tt, rr), T.doc.scan(ky(buf), Chr{xx})),
+            T.doc.read(String.append(tt, rr), T.MScan{ky(Chr{xx} <> buf)}),
+            T.doc.read(rr, T.MScan{ky(rev.onto(tt, Chr{xx} <> buf))}),
+            Equal.cong(T.Mode, T.Doc, m => T.doc.read(String.append(tt, rr), m),
+              T.doc.scan(ky(buf), Chr{xx}), T.MScan{ky(Chr{xx} <> buf)},
+              key.step(buf, xx, ball.head(T.bare.at(Chr{xx}), String.to_list(tt), ee))),
+            key.body(tt, rr, Chr{xx} <> buf,
+              ball.tail(T.bare.at(Chr{xx}), String.to_list(tt), ee)))
+
+# a buffer something was pushed onto is not empty
+def rev.full(
+  xs: String,
+  hh: Char,
+  acc: List<&2, Char>
+) -> {List.is_empty(&2, Char, rev.onto(xs, hh <> acc)) == False{} : Bool}:
+  match xs:
+    case SNil{}:
+      {==}
+    case SCon{h2, t2}:
+      rev.full(t2, h2, hh <> acc)
+
+# the document of one key holding the empty string
+def doc.empty(ss: String) -> T.Doc:
+  T.Doc{"", [T.VPair{ss, T.VStr{""}}]}
+
+# the rest of the text after `=` ends the key: the document is the key and an
+# empty string
+def key.done(rest: String, bb: List<&2, Char>) -> Type:
+  {T.doc.read(rest, T.MScan{T.read.once2(T.lex.key.end.go(False{}, ky(bb), T.LVal{}))})
+    == doc.empty(T.buf.str.go(bb, "")) : T.Doc}
+
+# `=` ends a nonempty key, and the rest of the text (an empty string of
+# either kind) is read to the end: the document is the key and the value
+def key.end(
+  +rest: String,
+  +bb: List<&2, Char>,
+  full: {List.is_empty(&2, Char, bb) == False{} : Bool},
+  done: key.done(rest, bb)
+) -> {T.doc.read(SCon{'=', rest}, T.MScan{ky(bb)}) == T.Doc{"", [T.VPair{T.buf.str.go(bb,
+  ""), T.VStr{""}}]} : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(rest, T.MScan{T.read.once2(T.lex.key.end.go(List.is_empty(&2, Char, bb),
+      ky(bb), T.LVal{}))}),
+    T.doc.read(rest, T.MScan{T.read.once2(T.lex.key.end.go(False{}, ky(bb), T.LVal{}))}),
+    T.Doc{"", [T.VPair{T.buf.str.go(bb, ""), T.VStr{""}}]},
+    Equal.cong(Bool, T.Doc,
+      b => T.doc.read(rest, T.MScan{T.read.once2(T.lex.key.end.go(b, ky(bb), T.LVal{}))}),
+      List.is_empty(&2, Char, bb), False{}, full),
+    done)
+
+# a bare key, then `=` and an empty string that ends the text
+def key.law(
+  +rest: String,
+  +xx: U32,
+  +tt: String,
+  +ee: {T.bare.all.step(T.bare.at(Chr{xx}), _u => T.bare.all(String.to_list(tt))) == True{} : Bool},
+  done: key.done(rest, rev.onto(tt, [Chr{xx}]))
+) -> {T.doc.read(String.append(tt, SCon{'=', rest}), T.doc.scan(T.st.start(), Chr{xx}))
+  == doc.empty(SCon{Chr{xx}, tt}) : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(String.append(tt, SCon{'=', rest}), T.doc.scan(T.st.start(), Chr{xx})),
+    T.doc.read(String.append(tt, SCon{'=', rest}), T.MScan{ky([Chr{xx}])}),
+    doc.empty(SCon{Chr{xx}, tt}),
+    Equal.cong(T.Mode, T.Doc, m => T.doc.read(String.append(tt, SCon{'=', rest}), m),
+      T.doc.scan(T.st.start(), Chr{xx}), T.MScan{ky([Chr{xx}])},
+      key.first(xx, ball.head(T.bare.at(Chr{xx}), String.to_list(tt), ee))),
+    Equal.trans(T.Doc,
+      T.doc.read(String.append(tt, SCon{'=', rest}), T.MScan{ky([Chr{xx}])}),
+      T.doc.read(SCon{'=', rest}, T.MScan{ky(rev.onto(tt, [Chr{xx}]))}),
+      doc.empty(SCon{Chr{xx}, tt}),
+      key.body(tt, SCon{'=', rest}, [Chr{xx}],
+        ball.tail(T.bare.at(Chr{xx}), String.to_list(tt), ee)),
+      Equal.trans(T.Doc,
+        T.doc.read(SCon{'=', rest}, T.MScan{ky(rev.onto(tt, [Chr{xx}]))}),
+        doc.empty(T.buf.str.go(rev.onto(tt, [Chr{xx}]), "")),
+        doc.empty(SCon{Chr{xx}, tt}),
+        key.end(rest, rev.onto(tt, [Chr{xx}]), rev.full(tt, Chr{xx}, []), done),
+        Equal.cong(String, T.Doc, s => doc.empty(s),
+          T.buf.str.go(rev.onto(tt, [Chr{xx}]), ""), SCon{Chr{xx}, tt},
+          Equal.trans(String, T.buf.str.go(rev.onto(tt, [Chr{xx}]), ""),
+            SCon{Chr{xx}, String.append(tt, "")}, SCon{Chr{xx}, tt},
+            ml.rev(tt, [Chr{xx}], ""),
+            Equal.cong(String, String, s => SCon{Chr{xx}, s}, String.append(tt, ""), tt,
+              Eq.append_nil(tt)))))))
+
+def Laws.empty_basic_at_end(k, e):
+  match k:
+    case SNil{}:
+      Eq.bit.absurd(&2, {T.parse(String.append(SNil{}, "=\"\""))
+        == T.Doc{"", [T.VPair{SNil{}, T.VStr{""}}]} : T.Doc}, e)
+    case SCon{hh, tt}:
+      match hh:
+        case Chr{xx}:
+          key.law("\"\"", xx, tt, e, {==})
+
+def Laws.empty_literal_at_end(k, e):
+  match k:
+    case SNil{}:
+      Eq.bit.absurd(&2, {T.parse(String.append(SNil{}, "=''"))
+        == T.Doc{"", [T.VPair{SNil{}, T.VStr{""}}]} : T.Doc}, e)
+    case SCon{hh, tt}:
+      match hh:
+        case Chr{xx}:
+          key.law("''", xx, tt, e, {==})
