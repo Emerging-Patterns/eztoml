@@ -4,7 +4,7 @@
 #
 # parse, render, get, at, root, bad, string, digits, flag
 # str, integer, float, boolean, array, inline, table, pair
-# key
+# key, wf
 import Base
 
 # the sign of an integer, a float, or a zone offset
@@ -5915,3 +5915,291 @@ def render(doc: Doc) -> String:
 # a document read from TOML text
 def parse(text: String) -> Doc:
   doc.read(text, MScan{st.start()})
+
+# Well-formed documents: the shapes parse returns. The builders make any shape,
+# and render writes TOML only for these.
+
+# where a list of values sits: a table's rows under its path (the root's is
+# ""), an inline table's rows, an array's items, or the elements of an array of
+# tables under its path
+type WfAt is Data:
+  WfRows{path: String}
+  WfInl{}
+  WfItems{}
+  WfElems{path: String}
+
+# how far a float's spelling has been read: toml.abnf's float with no sign
+# and no underscore, `dec-int ( exp / frac [ exp ] )`
+type Fl is Data:
+  FlStart{}
+  FlZero{}
+  FlInt{}
+  FlDot{}
+  FlFrac{}
+  FlE{}
+  FlESign{}
+  FlExp{}
+  FlNo{}
+
+# the rest when this part holds, and False otherwise
+def wf.then(ok: Bool, more: Unit -> Bool) -> Bool:
+  match ok:
+    case True{}:
+      more(Unit{})
+    case False{}:
+      False{}
+
+# a Unicode scalar value: no surrogate, and nothing past U+10FFFF
+def wf.char(+cc: Char) -> Bool:
+  uni.ok(Char.to_u32(cc))
+
+# every character of a string or a key is a Unicode scalar value
+def wf.text(ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      True{}
+    case SCon{+h, t}:
+      wf.then(wf.char(h), _u => wf.text(t))
+
+# a span's source holds its n characters, each a Unicode scalar value
+def wf.span(src: String, +nn: U32, zz: Bool) -> Bool:
+  match src zz:
+    case _s True{}:
+      True{}
+    case SNil{} False{}:
+      False{}
+    case SCon{+h, t} False{}:
+      wf.then(wf.char(h), _u => wf.span(t, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1))))
+
+# every character is an ASCII digit
+def wf.digits(ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      True{}
+    case SCon{+h, t}:
+      wf.then(Char.is_digit(h), _u => wf.digits(t))
+
+# a lone 0, or a first digit that is not 0 and more digits
+def wf.dec.lead(zero: Bool, +cc: Char, rest: String) -> Bool:
+  match zero:
+    case True{}:
+      String.is_empty(rest)
+    case False{}:
+      Bool.and(Char.is_digit(cc), wf.digits(rest))
+
+# decimal digits with no leading zero, except 0 itself
+def wf.dec(ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      False{}
+    case SCon{+h, t}:
+      wf.dec.lead(Char.is_eq(h, '0'), h, t)
+
+# an integer: decimal digits within signed 64 bits
+def wf.int(+sign: Sign, +digits: String) -> Bool:
+  Bool.and(wf.dec(digits), i64.fits(sign, digits))
+
+# e or E
+def wf.flo.is_e(+cc: Char) -> Bool:
+  Bool.or(Char.is_eq(cc, 'e'), Char.is_eq(cc, 'E'))
+
+# after the integer part: a fraction or an exponent
+def wf.flo.tail(+cc: Char) -> Fl:
+  Bool.pick(Fl, Char.is_eq(cc, '.'), FlDot{}, Bool.pick(Fl, wf.flo.is_e(cc), FlE{}, FlNo{}))
+
+# one character of a float's spelling
+def wf.flo.step(st: Fl, +cc: Char) -> Fl:
+  match st:
+    case FlStart{}:
+      Bool.pick(Fl, Char.is_eq(cc, '0'), FlZero{}, Bool.pick(Fl, Char.is_digit(cc), FlInt{}, FlNo{}))
+    case FlZero{}:
+      wf.flo.tail(cc)
+    case FlInt{}:
+      Bool.pick(Fl, Char.is_digit(cc), FlInt{}, wf.flo.tail(cc))
+    case FlDot{}:
+      Bool.pick(Fl, Char.is_digit(cc), FlFrac{}, FlNo{})
+    case FlFrac{}:
+      Bool.pick(Fl, Char.is_digit(cc), FlFrac{}, Bool.pick(Fl, wf.flo.is_e(cc), FlE{}, FlNo{}))
+    case FlE{}:
+      Bool.pick(Fl, Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')), FlESign{},
+        Bool.pick(Fl, Char.is_digit(cc), FlExp{}, FlNo{}))
+    case FlESign{}:
+      Bool.pick(Fl, Char.is_digit(cc), FlExp{}, FlNo{})
+    case FlExp{}:
+      Bool.pick(Fl, Char.is_digit(cc), FlExp{}, FlNo{})
+    case FlNo{}:
+      FlNo{}
+
+# a float's spelling read from the given state
+def wf.flo.go(cs: List<&2, Char>, st: Fl) -> Fl:
+  match cs:
+    case []:
+      st
+    case +h <> t:
+      wf.flo.go(t, wf.flo.step(st, h))
+
+# a spelling ends after a fraction's digit or an exponent's digit
+def wf.flo.end(st: Fl) -> Bool:
+  match st:
+    case FlFrac{}:
+      True{}
+    case FlExp{}:
+      True{}
+    case _:
+      False{}
+
+# a float's spelling: inf, nan, or toml.abnf's float with no sign and no `_`
+def wf.flo(+text: String) -> Bool:
+  Bool.or(str.eq(text, "inf"), Bool.or(str.eq(text, "nan"),
+    wf.flo.end(wf.flo.go(String.to_list(text), FlStart{}))))
+
+# a date: a four-digit year, a month, and a day within that month in that year
+def wf.date(dd: Date) -> Bool:
+  Date{+y, +mo, +day} = dd
+  Bool.and(U32.is_le(y, 9999), Bool.and(bound.rng(mo, 1, 12), bound.rng(day, 1, when.days(y, mo))))
+
+# a time of day: hour, minute and second in range, and a fraction of digits
+def wf.clock(cc: Clock) -> Bool:
+  Clock{+h, +mi, +s, frac} = cc
+  Bool.and(U32.is_le(h, 23), Bool.and(U32.is_le(mi, 59), Bool.and(U32.is_le(s, 60), wf.digits(frac))))
+
+# a zone offset in range
+def wf.zone(zz: Zone) -> Bool:
+  match zz:
+    case Zulu{}:
+      True{}
+    case Shift{_sign, +h, +mi}:
+      Bool.and(U32.is_le(h, 23), U32.is_le(mi, 59))
+
+# a datetime whose fields are in range
+def wf.when(ww: When) -> Bool:
+  match ww:
+    case WOff{date, clock, zone}:
+      Bool.and(wf.date(date), Bool.and(wf.clock(clock), wf.zone(zone)))
+    case WLocal{date, clock}:
+      Bool.and(wf.date(date), wf.clock(clock))
+    case WDate{date}:
+      wf.date(date)
+    case WTime{clock}:
+      wf.clock(clock)
+
+# a string, a number, a boolean or a datetime, well-formed. Nothing else is a
+# scalar
+def wf.atom(vv: Val) -> Bool:
+  match vv:
+    case VStr{text}:
+      wf.text(text)
+    case VSpan{src, +n}:
+      wf.span(src, n, U32.is_zero(n))
+    case VInt{+sign, +digits}:
+      wf.int(sign, digits)
+    case VFlo{_sign, +text}:
+      wf.flo(text)
+    case VBool{_bit}:
+      True{}
+    case VWhen{w}:
+      wf.when(w)
+    case _:
+      False{}
+
+# a name no later pair of the table has
+def wf.fresh(hit: Hit) -> Bool:
+  match hit:
+    case Found{_v}:
+      False{}
+    case Miss{}:
+      True{}
+
+# a pair's key: Unicode scalar values, and no later pair of the same name
+def wf.key(+name: String, +rest: List<&2, Val>) -> Bool:
+  Bool.and(wf.text(name), wf.fresh(get(rest, name)))
+
+# a table as a pair's value, in a table's rows, at the path its name gives
+def wf.head(at: WfAt, +name: String, +path: String, +rest: List<&2, Val>, more: Unit -> Bool) -> Bool:
+  match at:
+    case WfRows{+here}:
+      wf.then(Bool.and(wf.key(name, rest), str.eq(path, tree.pre(here, name))), more)
+    case _:
+      False{}
+
+# an array of tables as a pair's value, in a table's rows, at the path its
+# name gives, with at least one element
+def wf.aots(
+  at: WfAt,
+  +name: String,
+  +path: String,
+  some: Bool,
+  +rest: List<&2, Val>,
+  more: Unit -> Bool
+) -> Bool:
+  match at:
+    case WfRows{+here}:
+      wf.then(Bool.and(some, Bool.and(wf.key(name, rest), str.eq(path, tree.pre(here, name)))), more)
+    case _:
+      False{}
+
+# an element of an array of tables, at the array's path
+def wf.aot(at: WfAt, +path: String, more: Unit -> Bool) -> Bool:
+  match at:
+    case WfElems{here}:
+      wf.then(str.eq(path, here), more)
+    case _:
+      False{}
+
+# a pair of any other value, in a table's or an inline table's rows
+def wf.pair(at: WfAt, +name: String, +rest: List<&2, Val>, ok: Bool, more: Unit -> Bool) -> Bool:
+  match at:
+    case WfRows{_here}:
+      wf.then(Bool.and(ok, wf.key(name, rest)), more)
+    case WfInl{}:
+      wf.then(Bool.and(ok, wf.key(name, rest)), more)
+    case _:
+      False{}
+
+# a value that is not a pair, as an array's item
+def wf.item(at: WfAt, ok: Bool, more: Unit -> Bool) -> Bool:
+  match at:
+    case WfItems{}:
+      wf.then(ok, more)
+    case _:
+      False{}
+
+# a list of values, well-formed where it sits
+def wf.go(vs: List<&2, Val>, +at: WfAt) -> Bool:
+  match vs:
+    case []:
+      True{}
+    case VPair{+name, VHead{+path, rows}} <> +t:
+      wf.head(at, name, path, t,
+        _u => wf.then(wf.go(rows, WfRows{path}), _v => wf.go(t, at)))
+    case VPair{+name, VAots{+path, +elems}} <> +t:
+      wf.aots(at, name, path, Bool.not(List.is_empty(&2, Val, elems)), t,
+        _u => wf.then(wf.go(elems, WfElems{path}), _v => wf.go(t, at)))
+    case VPair{+name, VArr{items}} <> +t:
+      wf.pair(at, name, t, True{},
+        _u => wf.then(wf.go(items, WfItems{}), _v => wf.go(t, at)))
+    case VPair{+name, VInl{rows}} <> +t:
+      wf.pair(at, name, t, True{},
+        _u => wf.then(wf.go(rows, WfInl{}), _v => wf.go(t, at)))
+    case VPair{+name, val} <> +t:
+      wf.pair(at, name, t, wf.atom(val), _u => wf.go(t, at))
+    case VAot{+path, rows} <> t:
+      wf.aot(at, path,
+        _u => wf.then(wf.go(rows, WfRows{path}), _v => wf.go(t, at)))
+    case VArr{items} <> t:
+      wf.item(at, True{},
+        _u => wf.then(wf.go(items, WfItems{}), _v => wf.go(t, at)))
+    case VInl{rows} <> t:
+      wf.item(at, True{},
+        _u => wf.then(wf.go(rows, WfInl{}), _v => wf.go(t, at)))
+    case val <> t:
+      wf.item(at, wf.atom(val), _u => wf.go(t, at))
+
+# whether a document is well-formed: the shapes parse returns. Tables and
+# arrays of tables sit only as a pair's value in a table's rows, each at the
+# path its parent's path and its name give; a table's keys are distinct;
+# numbers, datetimes and strings are as parse reads them. The error is not
+# looked at
+def wf(doc: Doc) -> Bool:
+  Doc{_bad, rows} = doc
+  wf.go(rows, WfRows{""})
