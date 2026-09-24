@@ -305,6 +305,10 @@ def Laws.at_inline(rows, k, sub, next, ks, e):
   Equal.cong(T.Hit, T.Hit, hh => T.at.step(next <> ks, hh), T.get(rows, k),
     T.Found{T.VInl{sub}}, e)
 
+def Laws.at_aot(rows, k, path, sub, next, ks, e):
+  Equal.cong(T.Hit, T.Hit, hh => T.at.step(next <> ks, hh), T.get(rows, k),
+    T.Found{T.VAot{path, sub}}, e)
+
 def Laws.at_miss(rows, k, next, ks, e):
   Equal.trans(T.Hit, T.at.step(next <> ks, T.get(rows, k)),
     T.at.step(next <> ks, T.Miss{}), T.Miss{},

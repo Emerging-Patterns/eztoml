@@ -62,7 +62,7 @@ A tag may name a proved or a pending requirement, never a Trusted one or an ID n
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
 | TOML-GET-1 | `get(rows, k)` is `Found{v}` for the value `v` of the first `VPair{k, v}` in `rows`, and `Miss` when no pair in `rows` is named `k` | Proved | proved | LAWS.bend get_first; LAWS.bend get_skips_other_name; LAWS.bend get_skips_non_pair; LAWS.bend get_finds_first; LAWS.bend get_misses |
-| TOML-GET-2 | `at(rows, [])` is `Miss`; `at(rows, [k])` is `get(rows, k)`; and `at(rows, k <> ks)` with `ks` nonempty is `at` of the rows of the value `get(rows, k)` finds, when that value is a table or an inline table, and `Miss` otherwise, an array of tables included | Proved | pending | LAWS.bend at_empty; LAWS.bend at_one; LAWS.bend at_table; LAWS.bend at_inline; LAWS.bend at_miss; LAWS.bend at_leaf |
+| TOML-GET-2 | `at(rows, [])` is `Miss`; `at(rows, [k])` is `get(rows, k)`; and `at(rows, k <> ks)` with `ks` nonempty is `at` of the rows of the value `get(rows, k)` finds, when that value is a table, an inline table, or one element of an array of tables (a `VAot`, which only a hand-built document holds as a pair's value), and `Miss` otherwise, a whole array of tables included | Proved | proved | LAWS.bend at_empty; LAWS.bend at_one; LAWS.bend at_table; LAWS.bend at_inline; LAWS.bend at_aot; LAWS.bend at_miss; LAWS.bend at_leaf |
 | TOML-READ-1 | For every value `v`, `string(v)` is its characters when `v` is a string, owned or a span, and `""` otherwise; `digits(v)` is its digits when `v` is an integer, and `""` otherwise; `flag(v)` is its bit when `v` is a boolean, and `false` otherwise | Proved | proved | LAWS.bend string_of; LAWS.bend string_of_span; LAWS.bend string_of_other; LAWS.bend digits_of; LAWS.bend digits_of_other; LAWS.bend flag_of; LAWS.bend flag_of_other |
 
 ### Trusted (TOML-TRUST)
@@ -75,12 +75,11 @@ A tag may name a proved or a pending requirement, never a Trusted one or an ID n
 
 ## Left to prove
 
-Every row is pending. For the rows that name laws already:
+TOML-KEY-1, TOML-GET-1, TOML-GET-2 and TOML-READ-1 are proved; every other row is pending. For the pending rows that name laws already:
 
 | Row | Proved so far | Missing |
 | :---- | :---- | :---- |
 | TOML-KEY-2 | `key` picks `s` or `key.basic(s)` by `bare(s)` (`key_is_bare_when_it_can`, `key_is_quoted_when_it_must`) | that `key.basic(s)` reads back as `s` |
-| TOML-GET-2 | the empty path, one key, and a longer path through a table, an inline table, a miss, or a value with no rows (`at_empty`, `at_one`, `at_table`, `at_inline`, `at_miss`, `at_leaf`) | a longer path through a value `get` finds that is an element of an array of tables (`VAot`): `at.rows` reads its rows, and the row says `Miss` |
 
 The order of work is in the RFC's Rollout: the cheap readers first, then the conformance fixes each with its partial law, then `wf`, `same` and the renderer, then the round trip, then the grammar relation.
 

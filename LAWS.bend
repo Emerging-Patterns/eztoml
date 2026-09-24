@@ -140,10 +140,8 @@ law get_misses:
   for +e: {has_pair(rows, k) == False{} : Bool}
   {T.get(rows, k) == T.Miss{} : T.Hit}
 
-# whether a value holds no rows for at to go on in. A table (VHead) and an
-# inline table (VInl) hold rows. An element of an array of tables (VAot) is
-# left out both ways: `at.rows` reads its rows, TOML-GET-2 names only a
-# table and an inline table, and no law here speaks for it.
+# whether a value holds no rows for at to go on in. A table (VHead), an
+# element of an array of tables (VAot) and an inline table (VInl) hold rows.
 def holds_no_rows(vv: T.Val) -> Bool:
   match vv:
     case T.VHead{_pp, _rr}:
@@ -189,6 +187,19 @@ law at_inline:
   for +next: String
   for ks: List<&2, String>
   for e: {T.get(rows, k) == T.Found{T.VInl{sub}} : T.Hit}
+  {T.at(rows, k <> next <> ks) == T.at(sub, next <> ks) : T.Hit}
+
+# LAW: a longer path goes on in the rows of the array-of-tables element get
+# finds, which a hand-built document can hold as a pair's value
+# TOML-GET-2
+law at_aot:
+  for rows: List<&2, T.Val>
+  for +k: String
+  for path: String
+  for sub: List<&2, T.Val>
+  for +next: String
+  for ks: List<&2, String>
+  for e: {T.get(rows, k) == T.Found{T.VAot{path, sub}} : T.Hit}
   {T.at(rows, k <> next <> ks) == T.at(sub, next <> ks) : T.Hit}
 
 # LAW: a longer path misses when get misses its first key
