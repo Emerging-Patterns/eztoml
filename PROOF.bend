@@ -2339,3 +2339,1785 @@ def Laws.empty_literal_at_end(k, e):
       match hh:
         case Chr{xx}:
           key.law("''", xx, tt, e, {==})
+# A head that matches itself: comparing h <> t with h <> o is comparing [h]
+# with [h], and then t with o. A pair picks itself, the first pair of its name,
+# and any other value meets itself first.
+
+# a head's part and then the rest, as the part alone and the rest
+def at.split(
+  bb: Bool,
+  -xx: Bool
+) -> {Laws.and_then(bb, _u => xx) == Bool.and(Laws.and_then(bb, _u => True{}), xx) : Bool}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a pair picks itself out of rows it heads
+def pick.self(
+  +nn: String,
+  vv: T.Val,
+  tt: List<&2, T.Val>
+) -> {Laws.pick(T.VPair{nn, vv} <> tt, nn) == Laws.Picked{vv, tt} : Laws.Pick}:
+  Equal.cong(Bool, Laws.Pick, bb => Laws.pick.step(bb, nn, vv, tt, _u => Laws.pick(tt, nn)),
+    String.eq(nn, nn), True{}, Eq.string_eq_self(nn))
+
+# a pair's head cancel, whatever its comparison and its rest
+def hc.pair(
+  +nn: String,
+  +vv: T.Val,
+  +oo: List<&2, T.Val>,
+  cmp: T.Val -> Bool,
+  -rest: List<&2, T.Val> -> Bool
+) -> {Laws.same.pair(Laws.pick(T.VPair{nn, vv} <> oo, nn), cmp, rest)
+  == Bool.and(Laws.same.pair(Laws.pick(T.VPair{nn, vv} <> [], nn), cmp, rr => Laws.same.go([], rr)), rest(oo))
+  : Bool}:
+  Equal.trans(Bool,
+    Laws.same.pair(Laws.pick(T.VPair{nn, vv} <> oo, nn), cmp, rest),
+    Laws.and_then(cmp(vv), _u => rest(oo)),
+    Bool.and(Laws.same.pair(Laws.pick(T.VPair{nn, vv} <> [], nn), cmp, rr => Laws.same.go([], rr)), rest(oo)),
+    Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, cmp, rest),
+      Laws.pick(T.VPair{nn, vv} <> oo, nn), Laws.Picked{vv, oo}, pick.self(nn, vv, oo)),
+    Equal.trans(Bool,
+      Laws.and_then(cmp(vv), _u => rest(oo)),
+      Bool.and(Laws.and_then(cmp(vv), _u => True{}), rest(oo)),
+      Bool.and(Laws.same.pair(Laws.pick(T.VPair{nn, vv} <> [], nn), cmp, rr => Laws.same.go([], rr)), rest(oo)),
+      at.split(cmp(vv), rest(oo)),
+      Equal.cong(Laws.Pick, Bool, pp => Bool.and(Laws.same.pair(pp, cmp, rr => Laws.same.go([], rr)), rest(oo)),
+        Laws.Picked{vv, []}, Laws.pick(T.VPair{nn, vv} <> [], nn),
+        Equal.sym(Laws.Pick, Laws.pick(T.VPair{nn, vv} <> [], nn), Laws.Picked{vv, []}, pick.self(nn, vv, [])))))
+
+# any other value's head cancel
+def hc.item(
+  +hh: T.Val,
+  +oo: List<&2, T.Val>,
+  cmp: T.Val -> Bool,
+  -rest: List<&2, T.Val> -> Bool
+) -> {Laws.same.item(hh <> oo, cmp, rest)
+  == Bool.and(Laws.same.item(hh <> [], cmp, rr => Laws.same.go([], rr)), rest(oo)) : Bool}:
+  at.split(cmp(hh), rest(oo))
+
+# a pair's head cancel, by the kind of its value
+def hc.p(
+  +nn: String,
+  vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +oo: List<&2, T.Val>
+) -> {Laws.same.go(T.VPair{nn, vv} <> tt, T.VPair{nn, vv} <> oo)
+  == Bool.and(Laws.same.go(T.VPair{nn, vv} <> [], T.VPair{nn, vv} <> []), Laws.same.go(tt, oo)) : Bool}:
+  match vv:
+    case T.VStr{+a1}:
+      hc.pair(nn, T.VStr{a1}, oo, ww => Laws.same.atom(T.VStr{a1}, ww), rr => Laws.same.go(tt, rr))
+    case T.VSpan{+a1, +a2}:
+      hc.pair(nn, T.VSpan{a1, a2}, oo, ww => Laws.same.atom(T.VSpan{a1, a2}, ww), rr => Laws.same.go(tt, rr))
+    case T.VInt{+a1, +a2}:
+      hc.pair(nn, T.VInt{a1, a2}, oo, ww => Laws.same.atom(T.VInt{a1, a2}, ww), rr => Laws.same.go(tt, rr))
+    case T.VFlo{+a1, +a2}:
+      hc.pair(nn, T.VFlo{a1, a2}, oo, ww => Laws.same.atom(T.VFlo{a1, a2}, ww), rr => Laws.same.go(tt, rr))
+    case T.VBool{+a1}:
+      hc.pair(nn, T.VBool{a1}, oo, ww => Laws.same.atom(T.VBool{a1}, ww), rr => Laws.same.go(tt, rr))
+    case T.VWhen{+a1}:
+      hc.pair(nn, T.VWhen{a1}, oo, ww => Laws.same.atom(T.VWhen{a1}, ww), rr => Laws.same.go(tt, rr))
+    case T.VArr{+ls}:
+      hc.pair(nn, T.VArr{ls}, oo, ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(tt, rr))
+    case T.VInl{+ls}:
+      hc.pair(nn, T.VInl{ls}, oo, ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(tt, rr))
+    case T.VHead{+pa, +ls}:
+      hc.pair(nn, T.VHead{pa, ls}, oo, ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(tt, rr))
+    case T.VAot{+pa, +ls}:
+      hc.pair(nn, T.VAot{pa, ls}, oo, ww => Laws.same.box(Laws.KAot{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(tt, rr))
+    case T.VAots{+pa, +ls}:
+      hc.pair(nn, T.VAots{pa, ls}, oo, ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(tt, rr))
+    case T.VPair{+a1, +a2}:
+      hc.pair(nn, T.VPair{a1, a2}, oo, ww => Laws.same.atom(T.VPair{a1, a2}, ww), rr => Laws.same.go(tt, rr))
+
+# a head matches itself, whatever it is
+def hc(
+  hh: T.Val,
+  +tt: List<&2, T.Val>,
+  +oo: List<&2, T.Val>
+) -> {Laws.same.go(hh <> tt, hh <> oo) == Bool.and(Laws.same.go(hh <> [], hh <> []), Laws.same.go(tt, oo)) : Bool}:
+  match hh:
+    case T.VStr{+a1}:
+      hc.item(T.VStr{a1}, oo, ww => Laws.same.atom(T.VStr{a1}, ww), rr => Laws.same.go(tt, rr))
+    case T.VSpan{+a1, +a2}:
+      hc.item(T.VSpan{a1, a2}, oo, ww => Laws.same.atom(T.VSpan{a1, a2}, ww), rr => Laws.same.go(tt, rr))
+    case T.VInt{+a1, +a2}:
+      hc.item(T.VInt{a1, a2}, oo, ww => Laws.same.atom(T.VInt{a1, a2}, ww), rr => Laws.same.go(tt, rr))
+    case T.VFlo{+a1, +a2}:
+      hc.item(T.VFlo{a1, a2}, oo, ww => Laws.same.atom(T.VFlo{a1, a2}, ww), rr => Laws.same.go(tt, rr))
+    case T.VBool{+a1}:
+      hc.item(T.VBool{a1}, oo, ww => Laws.same.atom(T.VBool{a1}, ww), rr => Laws.same.go(tt, rr))
+    case T.VWhen{+a1}:
+      hc.item(T.VWhen{a1}, oo, ww => Laws.same.atom(T.VWhen{a1}, ww), rr => Laws.same.go(tt, rr))
+    case T.VArr{+ls}:
+      hc.item(T.VArr{ls}, oo, ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt,
+        rr))
+    case T.VInl{+ls}:
+      hc.item(T.VInl{ls}, oo, ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt,
+        rr))
+    case T.VHead{+pa, +ls}:
+      hc.item(T.VHead{pa, ls}, oo, ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(tt, rr))
+    case T.VAot{+pa, +ls}:
+      hc.item(T.VAot{pa, ls}, oo, ww => Laws.same.box(Laws.KAot{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(tt, rr))
+    case T.VAots{+pa, +ls}:
+      hc.item(T.VAots{pa, ls}, oo, ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(tt, rr))
+    case T.VPair{+nn, vv}:
+      hc.p(nn, vv, tt, oo)
+
+# every value of the rows matches itself alone
+def selfs(xs: List<&2, T.Val>) -> Bool:
+  match xs:
+    case []:
+      True{}
+    case +hh <> tt:
+      Bool.and(Laws.same.go(hh <> [], hh <> []), selfs(tt))
+
+# an `and` of two parts that hold
+def and.tt(
+  aa: Bool,
+  bb: Bool,
+  ea: {aa == True{} : Bool},
+  eb: {bb == True{} : Bool}
+) -> {Bool.and(aa, bb) == True{} : Bool}:
+  Equal.trans(Bool, Bool.and(aa, bb), Bool.and(True{}, bb), True{},
+    Equal.cong(Bool, Bool, xx => Bool.and(xx, bb), aa, True{}, ea), eb)
+
+# rows whose every value matches itself match themselves
+def refl.rows(
+  xs: List<&2, T.Val>,
+  +ee: {selfs(xs) == True{} : Bool}
+) -> {Laws.same.go(xs, xs) == True{} : Bool}:
+  match xs:
+    case []:
+      {==}
+    case +hh <> +tt:
+      Equal.trans(Bool, Laws.same.go(hh <> tt, hh <> tt),
+        Bool.and(Laws.same.go(hh <> [], hh <> []), Laws.same.go(tt, tt)), True{},
+        hc(hh, tt, tt),
+        and.tt(Laws.same.go(hh <> [], hh <> []), Laws.same.go(tt, tt),
+          Eq.and.left(Laws.same.go(hh <> [], hh <> []), selfs(tt), ee),
+          refl.rows(tt, Eq.and.right(Laws.same.go(hh <> [], hh <> []), selfs(tt), ee))))
+
+# a part that holds, then a rest that holds
+def at.tt(
+  -bb: Bool,
+  -more: Unit -> Bool,
+  eb: {bb == True{} : Bool},
+  em: {more(Unit{}) == True{} : Bool}
+) -> {Laws.and_then(bb, more) == True{} : Bool}:
+  Equal.trans(Bool, Laws.and_then(bb, more), Laws.and_then(True{}, more), True{},
+    Equal.cong(Bool, Bool, xx => Laws.and_then(xx, more), bb, True{}, eb), em)
+
+# a pair alone matches itself when its value does
+def pair.self.tt(
+  +nn: String,
+  +vv: T.Val,
+  -cmp: T.Val -> Bool,
+  ec: {cmp(vv) == True{} : Bool}
+) -> {Laws.same.pair(Laws.pick(T.VPair{nn, vv} <> [], nn), cmp, rr => Laws.same.go([], rr)) == True{} : Bool}:
+  Equal.trans(Bool, Laws.same.pair(Laws.pick(T.VPair{nn, vv} <> [], nn), cmp, rr => Laws.same.go([], rr)),
+    Laws.same.pair(Laws.Picked{vv, []}, cmp, rr => Laws.same.go([], rr)), True{},
+    Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, cmp, rr => Laws.same.go([], rr)),
+      Laws.pick(T.VPair{nn, vv} <> [], nn), Laws.Picked{vv, []}, pick.self(nn, vv, [])),
+    at.tt(cmp(vv), _u => True{}, ec, {==}))
+
+# a value alone matches itself when it does
+def item.self.tt(
+  +hh: T.Val,
+  -cmp: T.Val -> Bool,
+  ec: {cmp(hh) == True{} : Bool}
+) -> {Laws.same.item(hh <> [], cmp, rr => Laws.same.go([], rr)) == True{} : Bool}:
+  at.tt(cmp(hh), _u => True{}, ec, {==})
+
+# the other half of a then that answered True
+def wt.more(
+  ok: Bool,
+  -more: Unit -> Bool,
+  ee: {T.wf.then(ok, more) == True{} : Bool}
+) -> {more(Unit{}) == True{} : Bool}:
+  match ok:
+    case True{}:
+      ee
+    case False{}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+
+# the first half of a then that answered True
+def wt.ok(
+  ok: Bool,
+  -more: Unit -> Bool,
+  ee: {T.wf.then(ok, more) == True{} : Bool}
+) -> {ok == True{} : Bool}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      ee
+
+# a well-formed table as a pair's value: the rest holds
+def wf.head.more(
+  at: T.WfAt,
+  +name: String,
+  +path: String,
+  +rest: List<&2, T.Val>,
+  -more: Unit -> Bool,
+  ee: {T.wf.head(at, name, path, rest, more) == True{} : Bool}
+) -> {more(Unit{}) == True{} : Bool}:
+  match at:
+    case T.WfRows{+here}:
+      wt.more(Bool.and(T.wf.key(name, rest), T.str.eq(path, T.tree.pre(here, name))), more, ee)
+    case T.WfInl{}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+    case T.WfItems{}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+    case T.WfElems{_h}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+
+# a well-formed array of tables as a pair's value: the rest holds
+def wf.aots.more(
+  at: T.WfAt,
+  +name: String,
+  +path: String,
+  some: Bool,
+  +rest: List<&2, T.Val>,
+  -more: Unit -> Bool,
+  ee: {T.wf.aots(at, name, path, some, rest, more) == True{} : Bool}
+) -> {more(Unit{}) == True{} : Bool}:
+  match at:
+    case T.WfRows{+here}:
+      wt.more(Bool.and(some, Bool.and(T.wf.key(name, rest), T.str.eq(path, T.tree.pre(here, name)))), more, ee)
+    case T.WfInl{}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+    case T.WfItems{}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+    case T.WfElems{_h}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+
+# a well-formed element of an array of tables: the rest holds
+def wf.aot.more(
+  at: T.WfAt,
+  +path: String,
+  -more: Unit -> Bool,
+  ee: {T.wf.aot(at, path, more) == True{} : Bool}
+) -> {more(Unit{}) == True{} : Bool}:
+  match at:
+    case T.WfElems{+here}:
+      wt.more(T.str.eq(path, here), more, ee)
+    case T.WfRows{_h}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+    case T.WfInl{}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+    case T.WfItems{}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+
+# a well-formed pair of any other value: the rest holds
+def wf.pair.more(
+  at: T.WfAt,
+  +name: String,
+  +rest: List<&2, T.Val>,
+  ok: Bool,
+  -more: Unit -> Bool,
+  ee: {T.wf.pair(at, name, rest, ok, more) == True{} : Bool}
+) -> {more(Unit{}) == True{} : Bool}:
+  match at:
+    case T.WfRows{_h}:
+      wt.more(Bool.and(ok, T.wf.key(name, rest)), more, ee)
+    case T.WfInl{}:
+      wt.more(Bool.and(ok, T.wf.key(name, rest)), more, ee)
+    case T.WfItems{}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+    case T.WfElems{_h}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+
+# a well-formed pair of any other value: its value is well-formed
+def wf.pair.ok(
+  at: T.WfAt,
+  +name: String,
+  +rest: List<&2, T.Val>,
+  +ok: Bool,
+  -more: Unit -> Bool,
+  ee: {T.wf.pair(at, name, rest, ok, more) == True{} : Bool}
+) -> {ok == True{} : Bool}:
+  match at:
+    case T.WfRows{_h}:
+      Eq.and.left(ok, T.wf.key(name, rest), wt.ok(Bool.and(ok, T.wf.key(name, rest)), more, ee))
+    case T.WfInl{}:
+      Eq.and.left(ok, T.wf.key(name, rest), wt.ok(Bool.and(ok, T.wf.key(name, rest)), more, ee))
+    case T.WfItems{}:
+      Eq.bit.absurd(&2, {ok == True{} : Bool}, ee)
+    case T.WfElems{_h}:
+      Eq.bit.absurd(&2, {ok == True{} : Bool}, ee)
+
+# a well-formed item: the rest holds
+def wf.item.more(
+  at: T.WfAt,
+  ok: Bool,
+  -more: Unit -> Bool,
+  ee: {T.wf.item(at, ok, more) == True{} : Bool}
+) -> {more(Unit{}) == True{} : Bool}:
+  match at:
+    case T.WfItems{}:
+      wt.more(ok, more, ee)
+    case T.WfRows{_h}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+    case T.WfInl{}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+    case T.WfElems{_h}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, ee)
+
+# a well-formed item: it is well-formed itself
+def wf.item.ok(
+  at: T.WfAt,
+  ok: Bool,
+  -more: Unit -> Bool,
+  ee: {T.wf.item(at, ok, more) == True{} : Bool}
+) -> {ok == True{} : Bool}:
+  match at:
+    case T.WfItems{}:
+      wt.ok(ok, more, ee)
+    case T.WfRows{_h}:
+      Eq.bit.absurd(&2, {ok == True{} : Bool}, ee)
+    case T.WfInl{}:
+      Eq.bit.absurd(&2, {ok == True{} : Bool}, ee)
+    case T.WfElems{_h}:
+      Eq.bit.absurd(&2, {ok == True{} : Bool}, ee)
+
+# a number equals itself
+def u32.self(+xx: U32) -> {U32.is_eq(xx, xx) == True{} : Bool}:
+  Equal.cong(Cmp, Bool, cc => Cmp.is_eq(cc), U32.cmp(xx, xx), EQ{}, Eq.u32_cmp_self(xx))
+
+# a sign equals itself
+def sign.self(sg: T.Sign) -> {Laws.sign.eq(sg, sg) == True{} : Bool}:
+  match sg:
+    case T.Plus{}:
+      {==}
+    case T.Minus{}:
+      {==}
+
+# a bit equals itself
+def bit.self(bb: Bool) -> {Laws.bit.eq(bb, bb) == True{} : Bool}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a date equals itself
+def date.self(dd: T.Date) -> {Laws.date.eq(dd, dd) == True{} : Bool}:
+  match dd:
+    case T.Date{+yy, +mo, +dy}:
+      and.tt(U32.is_eq(yy, yy), Bool.and(U32.is_eq(mo, mo), U32.is_eq(dy, dy)), u32.self(yy),
+        and.tt(U32.is_eq(mo, mo), U32.is_eq(dy, dy), u32.self(mo), u32.self(dy)))
+
+# a clock equals itself
+def clock.self(cc: T.Clock) -> {Laws.clock.eq(cc, cc) == True{} : Bool}:
+  match cc:
+    case T.Clock{+hh, +mi, +ss, +fr}:
+      and.tt(U32.is_eq(hh, hh), Bool.and(U32.is_eq(mi, mi), Bool.and(U32.is_eq(ss, ss), String.eq(fr, fr))),
+        u32.self(hh),
+        and.tt(U32.is_eq(mi, mi), Bool.and(U32.is_eq(ss, ss), String.eq(fr, fr)), u32.self(mi),
+          and.tt(U32.is_eq(ss, ss), String.eq(fr, fr), u32.self(ss), Eq.string_eq_self(fr))))
+
+# a zone equals itself
+def zone.self(zz: T.Zone) -> {Laws.zone.eq(zz, zz) == True{} : Bool}:
+  match zz:
+    case T.Zulu{}:
+      {==}
+    case T.Shift{+sg, +hh, +mi}:
+      and.tt(Laws.sign.eq(sg, sg), Bool.and(U32.is_eq(hh, hh), U32.is_eq(mi, mi)), sign.self(sg),
+        and.tt(U32.is_eq(hh, hh), U32.is_eq(mi, mi), u32.self(hh), u32.self(mi)))
+
+# a datetime equals itself
+def when.self(ww: T.When) -> {Laws.when.eq(ww, ww) == True{} : Bool}:
+  match ww:
+    case T.WOff{+dd, +cc, +zz}:
+      and.tt(Laws.date.eq(dd, dd), Bool.and(Laws.clock.eq(cc, cc), Laws.zone.eq(zz, zz)), date.self(dd),
+        and.tt(Laws.clock.eq(cc, cc), Laws.zone.eq(zz, zz), clock.self(cc), zone.self(zz)))
+    case T.WLocal{+dd, +cc}:
+      and.tt(Laws.date.eq(dd, dd), Laws.clock.eq(cc, cc), date.self(dd), clock.self(cc))
+    case T.WDate{+dd}:
+      date.self(dd)
+    case T.WTime{+cc}:
+      clock.self(cc)
+
+# a well-formed scalar is the same scalar as itself
+def atom.self(
+  vv: T.Val,
+  ee: {T.wf.atom(vv) == True{} : Bool}
+) -> {Laws.same.atom(vv, vv) == True{} : Bool}:
+  match vv:
+    case T.VStr{+a1}:
+      Eq.string_eq_self(a1)
+    case T.VSpan{+a1, +a2}:
+      Eq.string_eq_self(T.span.str(a1, a2, U32.is_zero(a2)))
+    case T.VInt{+a1, +a2}:
+      and.tt(Laws.sign.eq(a1, a1), String.eq(a2, a2), sign.self(a1), Eq.string_eq_self(a2))
+    case T.VFlo{+a1, +a2}:
+      and.tt(Laws.sign.eq(a1, a1), String.eq(a2, a2), sign.self(a1), Eq.string_eq_self(a2))
+    case T.VBool{+a1}:
+      bit.self(a1)
+    case T.VWhen{+a1}:
+      when.self(a1)
+    case T.VArr{+ls}:
+      Eq.bit.absurd(&2, {Laws.same.atom(T.VArr{ls}, T.VArr{ls}) == True{} : Bool}, ee)
+    case T.VInl{+ls}:
+      Eq.bit.absurd(&2, {Laws.same.atom(T.VInl{ls}, T.VInl{ls}) == True{} : Bool}, ee)
+    case T.VHead{+pa, +ls}:
+      Eq.bit.absurd(&2, {Laws.same.atom(T.VHead{pa, ls}, T.VHead{pa, ls}) == True{} : Bool}, ee)
+    case T.VAot{+pa, +ls}:
+      Eq.bit.absurd(&2, {Laws.same.atom(T.VAot{pa, ls}, T.VAot{pa, ls}) == True{} : Bool}, ee)
+    case T.VAots{+pa, +ls}:
+      Eq.bit.absurd(&2, {Laws.same.atom(T.VAots{pa, ls}, T.VAots{pa, ls}) == True{} : Bool}, ee)
+    case T.VPair{+a1, +a2}:
+      Eq.bit.absurd(&2, {Laws.same.atom(T.VPair{a1, a2}, T.VPair{a1, a2}) == True{} : Bool}, ee)
+
+# the values of well-formed rows each match themselves alone, by induction
+# on the rows: a table, an inline table, an array or an array of tables
+# matches itself by its list, a scalar by its fields, and wf rules out the
+# rest
+def wf.selfs(
+  xs: List<&2, T.Val>,
+  +at: T.WfAt,
+  +ee: {T.wf.go(xs, at) == True{} : Bool}
+) -> {selfs(xs) == True{} : Bool}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+nn, T.VStr{+a1}} <> +tt:
+      and.tt(Laws.same.go(T.VPair{nn, T.VStr{a1}} <> [], T.VPair{nn, T.VStr{a1}} <> []), selfs(tt),
+        pair.self.tt(nn, T.VStr{a1}, ww => Laws.same.atom(T.VStr{a1}, ww), atom.self(T.VStr{a1}, wf.pair.ok(at, nn, tt,
+          T.wf.atom(T.VStr{a1}), _u => T.wf.go(tt, at), ee))),
+        wf.selfs(tt, at, wf.pair.more(at, nn, tt, T.wf.atom(T.VStr{a1}), _u => T.wf.go(tt, at), ee)))
+    case T.VPair{+nn, T.VSpan{+a1, +a2}} <> +tt:
+      and.tt(Laws.same.go(T.VPair{nn, T.VSpan{a1, a2}} <> [], T.VPair{nn, T.VSpan{a1, a2}} <> []), selfs(tt),
+        pair.self.tt(nn, T.VSpan{a1, a2}, ww => Laws.same.atom(T.VSpan{a1, a2}, ww), atom.self(T.VSpan{a1, a2},
+          wf.pair.ok(at, nn, tt, T.wf.atom(T.VSpan{a1, a2}), _u => T.wf.go(tt, at), ee))),
+        wf.selfs(tt, at, wf.pair.more(at, nn, tt, T.wf.atom(T.VSpan{a1, a2}), _u => T.wf.go(tt, at), ee)))
+    case T.VPair{+nn, T.VInt{+a1, +a2}} <> +tt:
+      and.tt(Laws.same.go(T.VPair{nn, T.VInt{a1, a2}} <> [], T.VPair{nn, T.VInt{a1, a2}} <> []), selfs(tt),
+        pair.self.tt(nn, T.VInt{a1, a2}, ww => Laws.same.atom(T.VInt{a1, a2}, ww), atom.self(T.VInt{a1, a2},
+          wf.pair.ok(at, nn, tt, T.wf.atom(T.VInt{a1, a2}), _u => T.wf.go(tt, at), ee))),
+        wf.selfs(tt, at, wf.pair.more(at, nn, tt, T.wf.atom(T.VInt{a1, a2}), _u => T.wf.go(tt, at), ee)))
+    case T.VPair{+nn, T.VFlo{+a1, +a2}} <> +tt:
+      and.tt(Laws.same.go(T.VPair{nn, T.VFlo{a1, a2}} <> [], T.VPair{nn, T.VFlo{a1, a2}} <> []), selfs(tt),
+        pair.self.tt(nn, T.VFlo{a1, a2}, ww => Laws.same.atom(T.VFlo{a1, a2}, ww), atom.self(T.VFlo{a1, a2},
+          wf.pair.ok(at, nn, tt, T.wf.atom(T.VFlo{a1, a2}), _u => T.wf.go(tt, at), ee))),
+        wf.selfs(tt, at, wf.pair.more(at, nn, tt, T.wf.atom(T.VFlo{a1, a2}), _u => T.wf.go(tt, at), ee)))
+    case T.VPair{+nn, T.VBool{+a1}} <> +tt:
+      and.tt(Laws.same.go(T.VPair{nn, T.VBool{a1}} <> [], T.VPair{nn, T.VBool{a1}} <> []), selfs(tt),
+        pair.self.tt(nn, T.VBool{a1}, ww => Laws.same.atom(T.VBool{a1}, ww), atom.self(T.VBool{a1}, wf.pair.ok(at, nn,
+          tt, T.wf.atom(T.VBool{a1}), _u => T.wf.go(tt, at), ee))),
+        wf.selfs(tt, at, wf.pair.more(at, nn, tt, T.wf.atom(T.VBool{a1}), _u => T.wf.go(tt, at), ee)))
+    case T.VPair{+nn, T.VWhen{+a1}} <> +tt:
+      and.tt(Laws.same.go(T.VPair{nn, T.VWhen{a1}} <> [], T.VPair{nn, T.VWhen{a1}} <> []), selfs(tt),
+        pair.self.tt(nn, T.VWhen{a1}, ww => Laws.same.atom(T.VWhen{a1}, ww), atom.self(T.VWhen{a1}, wf.pair.ok(at, nn,
+          tt, T.wf.atom(T.VWhen{a1}), _u => T.wf.go(tt, at), ee))),
+        wf.selfs(tt, at, wf.pair.more(at, nn, tt, T.wf.atom(T.VWhen{a1}), _u => T.wf.go(tt, at), ee)))
+    case T.VPair{+nn, T.VArr{+ls}} <> +tt:
+      and.tt(Laws.same.go(T.VPair{nn, T.VArr{ls}} <> [], T.VPair{nn, T.VArr{ls}} <> []), selfs(tt),
+        pair.self.tt(nn, T.VArr{ls}, ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(ls, ws)), refl.rows(ls,
+          wf.selfs(ls, T.WfItems{}, wt.ok(T.wf.go(ls, T.WfItems{}), _v => T.wf.go(tt, at), wf.pair.more(at, nn, tt,
+          True{}, _u => T.wf.then(T.wf.go(ls, T.WfItems{}), _v => T.wf.go(tt, at)), ee))))),
+        wf.selfs(tt, at, wt.more(T.wf.go(ls, T.WfItems{}), _v => T.wf.go(tt, at), wf.pair.more(at, nn, tt, True{},
+          _u => T.wf.then(T.wf.go(ls, T.WfItems{}), _v => T.wf.go(tt, at)), ee))))
+    case T.VPair{+nn, T.VInl{+ls}} <> +tt:
+      and.tt(Laws.same.go(T.VPair{nn, T.VInl{ls}} <> [], T.VPair{nn, T.VInl{ls}} <> []), selfs(tt),
+        pair.self.tt(nn, T.VInl{ls}, ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(ls, ws)), refl.rows(ls,
+          wf.selfs(ls, T.WfInl{}, wt.ok(T.wf.go(ls, T.WfInl{}), _v => T.wf.go(tt, at), wf.pair.more(at, nn, tt, True{},
+          _u => T.wf.then(T.wf.go(ls, T.WfInl{}), _v => T.wf.go(tt, at)), ee))))),
+        wf.selfs(tt, at, wt.more(T.wf.go(ls, T.WfInl{}), _v => T.wf.go(tt, at), wf.pair.more(at, nn, tt, True{},
+          _u => T.wf.then(T.wf.go(ls, T.WfInl{}), _v => T.wf.go(tt, at)), ee))))
+    case T.VPair{+nn, T.VHead{+pa, +ls}} <> +tt:
+      and.tt(Laws.same.go(T.VPair{nn, T.VHead{pa, ls}} <> [], T.VPair{nn, T.VHead{pa, ls}} <> []), selfs(tt),
+        pair.self.tt(nn, T.VHead{pa, ls}, ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(ls, ws)),
+          refl.rows(ls, wf.selfs(ls, T.WfRows{pa}, wt.ok(T.wf.go(ls, T.WfRows{pa}), _v => T.wf.go(tt, at),
+          wf.head.more(at, nn, pa, tt, _u => T.wf.then(T.wf.go(ls, T.WfRows{pa}), _v => T.wf.go(tt, at)), ee))))),
+        wf.selfs(tt, at, wt.more(T.wf.go(ls, T.WfRows{pa}), _v => T.wf.go(tt, at), wf.head.more(at, nn, pa, tt,
+          _u => T.wf.then(T.wf.go(ls, T.WfRows{pa}), _v => T.wf.go(tt, at)), ee))))
+    case T.VPair{+nn, T.VAot{+pa, +ls}} <> +tt:
+      Eq.bit.absurd(&2, {selfs(T.VPair{nn, T.VAot{pa, ls}} <> tt) == True{} : Bool}, wf.pair.ok(at, nn, tt,
+        T.wf.atom(T.VAot{pa, ls}), _u => T.wf.go(tt, at), ee))
+    case T.VPair{+nn, T.VAots{+pa, +ls}} <> +tt:
+      and.tt(Laws.same.go(T.VPair{nn, T.VAots{pa, ls}} <> [], T.VPair{nn, T.VAots{pa, ls}} <> []), selfs(tt),
+        pair.self.tt(nn, T.VAots{pa, ls}, ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(ls, ws)),
+          refl.rows(ls, wf.selfs(ls, T.WfElems{pa}, wt.ok(T.wf.go(ls, T.WfElems{pa}), _v => T.wf.go(tt, at),
+          wf.aots.more(at, nn, pa, Bool.not(List.is_empty(&2, T.Val, ls)), tt, _u => T.wf.then(T.wf.go(ls,
+          T.WfElems{pa}), _v => T.wf.go(tt, at)), ee))))),
+        wf.selfs(tt, at, wt.more(T.wf.go(ls, T.WfElems{pa}), _v => T.wf.go(tt, at), wf.aots.more(at, nn, pa,
+          Bool.not(List.is_empty(&2, T.Val, ls)), tt, _u => T.wf.then(T.wf.go(ls, T.WfElems{pa}), _v => T.wf.go(tt,
+          at)), ee))))
+    case T.VPair{+nn, T.VPair{+a1, +a2}} <> +tt:
+      Eq.bit.absurd(&2, {selfs(T.VPair{nn, T.VPair{a1, a2}} <> tt) == True{} : Bool}, wf.pair.ok(at, nn, tt,
+        T.wf.atom(T.VPair{a1, a2}), _u => T.wf.go(tt, at), ee))
+    case T.VStr{+a1} <> +tt:
+      and.tt(Laws.same.go(T.VStr{a1} <> [], T.VStr{a1} <> []), selfs(tt),
+        item.self.tt(T.VStr{a1}, ww => Laws.same.atom(T.VStr{a1}, ww), atom.self(T.VStr{a1}, wf.item.ok(at,
+          T.wf.atom(T.VStr{a1}), _u => T.wf.go(tt, at), ee))),
+        wf.selfs(tt, at, wf.item.more(at, T.wf.atom(T.VStr{a1}), _u => T.wf.go(tt, at), ee)))
+    case T.VSpan{+a1, +a2} <> +tt:
+      and.tt(Laws.same.go(T.VSpan{a1, a2} <> [], T.VSpan{a1, a2} <> []), selfs(tt),
+        item.self.tt(T.VSpan{a1, a2}, ww => Laws.same.atom(T.VSpan{a1, a2}, ww), atom.self(T.VSpan{a1, a2},
+          wf.item.ok(at, T.wf.atom(T.VSpan{a1, a2}), _u => T.wf.go(tt, at), ee))),
+        wf.selfs(tt, at, wf.item.more(at, T.wf.atom(T.VSpan{a1, a2}), _u => T.wf.go(tt, at), ee)))
+    case T.VInt{+a1, +a2} <> +tt:
+      and.tt(Laws.same.go(T.VInt{a1, a2} <> [], T.VInt{a1, a2} <> []), selfs(tt),
+        item.self.tt(T.VInt{a1, a2}, ww => Laws.same.atom(T.VInt{a1, a2}, ww), atom.self(T.VInt{a1, a2}, wf.item.ok(at,
+          T.wf.atom(T.VInt{a1, a2}), _u => T.wf.go(tt, at), ee))),
+        wf.selfs(tt, at, wf.item.more(at, T.wf.atom(T.VInt{a1, a2}), _u => T.wf.go(tt, at), ee)))
+    case T.VFlo{+a1, +a2} <> +tt:
+      and.tt(Laws.same.go(T.VFlo{a1, a2} <> [], T.VFlo{a1, a2} <> []), selfs(tt),
+        item.self.tt(T.VFlo{a1, a2}, ww => Laws.same.atom(T.VFlo{a1, a2}, ww), atom.self(T.VFlo{a1, a2}, wf.item.ok(at,
+          T.wf.atom(T.VFlo{a1, a2}), _u => T.wf.go(tt, at), ee))),
+        wf.selfs(tt, at, wf.item.more(at, T.wf.atom(T.VFlo{a1, a2}), _u => T.wf.go(tt, at), ee)))
+    case T.VBool{+a1} <> +tt:
+      and.tt(Laws.same.go(T.VBool{a1} <> [], T.VBool{a1} <> []), selfs(tt),
+        item.self.tt(T.VBool{a1}, ww => Laws.same.atom(T.VBool{a1}, ww), atom.self(T.VBool{a1}, wf.item.ok(at,
+          T.wf.atom(T.VBool{a1}), _u => T.wf.go(tt, at), ee))),
+        wf.selfs(tt, at, wf.item.more(at, T.wf.atom(T.VBool{a1}), _u => T.wf.go(tt, at), ee)))
+    case T.VWhen{+a1} <> +tt:
+      and.tt(Laws.same.go(T.VWhen{a1} <> [], T.VWhen{a1} <> []), selfs(tt),
+        item.self.tt(T.VWhen{a1}, ww => Laws.same.atom(T.VWhen{a1}, ww), atom.self(T.VWhen{a1}, wf.item.ok(at,
+          T.wf.atom(T.VWhen{a1}), _u => T.wf.go(tt, at), ee))),
+        wf.selfs(tt, at, wf.item.more(at, T.wf.atom(T.VWhen{a1}), _u => T.wf.go(tt, at), ee)))
+    case T.VArr{+ls} <> +tt:
+      and.tt(Laws.same.go(T.VArr{ls} <> [], T.VArr{ls} <> []), selfs(tt),
+        item.self.tt(T.VArr{ls}, ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(ls, ws)), refl.rows(ls,
+          wf.selfs(ls, T.WfItems{}, wt.ok(T.wf.go(ls, T.WfItems{}), _v => T.wf.go(tt, at), wf.item.more(at, True{},
+          _u => T.wf.then(T.wf.go(ls, T.WfItems{}), _v => T.wf.go(tt, at)), ee))))),
+        wf.selfs(tt, at, wt.more(T.wf.go(ls, T.WfItems{}), _v => T.wf.go(tt, at), wf.item.more(at, True{},
+          _u => T.wf.then(T.wf.go(ls, T.WfItems{}), _v => T.wf.go(tt, at)), ee))))
+    case T.VInl{+ls} <> +tt:
+      and.tt(Laws.same.go(T.VInl{ls} <> [], T.VInl{ls} <> []), selfs(tt),
+        item.self.tt(T.VInl{ls}, ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(ls, ws)), refl.rows(ls,
+          wf.selfs(ls, T.WfInl{}, wt.ok(T.wf.go(ls, T.WfInl{}), _v => T.wf.go(tt, at), wf.item.more(at, True{},
+          _u => T.wf.then(T.wf.go(ls, T.WfInl{}), _v => T.wf.go(tt, at)), ee))))),
+        wf.selfs(tt, at, wt.more(T.wf.go(ls, T.WfInl{}), _v => T.wf.go(tt, at), wf.item.more(at, True{},
+          _u => T.wf.then(T.wf.go(ls, T.WfInl{}), _v => T.wf.go(tt, at)), ee))))
+    case T.VHead{+pa, +ls} <> +tt:
+      Eq.bit.absurd(&2, {selfs(T.VHead{pa, ls} <> tt) == True{} : Bool}, wf.item.ok(at, T.wf.atom(T.VHead{pa, ls}),
+        _u => T.wf.go(tt, at), ee))
+    case T.VAot{+pa, +ls} <> +tt:
+      and.tt(Laws.same.go(T.VAot{pa, ls} <> [], T.VAot{pa, ls} <> []), selfs(tt),
+        item.self.tt(T.VAot{pa, ls}, ww => Laws.same.box(Laws.KAot{}, ww, ws => Laws.same.go(ls, ws)), refl.rows(ls,
+          wf.selfs(ls, T.WfRows{pa}, wt.ok(T.wf.go(ls, T.WfRows{pa}), _v => T.wf.go(tt, at), wf.aot.more(at, pa,
+          _u => T.wf.then(T.wf.go(ls, T.WfRows{pa}), _v => T.wf.go(tt, at)), ee))))),
+        wf.selfs(tt, at, wt.more(T.wf.go(ls, T.WfRows{pa}), _v => T.wf.go(tt, at), wf.aot.more(at, pa,
+          _u => T.wf.then(T.wf.go(ls, T.WfRows{pa}), _v => T.wf.go(tt, at)), ee))))
+    case T.VAots{+pa, +ls} <> +tt:
+      Eq.bit.absurd(&2, {selfs(T.VAots{pa, ls} <> tt) == True{} : Bool}, wf.item.ok(at, T.wf.atom(T.VAots{pa, ls}),
+        _u => T.wf.go(tt, at), ee))
+
+# `own` changes no answer of `same`. own.rows reads a span out as an owned
+# string of the same characters, and same compares strings by characters.
+
+# one value with its spans read out, as own.rows writes a value it holds
+def own.val(vv: T.Val) -> T.Val:
+  match vv:
+    case T.VSpan{src, +kk}:
+      T.VStr{T.span.str(src, kk, U32.is_zero(kk))}
+    case T.VArr{ls}:
+      T.VArr{Laws.own.rows(ls)}
+    case T.VInl{ls}:
+      T.VInl{Laws.own.rows(ls)}
+    case T.VHead{pa, ls}:
+      T.VHead{pa, Laws.own.rows(ls)}
+    case T.VAot{pa, ls}:
+      T.VAot{pa, Laws.own.rows(ls)}
+    case T.VAots{pa, ls}:
+      T.VAots{pa, Laws.own.rows(ls)}
+    case other:
+      other
+
+# one row with its spans read out: a pair's value, or the value itself
+def own.elem(hh: T.Val) -> T.Val:
+  match hh:
+    case T.VPair{nn, vv}:
+      T.VPair{nn, own.val(vv)}
+    case other:
+      own.val(other)
+
+# a pick with its spans read out
+def pick.own(pp: Laws.Pick) -> Laws.Pick:
+  match pp:
+    case Laws.Picked{vv, rest}:
+      Laws.Picked{own.val(vv), Laws.own.rows(rest)}
+    case Laws.NoPick{}:
+      Laws.NoPick{}
+
+# a box with its spans read out
+def box.own(bx: Laws.Box) -> Laws.Box:
+  match bx:
+    case Laws.Boxed{kk, ls}:
+      Laws.Boxed{kk, Laws.own.rows(ls)}
+    case Laws.Unboxed{}:
+      Laws.Unboxed{}
+
+# own.rows reads out one row at a time
+def own.cons(
+  hh: T.Val,
+  tt: List<&2, T.Val>
+) -> {Laws.own.rows(hh <> tt) == own.elem(hh) <> Laws.own.rows(tt) : List<&2, T.Val>}:
+  match hh:
+    case T.VPair{nn, vv}:
+      match vv:
+        case T.VStr{a1}:
+          {==}
+        case T.VSpan{a1, a2}:
+          {==}
+        case T.VInt{a1, a2}:
+          {==}
+        case T.VFlo{a1, a2}:
+          {==}
+        case T.VBool{a1}:
+          {==}
+        case T.VWhen{a1}:
+          {==}
+        case T.VArr{ls}:
+          {==}
+        case T.VInl{ls}:
+          {==}
+        case T.VHead{pa, ls}:
+          {==}
+        case T.VAot{pa, ls}:
+          {==}
+        case T.VAots{pa, ls}:
+          {==}
+        case T.VPair{a1, a2}:
+          {==}
+    case T.VStr{a1}:
+      {==}
+    case T.VSpan{a1, a2}:
+      {==}
+    case T.VInt{a1, a2}:
+      {==}
+    case T.VFlo{a1, a2}:
+      {==}
+    case T.VBool{a1}:
+      {==}
+    case T.VWhen{a1}:
+      {==}
+    case T.VArr{ls}:
+      {==}
+    case T.VInl{ls}:
+      {==}
+    case T.VHead{pa, ls}:
+      {==}
+    case T.VAot{pa, ls}:
+      {==}
+    case T.VAots{pa, ls}:
+      {==}
+
+# the list a value holds, read out
+def kids.own(ww: T.Val) -> {Laws.kids(own.val(ww)) == box.own(Laws.kids(ww)) : Laws.Box}:
+  match ww:
+    case T.VStr{a1}:
+      {==}
+    case T.VSpan{a1, a2}:
+      {==}
+    case T.VInt{a1, a2}:
+      {==}
+    case T.VFlo{a1, a2}:
+      {==}
+    case T.VBool{a1}:
+      {==}
+    case T.VWhen{a1}:
+      {==}
+    case T.VArr{ls}:
+      {==}
+    case T.VInl{ls}:
+      {==}
+    case T.VHead{pa, ls}:
+      {==}
+    case T.VAot{pa, ls}:
+      {==}
+    case T.VAots{pa, ls}:
+      {==}
+    case T.VPair{a1, a2}:
+      {==}
+
+# the list a row holds, read out
+def kids.own.e(ww: T.Val) -> {Laws.kids(own.elem(ww)) == box.own(Laws.kids(ww)) : Laws.Box}:
+  match ww:
+    case T.VStr{a1}:
+      {==}
+    case T.VSpan{a1, a2}:
+      {==}
+    case T.VInt{a1, a2}:
+      {==}
+    case T.VFlo{a1, a2}:
+      {==}
+    case T.VBool{a1}:
+      {==}
+    case T.VWhen{a1}:
+      {==}
+    case T.VArr{ls}:
+      {==}
+    case T.VInl{ls}:
+      {==}
+    case T.VHead{pa, ls}:
+      {==}
+    case T.VAot{pa, ls}:
+      {==}
+    case T.VAots{pa, ls}:
+      {==}
+    case T.VPair{a1, a2}:
+      {==}
+
+# reading out keeps a scalar's fields
+def scal.own(ww: T.Val) -> {Laws.scal(own.val(ww)) == Laws.scal(ww) : Laws.Sc}:
+  match ww:
+    case T.VStr{a1}:
+      {==}
+    case T.VSpan{a1, a2}:
+      {==}
+    case T.VInt{a1, a2}:
+      {==}
+    case T.VFlo{a1, a2}:
+      {==}
+    case T.VBool{a1}:
+      {==}
+    case T.VWhen{a1}:
+      {==}
+    case T.VArr{ls}:
+      {==}
+    case T.VInl{ls}:
+      {==}
+    case T.VHead{pa, ls}:
+      {==}
+    case T.VAot{pa, ls}:
+      {==}
+    case T.VAots{pa, ls}:
+      {==}
+    case T.VPair{a1, a2}:
+      {==}
+
+# and a row's
+def scal.own.e(ww: T.Val) -> {Laws.scal(own.elem(ww)) == Laws.scal(ww) : Laws.Sc}:
+  match ww:
+    case T.VStr{a1}:
+      {==}
+    case T.VSpan{a1, a2}:
+      {==}
+    case T.VInt{a1, a2}:
+      {==}
+    case T.VFlo{a1, a2}:
+      {==}
+    case T.VBool{a1}:
+      {==}
+    case T.VWhen{a1}:
+      {==}
+    case T.VArr{ls}:
+      {==}
+    case T.VInl{ls}:
+      {==}
+    case T.VHead{pa, ls}:
+      {==}
+    case T.VAot{pa, ls}:
+      {==}
+    case T.VAots{pa, ls}:
+      {==}
+    case T.VPair{a1, a2}:
+      {==}
+
+# a then whose rests agree
+def at.cong2(
+  bb: Bool,
+  -m1: Unit -> Bool,
+  -m2: Unit -> Bool,
+  em: {m1(Unit{}) == m2(Unit{}) : Bool}
+) -> {Laws.and_then(bb, m1) == Laws.and_then(bb, m2) : Bool}:
+  match bb:
+    case True{}:
+      em
+    case False{}:
+      {==}
+
+# a then whose parts and rests agree
+def at.cong(
+  -b1: Bool,
+  b2: Bool,
+  eb: {b1 == b2 : Bool},
+  -m1: Unit -> Bool,
+  -m2: Unit -> Bool,
+  em: {m1(Unit{}) == m2(Unit{}) : Bool}
+) -> {Laws.and_then(b1, m1) == Laws.and_then(b2, m2) : Bool}:
+  Equal.trans(Bool, Laws.and_then(b1, m1), Laws.and_then(b2, m1), Laws.and_then(b2, m2),
+    Equal.cong(Bool, Bool, xx => Laws.and_then(xx, m1), b1, b2, eb), at.cong2(b2, m1, m2, em))
+
+# a box compared by comparisons that agree on every list
+def boxed.cong(
+  kk: Laws.Kin,
+  bx: Laws.Box,
+  -f1: List<&2, T.Val> -> Bool,
+  -f2: List<&2, T.Val> -> Bool,
+  hf: @ls: List<&2, T.Val> -> {f1(ls) == f2(ls) : Bool}
+) -> {Laws.same.boxed(kk, bx, f1) == Laws.same.boxed(kk, bx, f2) : Bool}:
+  match bx:
+    case Laws.Boxed{+k2, +ls}:
+      at.cong2(Laws.kin.eq(kk, k2), _u => f1(ls), _u => f2(ls), hf(ls))
+    case Laws.Unboxed{}:
+      {==}
+
+# a value compared by comparisons that agree on every list
+def box.cong(
+  kk: Laws.Kin,
+  ww: T.Val,
+  -f1: List<&2, T.Val> -> Bool,
+  -f2: List<&2, T.Val> -> Bool,
+  hf: @ls: List<&2, T.Val> -> {f1(ls) == f2(ls) : Bool}
+) -> {Laws.same.box(kk, ww, f1) == Laws.same.box(kk, ww, f2) : Bool}:
+  boxed.cong(kk, Laws.kids(ww), f1, f2, hf)
+
+# a pick compared by comparisons and rests that agree
+def pair.cong(
+  pp: Laws.Pick,
+  -c1: T.Val -> Bool,
+  c2: T.Val -> Bool,
+  -r1: List<&2, T.Val> -> Bool,
+  -r2: List<&2, T.Val> -> Bool,
+  hc: @vv: T.Val -> {c1(vv) == c2(vv) : Bool},
+  hr: @ls: List<&2, T.Val> -> {r1(ls) == r2(ls) : Bool}
+) -> {Laws.same.pair(pp, c1, r1) == Laws.same.pair(pp, c2, r2) : Bool}:
+  match pp:
+    case Laws.Picked{+ww, +left}:
+      at.cong(c1(ww), c2(ww), hc(ww), _u => r1(left), _u => r2(left), hr(left))
+    case Laws.NoPick{}:
+      {==}
+
+# the other rows' first value compared by comparisons and rests that agree
+def item.cong(
+  oo: List<&2, T.Val>,
+  -c1: T.Val -> Bool,
+  c2: T.Val -> Bool,
+  -r1: List<&2, T.Val> -> Bool,
+  -r2: List<&2, T.Val> -> Bool,
+  hc: @vv: T.Val -> {c1(vv) == c2(vv) : Bool},
+  hr: @ls: List<&2, T.Val> -> {r1(ls) == r2(ls) : Bool}
+) -> {Laws.same.item(oo, c1, r1) == Laws.same.item(oo, c2, r2) : Bool}:
+  match oo:
+    case []:
+      {==}
+    case +ww <> +left:
+      at.cong(c1(ww), c2(ww), hc(ww), _u => r1(left), _u => r2(left), hr(left))
+
+# rows read out compare as the rows do, against any other rows
+def own.l(
+  xs: List<&2, T.Val>,
+  +oo: List<&2, T.Val>
+) -> {Laws.same.go(Laws.own.rows(xs), oo) == Laws.same.go(xs, oo) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+nn, T.VStr{+a1}} <> +tt:
+      pair.cong(Laws.pick(oo, nn), ww => Laws.same.atom(T.VStr{a1}, ww),
+        ww => Laws.same.atom(T.VStr{a1}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VPair{+nn, T.VSpan{+a1, +a2}} <> +tt:
+      pair.cong(Laws.pick(oo, nn), ww => Laws.same.atom(T.VStr{T.span.str(a1, a2, U32.is_zero(a2))}, ww),
+        ww => Laws.same.atom(T.VSpan{a1, a2}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VPair{+nn, T.VInt{+a1, +a2}} <> +tt:
+      pair.cong(Laws.pick(oo, nn), ww => Laws.same.atom(T.VInt{a1, a2}, ww),
+        ww => Laws.same.atom(T.VInt{a1, a2}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VPair{+nn, T.VFlo{+a1, +a2}} <> +tt:
+      pair.cong(Laws.pick(oo, nn), ww => Laws.same.atom(T.VFlo{a1, a2}, ww),
+        ww => Laws.same.atom(T.VFlo{a1, a2}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VPair{+nn, T.VBool{+a1}} <> +tt:
+      pair.cong(Laws.pick(oo, nn), ww => Laws.same.atom(T.VBool{a1}, ww),
+        ww => Laws.same.atom(T.VBool{a1}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VPair{+nn, T.VWhen{+a1}} <> +tt:
+      pair.cong(Laws.pick(oo, nn), ww => Laws.same.atom(T.VWhen{a1}, ww),
+        ww => Laws.same.atom(T.VWhen{a1}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VPair{+nn, T.VArr{+ls}} <> +tt:
+      pair.cong(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws)),
+        ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        ww => box.cong(Laws.KArr{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws), ws => Laws.same.go(ls, ws),
+          ws => own.l(ls, ws)),
+        rr => own.l(tt, rr))
+    case T.VPair{+nn, T.VInl{+ls}} <> +tt:
+      pair.cong(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws)),
+        ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        ww => box.cong(Laws.KInl{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws), ws => Laws.same.go(ls, ws),
+          ws => own.l(ls, ws)),
+        rr => own.l(tt, rr))
+    case T.VPair{+nn, T.VHead{+pa, +ls}} <> +tt:
+      pair.cong(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws)),
+        ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        ww => box.cong(Laws.KHead{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws), ws => Laws.same.go(ls, ws),
+          ws => own.l(ls, ws)),
+        rr => own.l(tt, rr))
+    case T.VPair{+nn, T.VAot{+pa, +ls}} <> +tt:
+      pair.cong(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KAot{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws)),
+        ww => Laws.same.box(Laws.KAot{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        ww => box.cong(Laws.KAot{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws), ws => Laws.same.go(ls, ws),
+          ws => own.l(ls, ws)),
+        rr => own.l(tt, rr))
+    case T.VPair{+nn, T.VAots{+pa, +ls}} <> +tt:
+      pair.cong(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws)),
+        ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        ww => box.cong(Laws.KAots{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws), ws => Laws.same.go(ls, ws),
+          ws => own.l(ls, ws)),
+        rr => own.l(tt, rr))
+    case T.VPair{+nn, T.VPair{+a1, +a2}} <> +tt:
+      pair.cong(Laws.pick(oo, nn), ww => Laws.same.atom(T.VPair{a1, a2}, ww),
+        ww => Laws.same.atom(T.VPair{a1, a2}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VStr{+a1} <> +tt:
+      item.cong(oo, ww => Laws.same.atom(T.VStr{a1}, ww),
+        ww => Laws.same.atom(T.VStr{a1}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VSpan{+a1, +a2} <> +tt:
+      item.cong(oo, ww => Laws.same.atom(T.VStr{T.span.str(a1, a2, U32.is_zero(a2))}, ww),
+        ww => Laws.same.atom(T.VSpan{a1, a2}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VInt{+a1, +a2} <> +tt:
+      item.cong(oo, ww => Laws.same.atom(T.VInt{a1, a2}, ww),
+        ww => Laws.same.atom(T.VInt{a1, a2}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VFlo{+a1, +a2} <> +tt:
+      item.cong(oo, ww => Laws.same.atom(T.VFlo{a1, a2}, ww),
+        ww => Laws.same.atom(T.VFlo{a1, a2}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VBool{+a1} <> +tt:
+      item.cong(oo, ww => Laws.same.atom(T.VBool{a1}, ww),
+        ww => Laws.same.atom(T.VBool{a1}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VWhen{+a1} <> +tt:
+      item.cong(oo, ww => Laws.same.atom(T.VWhen{a1}, ww),
+        ww => Laws.same.atom(T.VWhen{a1}, ww),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        _ww => {==},
+        rr => own.l(tt, rr))
+    case T.VArr{+ls} <> +tt:
+      item.cong(oo, ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws)),
+        ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        ww => box.cong(Laws.KArr{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws), ws => Laws.same.go(ls, ws),
+          ws => own.l(ls, ws)),
+        rr => own.l(tt, rr))
+    case T.VInl{+ls} <> +tt:
+      item.cong(oo, ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws)),
+        ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        ww => box.cong(Laws.KInl{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws), ws => Laws.same.go(ls, ws),
+          ws => own.l(ls, ws)),
+        rr => own.l(tt, rr))
+    case T.VHead{+pa, +ls} <> +tt:
+      item.cong(oo, ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws)),
+        ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        ww => box.cong(Laws.KHead{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws), ws => Laws.same.go(ls, ws),
+          ws => own.l(ls, ws)),
+        rr => own.l(tt, rr))
+    case T.VAot{+pa, +ls} <> +tt:
+      item.cong(oo, ww => Laws.same.box(Laws.KAot{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws)),
+        ww => Laws.same.box(Laws.KAot{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        ww => box.cong(Laws.KAot{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws), ws => Laws.same.go(ls, ws),
+          ws => own.l(ls, ws)),
+        rr => own.l(tt, rr))
+    case T.VAots{+pa, +ls} <> +tt:
+      item.cong(oo, ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws)),
+        ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(ls, ws)),
+        rr => Laws.same.go(Laws.own.rows(tt), rr), rr => Laws.same.go(tt, rr),
+        ww => box.cong(Laws.KAots{}, ww, ws => Laws.same.go(Laws.own.rows(ls), ws), ws => Laws.same.go(ls, ws),
+          ws => own.l(ls, ws)),
+        rr => own.l(tt, rr))
+
+# a pick read out, cons'd onto a row read out
+def cons.own(
+  +hh: T.Val,
+  pp: Laws.Pick
+) -> {Laws.pick.cons(own.elem(hh), pick.own(pp)) == pick.own(Laws.pick.cons(hh, pp)) : Laws.Pick}:
+  match pp:
+    case Laws.Picked{+vv, +rest}:
+      Equal.cong(List<&2, T.Val>, Laws.Pick, ls => Laws.Picked{own.val(vv), ls},
+        own.elem(hh) <> Laws.own.rows(rest), Laws.own.rows(hh <> rest),
+        Equal.sym(List<&2, T.Val>, Laws.own.rows(hh <> rest), own.elem(hh) <> Laws.own.rows(rest),
+          own.cons(hh, rest)))
+    case Laws.NoPick{}:
+      {==}
+
+# a pair of the name is picked the same way from rows read out
+def po.step(
+  bb: Bool,
+  +mm: String,
+  +vv: T.Val,
+  +uu: List<&2, T.Val>,
+  +nn: String,
+  ih: {Laws.pick(Laws.own.rows(uu), nn) == pick.own(Laws.pick(uu, nn)) : Laws.Pick}
+) -> {Laws.pick.step(bb, mm, own.val(vv), Laws.own.rows(uu), _u => Laws.pick(Laws.own.rows(uu), nn))
+  == pick.own(Laws.pick.step(bb, mm, vv, uu, _u => Laws.pick(uu, nn))) : Laws.Pick}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      Equal.trans(Laws.Pick,
+        Laws.pick.cons(T.VPair{mm, own.val(vv)}, Laws.pick(Laws.own.rows(uu), nn)),
+        Laws.pick.cons(T.VPair{mm, own.val(vv)}, pick.own(Laws.pick(uu, nn))),
+        pick.own(Laws.pick.cons(T.VPair{mm, vv}, Laws.pick(uu, nn))),
+        Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(T.VPair{mm, own.val(vv)}, pp),
+          Laws.pick(Laws.own.rows(uu), nn), pick.own(Laws.pick(uu, nn)), ih),
+        cons.own(T.VPair{mm, vv}, Laws.pick(uu, nn)))
+
+# one row of a pick from rows read out
+def po.cell(
+  kk: T.Val,
+  +uu: List<&2, T.Val>,
+  +nn: String,
+  +ih: {Laws.pick(Laws.own.rows(uu), nn) == pick.own(Laws.pick(uu, nn)) : Laws.Pick}
+) -> {Laws.pick(own.elem(kk) <> Laws.own.rows(uu), nn) == pick.own(Laws.pick(kk <> uu, nn)) : Laws.Pick}:
+  match kk:
+    case T.VPair{+mm, +vv}:
+      po.step(String.eq(mm, nn), mm, vv, uu, nn, ih)
+    case T.VStr{+a1}:
+      Equal.trans(Laws.Pick,
+        Laws.pick.cons(own.elem(T.VStr{a1}), Laws.pick(Laws.own.rows(uu), nn)),
+        Laws.pick.cons(own.elem(T.VStr{a1}), pick.own(Laws.pick(uu, nn))),
+        pick.own(Laws.pick.cons(T.VStr{a1}, Laws.pick(uu, nn))),
+        Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(own.elem(T.VStr{a1}), pp),
+          Laws.pick(Laws.own.rows(uu), nn), pick.own(Laws.pick(uu, nn)), ih),
+        cons.own(T.VStr{a1}, Laws.pick(uu, nn)))
+    case T.VSpan{+a1, +a2}:
+      Equal.trans(Laws.Pick,
+        Laws.pick.cons(own.elem(T.VSpan{a1, a2}), Laws.pick(Laws.own.rows(uu), nn)),
+        Laws.pick.cons(own.elem(T.VSpan{a1, a2}), pick.own(Laws.pick(uu, nn))),
+        pick.own(Laws.pick.cons(T.VSpan{a1, a2}, Laws.pick(uu, nn))),
+        Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(own.elem(T.VSpan{a1, a2}), pp),
+          Laws.pick(Laws.own.rows(uu), nn), pick.own(Laws.pick(uu, nn)), ih),
+        cons.own(T.VSpan{a1, a2}, Laws.pick(uu, nn)))
+    case T.VInt{+a1, +a2}:
+      Equal.trans(Laws.Pick,
+        Laws.pick.cons(own.elem(T.VInt{a1, a2}), Laws.pick(Laws.own.rows(uu), nn)),
+        Laws.pick.cons(own.elem(T.VInt{a1, a2}), pick.own(Laws.pick(uu, nn))),
+        pick.own(Laws.pick.cons(T.VInt{a1, a2}, Laws.pick(uu, nn))),
+        Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(own.elem(T.VInt{a1, a2}), pp),
+          Laws.pick(Laws.own.rows(uu), nn), pick.own(Laws.pick(uu, nn)), ih),
+        cons.own(T.VInt{a1, a2}, Laws.pick(uu, nn)))
+    case T.VFlo{+a1, +a2}:
+      Equal.trans(Laws.Pick,
+        Laws.pick.cons(own.elem(T.VFlo{a1, a2}), Laws.pick(Laws.own.rows(uu), nn)),
+        Laws.pick.cons(own.elem(T.VFlo{a1, a2}), pick.own(Laws.pick(uu, nn))),
+        pick.own(Laws.pick.cons(T.VFlo{a1, a2}, Laws.pick(uu, nn))),
+        Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(own.elem(T.VFlo{a1, a2}), pp),
+          Laws.pick(Laws.own.rows(uu), nn), pick.own(Laws.pick(uu, nn)), ih),
+        cons.own(T.VFlo{a1, a2}, Laws.pick(uu, nn)))
+    case T.VBool{+a1}:
+      Equal.trans(Laws.Pick,
+        Laws.pick.cons(own.elem(T.VBool{a1}), Laws.pick(Laws.own.rows(uu), nn)),
+        Laws.pick.cons(own.elem(T.VBool{a1}), pick.own(Laws.pick(uu, nn))),
+        pick.own(Laws.pick.cons(T.VBool{a1}, Laws.pick(uu, nn))),
+        Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(own.elem(T.VBool{a1}), pp),
+          Laws.pick(Laws.own.rows(uu), nn), pick.own(Laws.pick(uu, nn)), ih),
+        cons.own(T.VBool{a1}, Laws.pick(uu, nn)))
+    case T.VWhen{+a1}:
+      Equal.trans(Laws.Pick,
+        Laws.pick.cons(own.elem(T.VWhen{a1}), Laws.pick(Laws.own.rows(uu), nn)),
+        Laws.pick.cons(own.elem(T.VWhen{a1}), pick.own(Laws.pick(uu, nn))),
+        pick.own(Laws.pick.cons(T.VWhen{a1}, Laws.pick(uu, nn))),
+        Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(own.elem(T.VWhen{a1}), pp),
+          Laws.pick(Laws.own.rows(uu), nn), pick.own(Laws.pick(uu, nn)), ih),
+        cons.own(T.VWhen{a1}, Laws.pick(uu, nn)))
+    case T.VArr{+ls}:
+      Equal.trans(Laws.Pick,
+        Laws.pick.cons(own.elem(T.VArr{ls}), Laws.pick(Laws.own.rows(uu), nn)),
+        Laws.pick.cons(own.elem(T.VArr{ls}), pick.own(Laws.pick(uu, nn))),
+        pick.own(Laws.pick.cons(T.VArr{ls}, Laws.pick(uu, nn))),
+        Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(own.elem(T.VArr{ls}), pp),
+          Laws.pick(Laws.own.rows(uu), nn), pick.own(Laws.pick(uu, nn)), ih),
+        cons.own(T.VArr{ls}, Laws.pick(uu, nn)))
+    case T.VInl{+ls}:
+      Equal.trans(Laws.Pick,
+        Laws.pick.cons(own.elem(T.VInl{ls}), Laws.pick(Laws.own.rows(uu), nn)),
+        Laws.pick.cons(own.elem(T.VInl{ls}), pick.own(Laws.pick(uu, nn))),
+        pick.own(Laws.pick.cons(T.VInl{ls}, Laws.pick(uu, nn))),
+        Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(own.elem(T.VInl{ls}), pp),
+          Laws.pick(Laws.own.rows(uu), nn), pick.own(Laws.pick(uu, nn)), ih),
+        cons.own(T.VInl{ls}, Laws.pick(uu, nn)))
+    case T.VHead{+pa, +ls}:
+      Equal.trans(Laws.Pick,
+        Laws.pick.cons(own.elem(T.VHead{pa, ls}), Laws.pick(Laws.own.rows(uu), nn)),
+        Laws.pick.cons(own.elem(T.VHead{pa, ls}), pick.own(Laws.pick(uu, nn))),
+        pick.own(Laws.pick.cons(T.VHead{pa, ls}, Laws.pick(uu, nn))),
+        Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(own.elem(T.VHead{pa, ls}), pp),
+          Laws.pick(Laws.own.rows(uu), nn), pick.own(Laws.pick(uu, nn)), ih),
+        cons.own(T.VHead{pa, ls}, Laws.pick(uu, nn)))
+    case T.VAot{+pa, +ls}:
+      Equal.trans(Laws.Pick,
+        Laws.pick.cons(own.elem(T.VAot{pa, ls}), Laws.pick(Laws.own.rows(uu), nn)),
+        Laws.pick.cons(own.elem(T.VAot{pa, ls}), pick.own(Laws.pick(uu, nn))),
+        pick.own(Laws.pick.cons(T.VAot{pa, ls}, Laws.pick(uu, nn))),
+        Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(own.elem(T.VAot{pa, ls}), pp),
+          Laws.pick(Laws.own.rows(uu), nn), pick.own(Laws.pick(uu, nn)), ih),
+        cons.own(T.VAot{pa, ls}, Laws.pick(uu, nn)))
+    case T.VAots{+pa, +ls}:
+      Equal.trans(Laws.Pick,
+        Laws.pick.cons(own.elem(T.VAots{pa, ls}), Laws.pick(Laws.own.rows(uu), nn)),
+        Laws.pick.cons(own.elem(T.VAots{pa, ls}), pick.own(Laws.pick(uu, nn))),
+        pick.own(Laws.pick.cons(T.VAots{pa, ls}, Laws.pick(uu, nn))),
+        Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(own.elem(T.VAots{pa, ls}), pp),
+          Laws.pick(Laws.own.rows(uu), nn), pick.own(Laws.pick(uu, nn)), ih),
+        cons.own(T.VAots{pa, ls}, Laws.pick(uu, nn)))
+
+# a pick from rows read out is the pick read out
+def pick.own.rows(
+  oo: List<&2, T.Val>,
+  +nn: String
+) -> {Laws.pick(Laws.own.rows(oo), nn) == pick.own(Laws.pick(oo, nn)) : Laws.Pick}:
+  match oo:
+    case []:
+      {==}
+    case +kk <> +uu:
+      Equal.trans(Laws.Pick, Laws.pick(Laws.own.rows(kk <> uu), nn),
+        Laws.pick(own.elem(kk) <> Laws.own.rows(uu), nn), pick.own(Laws.pick(kk <> uu, nn)),
+        Equal.cong(List<&2, T.Val>, Laws.Pick, ls => Laws.pick(ls, nn), Laws.own.rows(kk <> uu),
+          own.elem(kk) <> Laws.own.rows(uu), own.cons(kk, uu)),
+        po.cell(kk, uu, nn, pick.own.rows(uu, nn)))
+
+# rows read out are empty exactly when the rows are
+def empty.own(
+  oo: List<&2, T.Val>
+) -> {List.is_empty(&2, T.Val, Laws.own.rows(oo)) == List.is_empty(&2, T.Val, oo) : Bool}:
+  match oo:
+    case []:
+      {==}
+    case +kk <> +uu:
+      Equal.cong(List<&2, T.Val>, Bool, ls => List.is_empty(&2, T.Val, ls), Laws.own.rows(kk <> uu),
+        own.elem(kk) <> Laws.own.rows(uu), own.cons(kk, uu))
+
+# a box read out, compared by a comparison that does not see reading out
+def boxed.own(
+  kk: Laws.Kin,
+  bx: Laws.Box,
+  -ff: List<&2, T.Val> -> Bool,
+  hf: @ls: List<&2, T.Val> -> {ff(Laws.own.rows(ls)) == ff(ls) : Bool}
+) -> {Laws.same.boxed(kk, box.own(bx), ff) == Laws.same.boxed(kk, bx, ff) : Bool}:
+  match bx:
+    case Laws.Boxed{+k2, +ls}:
+      at.cong2(Laws.kin.eq(kk, k2), _u => ff(Laws.own.rows(ls)), _u => ff(ls), hf(ls))
+    case Laws.Unboxed{}:
+      {==}
+
+# a value read out, compared as a box
+def box.own.v(
+  kk: Laws.Kin,
+  +ww: T.Val,
+  -ff: List<&2, T.Val> -> Bool,
+  hf: @ls: List<&2, T.Val> -> {ff(Laws.own.rows(ls)) == ff(ls) : Bool}
+) -> {Laws.same.box(kk, own.val(ww), ff) == Laws.same.box(kk, ww, ff) : Bool}:
+  Equal.trans(Bool, Laws.same.boxed(kk, Laws.kids(own.val(ww)), ff), Laws.same.boxed(kk, box.own(Laws.kids(ww)), ff),
+    Laws.same.boxed(kk, Laws.kids(ww), ff),
+    Equal.cong(Laws.Box, Bool, bx => Laws.same.boxed(kk, bx, ff), Laws.kids(own.val(ww)), box.own(Laws.kids(ww)),
+      kids.own(ww)),
+    boxed.own(kk, Laws.kids(ww), ff, hf))
+
+# a row read out, compared as a box
+def box.own.e(
+  kk: Laws.Kin,
+  +ww: T.Val,
+  -ff: List<&2, T.Val> -> Bool,
+  hf: @ls: List<&2, T.Val> -> {ff(Laws.own.rows(ls)) == ff(ls) : Bool}
+) -> {Laws.same.box(kk, own.elem(ww), ff) == Laws.same.box(kk, ww, ff) : Bool}:
+  Equal.trans(Bool, Laws.same.boxed(kk, Laws.kids(own.elem(ww)), ff), Laws.same.boxed(kk, box.own(Laws.kids(ww)), ff),
+    Laws.same.boxed(kk, Laws.kids(ww), ff),
+    Equal.cong(Laws.Box, Bool, bx => Laws.same.boxed(kk, bx, ff), Laws.kids(own.elem(ww)), box.own(Laws.kids(ww)),
+      kids.own.e(ww)),
+    boxed.own(kk, Laws.kids(ww), ff, hf))
+
+# a value read out is the same scalar
+def atom.own.v(
+  +vv: T.Val,
+  +ww: T.Val
+) -> {Laws.same.atom(vv, own.val(ww)) == Laws.same.atom(vv, ww) : Bool}:
+  Equal.cong(Laws.Sc, Bool, sc => Laws.sc.eq(Laws.scal(vv), sc), Laws.scal(own.val(ww)), Laws.scal(ww), scal.own(ww))
+
+# a row read out is the same scalar
+def atom.own.e(
+  +vv: T.Val,
+  +ww: T.Val
+) -> {Laws.same.atom(vv, own.elem(ww)) == Laws.same.atom(vv, ww) : Bool}:
+  Equal.cong(Laws.Sc, Bool, sc => Laws.sc.eq(Laws.scal(vv), sc), Laws.scal(own.elem(ww)), Laws.scal(ww), scal.own.e(ww))
+
+# a pick read out compares as the pick
+def pair.own(
+  pp: Laws.Pick,
+  cmp: T.Val -> Bool,
+  -rest: List<&2, T.Val> -> Bool,
+  hc: @vv: T.Val -> {cmp(own.val(vv)) == cmp(vv) : Bool},
+  hr: @ls: List<&2, T.Val> -> {rest(Laws.own.rows(ls)) == rest(ls) : Bool}
+) -> {Laws.same.pair(pick.own(pp), cmp, rest) == Laws.same.pair(pp, cmp, rest) : Bool}:
+  match pp:
+    case Laws.Picked{+ww, +left}:
+      at.cong(cmp(own.val(ww)), cmp(ww), hc(ww), _u => rest(Laws.own.rows(left)), _u => rest(left), hr(left))
+    case Laws.NoPick{}:
+      {==}
+
+# other rows read out give their first value read out
+def item.own(
+  oo: List<&2, T.Val>,
+  cmp: T.Val -> Bool,
+  -rest: List<&2, T.Val> -> Bool,
+  hc: @vv: T.Val -> {cmp(own.elem(vv)) == cmp(vv) : Bool},
+  hr: @ls: List<&2, T.Val> -> {rest(Laws.own.rows(ls)) == rest(ls) : Bool}
+) -> {Laws.same.item(Laws.own.rows(oo), cmp, rest) == Laws.same.item(oo, cmp, rest) : Bool}:
+  match oo:
+    case []:
+      {==}
+    case +kk <> +uu:
+      Equal.trans(Bool, Laws.same.item(Laws.own.rows(kk <> uu), cmp, rest),
+        Laws.same.item(own.elem(kk) <> Laws.own.rows(uu), cmp, rest), Laws.same.item(kk <> uu, cmp, rest),
+        Equal.cong(List<&2, T.Val>, Bool, ls => Laws.same.item(ls, cmp, rest), Laws.own.rows(kk <> uu),
+          own.elem(kk) <> Laws.own.rows(uu), own.cons(kk, uu)),
+        at.cong(cmp(own.elem(kk)), cmp(kk), hc(kk), _u => rest(Laws.own.rows(uu)), _u => rest(uu), hr(uu)))
+
+# rows compare against other rows read out as against the rows
+def own.r(
+  xs: List<&2, T.Val>,
+  +oo: List<&2, T.Val>
+) -> {Laws.same.go(xs, Laws.own.rows(oo)) == Laws.same.go(xs, oo) : Bool}:
+  match xs:
+    case []:
+      empty.own(oo)
+    case T.VPair{+nn, T.VStr{+a1}} <> +tt:
+      Equal.trans(Bool, Laws.same.pair(Laws.pick(Laws.own.rows(oo), nn), ww => Laws.same.atom(T.VStr{a1}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(pick.own(Laws.pick(oo, nn)), ww => Laws.same.atom(T.VStr{a1}, ww), rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(Laws.pick(oo, nn), ww => Laws.same.atom(T.VStr{a1}, ww), rr => Laws.same.go(tt, rr)),
+        Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VStr{a1}, ww),
+          rr => Laws.same.go(tt, rr)),
+          Laws.pick(Laws.own.rows(oo), nn), pick.own(Laws.pick(oo, nn)), pick.own.rows(oo, nn)),
+        pair.own(Laws.pick(oo, nn), ww => Laws.same.atom(T.VStr{a1}, ww), rr => Laws.same.go(tt, rr),
+          ww => atom.own.v(T.VStr{a1}, ww), rr => own.r(tt, rr)))
+    case T.VPair{+nn, T.VSpan{+a1, +a2}} <> +tt:
+      Equal.trans(Bool, Laws.same.pair(Laws.pick(Laws.own.rows(oo), nn), ww => Laws.same.atom(T.VSpan{a1, a2}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(pick.own(Laws.pick(oo, nn)), ww => Laws.same.atom(T.VSpan{a1, a2}, ww), rr => Laws.same.go(tt,
+          rr)),
+        Laws.same.pair(Laws.pick(oo, nn), ww => Laws.same.atom(T.VSpan{a1, a2}, ww), rr => Laws.same.go(tt, rr)),
+        Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VSpan{a1, a2}, ww),
+          rr => Laws.same.go(tt, rr)),
+          Laws.pick(Laws.own.rows(oo), nn), pick.own(Laws.pick(oo, nn)), pick.own.rows(oo, nn)),
+        pair.own(Laws.pick(oo, nn), ww => Laws.same.atom(T.VSpan{a1, a2}, ww), rr => Laws.same.go(tt, rr),
+          ww => atom.own.v(T.VSpan{a1, a2}, ww), rr => own.r(tt, rr)))
+    case T.VPair{+nn, T.VInt{+a1, +a2}} <> +tt:
+      Equal.trans(Bool, Laws.same.pair(Laws.pick(Laws.own.rows(oo), nn), ww => Laws.same.atom(T.VInt{a1, a2}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(pick.own(Laws.pick(oo, nn)), ww => Laws.same.atom(T.VInt{a1, a2}, ww), rr => Laws.same.go(tt,
+          rr)),
+        Laws.same.pair(Laws.pick(oo, nn), ww => Laws.same.atom(T.VInt{a1, a2}, ww), rr => Laws.same.go(tt, rr)),
+        Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VInt{a1, a2}, ww),
+          rr => Laws.same.go(tt, rr)),
+          Laws.pick(Laws.own.rows(oo), nn), pick.own(Laws.pick(oo, nn)), pick.own.rows(oo, nn)),
+        pair.own(Laws.pick(oo, nn), ww => Laws.same.atom(T.VInt{a1, a2}, ww), rr => Laws.same.go(tt, rr),
+          ww => atom.own.v(T.VInt{a1, a2}, ww), rr => own.r(tt, rr)))
+    case T.VPair{+nn, T.VFlo{+a1, +a2}} <> +tt:
+      Equal.trans(Bool, Laws.same.pair(Laws.pick(Laws.own.rows(oo), nn), ww => Laws.same.atom(T.VFlo{a1, a2}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(pick.own(Laws.pick(oo, nn)), ww => Laws.same.atom(T.VFlo{a1, a2}, ww), rr => Laws.same.go(tt,
+          rr)),
+        Laws.same.pair(Laws.pick(oo, nn), ww => Laws.same.atom(T.VFlo{a1, a2}, ww), rr => Laws.same.go(tt, rr)),
+        Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VFlo{a1, a2}, ww),
+          rr => Laws.same.go(tt, rr)),
+          Laws.pick(Laws.own.rows(oo), nn), pick.own(Laws.pick(oo, nn)), pick.own.rows(oo, nn)),
+        pair.own(Laws.pick(oo, nn), ww => Laws.same.atom(T.VFlo{a1, a2}, ww), rr => Laws.same.go(tt, rr),
+          ww => atom.own.v(T.VFlo{a1, a2}, ww), rr => own.r(tt, rr)))
+    case T.VPair{+nn, T.VBool{+a1}} <> +tt:
+      Equal.trans(Bool, Laws.same.pair(Laws.pick(Laws.own.rows(oo), nn), ww => Laws.same.atom(T.VBool{a1}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(pick.own(Laws.pick(oo, nn)), ww => Laws.same.atom(T.VBool{a1}, ww), rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(Laws.pick(oo, nn), ww => Laws.same.atom(T.VBool{a1}, ww), rr => Laws.same.go(tt, rr)),
+        Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VBool{a1}, ww),
+          rr => Laws.same.go(tt, rr)),
+          Laws.pick(Laws.own.rows(oo), nn), pick.own(Laws.pick(oo, nn)), pick.own.rows(oo, nn)),
+        pair.own(Laws.pick(oo, nn), ww => Laws.same.atom(T.VBool{a1}, ww), rr => Laws.same.go(tt, rr),
+          ww => atom.own.v(T.VBool{a1}, ww), rr => own.r(tt, rr)))
+    case T.VPair{+nn, T.VWhen{+a1}} <> +tt:
+      Equal.trans(Bool, Laws.same.pair(Laws.pick(Laws.own.rows(oo), nn), ww => Laws.same.atom(T.VWhen{a1}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(pick.own(Laws.pick(oo, nn)), ww => Laws.same.atom(T.VWhen{a1}, ww), rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(Laws.pick(oo, nn), ww => Laws.same.atom(T.VWhen{a1}, ww), rr => Laws.same.go(tt, rr)),
+        Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VWhen{a1}, ww),
+          rr => Laws.same.go(tt, rr)),
+          Laws.pick(Laws.own.rows(oo), nn), pick.own(Laws.pick(oo, nn)), pick.own.rows(oo, nn)),
+        pair.own(Laws.pick(oo, nn), ww => Laws.same.atom(T.VWhen{a1}, ww), rr => Laws.same.go(tt, rr),
+          ww => atom.own.v(T.VWhen{a1}, ww), rr => own.r(tt, rr)))
+    case T.VPair{+nn, T.VArr{+ls}} <> +tt:
+      Equal.trans(Bool, Laws.same.pair(Laws.pick(Laws.own.rows(oo), nn), ww => Laws.same.box(Laws.KArr{}, ww,
+        ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(pick.own(Laws.pick(oo, nn)), ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr)),
+        Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.box(Laws.KArr{}, ww,
+          ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr)),
+          Laws.pick(Laws.own.rows(oo), nn), pick.own(Laws.pick(oo, nn)), pick.own.rows(oo, nn)),
+        pair.own(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr), ww => box.own.v(Laws.KArr{}, ww, ws => Laws.same.go(ls, ws), ws => own.r(ls,
+          ws)), rr => own.r(tt, rr)))
+    case T.VPair{+nn, T.VInl{+ls}} <> +tt:
+      Equal.trans(Bool, Laws.same.pair(Laws.pick(Laws.own.rows(oo), nn), ww => Laws.same.box(Laws.KInl{}, ww,
+        ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(pick.own(Laws.pick(oo, nn)), ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr)),
+        Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.box(Laws.KInl{}, ww,
+          ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr)),
+          Laws.pick(Laws.own.rows(oo), nn), pick.own(Laws.pick(oo, nn)), pick.own.rows(oo, nn)),
+        pair.own(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr), ww => box.own.v(Laws.KInl{}, ww, ws => Laws.same.go(ls, ws), ws => own.r(ls,
+          ws)), rr => own.r(tt, rr)))
+    case T.VPair{+nn, T.VHead{+pa, +ls}} <> +tt:
+      Equal.trans(Bool, Laws.same.pair(Laws.pick(Laws.own.rows(oo), nn), ww => Laws.same.box(Laws.KHead{}, ww,
+        ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(pick.own(Laws.pick(oo, nn)), ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr)),
+        Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.box(Laws.KHead{}, ww,
+          ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr)),
+          Laws.pick(Laws.own.rows(oo), nn), pick.own(Laws.pick(oo, nn)), pick.own.rows(oo, nn)),
+        pair.own(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr), ww => box.own.v(Laws.KHead{}, ww, ws => Laws.same.go(ls, ws), ws => own.r(ls,
+          ws)), rr => own.r(tt, rr)))
+    case T.VPair{+nn, T.VAot{+pa, +ls}} <> +tt:
+      Equal.trans(Bool, Laws.same.pair(Laws.pick(Laws.own.rows(oo), nn), ww => Laws.same.box(Laws.KAot{}, ww,
+        ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(pick.own(Laws.pick(oo, nn)), ww => Laws.same.box(Laws.KAot{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KAot{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr)),
+        Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.box(Laws.KAot{}, ww,
+          ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr)),
+          Laws.pick(Laws.own.rows(oo), nn), pick.own(Laws.pick(oo, nn)), pick.own.rows(oo, nn)),
+        pair.own(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KAot{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr), ww => box.own.v(Laws.KAot{}, ww, ws => Laws.same.go(ls, ws), ws => own.r(ls,
+          ws)), rr => own.r(tt, rr)))
+    case T.VPair{+nn, T.VAots{+pa, +ls}} <> +tt:
+      Equal.trans(Bool, Laws.same.pair(Laws.pick(Laws.own.rows(oo), nn), ww => Laws.same.box(Laws.KAots{}, ww,
+        ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(pick.own(Laws.pick(oo, nn)), ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr)),
+        Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.box(Laws.KAots{}, ww,
+          ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr)),
+          Laws.pick(Laws.own.rows(oo), nn), pick.own(Laws.pick(oo, nn)), pick.own.rows(oo, nn)),
+        pair.own(Laws.pick(oo, nn), ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(ls, ws)),
+          rr => Laws.same.go(tt, rr), ww => box.own.v(Laws.KAots{}, ww, ws => Laws.same.go(ls, ws), ws => own.r(ls,
+          ws)), rr => own.r(tt, rr)))
+    case T.VPair{+nn, T.VPair{+a1, +a2}} <> +tt:
+      Equal.trans(Bool, Laws.same.pair(Laws.pick(Laws.own.rows(oo), nn), ww => Laws.same.atom(T.VPair{a1, a2}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.same.pair(pick.own(Laws.pick(oo, nn)), ww => Laws.same.atom(T.VPair{a1, a2}, ww), rr => Laws.same.go(tt,
+          rr)),
+        Laws.same.pair(Laws.pick(oo, nn), ww => Laws.same.atom(T.VPair{a1, a2}, ww), rr => Laws.same.go(tt, rr)),
+        Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VPair{a1, a2}, ww),
+          rr => Laws.same.go(tt, rr)),
+          Laws.pick(Laws.own.rows(oo), nn), pick.own(Laws.pick(oo, nn)), pick.own.rows(oo, nn)),
+        pair.own(Laws.pick(oo, nn), ww => Laws.same.atom(T.VPair{a1, a2}, ww), rr => Laws.same.go(tt, rr),
+          ww => atom.own.v(T.VPair{a1, a2}, ww), rr => own.r(tt, rr)))
+    case T.VStr{+a1} <> +tt:
+      item.own(oo, ww => Laws.same.atom(T.VStr{a1}, ww), rr => Laws.same.go(tt, rr), ww => atom.own.e(T.VStr{a1}, ww),
+        rr => own.r(tt, rr))
+    case T.VSpan{+a1, +a2} <> +tt:
+      item.own(oo, ww => Laws.same.atom(T.VSpan{a1, a2}, ww), rr => Laws.same.go(tt, rr), ww => atom.own.e(T.VSpan{a1,
+        a2}, ww), rr => own.r(tt, rr))
+    case T.VInt{+a1, +a2} <> +tt:
+      item.own(oo, ww => Laws.same.atom(T.VInt{a1, a2}, ww), rr => Laws.same.go(tt, rr), ww => atom.own.e(T.VInt{a1,
+        a2}, ww), rr => own.r(tt, rr))
+    case T.VFlo{+a1, +a2} <> +tt:
+      item.own(oo, ww => Laws.same.atom(T.VFlo{a1, a2}, ww), rr => Laws.same.go(tt, rr), ww => atom.own.e(T.VFlo{a1,
+        a2}, ww), rr => own.r(tt, rr))
+    case T.VBool{+a1} <> +tt:
+      item.own(oo, ww => Laws.same.atom(T.VBool{a1}, ww), rr => Laws.same.go(tt, rr), ww => atom.own.e(T.VBool{a1},
+        ww), rr => own.r(tt, rr))
+    case T.VWhen{+a1} <> +tt:
+      item.own(oo, ww => Laws.same.atom(T.VWhen{a1}, ww), rr => Laws.same.go(tt, rr), ww => atom.own.e(T.VWhen{a1},
+        ww), rr => own.r(tt, rr))
+    case T.VArr{+ls} <> +tt:
+      item.own(oo, ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr),
+        ww => box.own.e(Laws.KArr{}, ww, ws => Laws.same.go(ls, ws), ws => own.r(ls, ws)), rr => own.r(tt, rr))
+    case T.VInl{+ls} <> +tt:
+      item.own(oo, ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr),
+        ww => box.own.e(Laws.KInl{}, ww, ws => Laws.same.go(ls, ws), ws => own.r(ls, ws)), rr => own.r(tt, rr))
+    case T.VHead{+pa, +ls} <> +tt:
+      item.own(oo, ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr),
+        ww => box.own.e(Laws.KHead{}, ww, ws => Laws.same.go(ls, ws), ws => own.r(ls, ws)), rr => own.r(tt, rr))
+    case T.VAot{+pa, +ls} <> +tt:
+      item.own(oo, ww => Laws.same.box(Laws.KAot{}, ww, ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr),
+        ww => box.own.e(Laws.KAot{}, ww, ws => Laws.same.go(ls, ws), ws => own.r(ls, ws)), rr => own.r(tt, rr))
+    case T.VAots{+pa, +ls} <> +tt:
+      item.own(oo, ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(ls, ws)), rr => Laws.same.go(tt, rr),
+        ww => box.own.e(Laws.KAots{}, ww, ws => Laws.same.go(ls, ws), ws => own.r(ls, ws)), rr => own.r(tt, rr))
+
+# Order. A row matches itself wherever it stands, so rows that differ only by
+# a swap of two pairs of different names match.
+
+# every value of the front of some rows matches itself
+def selfs.pre(
+  pre: List<&2, T.Val>,
+  +zz: List<&2, T.Val>,
+  +ee: {selfs(List.append(&2, T.Val, pre, zz)) == True{} : Bool}
+) -> {selfs(pre) == True{} : Bool}:
+  match pre:
+    case []:
+      {==}
+    case +hh <> +pp:
+      and.tt(Laws.same.go(hh <> [], hh <> []), selfs(pp),
+        Eq.and.left(Laws.same.go(hh <> [], hh <> []), selfs(List.append(&2, T.Val, pp, zz)), ee),
+        selfs.pre(pp, zz, Eq.and.right(Laws.same.go(hh <> [], hh <> []), selfs(List.append(&2, T.Val, pp, zz)), ee)))
+
+# and of the back
+def selfs.suf(
+  pre: List<&2, T.Val>,
+  +zz: List<&2, T.Val>,
+  ee: {selfs(List.append(&2, T.Val, pre, zz)) == True{} : Bool}
+) -> {selfs(zz) == True{} : Bool}:
+  match pre:
+    case []:
+      ee
+    case +hh <> +pp:
+      selfs.suf(pp, zz, Eq.and.right(Laws.same.go(hh <> [], hh <> []), selfs(List.append(&2, T.Val, pp, zz)), ee))
+
+# a front that matches itself cancels
+def cancel(
+  pre: List<&2, T.Val>,
+  +z1: List<&2, T.Val>,
+  +z2: List<&2, T.Val>,
+  +ee: {selfs(pre) == True{} : Bool}
+) -> {Laws.same.go(List.append(&2, T.Val, pre, z1), List.append(&2, T.Val, pre, z2)) == Laws.same.go(z1, z2) : Bool}:
+  match pre:
+    case []:
+      {==}
+    case +hh <> +pp:
+      Equal.trans(Bool,
+        Laws.same.go(hh <> List.append(&2, T.Val, pp, z1), hh <> List.append(&2, T.Val, pp, z2)),
+        Bool.and(Laws.same.go(hh <> [], hh <> []),
+          Laws.same.go(List.append(&2, T.Val, pp, z1), List.append(&2, T.Val, pp, z2))),
+        Laws.same.go(z1, z2),
+        hc(hh, List.append(&2, T.Val, pp, z1), List.append(&2, T.Val, pp, z2)),
+        Equal.trans(Bool,
+          Bool.and(Laws.same.go(hh <> [], hh <> []),
+            Laws.same.go(List.append(&2, T.Val, pp, z1), List.append(&2, T.Val, pp, z2))),
+          Laws.same.go(List.append(&2, T.Val, pp, z1), List.append(&2, T.Val, pp, z2)),
+          Laws.same.go(z1, z2),
+          Equal.cong(Bool, Bool,
+            xx => Bool.and(xx, Laws.same.go(List.append(&2, T.Val, pp, z1), List.append(&2, T.Val, pp, z2))),
+            Laws.same.go(hh <> [], hh <> []), True{},
+            Eq.and.left(Laws.same.go(hh <> [], hh <> []), selfs(pp), ee)),
+          cancel(pp, z1, z2, Eq.and.right(Laws.same.go(hh <> [], hh <> []), selfs(pp), ee))))
+
+# a pair at the head compares the same against other rows that pick the same
+def pick.same(
+  +nn: String,
+  vv: T.Val,
+  +tt: List<&2, T.Val>,
+  o1: List<&2, T.Val>,
+  o2: List<&2, T.Val>,
+  ep: {Laws.pick(o1, nn) == Laws.pick(o2, nn) : Laws.Pick}
+) -> {Laws.same.go(T.VPair{nn, vv} <> tt, o1) == Laws.same.go(T.VPair{nn, vv} <> tt, o2) : Bool}:
+  match vv:
+    case T.VStr{+a1}:
+      Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VStr{a1}, ww), rr => Laws.same.go(tt,
+        rr)),
+        Laws.pick(o1, nn), Laws.pick(o2, nn), ep)
+    case T.VSpan{+a1, +a2}:
+      Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VSpan{a1, a2}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.pick(o1, nn), Laws.pick(o2, nn), ep)
+    case T.VInt{+a1, +a2}:
+      Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VInt{a1, a2}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.pick(o1, nn), Laws.pick(o2, nn), ep)
+    case T.VFlo{+a1, +a2}:
+      Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VFlo{a1, a2}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.pick(o1, nn), Laws.pick(o2, nn), ep)
+    case T.VBool{+a1}:
+      Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VBool{a1}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.pick(o1, nn), Laws.pick(o2, nn), ep)
+    case T.VWhen{+a1}:
+      Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VWhen{a1}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.pick(o1, nn), Laws.pick(o2, nn), ep)
+    case T.VArr{+ls}:
+      Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.box(Laws.KArr{}, ww, ws => Laws.same.go(ls,
+        ws)), rr => Laws.same.go(tt, rr)),
+        Laws.pick(o1, nn), Laws.pick(o2, nn), ep)
+    case T.VInl{+ls}:
+      Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.box(Laws.KInl{}, ww, ws => Laws.same.go(ls,
+        ws)), rr => Laws.same.go(tt, rr)),
+        Laws.pick(o1, nn), Laws.pick(o2, nn), ep)
+    case T.VHead{+pa, +ls}:
+      Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(ls,
+        ws)), rr => Laws.same.go(tt, rr)),
+        Laws.pick(o1, nn), Laws.pick(o2, nn), ep)
+    case T.VAot{+pa, +ls}:
+      Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.box(Laws.KAot{}, ww, ws => Laws.same.go(ls,
+        ws)), rr => Laws.same.go(tt, rr)),
+        Laws.pick(o1, nn), Laws.pick(o2, nn), ep)
+    case T.VAots{+pa, +ls}:
+      Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(ls,
+        ws)), rr => Laws.same.go(tt, rr)),
+        Laws.pick(o1, nn), Laws.pick(o2, nn), ep)
+    case T.VPair{+a1, +a2}:
+      Equal.cong(Laws.Pick, Bool, pp => Laws.same.pair(pp, ww => Laws.same.atom(T.VPair{a1, a2}, ww),
+        rr => Laws.same.go(tt, rr)),
+        Laws.pick(o1, nn), Laws.pick(o2, nn), ep)
+
+# a pair of another name in front is kept, and the pair behind it picked
+def pick.skip(
+  +nx: String,
+  +vx: T.Val,
+  +ny: String,
+  +vy: T.Val,
+  +post: List<&2, T.Val>,
+  ne: {String.eq(ny, nx) == False{} : Bool}
+) -> {Laws.pick(T.VPair{ny, vy} <> T.VPair{nx, vx} <> post, nx) == Laws.Picked{vx, T.VPair{ny, vy} <> post}
+  : Laws.Pick}:
+  Equal.trans(Laws.Pick, Laws.pick(T.VPair{ny, vy} <> T.VPair{nx, vx} <> post, nx),
+    Laws.pick.cons(T.VPair{ny, vy}, Laws.pick(T.VPair{nx, vx} <> post, nx)),
+    Laws.Picked{vx, T.VPair{ny, vy} <> post},
+    Equal.cong(Bool, Laws.Pick,
+      bb => Laws.pick.step(bb, ny, vy, T.VPair{nx, vx} <> post, _u => Laws.pick(T.VPair{nx, vx} <> post, nx)),
+      String.eq(ny, nx), False{}, ne),
+    Equal.cong(Laws.Pick, Laws.Pick, pp => Laws.pick.cons(T.VPair{ny, vy}, pp),
+      Laws.pick(T.VPair{nx, vx} <> post, nx), Laws.Picked{vx, post}, pick.self(nx, vx, post)))
+
+# either order of the two pairs picks the first one the same
+def pick.swap(
+  +nx: String,
+  +vx: T.Val,
+  +ny: String,
+  +vy: T.Val,
+  +post: List<&2, T.Val>,
+  ne: {String.eq(ny, nx) == False{} : Bool}
+) -> {Laws.pick(T.VPair{ny, vy} <> T.VPair{nx, vx} <> post, nx)
+  == Laws.pick(T.VPair{nx, vx} <> T.VPair{ny, vy} <> post, nx) : Laws.Pick}:
+  Equal.trans(Laws.Pick, Laws.pick(T.VPair{ny, vy} <> T.VPair{nx, vx} <> post, nx),
+    Laws.Picked{vx, T.VPair{ny, vy} <> post}, Laws.pick(T.VPair{nx, vx} <> T.VPair{ny, vy} <> post, nx),
+    pick.skip(nx, vx, ny, vy, post, ne),
+    Equal.sym(Laws.Pick, Laws.pick(T.VPair{nx, vx} <> T.VPair{ny, vy} <> post, nx),
+      Laws.Picked{vx, T.VPair{ny, vy} <> post}, pick.self(nx, vx, T.VPair{ny, vy} <> post)))
+
+# two chars compare the same either way round
+def char.sym.go(
+  +xx: Char,
+  +yy: Char,
+  b1: Bool,
+  b2: Bool,
+  e1: {Char.is_eq(xx, yy) == b1 : Bool},
+  e2: {Char.is_eq(yy, xx) == b2 : Bool}
+) -> {b1 == b2 : Bool}:
+  match b1 b2:
+    case True{} True{}:
+      {==}
+    case False{} False{}:
+      {==}
+    case True{} False{}:
+      Equal.trans(Bool, True{}, Char.is_eq(yy, yy), False{},
+        Equal.sym(Bool, Char.is_eq(yy, yy), True{}, Eq.char_eq_self(yy)),
+        Equal.trans(Bool, Char.is_eq(yy, yy), Char.is_eq(yy, xx), False{},
+          Equal.cong(Char, Bool, zz => Char.is_eq(yy, zz), yy, xx,
+            Equal.sym(Char, xx, yy, Eq.char_eq_true(xx, yy, e1))),
+          e2))
+    case False{} True{}:
+      Equal.trans(Bool, False{}, Char.is_eq(xx, yy), True{},
+        Equal.sym(Bool, Char.is_eq(xx, yy), False{}, e1),
+        Equal.trans(Bool, Char.is_eq(xx, yy), Char.is_eq(xx, xx), True{},
+          Equal.cong(Char, Bool, zz => Char.is_eq(xx, zz), yy, xx, Eq.char_eq_true(yy, xx, e2)),
+          Eq.char_eq_self(xx)))
+
+# two chars compare the same either way round
+def char.sym(+xx: Char, +yy: Char) -> {Char.is_eq(xx, yy) == Char.is_eq(yy, xx) : Bool}:
+  char.sym.go(xx, yy, Char.is_eq(xx, yy), Char.is_eq(yy, xx), {==}, {==})
+
+# the code's string walk answers the same either way round
+def str.eq.sym(
+  aa: String,
+  bb: String,
+  ss: Bool
+) -> {T.str.eq.step(aa, bb, ss) == T.str.eq.step(bb, aa, ss) : Bool}:
+  match aa bb ss:
+    case SNil{} SNil{} True{}:
+      {==}
+    case SNil{} SNil{} False{}:
+      {==}
+    case SNil{} SCon{_h, _t} _s:
+      {==}
+    case SCon{_h, _t} SNil{} _s:
+      {==}
+    case SCon{+xx, +xt} SCon{+yy, +yt} True{}:
+      Equal.trans(Bool, T.str.eq.step(xt, yt, Char.is_eq(xx, yy)), T.str.eq.step(xt, yt, Char.is_eq(yy, xx)),
+        T.str.eq.step(yt, xt, Char.is_eq(yy, xx)),
+        Equal.cong(Bool, Bool, bb2 => T.str.eq.step(xt, yt, bb2), Char.is_eq(xx, yy), Char.is_eq(yy, xx),
+          char.sym(xx, yy)),
+        str.eq.sym(xt, yt, Char.is_eq(yy, xx)))
+    case SCon{_x, _xt} SCon{_y, _yt} False{}:
+      {==}
+
+# Base's string equality answers the same either way round
+def string.sym(+aa: String, +bb: String) -> {String.eq(aa, bb) == String.eq(bb, aa) : Bool}:
+  Equal.trans(Bool, String.eq(aa, bb), T.str.eq(aa, bb), String.eq(bb, aa),
+    Equal.sym(Bool, T.str.eq(aa, bb), String.eq(aa, bb), str.eq.agree(aa, bb)),
+    Equal.trans(Bool, T.str.eq(aa, bb), T.str.eq(bb, aa), String.eq(bb, aa),
+      str.eq.sym(aa, bb, True{}), str.eq.agree(bb, aa)))
+
+# which of two bits an `and` reads first does not change its answer
+def and.comm(xx: Bool, yy: Bool) -> {Bool.and(xx, yy) == Bool.and(yy, xx) : Bool}:
+  match xx yy:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      {==}
+    case False{} True{}:
+      {==}
+    case False{} False{}:
+      {==}
+
+# a well-formed document's rows match themselves: each value does
+def Laws.same_refl(d, e):
+  match d:
+    case T.Doc{_e0, +rows}:
+      +rr = {refl.rows(rows, wf.selfs(rows, T.WfRows{""}, e)) : {Laws.same.go(rows, rows) == True{} : Bool}}
+      and.tt(Laws.same.go(rows, rows), Laws.same.go(rows, rows), rr, rr)
+
+# same is an `and` of the two directions
+def Laws.same_sym(a, b):
+  match a b:
+    case T.Doc{_e1, +r1} T.Doc{_e2, +r2}:
+      and.comm(Laws.same.go(r1, r2), Laws.same.go(r2, r1))
+
+# reading out changes neither direction, and the rows match themselves
+def Laws.same_own(d, e):
+  match d:
+    case T.Doc{_e0, +rows}:
+      +rr = {refl.rows(rows, wf.selfs(rows, T.WfRows{""}, e)) : {Laws.same.go(rows, rows) == True{} : Bool}}
+      Equal.trans(Bool,
+        Bool.and(Laws.same.go(rows, Laws.own.rows(rows)), Laws.same.go(Laws.own.rows(rows), rows)),
+        Bool.and(Laws.same.go(rows, rows), Laws.same.go(rows, rows)), True{},
+        Equal.trans(Bool,
+          Bool.and(Laws.same.go(rows, Laws.own.rows(rows)), Laws.same.go(Laws.own.rows(rows), rows)),
+          Bool.and(Laws.same.go(rows, rows), Laws.same.go(Laws.own.rows(rows), rows)),
+          Bool.and(Laws.same.go(rows, rows), Laws.same.go(rows, rows)),
+          Equal.cong(Bool, Bool, xx => Bool.and(xx, Laws.same.go(Laws.own.rows(rows), rows)),
+            Laws.same.go(rows, Laws.own.rows(rows)), Laws.same.go(rows, rows), own.r(rows, rows)),
+          Equal.cong(Bool, Bool, yy => Bool.and(Laws.same.go(rows, rows), yy),
+            Laws.same.go(Laws.own.rows(rows), rows), Laws.same.go(rows, rows), own.l(rows, rows))),
+        and.tt(Laws.same.go(rows, rows), Laws.same.go(rows, rows), rr, rr))
+
+# the two orders of two pairs of different names match, after a front that
+# matches itself
+def swap.fin(
+  +e: String,
+  +pre: List<&2, T.Val>,
+  +nx: String,
+  +vx: T.Val,
+  +ny: String,
+  +vy: T.Val,
+  +post: List<&2, T.Val>,
+  +ne: {String.eq(nx, ny) == False{} : Bool},
+  +sp: {selfs(pre) == True{} : Bool},
+  +sx: {selfs(T.VPair{nx, vx} <> T.VPair{ny, vy} <> post) == True{} : Bool}
+) -> {Laws.same(T.Doc{e, List.append(&2, T.Val, pre, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post)},
+  T.Doc{e, List.append(&2, T.Val, pre, T.VPair{ny, vy} <> T.VPair{nx, vx} <> post)}) == True{} : Bool}:
+  and.tt(
+    Laws.same.go(List.append(&2, T.Val, pre, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post),
+      List.append(&2, T.Val, pre, T.VPair{ny, vy} <> T.VPair{nx, vx} <> post)),
+    Laws.same.go(List.append(&2, T.Val, pre, T.VPair{ny, vy} <> T.VPair{nx, vx} <> post),
+      List.append(&2, T.Val, pre, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post)),
+    Equal.trans(Bool,
+      Laws.same.go(List.append(&2, T.Val, pre, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post),
+        List.append(&2, T.Val, pre, T.VPair{ny, vy} <> T.VPair{nx, vx} <> post)),
+      Laws.same.go(T.VPair{nx, vx} <> T.VPair{ny, vy} <> post, T.VPair{ny, vy} <> T.VPair{nx, vx} <> post),
+      True{},
+      cancel(pre, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post, T.VPair{ny, vy} <> T.VPair{nx, vx} <> post, sp),
+      Equal.trans(Bool,
+        Laws.same.go(T.VPair{nx, vx} <> T.VPair{ny, vy} <> post, T.VPair{ny, vy} <> T.VPair{nx, vx} <> post),
+        Laws.same.go(T.VPair{nx, vx} <> T.VPair{ny, vy} <> post, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post),
+        True{},
+        pick.same(nx, vx, T.VPair{ny, vy} <> post, T.VPair{ny, vy} <> T.VPair{nx, vx} <> post,
+          T.VPair{nx, vx} <> T.VPair{ny, vy} <> post,
+          pick.swap(nx, vx, ny, vy, post,
+            Equal.trans(Bool, String.eq(ny, nx), String.eq(nx, ny), False{}, string.sym(ny, nx), ne))),
+        refl.rows(T.VPair{nx, vx} <> T.VPair{ny, vy} <> post, sx))),
+    Equal.trans(Bool,
+      Laws.same.go(List.append(&2, T.Val, pre, T.VPair{ny, vy} <> T.VPair{nx, vx} <> post),
+        List.append(&2, T.Val, pre, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post)),
+      Laws.same.go(T.VPair{ny, vy} <> T.VPair{nx, vx} <> post, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post),
+      True{},
+      cancel(pre, T.VPair{ny, vy} <> T.VPair{nx, vx} <> post, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post, sp),
+      Equal.trans(Bool,
+        Laws.same.go(T.VPair{ny, vy} <> T.VPair{nx, vx} <> post, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post),
+        Laws.same.go(T.VPair{ny, vy} <> T.VPair{nx, vx} <> post, T.VPair{ny, vy} <> T.VPair{nx, vx} <> post),
+        True{},
+        pick.same(ny, vy, T.VPair{nx, vx} <> post, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post,
+          T.VPair{ny, vy} <> T.VPair{nx, vx} <> post, pick.swap(ny, vy, nx, vx, post, ne)),
+        refl.rows(T.VPair{ny, vy} <> T.VPair{nx, vx} <> post,
+          and.tt(Laws.same.go(T.VPair{ny, vy} <> [], T.VPair{ny, vy} <> []),
+            Bool.and(Laws.same.go(T.VPair{nx, vx} <> [], T.VPair{nx, vx} <> []), selfs(post)),
+            Eq.and.left(Laws.same.go(T.VPair{ny, vy} <> [], T.VPair{ny, vy} <> []), selfs(post),
+              Eq.and.right(Laws.same.go(T.VPair{nx, vx} <> [], T.VPair{nx, vx} <> []),
+                selfs(T.VPair{ny, vy} <> post), sx)),
+            and.tt(Laws.same.go(T.VPair{nx, vx} <> [], T.VPair{nx, vx} <> []), selfs(post),
+              Eq.and.left(Laws.same.go(T.VPair{nx, vx} <> [], T.VPair{nx, vx} <> []),
+                selfs(T.VPair{ny, vy} <> post), sx),
+              Eq.and.right(Laws.same.go(T.VPair{ny, vy} <> [], T.VPair{ny, vy} <> []), selfs(post),
+                Eq.and.right(Laws.same.go(T.VPair{nx, vx} <> [], T.VPair{nx, vx} <> []),
+                  selfs(T.VPair{ny, vy} <> post), sx))))))))
+
+# a well-formed document's rows each match themselves; the front cancels
+# the rows before the two pairs cancel; each order then picks its first pair
+# as the other order would, and what is left matches itself
+def Laws.same_swap(e, pre, nx, vx, ny, vy, post, w, ne):
+  +sa = {wf.selfs(List.append(&2, T.Val, pre, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post), T.WfRows{""}, w)
+    : {selfs(List.append(&2, T.Val, pre, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post)) == True{} : Bool}}
+  +sp = {selfs.pre(pre, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post, sa) : {selfs(pre) == True{} : Bool}}
+  +sx = {selfs.suf(pre, T.VPair{nx, vx} <> T.VPair{ny, vy} <> post, sa)
+    : {selfs(T.VPair{nx, vx} <> T.VPair{ny, vy} <> post) == True{} : Bool}}
+  swap.fin(e, pre, nx, vx, ny, vy, post, ne, sp, sx)
+
