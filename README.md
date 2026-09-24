@@ -21,7 +21,7 @@ a boolean. `root` is the document's table and `bad` is the first error.
 build values. `key` writes a name bare or as a basic string.
 
 ```
-import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
+import 0x60bccc8edd34707613da7f8d2b8bfd47/main.bend as Toml
 
 def main() -> IO(Unit):
   +doc = Toml.parse("[pkg]\nname = \"app\"\nver = 1\non = true\n")
@@ -31,6 +31,7 @@ def main() -> IO(Unit):
 ```
 git clone https://github.com/Emerging-Patterns/eztoml
 cd eztoml
+mkdir -p bin
 bend examples/demo/main.bend -o bin/demo.bin
 bin/demo.bin
 ```
