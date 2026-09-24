@@ -204,9 +204,9 @@ Decided with the REVIEW items. Each lands as its own change, with master's resul
 | :---- | :---- | :---- |
 | a second sign and an `_`-hidden leading zero are refused (I6, R-I6) (landed) | TOML-NUM-1, TOML-NUM-2, TOML-RT-2 | REVIEW-6 |
 | quotes before a multi-line closing delimiter (V1); an empty string at the end of a text (R1) (landed) | TOML-STR-1 | REVIEW-6 |
-| dotted keys with a shared prefix in an inline table (V2) | TOML-TEXT-1 | REVIEW-6 |
-| the table-definition rules, per array element (I1, R2) | TOML-TEXT-2 | REVIEW-6 |
-| a bare header segment next to a quoted one (R3); `[ [` (I8) | TOML-TEXT-1, TOML-KEY-3 | REVIEW-6 |
+| dotted keys with a shared prefix in an inline table (V2) (landed) | TOML-TEXT-1 | REVIEW-6 |
+| the table-definition rules, per array element (I1, R2) (landed) | TOML-TEXT-2 | REVIEW-6 |
+| a bare header segment next to a quoted one (R3); `[ [` (I8) (landed) | TOML-TEXT-1, TOML-KEY-3 | REVIEW-6 |
 | controls in comments (I2), a lone CR (I3), a value on the next line (I7) (landed) | TOML-TEXT-1 | REVIEW-6 |
 | the day checked against the month and leap years (I4) (landed) | TOML-TIME-1 | REVIEW-6 |
 | add `wf` (landed) | TOML-RT-1, TOML-RT-3 | REVIEW-3 |
