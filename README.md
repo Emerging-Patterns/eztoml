@@ -40,7 +40,7 @@ bin/demo.bin
 
 ## Compliance
 
-`nix flake check` proves `eztoml/LAWS.bend` in `eztoml/PROOF.bend`. Those laws are closed parse and render equalities for these productions of [TOML v1.0.0](https://toml.io/en/v1.0.0) / [toml.abnf](https://github.com/toml-lang/toml/blob/1.0.0/toml.abnf):
+`nix flake check` proves `LAWS.bend` in `PROOF.bend`. Those laws are closed parse and render equalities for these productions of [TOML v1.0.0](https://toml.io/en/v1.0.0) / [toml.abnf](https://github.com/toml-lang/toml/blob/1.0.0/toml.abnf):
 
 - `comment`
 - `boolean`

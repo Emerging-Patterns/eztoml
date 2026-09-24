@@ -1,6 +1,6 @@
 # parse and render a TOML document
 import Base
-import ../../eztoml/main.bend as Toml
+import ../../main.bend as Toml
 
 # the string at a hit
 def shown.text(hh: Toml.Hit) -> String:

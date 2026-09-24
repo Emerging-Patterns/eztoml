@@ -1,6 +1,6 @@
 # eztoml vs Rust toml crate bench driver. Native ELF via `bend bench/main.bend`.
 # Timed path: load (and for render, parse) outside IO.now; loop only the codec.
-import ../eztoml/main.bend as Toml
+import ../main.bend as Toml
 
 # unwrap a parsed U32, or zero when parse fails
 def u32.arg.go(mm: Maybe<&2, U32>) -> U32:

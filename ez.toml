@@ -1,6 +1,6 @@
 [package]
 name = "eztoml"
-entry = "eztoml/main.bend"
+entry = "main.bend"
 
 [tools.bolt]
 git = "https://github.com/Emerging-Patterns/bolt"

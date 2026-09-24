@@ -1,7 +1,7 @@
 # Proofs of the eztoml laws.
 import Base
 import ./main.bend as T
-import ./eq.bend as Eq
+import ./src/eq.bend as Eq
 import ./LAWS.bend as Laws
 
 # a text equals itself when equality does not rebuild the text
