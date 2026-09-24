@@ -21,7 +21,7 @@ a boolean. `root` is the document's table and `bad` is the first error.
 build values. `key` writes a name bare or as a basic string.
 
 ```
-import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend as Toml
+import 0x60bccc8edd34707613da7f8d2b8bfd47/main.bend as Toml
 
 def main() -> IO(Unit):
   +doc = Toml.parse("[pkg]\nname = \"app\"\nver = 1\non = true\n")
@@ -31,22 +31,13 @@ def main() -> IO(Unit):
 ```
 git clone https://github.com/Emerging-Patterns/eztoml
 cd eztoml
+mkdir -p bin
 bend examples/demo/main.bend -o bin/demo.bin
 bin/demo.bin
 ```
 
 `nix build` builds the same fixture to `result/bin/demo`.
 
-## Compliance
+## Guarantees
 
-`nix flake check` proves `eztoml/LAWS.bend` in `eztoml/PROOF.bend`. Those laws are closed parse and render equalities for these productions of [TOML v1.0.0](https://toml.io/en/v1.0.0) / [toml.abnf](https://github.com/toml-lang/toml/blob/1.0.0/toml.abnf):
-
-- `comment`
-- `boolean`
-- `basic-string`, `literal-string`, `ml-basic-string`, `ml-literal-string`
-- `dec-int`, `hex-int`, `oct-int`, `bin-int`
-- `float`, `special-float`
-- `std-table`, `dotted-key`, `quoted-key`
-- `inline-table`, `array`, `array-table`
-
-The datetime equalities follow [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339): `offset-date-time`, `local-date-time`, `full-date`, `partial-time`.
+[SPEC.md](SPEC.md) lists every behavior eztoml guarantees, against [TOML v1.0.0](https://toml.io/en/v1.0.0) and [toml.abnf](https://github.com/toml-lang/toml/blob/1.0.0/toml.abnf), each either proved by a quantified law in `LAWS.bend` or named as a trusted assumption. A row marked pending is not guaranteed yet. `nix flake check` runs the proof gate (`bend PROOF.bend` must print exactly `All terms check.` first) and bolt, whose `trace` rule checks that SPEC.md and the laws agree. The headline is the round trip: a document `render` writes reads back as the same document (TOML-RT-1).

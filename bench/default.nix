@@ -9,7 +9,7 @@
   lib,
   bend,
   bend-cc,
-  # Flake `self` (repo root). Used only to copy eztoml/ + bench sources.
+  # Flake `self` (repo root). Used only to copy main.bend + bench sources.
   self,
 }:
 
@@ -24,7 +24,7 @@ let
     dontUnpack = true;
     nativeBuildInputs = [ bend llvm.clang ];
     buildPhase = ''
-      cp -r ${self}/eztoml ./eztoml
+      cp ${self}/main.bend ./main.bend
       mkdir -p bench
       cp ${./main.bend} bench/main.bend
       cd bench
