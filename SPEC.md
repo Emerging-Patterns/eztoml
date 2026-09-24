@@ -52,7 +52,7 @@ A tag may name a proved or a pending requirement, never a Trusted one or an ID n
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
 | TOML-STR-1 | For every string form of toml.abnf (basic, literal, multi-line basic, multi-line literal) and every text that form can hold, `string` of the value `parse` reads is the text it denotes: escapes decoded, a line-ending backslash and the whitespace after it dropped in a multi-line basic string, and a newline right after the opening delimiter dropped | Proved | pending | LAWS.bend ml_basic_one_quote; LAWS.bend ml_basic_two_quotes; LAWS.bend ml_literal_one_quote; LAWS.bend ml_literal_two_quotes; LAWS.bend empty_basic_at_end; LAWS.bend empty_literal_at_end |
-| TOML-STR-2 | `render` writes a string value as a basic string that escapes exactly `"`, `\` and the controls U+0000 to U+001F and U+007F (with `\b`, `\t`, `\n`, `\f`, `\r` where TOML has them and `\u00XX` otherwise), and writes every other character as itself | Proved | pending |  |
+| TOML-STR-2 | `render` writes a string value as a basic string that escapes exactly `"`, `\` and the controls U+0000 to U+001F and U+007F (with `\b`, `\t`, `\n`, `\f`, `\r` where TOML has them and `\u00XX` otherwise), and writes every other character as itself | Proved | proved | LAWS.bend esc_quote; LAWS.bend esc_backslash; LAWS.bend esc_b; LAWS.bend esc_t; LAWS.bend esc_n; LAWS.bend esc_f; LAWS.bend esc_r; LAWS.bend esc_ctl; LAWS.bend esc_plain; LAWS.bend basic_escs; LAWS.bend span_quote_basic; LAWS.bend render_string; LAWS.bend pass_string; LAWS.bend pass_string_tables; LAWS.bend inline_string; LAWS.bend array_string |
 | TOML-NUM-1 | An integer is read exactly when it matches toml.abnf's `integer` rule and lies within signed 64 bits, and reads to its sign and its value's decimal digits, with no leading zero unless the value is 0 | Proved | pending | LAWS.bend num_two_signs; LAWS.bend num_zero_underscore; LAWS.bend num_signed_zero_underscore; LAWS.bend num_one_sign; LAWS.bend word_two_signs; LAWS.bend word_zero_underscore; LAWS.bend word_signed_zero_underscore |
 | TOML-NUM-2 | A float is read exactly when it matches toml.abnf's `float` rule, and reads to its sign and its spelling with the sign and every `_` removed; `render` writes the sign (`-` only) and that spelling | Proved | pending | LAWS.bend num_two_signs; LAWS.bend num_zero_underscore; LAWS.bend num_signed_zero_underscore; LAWS.bend num_one_sign; LAWS.bend word_two_signs; LAWS.bend word_zero_underscore; LAWS.bend word_signed_zero_underscore |
 | TOML-TIME-1 | A datetime is read exactly when it matches one of toml.abnf's four date-time rules with RFC 3339's ranges (month 1 to 12, the day within the month in that year, hour 0 to 23, minute 0 to 59, second 0 to 60, offset hours 0 to 23 and minutes 0 to 59), and `render` writes it with `T` and `Z` in upper case, keeping the fraction's digits | Proved | pending | LAWS.bend date_day_in_month; LAWS.bend date_day_past_month |
@@ -75,7 +75,7 @@ A tag may name a proved or a pending requirement, never a Trusted one or an ID n
 
 ## Left to prove
 
-TOML-KEY-1, TOML-GET-1, TOML-GET-2 and TOML-READ-1 are proved; every other row is pending. For the pending rows that name laws already:
+TOML-KEY-1, TOML-GET-1, TOML-GET-2, TOML-READ-1 and TOML-STR-2 are proved; every other row is pending. For the pending rows that name laws already:
 
 | Row | Proved so far | Missing |
 | :---- | :---- | :---- |

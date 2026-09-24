@@ -4121,3 +4121,917 @@ def Laws.same_swap(e, pre, nx, vx, ny, vy, post, w, ne):
     : {selfs(T.VPair{nx, vx} <> T.VPair{ny, vy} <> post) == True{} : Bool}}
   swap.fin(e, pre, nx, vx, ny, vy, post, ne, sp, sx)
 
+# TOML-STR-2. esc reads back what basic.one writes for one character.
+
+# the short escapes: the character is the one the law names
+def Laws.esc_quote(c, h):
+  ec = Equal.sym(Char, c, '"', h)
+  %ec : {Laws.esc(_) == "\\\"" : String}
+  {==}
+
+# a backslash
+def Laws.esc_backslash(c, h):
+  ec = Equal.sym(Char, c, '\\', h)
+  %ec : {Laws.esc(_) == "\\\\" : String}
+  {==}
+
+# a backspace
+def Laws.esc_b(c, h):
+  ec = Equal.sym(Char, c, '\u{8}', h)
+  %ec : {Laws.esc(_) == "\\b" : String}
+  {==}
+
+# a tab
+def Laws.esc_t(c, h):
+  ec = Equal.sym(Char, c, '\t', h)
+  %ec : {Laws.esc(_) == "\\t" : String}
+  {==}
+
+# a line feed
+def Laws.esc_n(c, h):
+  ec = Equal.sym(Char, c, '\n', h)
+  %ec : {Laws.esc(_) == "\\n" : String}
+  {==}
+
+# a form feed
+def Laws.esc_f(c, h):
+  ec = Equal.sym(Char, c, '\u{c}', h)
+  %ec : {Laws.esc(_) == "\\f" : String}
+  {==}
+
+# a carriage return
+def Laws.esc_r(c, h):
+  ec = Equal.sym(Char, c, '\r', h)
+  %ec : {Laws.esc(_) == "\\r" : String}
+  {==}
+
+# The other controls. A code point below 32 has zeros above its five low bits,
+# so the thirty-two of them can be taken one at a time; U+007F is one more.
+
+# a word of n zero bits
+def zw(nn: Nat) -> Word(nn):
+  match nn:
+    case 0n:
+      WNil{}
+    case 1n+pp:
+      WCon{False{}, zw(pp)}
+
+# against a 0 bit, a word is below exactly when the bits above are
+def lt_fin_f(cc: Cmp, aa: Bool) -> {Cmp.is_lt(Word.cmp.fin(aa, False{}, cc)) == Cmp.is_lt(cc) : Bool}:
+  match cc:
+    case LT{}:
+      {==}
+    case GT{}:
+      {==}
+    case EQ{}:
+      match aa:
+        case False{}:
+          {==}
+        case True{}:
+          {==}
+
+# a word is never below zero
+def zw_nlt(nn: Nat, ww: Word(nn)) -> {Cmp.is_lt(Word.cmp(nn, ww, zw(nn))) == False{} : Bool}:
+  match nn:
+    case 0n:
+      match ww:
+        case WNil{}:
+          {==}
+    case 1n+(+pp):
+      match ww:
+        case WCon{bb, +tt}:
+          Equal.trans(Bool, Cmp.is_lt(Word.cmp.fin(bb, False{}, Word.cmp(pp, tt, zw(pp)))),
+            Cmp.is_lt(Word.cmp(pp, tt, zw(pp))), False{}, lt_fin_f(Word.cmp(pp, tt, zw(pp)), bb), zw_nlt(pp, tt))
+
+# below a word whose low bit is 0, the bits above are below
+def lt_up(
+  aa: Bool,
+  cc: Cmp,
+  h_lt: {Cmp.is_lt(Word.cmp.fin(aa, False{}, cc)) == True{} : Bool}
+) -> {Cmp.is_lt(cc) == True{} : Bool}:
+  Equal.trans(Bool, Cmp.is_lt(cc), Cmp.is_lt(Word.cmp.fin(aa, False{}, cc)), True{},
+    Equal.sym(Bool, Cmp.is_lt(Word.cmp.fin(aa, False{}, cc)), Cmp.is_lt(cc), lt_fin_f(cc, aa)), h_lt)
+
+# what esc_ctl says of a code point
+def ctl.eq(+uu: U32) -> Type:
+  {Laws.esc(Chr{uu}) == "\\u00" ++ String.from_list([Laws.char_at(Laws.hex_lower(), U32.to_nat(U32.div(uu, 16))),
+    Laws.char_at(Laws.hex_lower(), U32.to_nat(U32.mod(uu, 16)))]) : String}
+
+# and with its other hypotheses first
+def ctl.goal(+uu: U32) -> Type:
+  {Chr{uu} != '\u{8}' : Char} -> {Chr{uu} != '\t' : Char} -> {Chr{uu} != '\n' : Char} ->
+    {Chr{uu} != '\u{c}' : Char} -> {Chr{uu} != '\r' : Char} -> ctl.eq(uu)
+
+# the controls below U+0020, one at a time: the five with short escapes are
+# ruled out by their hypotheses, and the others compute
+def ctl5(
+  b0: Bool,
+  b1: Bool,
+  b2: Bool,
+  b3: Bool,
+  b4: Bool
+) -> ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{}, zw(26n)}}}}}}}):
+  match b0 b1 b2 b3 b4:
+    case False{} False{} False{} False{} False{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} False{} False{} False{} False{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} True{} False{} False{} False{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} True{} False{} False{} False{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} False{} True{} False{} False{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} False{} True{} False{} False{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} True{} True{} False{} False{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} True{} True{} False{} False{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} False{} False{} True{} False{}:
+      hb => _ht => _hn => _hf => _hr =>
+        Eq.bit.gone(&1, ctl.eq(U32{WCon{False{}, WCon{False{}, WCon{False{}, WCon{True{}, WCon{False{}, WCon{False{},
+          zw(26n)}}}}}}}), hb({==}))
+    case True{} False{} False{} True{} False{}:
+      _hb => ht => _hn => _hf => _hr =>
+        Eq.bit.gone(&1, ctl.eq(U32{WCon{True{}, WCon{False{}, WCon{False{}, WCon{True{}, WCon{False{}, WCon{False{},
+          zw(26n)}}}}}}}), ht({==}))
+    case False{} True{} False{} True{} False{}:
+      _hb => _ht => hn => _hf => _hr =>
+        Eq.bit.gone(&1, ctl.eq(U32{WCon{False{}, WCon{True{}, WCon{False{}, WCon{True{}, WCon{False{}, WCon{False{},
+          zw(26n)}}}}}}}), hn({==}))
+    case True{} True{} False{} True{} False{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} False{} True{} True{} False{}:
+      _hb => _ht => _hn => hf => _hr =>
+        Eq.bit.gone(&1, ctl.eq(U32{WCon{False{}, WCon{False{}, WCon{True{}, WCon{True{}, WCon{False{}, WCon{False{},
+          zw(26n)}}}}}}}), hf({==}))
+    case True{} False{} True{} True{} False{}:
+      _hb => _ht => _hn => _hf => hr =>
+        Eq.bit.gone(&1, ctl.eq(U32{WCon{True{}, WCon{False{}, WCon{True{}, WCon{True{}, WCon{False{}, WCon{False{},
+          zw(26n)}}}}}}}), hr({==}))
+    case False{} True{} True{} True{} False{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} True{} True{} True{} False{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} False{} False{} False{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} False{} False{} False{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} True{} False{} False{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} True{} False{} False{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} False{} True{} False{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} False{} True{} False{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} True{} True{} False{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} True{} True{} False{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} False{} False{} True{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} False{} False{} True{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} True{} False{} True{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} True{} False{} True{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} False{} True{} True{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} False{} True{} True{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case False{} True{} True{} True{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+    case True{} True{} True{} True{} True{}:
+      _hb => _ht => _hn => _hf => _hr => {==}
+
+# the bits above the fifth are zero and the fifth is 0, else the code point
+# is not below 32
+def ctl.at(
+  cc: Cmp,
+  b5: Bool,
+  +b0: Bool,
+  +b1: Bool,
+  +b2: Bool,
+  +b3: Bool,
+  +b4: Bool,
+  +rest: Word(26n),
+  ec: {Word.cmp(26n, rest, zw(26n)) == cc : Cmp},
+  h_lt: {Cmp.is_lt(Word.cmp.fin(b5, True{}, cc)) == True{} : Bool}
+) -> ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, rest}}}}}}}):
+  match cc:
+    case LT{}:
+      Eq.bit.gone(&1, ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, rest}}}}}}}),
+        Eq.bit.clash2(Equal.trans(Bool, True{}, Cmp.is_lt(Word.cmp(26n, rest, zw(26n))), False{},
+          Equal.sym(Bool, Cmp.is_lt(Word.cmp(26n, rest, zw(26n))), True{},
+            Equal.cong(Cmp, Bool, xx => Cmp.is_lt(xx), Word.cmp(26n, rest, zw(26n)), LT{}, ec)),
+          zw_nlt(26n, rest))))
+    case GT{}:
+      match b5:
+        case False{}:
+          Eq.bit.absurd(&1, ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{}, rest}}}}}}}),
+            h_lt)
+        case True{}:
+          Eq.bit.absurd(&1, ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{True{}, rest}}}}}}}),
+            h_lt)
+    case EQ{}:
+      match b5:
+        case True{}:
+          Eq.bit.absurd(&1, ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{True{}, rest}}}}}}}),
+            h_lt)
+        case False{}:
+          er = Equal.sym(Word(26n), rest, zw(26n), Eq.word_eq(26n, rest, zw(26n), ec))
+          %er : ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{}, _}}}}}}})
+          ctl5(b0, b1, b2, b3, b4)
+
+# a control below U+0020
+def ctl.lt(
+  uu: U32,
+  h_lt: {U32.is_lt(uu, 32) == True{} : Bool}
+) -> ctl.goal(uu):
+  match uu:
+    case U32{WCon{+b0, WCon{+b1, WCon{+b2, WCon{+b3, WCon{+b4, WCon{+b5, +rest}}}}}}}:
+      +c5 = Word.cmp.fin(b5, True{}, Word.cmp(26n, rest, zw(26n)))
+      +c4 = Word.cmp.fin(b4, False{}, c5)
+      +c3 = Word.cmp.fin(b3, False{}, c4)
+      +c2 = Word.cmp.fin(b2, False{}, c3)
+      +c1 = Word.cmp.fin(b1, False{}, c2)
+      h5 = lt_up(b4, c5, lt_up(b3, c4, lt_up(b2, c3, lt_up(b1, c2, lt_up(b0, c1, h_lt)))))
+      ctl.at(Word.cmp(26n, rest, zw(26n)), b5, b0, b1, b2, b3, b4, rest, {==}, h5)
+
+# U+007F
+def ctl.del(
+  +uu: U32,
+  ee: {U32.is_eq(uu, 127) == True{} : Bool}
+) -> ctl.goal(uu):
+  eu = Equal.cong(Char, U32, cc => Char.to_u32(cc), Chr{uu}, Chr{127}, Eq.u32_eq(uu, 127, ee))
+  %Equal.sym(U32, uu, 127, eu) : ctl.goal(_)
+  _hb => _ht => _hn => _hf => _hr => {==}
+
+# a control is below U+0020 or is U+007F
+def ctl.split(
+  +uu: U32,
+  lt: Bool,
+  eq: Bool,
+  elt: {U32.is_lt(uu, 32) == lt : Bool},
+  eeq: {U32.is_eq(uu, 127) == eq : Bool},
+  eo: {Bool.or(lt, eq) == True{} : Bool}
+) -> ctl.goal(uu):
+  match lt:
+    case True{}:
+      ctl.lt(uu, elt)
+    case False{}:
+      match eq:
+        case True{}:
+          ctl.del(uu, eeq)
+        case False{}:
+          Eq.bit.absurd(&1, ctl.goal(uu), eo)
+
+# every other control is \u00 and two lowercase hex digits
+def Laws.esc_ctl(c, h_c, h_b, h_t, h_n, h_f, h_r):
+  match c:
+    case Chr{+uu}:
+      ctl.split(uu, U32.is_lt(uu, 32), U32.is_eq(uu, 127), {==}, {==}, h_c)(h_b, h_t, h_n, h_f, h_r)
+
+# Every other character. Each test basic.cls makes answers False.
+
+# a code point a char is not is not equal to it
+def neq.go(
+  +uu: U32,
+  +kk: U32,
+  bb: Bool,
+  eb: {U32.is_eq(uu, kk) == bb : Bool},
+  hn: {Chr{uu} != Chr{kk} : Char}
+) -> {bb == False{} : Bool}:
+  match bb:
+    case False{}:
+      {==}
+    case True{}:
+      Eq.bit.gone(&2, {True{} == False{} : Bool}, hn(Eq.u32_eq(uu, kk, eb)))
+
+# a code point a char is not is not equal to it
+def neq.off(
+  +uu: U32,
+  +kk: U32,
+  hn: {Chr{uu} != Chr{kk} : Char}
+) -> {U32.is_eq(uu, kk) == False{} : Bool}:
+  neq.go(uu, kk, U32.is_eq(uu, kk), {==}, hn)
+
+# a code point that is no control is not a control's
+def ctl.off(
+  +uu: U32,
+  +kk: U32,
+  eu: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool},
+  ek: {Bool.or(U32.is_lt(kk, 32), U32.is_eq(kk, 127)) == True{} : Bool}
+) -> {U32.is_eq(uu, kk) == False{} : Bool}:
+  neq.off(uu, kk, ee => Eq.bit.clash(Equal.trans(Bool, False{}, Laws.is_ctl(Chr{uu}), True{},
+    Equal.sym(Bool, Laws.is_ctl(Chr{uu}), False{}, eu),
+    Equal.trans(Bool, Laws.is_ctl(Chr{uu}), Laws.is_ctl(Chr{kk}), True{},
+      Equal.cong(Char, Bool, cc => Laws.is_ctl(cc), Chr{uu}, Chr{kk}, ee), ek))))
+
+# a code point that passes none of basic.cls's tests is written as itself
+def cls.plain(
+  +uu: U32,
+  e8: {U32.is_eq(uu, 8) == False{} : Bool},
+  e9: {U32.is_eq(uu, 9) == False{} : Bool},
+  e10: {U32.is_eq(uu, 10) == False{} : Bool},
+  e12: {U32.is_eq(uu, 12) == False{} : Bool},
+  e13: {U32.is_eq(uu, 13) == False{} : Bool},
+  e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
+) -> {T.basic.cls(uu) == T.BKCh{} : T.BK}:
+  %Equal.sym(Bool, U32.is_eq(uu, 8), False{}, e8) : {T.basic.cls.8(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 9), False{}, e9) : {T.basic.cls.9(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 10), False{}, e10) : {T.basic.cls.10(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 12), False{}, e12) : {T.basic.cls.12(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 13), False{}, e13) : {T.basic.cls.13(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 34), False{}, e34) : {T.basic.cls.34(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 92), False{}, e92) : {T.basic.cls.92(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), False{},
+    ec) : {T.basic.cls.hex(_) == T.BKCh{} : T.BK}
+  {==}
+
+# no control, no quotation mark and no backslash: written as itself
+def Laws.esc_plain(c, h_c, h_q, h_b):
+  match c:
+    case Chr{+uu}:
+      ek = cls.plain(uu, ctl.off(uu, 8, h_c, {==}), ctl.off(uu, 9, h_c, {==}), ctl.off(uu, 10, h_c, {==}),
+        ctl.off(uu, 12, h_c, {==}), ctl.off(uu, 13, h_c, {==}), neq.off(uu, 34, h_q), neq.off(uu, 92, h_b), h_c)
+      %Equal.sym(T.BK, T.basic.cls(uu), T.BKCh{}, ek) :
+        {String.from_list(List.reverse(&2, Char, T.basic.disp(_, Chr{uu}, uu,
+          []))) == String.from_list([Chr{uu}]) : String}
+      {==}
+
+# The whole string. An output list is kept reversed; its text is read back
+# with reverse.
+
+# a list reversed onto what is already there reads as the list reversed, then
+# that
+def txt.onto(
+  xs: List<&2, Char>,
+  +acc: List<&2, Char>
+) -> {String.from_list(List.reverse.go(&2, Char, xs, acc))
+  == String.append(String.from_list(List.reverse.go(&2, Char, xs, [])), String.from_list(acc)) : String}:
+  match xs:
+    case []:
+      {==}
+    case +yy <> +ys:
+      Equal.trans(String, String.from_list(List.reverse.go(&2, Char, ys, yy <> acc)),
+        String.append(String.from_list(List.reverse.go(&2, Char, ys, [])), String.from_list(yy <> acc)),
+        String.append(String.from_list(List.reverse.go(&2, Char, ys, [yy])), String.from_list(acc)),
+        txt.onto(ys, yy <> acc),
+        Equal.sym(String, String.append(String.from_list(List.reverse.go(&2, Char, ys, [yy])), String.from_list(acc)),
+          String.append(String.from_list(List.reverse.go(&2, Char, ys, [])), String.from_list(yy <> acc)),
+          Equal.trans(String,
+            String.append(String.from_list(List.reverse.go(&2, Char, ys, [yy])), String.from_list(acc)),
+            String.append(String.append(String.from_list(List.reverse.go(&2, Char, ys, [])), String.from_list([yy])),
+              String.from_list(acc)),
+            String.append(String.from_list(List.reverse.go(&2, Char, ys, [])),
+              String.append(String.from_list([yy]), String.from_list(acc))),
+            Equal.cong(String, String, zz => String.append(zz, String.from_list(acc)),
+              String.from_list(List.reverse.go(&2, Char, ys, [yy])),
+              String.append(String.from_list(List.reverse.go(&2, Char, ys, [])), String.from_list([yy])),
+              txt.onto(ys, [yy])),
+            Eq.append_assoc(String.from_list(List.reverse.go(&2, Char, ys, [])), String.from_list([yy]),
+              String.from_list(acc)))))
+
+# one character of each class written onto an output reads as the output,
+# then the character's text
+def disp.txt(
+  kk: T.BK,
+  +cc: Char,
+  +uu: U32,
+  +out: List<&2, Char>
+) -> {String.from_list(List.reverse(&2, Char, T.basic.disp(kk, cc, uu, out)))
+  == String.append(String.from_list(List.reverse(&2, Char, out)),
+    String.from_list(List.reverse(&2, Char, T.basic.disp(kk, cc, uu, [])))) : String}:
+  match kk:
+    case T.BKCh{}:
+      txt.onto(out, [cc])
+    case T.BKEsc{+mark}:
+      txt.onto(out, ['\\', mark])
+    case T.BKHex{}:
+      txt.onto(out, ['\\', 'u', T.hex.char(U32.mod(U32.shrn(uu, 12n), 16)), T.hex.char(U32.mod(U32.shrn(uu, 8n), 16)),
+        T.hex.char(U32.mod(U32.shrn(uu, 4n), 16)), T.hex.char(U32.mod(uu, 16))])
+
+# one character written onto an output reads as the output, then its escape
+def one.txt(
+  +cc: Char,
+  +out: List<&2, Char>
+) -> {String.from_list(List.reverse(&2, Char, T.basic.one(cc, out)))
+  == String.append(String.from_list(List.reverse(&2, Char, out)), Laws.esc(cc)) : String}:
+  disp.txt(T.basic.cls(Char.to_u32(cc)), cc, Char.to_u32(cc), out)
+
+# a string's characters written onto an output read as the output, then escs
+def go.txt(
+  ss: String,
+  +out: List<&2, Char>
+) -> {String.from_list(List.reverse(&2, Char, T.basic.go(String.to_list(ss), out)))
+  == String.append(String.from_list(List.reverse(&2, Char, out)), Laws.escs(ss)) : String}:
+  match ss:
+    case SNil{}:
+      Equal.sym(String, String.append(String.from_list(List.reverse(&2, Char, out)), SNil{}),
+        String.from_list(List.reverse(&2, Char, out)), Eq.append_nil(String.from_list(List.reverse(&2, Char, out))))
+    case SCon{+hh, +tt}:
+      Equal.trans(String,
+        String.from_list(List.reverse(&2, Char, T.basic.go(String.to_list(tt), T.basic.one(hh, out)))),
+        String.append(String.from_list(List.reverse(&2, Char, T.basic.one(hh, out))), Laws.escs(tt)),
+        String.append(String.from_list(List.reverse(&2, Char, out)), String.append(Laws.esc(hh), Laws.escs(tt))),
+        go.txt(tt, T.basic.one(hh, out)),
+        Equal.trans(String,
+          String.append(String.from_list(List.reverse(&2, Char, T.basic.one(hh, out))), Laws.escs(tt)),
+          String.append(String.append(String.from_list(List.reverse(&2, Char, out)), Laws.esc(hh)), Laws.escs(tt)),
+          String.append(String.from_list(List.reverse(&2, Char, out)), String.append(Laws.esc(hh), Laws.escs(tt))),
+          Equal.cong(String, String, zz => String.append(zz, Laws.escs(tt)),
+            String.from_list(List.reverse(&2, Char, T.basic.one(hh, out))),
+            String.append(String.from_list(List.reverse(&2, Char, out)), Laws.esc(hh)), one.txt(hh, out)),
+          Eq.append_assoc(String.from_list(List.reverse(&2, Char, out)), Laws.esc(hh), Laws.escs(tt))))
+
+# key.basic is the quotes around escs
+def Laws.basic_escs(s):
+  Equal.cong(String, String, zz => String.append("\"", String.append(zz, "\"")),
+    String.from_list(List.reverse(&2, Char, T.basic.go(String.to_list(s), []))), Laws.escs(s), go.txt(s, []))
+
+# The span fast path. span.quote copies a span's characters until one needs an
+# escape, and then gives up to key.basic.
+
+# a quoting walk that has stopped stays stopped
+def push.stop(bb: Bool, hh: Char) -> {T.span.quote.push(bb, T.SqStop{}, hh) == T.SqStop{} : T.SqAcc}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a stopped walk ends with no copy, whatever is left
+def sq.stop(src: String, +nn: U32, zz: Bool) -> {T.span.quote.go(src, nn, zz, T.SqStop{}) == T.SqNo{} : T.Sq}:
+  match src zz:
+    case SNil{} True{}:
+      {==}
+    case SNil{} False{}:
+      {==}
+    case SCon{_h, _t} True{}:
+      {==}
+    case SCon{+hh, +tt} False{}:
+      Equal.trans(T.Sq,
+        T.span.quote.go(tt, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1)),
+          T.span.quote.push(T.span.esc(Char.to_u32(hh)), T.SqStop{}, hh)),
+        T.span.quote.go(tt, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1)), T.SqStop{}), T.SqNo{},
+        Equal.cong(T.SqAcc, T.Sq, aa => T.span.quote.go(tt, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1)), aa),
+          T.span.quote.push(T.span.esc(Char.to_u32(hh)), T.SqStop{}, hh), T.SqStop{},
+          push.stop(T.span.esc(Char.to_u32(hh)), hh)),
+        sq.stop(tt, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1))))
+
+# the walk's answer on a text: a copy, reversed onto rr, when no character
+# needs an escape
+def sq.want.step(esc: Bool, more: Unit -> T.Sq) -> T.Sq:
+  match esc:
+    case True{}:
+      T.SqNo{}
+    case False{}:
+      more(Unit{})
+
+# the walk's answer on a text
+def sq.want(ss: String, rr: List<&2, Char>) -> T.Sq:
+  match ss:
+    case SNil{}:
+      T.SqOk{rr}
+    case SCon{+hh, tt}:
+      sq.want.step(T.span.esc(Char.to_u32(hh)), _u => sq.want(tt, hh <> rr))
+
+# the walk's claim for the rest of a span, one character copied
+def sq.Ih(tt: String, +mm: U32, hh: Char, rr: List<&2, Char>) -> Type:
+  {T.span.quote.go(tt, mm, U32.is_zero(mm), T.SqRun{hh <> rr})
+    == sq.want(T.span.str(tt, mm, U32.is_zero(mm)), hh <> rr) : T.Sq}
+
+# one character of the walk: an escape stops it, anything else is copied
+def sq.go.step(
+  bb: Bool,
+  +hh: Char,
+  +tt: String,
+  +mm: U32,
+  +rr: List<&2, Char>,
+  ih: sq.Ih(tt, mm, hh, rr)
+) -> {T.span.quote.go(tt, mm, U32.is_zero(mm), T.span.quote.push(bb, T.SqRun{rr}, hh))
+  == sq.want.step(bb, _u => sq.want(T.span.str(tt, mm, U32.is_zero(mm)), hh <> rr)) : T.Sq}:
+  match bb:
+    case True{}:
+      sq.stop(tt, mm, U32.is_zero(mm))
+    case False{}:
+      ih
+
+# the walk over a span answers what its characters give
+def sq.go.want(
+  src: String,
+  +nn: U32,
+  zz: Bool,
+  +rr: List<&2, Char>
+) -> {T.span.quote.go(src, nn, zz, T.SqRun{rr}) == sq.want(T.span.str(src, nn, zz), rr) : T.Sq}:
+  match src zz:
+    case SNil{} True{}:
+      {==}
+    case SNil{} False{}:
+      {==}
+    case SCon{_h, _t} True{}:
+      {==}
+    case SCon{+hh, +tt} False{}:
+      sq.go.step(T.span.esc(Char.to_u32(hh)), hh, tt, U32.sub(nn, 1), rr,
+        sq.go.want(tt, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1)), hh <> rr))
+
+# a text none of whose characters needs an escape
+def plain(ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      True{}
+    case SCon{+hh, tt}:
+      Bool.and(Bool.not(T.span.esc(Char.to_u32(hh))), plain(tt))
+
+# a copy when the text is plain, and no copy otherwise
+def sq.gate(ok: Bool, rr: List<&2, Char>) -> T.Sq:
+  match ok:
+    case True{}:
+      T.SqOk{rr}
+    case False{}:
+      T.SqNo{}
+
+# a character that needs no escape passes every test of basic.cls
+def esc.no.ctl(
+  +uu: U32,
+  +ee: {T.span.esc(uu) == False{} : Bool}
+) -> {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}:
+  Equal.trans(Bool, Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), Bool.or(False{}, U32.is_eq(uu, 127)), False{},
+    Equal.cong(Bool, Bool, xx => Bool.or(xx, U32.is_eq(uu, 127)), U32.is_lt(uu, 32), False{},
+      Eq.or.false_left(U32.is_lt(uu, 32),
+        Bool.or(U32.is_eq(uu, 34), Bool.or(U32.is_eq(uu, 92), U32.is_eq(uu, 127))), ee)),
+    Eq.or.false_right(U32.is_eq(uu, 92), U32.is_eq(uu, 127),
+      Eq.or.false_right(U32.is_eq(uu, 34), Bool.or(U32.is_eq(uu, 92), U32.is_eq(uu, 127)),
+        Eq.or.false_right(U32.is_lt(uu, 32),
+          Bool.or(U32.is_eq(uu, 34), Bool.or(U32.is_eq(uu, 92), U32.is_eq(uu, 127))), ee))))
+
+# a character that needs no escape is written as itself
+def one.plain(
+  +cc: Char,
+  rr: List<&2, Char>,
+  +ee: {T.span.esc(Char.to_u32(cc)) == False{} : Bool}
+) -> {T.basic.one(cc, rr) == cc <> rr : List<&2, Char>}:
+  match cc:
+    case Chr{+uu}:
+      Equal.cong(T.BK, List<&2, Char>, kk => T.basic.disp(kk, Chr{uu}, uu, rr), T.basic.cls(uu), T.BKCh{},
+        cls.plain(uu, ctl.off(uu, 8, esc.no.ctl(uu, ee), {==}), ctl.off(uu, 9, esc.no.ctl(uu, ee), {==}),
+          ctl.off(uu, 10, esc.no.ctl(uu, ee), {==}), ctl.off(uu, 12, esc.no.ctl(uu, ee), {==}),
+          ctl.off(uu, 13, esc.no.ctl(uu, ee), {==}),
+          Eq.or.false_left(U32.is_eq(uu, 34), Bool.or(U32.is_eq(uu, 92), U32.is_eq(uu, 127)),
+            Eq.or.false_right(U32.is_lt(uu, 32),
+              Bool.or(U32.is_eq(uu, 34), Bool.or(U32.is_eq(uu, 92), U32.is_eq(uu, 127))), ee)),
+          Eq.or.false_left(U32.is_eq(uu, 92), U32.is_eq(uu, 127),
+            Eq.or.false_right(U32.is_eq(uu, 34), Bool.or(U32.is_eq(uu, 92), U32.is_eq(uu, 127)),
+              Eq.or.false_right(U32.is_lt(uu, 32),
+                Bool.or(U32.is_eq(uu, 34), Bool.or(U32.is_eq(uu, 92), U32.is_eq(uu, 127))), ee))),
+          esc.no.ctl(uu, ee)))
+
+# one character of the answer: an escape gives no copy, and anything else is
+# written as itself
+def sq.gate.step(
+  bb: Bool,
+  +hh: Char,
+  +tt: String,
+  +rr: List<&2, Char>,
+  eb: {T.span.esc(Char.to_u32(hh)) == bb : Bool},
+  ih: {sq.want(tt, hh <> rr) == sq.gate(plain(tt), T.basic.go(String.to_list(tt), hh <> rr)) : T.Sq}
+) -> {sq.want.step(bb, _u => sq.want(tt, hh <> rr))
+  == sq.gate(Bool.and(Bool.not(bb), plain(tt)), T.basic.go(String.to_list(tt), T.basic.one(hh, rr))) : T.Sq}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      Equal.trans(T.Sq, sq.want(tt, hh <> rr), sq.gate(plain(tt), T.basic.go(String.to_list(tt), hh <> rr)),
+        sq.gate(plain(tt), T.basic.go(String.to_list(tt), T.basic.one(hh, rr))), ih,
+        Equal.cong(List<&2, Char>, T.Sq, ll => sq.gate(plain(tt), T.basic.go(String.to_list(tt), ll)),
+          hh <> rr, T.basic.one(hh, rr),
+          Equal.sym(List<&2, Char>, T.basic.one(hh, rr), hh <> rr, one.plain(hh, rr, eb))))
+
+# the answer on a text is basic.go's output when the text is plain
+def sq.want.gate(
+  ss: String,
+  +rr: List<&2, Char>
+) -> {sq.want(ss, rr) == sq.gate(plain(ss), T.basic.go(String.to_list(ss), rr)) : T.Sq}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{+hh, +tt}:
+      sq.gate.step(T.span.esc(Char.to_u32(hh)), hh, tt, rr, {==}, sq.want.gate(tt, hh <> rr))
+
+# a copy is the quotes around the characters written as themselves
+def sq.fin(
+  bb: Bool,
+  +src: String,
+  +nn: U32
+) -> {T.span.quote.fin(sq.gate(bb, T.basic.go(String.to_list(T.span.str(src, nn, U32.is_zero(nn))), ['"'])), src, nn)
+  == T.key.basic(T.span.str(src, nn, U32.is_zero(nn))) : String}:
+  match bb:
+    case False{}:
+      {==}
+    case True{}:
+      Equal.trans(String,
+        String.from_list(List.reverse.go(&2, Char,
+          T.basic.go(String.to_list(T.span.str(src, nn, U32.is_zero(nn))), ['"']), ['"'])),
+        String.append(String.from_list(List.reverse(&2, Char,
+          T.basic.go(String.to_list(T.span.str(src, nn, U32.is_zero(nn))), ['"']))), "\""),
+        T.key.basic(T.span.str(src, nn, U32.is_zero(nn))),
+        txt.onto(T.basic.go(String.to_list(T.span.str(src, nn, U32.is_zero(nn))), ['"']), ['"']),
+        Equal.trans(String,
+          String.append(String.from_list(List.reverse(&2, Char,
+            T.basic.go(String.to_list(T.span.str(src, nn, U32.is_zero(nn))), ['"']))), "\""),
+          String.append(String.append("\"", Laws.escs(T.span.str(src, nn, U32.is_zero(nn)))), "\""),
+          T.key.basic(T.span.str(src, nn, U32.is_zero(nn))),
+          Equal.cong(String, String, zz => String.append(zz, "\""),
+            String.from_list(List.reverse(&2, Char,
+              T.basic.go(String.to_list(T.span.str(src, nn, U32.is_zero(nn))), ['"']))),
+            String.append("\"", Laws.escs(T.span.str(src, nn, U32.is_zero(nn)))),
+            go.txt(T.span.str(src, nn, U32.is_zero(nn)), ['"'])),
+          Equal.sym(String, T.key.basic(T.span.str(src, nn, U32.is_zero(nn))),
+            String.append("\"", String.append(Laws.escs(T.span.str(src, nn, U32.is_zero(nn))), "\"")),
+            Laws.basic_escs(T.span.str(src, nn, U32.is_zero(nn))))))
+
+# the walk answers what the characters give, which is key.basic's text
+def Laws.span_quote_basic(src, n):
+  Equal.trans(String, T.span.quote(src, n),
+    T.span.quote.fin(sq.want(T.span.str(src, n, U32.is_zero(n)), ['"']), src, n),
+    T.key.basic(T.span.str(src, n, U32.is_zero(n))),
+    Equal.cong(T.Sq, String, qq => T.span.quote.fin(qq, src, n),
+      T.span.quote.go(src, n, U32.is_zero(n), T.SqRun{['"']}),
+      sq.want(T.span.str(src, n, U32.is_zero(n)), ['"']), sq.go.want(src, n, U32.is_zero(n), ['"'])),
+    Equal.trans(String,
+      T.span.quote.fin(sq.want(T.span.str(src, n, U32.is_zero(n)), ['"']), src, n),
+      T.span.quote.fin(sq.gate(plain(T.span.str(src, n, U32.is_zero(n))),
+        T.basic.go(String.to_list(T.span.str(src, n, U32.is_zero(n))), ['"'])), src, n),
+      T.key.basic(T.span.str(src, n, U32.is_zero(n))),
+      Equal.cong(T.Sq, String, qq => T.span.quote.fin(qq, src, n),
+        sq.want(T.span.str(src, n, U32.is_zero(n)), ['"']),
+        sq.gate(plain(T.span.str(src, n, U32.is_zero(n))),
+          T.basic.go(String.to_list(T.span.str(src, n, U32.is_zero(n))), ['"'])),
+        sq.want.gate(T.span.str(src, n, U32.is_zero(n)), ['"'])),
+      sq.fin(plain(T.span.str(src, n, U32.is_zero(n))), src, n)))
+
+# the root table's first pair, then the rest: the appends regrouped
+def render.regroup(
+  +kk: String,
+  +bb: String,
+  +pf: String,
+  +pt: String
+) -> {String.append(String.append(String.append(kk, " = " ++ bb), "\n" ++ pf), pt)
+  == kk ++ " = " ++ bb ++ "\n" ++ String.append(pf, pt) : String}:
+  Equal.trans(String, String.append(String.append(String.append(kk, " = " ++ bb), "\n" ++ pf), pt),
+    String.append(String.append(kk, " = " ++ bb), String.append("\n" ++ pf, pt)),
+    kk ++ " = " ++ bb ++ "\n" ++ String.append(pf, pt),
+    Eq.append_assoc(String.append(kk, " = " ++ bb), "\n" ++ pf, pt),
+    Eq.append_assoc(kk, " = " ++ bb, String.append("\n" ++ pf, pt)))
+
+# a string pair first in the root table
+def Laws.render_string(e, name, v, rest, h):
+  match v:
+    case T.VStr{+a1}:
+      render.regroup(T.key(name), T.key.basic(a1), T.render.pass(rest, "\n", True{}, False{}),
+        T.render.pass(rest, "\n", True{}, True{}))
+    case T.VSpan{+a1, +a2}:
+      Equal.trans(String,
+        String.append(String.append(String.append(T.key(name), " = " ++ T.span.quote(a1, a2)),
+          "\n" ++ T.render.pass(rest, "\n", True{}, False{})), T.render.pass(rest, "\n", True{}, True{})),
+        String.append(String.append(String.append(T.key(name), " = " ++ T.key.basic(T.span.str(a1, a2,
+          U32.is_zero(a2)))),
+          "\n" ++ T.render.pass(rest, "\n", True{}, False{})), T.render.pass(rest, "\n", True{}, True{})),
+        T.key(name) ++ " = " ++ T.key.basic(T.span.str(a1, a2, U32.is_zero(a2))) ++ "\n" ++
+          String.append(T.render.pass(rest, "\n", True{}, False{}), T.render.pass(rest, "\n", True{}, True{})),
+        Equal.cong(String, String, zz => String.append(String.append(String.append(T.key(name), " = " ++ zz),
+          "\n" ++ T.render.pass(rest, "\n", True{}, False{})), T.render.pass(rest, "\n", True{}, True{})),
+          T.span.quote(a1, a2), T.key.basic(T.span.str(a1, a2, U32.is_zero(a2))), Laws.span_quote_basic(a1, a2)),
+        render.regroup(T.key(name), T.key.basic(T.span.str(a1, a2, U32.is_zero(a2))),
+          T.render.pass(rest, "\n", True{}, False{}), T.render.pass(rest, "\n", True{}, True{})))
+    case T.VInt{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render(T.Doc{e, T.VPair{name, T.VInt{a1, a2}} <> rest})
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VInt{a1, a2})) ++ "\n" ++ T.render(T.Doc{e,
+          rest}) : String}, h)
+    case T.VFlo{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render(T.Doc{e, T.VPair{name, T.VFlo{a1, a2}} <> rest})
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VFlo{a1, a2})) ++ "\n" ++ T.render(T.Doc{e,
+          rest}) : String}, h)
+    case T.VBool{+a1}:
+      Eq.bit.absurd(&2, {T.render(T.Doc{e, T.VPair{name, T.VBool{a1}} <> rest})
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VBool{a1})) ++ "\n" ++ T.render(T.Doc{e, rest}) : String}, h)
+    case T.VWhen{+a1}:
+      Eq.bit.absurd(&2, {T.render(T.Doc{e, T.VPair{name, T.VWhen{a1}} <> rest})
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VWhen{a1})) ++ "\n" ++ T.render(T.Doc{e, rest}) : String}, h)
+    case T.VArr{+a1}:
+      Eq.bit.absurd(&2, {T.render(T.Doc{e, T.VPair{name, T.VArr{a1}} <> rest})
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VArr{a1})) ++ "\n" ++ T.render(T.Doc{e, rest}) : String}, h)
+    case T.VInl{+a1}:
+      Eq.bit.absurd(&2, {T.render(T.Doc{e, T.VPair{name, T.VInl{a1}} <> rest})
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VInl{a1})) ++ "\n" ++ T.render(T.Doc{e, rest}) : String}, h)
+    case T.VHead{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render(T.Doc{e, T.VPair{name, T.VHead{a1, a2}} <> rest})
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VHead{a1, a2})) ++ "\n" ++ T.render(T.Doc{e,
+          rest}) : String}, h)
+    case T.VAot{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render(T.Doc{e, T.VPair{name, T.VAot{a1, a2}} <> rest})
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VAot{a1, a2})) ++ "\n" ++ T.render(T.Doc{e,
+          rest}) : String}, h)
+    case T.VAots{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render(T.Doc{e, T.VPair{name, T.VAots{a1, a2}} <> rest})
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VAots{a1, a2})) ++ "\n" ++ T.render(T.Doc{e,
+          rest}) : String}, h)
+    case T.VPair{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render(T.Doc{e, T.VPair{name, T.VPair{a1, a2}} <> rest})
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VPair{a1, a2})) ++ "\n" ++ T.render(T.Doc{e,
+          rest}) : String}, h)
+
+# a string pair in the pass that writes keys
+def Laws.pass_string(name, v, rest, gap, trail, h):
+  match v:
+    case T.VStr{_a1}:
+      {==}
+    case T.VSpan{+a1, +a2}:
+      Equal.cong(String, String, zz => (T.key(name) ++ " = " ++ zz) ++
+        T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)) ++ T.render.pass(rest, gap, trail, False{}),
+        T.span.quote(a1, a2), T.key.basic(T.span.str(a1, a2, U32.is_zero(a2))), Laws.span_quote_basic(a1, a2))
+    case T.VInt{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VInt{a1, a2}} <> rest, gap, trail, False{})
+        == (T.key(name) ++ " = " ++ T.key.basic(T.string(T.VInt{a1, a2}))) ++ T.render.suf(gap, trail,
+          List.is_empty(&2, T.Val, rest)) ++ T.render.pass(rest, gap, trail, False{}) : String}, h)
+    case T.VFlo{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VFlo{a1, a2}} <> rest, gap, trail, False{})
+        == (T.key(name) ++ " = " ++ T.key.basic(T.string(T.VFlo{a1, a2}))) ++ T.render.suf(gap, trail,
+          List.is_empty(&2, T.Val, rest)) ++ T.render.pass(rest, gap, trail, False{}) : String}, h)
+    case T.VBool{+a1}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VBool{a1}} <> rest, gap, trail, False{})
+        == (T.key(name) ++ " = " ++ T.key.basic(T.string(T.VBool{a1}))) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.pass(rest, gap, trail, False{}) : String}, h)
+    case T.VWhen{+a1}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VWhen{a1}} <> rest, gap, trail, False{})
+        == (T.key(name) ++ " = " ++ T.key.basic(T.string(T.VWhen{a1}))) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.pass(rest, gap, trail, False{}) : String}, h)
+    case T.VArr{+a1}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VArr{a1}} <> rest, gap, trail, False{})
+        == (T.key(name) ++ " = " ++ T.key.basic(T.string(T.VArr{a1}))) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.pass(rest, gap, trail, False{}) : String}, h)
+    case T.VInl{+a1}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VInl{a1}} <> rest, gap, trail, False{})
+        == (T.key(name) ++ " = " ++ T.key.basic(T.string(T.VInl{a1}))) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.pass(rest, gap, trail, False{}) : String}, h)
+    case T.VHead{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VHead{a1, a2}} <> rest, gap, trail, False{})
+        == (T.key(name) ++ " = " ++ T.key.basic(T.string(T.VHead{a1, a2}))) ++ T.render.suf(gap, trail,
+          List.is_empty(&2, T.Val, rest)) ++ T.render.pass(rest, gap, trail, False{}) : String}, h)
+    case T.VAot{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VAot{a1, a2}} <> rest, gap, trail, False{})
+        == (T.key(name) ++ " = " ++ T.key.basic(T.string(T.VAot{a1, a2}))) ++ T.render.suf(gap, trail,
+          List.is_empty(&2, T.Val, rest)) ++ T.render.pass(rest, gap, trail, False{}) : String}, h)
+    case T.VAots{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VAots{a1, a2}} <> rest, gap, trail, False{})
+        == (T.key(name) ++ " = " ++ T.key.basic(T.string(T.VAots{a1, a2}))) ++ T.render.suf(gap, trail,
+          List.is_empty(&2, T.Val, rest)) ++ T.render.pass(rest, gap, trail, False{}) : String}, h)
+    case T.VPair{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VPair{a1, a2}} <> rest, gap, trail, False{})
+        == (T.key(name) ++ " = " ++ T.key.basic(T.string(T.VPair{a1, a2}))) ++ T.render.suf(gap, trail,
+          List.is_empty(&2, T.Val, rest)) ++ T.render.pass(rest, gap, trail, False{}) : String}, h)
+
+# a string pair in the pass that writes tables
+def Laws.pass_string_tables(name, v, rest, gap, trail, h):
+  match v:
+    case T.VStr{_a1}:
+      {==}
+    case T.VSpan{_a1, _a2}:
+      {==}
+    case T.VInt{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VInt{a1, a2}} <> rest, gap, trail, True{})
+        == T.render.pass(rest, gap, trail, True{}) : String}, h)
+    case T.VFlo{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VFlo{a1, a2}} <> rest, gap, trail, True{})
+        == T.render.pass(rest, gap, trail, True{}) : String}, h)
+    case T.VBool{+a1}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VBool{a1}} <> rest, gap, trail, True{})
+        == T.render.pass(rest, gap, trail, True{}) : String}, h)
+    case T.VWhen{+a1}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VWhen{a1}} <> rest, gap, trail, True{})
+        == T.render.pass(rest, gap, trail, True{}) : String}, h)
+    case T.VArr{+a1}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VArr{a1}} <> rest, gap, trail, True{})
+        == T.render.pass(rest, gap, trail, True{}) : String}, h)
+    case T.VInl{+a1}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VInl{a1}} <> rest, gap, trail, True{})
+        == T.render.pass(rest, gap, trail, True{}) : String}, h)
+    case T.VHead{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VHead{a1, a2}} <> rest, gap, trail, True{})
+        == T.render.pass(rest, gap, trail, True{}) : String}, h)
+    case T.VAot{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VAot{a1, a2}} <> rest, gap, trail, True{})
+        == T.render.pass(rest, gap, trail, True{}) : String}, h)
+    case T.VAots{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VAots{a1, a2}} <> rest, gap, trail, True{})
+        == T.render.pass(rest, gap, trail, True{}) : String}, h)
+    case T.VPair{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{name, T.VPair{a1, a2}} <> rest, gap, trail, True{})
+        == T.render.pass(rest, gap, trail, True{}) : String}, h)
+
+# a string pair in an inline table
+def Laws.inline_string(name, v, rest, gap, trail, h):
+  match v:
+    case T.VStr{_a1}:
+      {==}
+    case T.VSpan{+a1, +a2}:
+      Equal.cong(String, String, zz => T.key(name) ++ " = " ++ zz ++
+        T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)) ++ T.render.go(rest, gap, trail),
+        T.span.quote(a1, a2), T.key.basic(T.span.str(a1, a2, U32.is_zero(a2))), Laws.span_quote_basic(a1, a2))
+    case T.VInt{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.go(T.VPair{name, T.VInt{a1, a2}} <> rest, gap, trail)
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VInt{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VFlo{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.go(T.VPair{name, T.VFlo{a1, a2}} <> rest, gap, trail)
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VFlo{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VBool{+a1}:
+      Eq.bit.absurd(&2, {T.render.go(T.VPair{name, T.VBool{a1}} <> rest, gap, trail)
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VBool{a1})) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VWhen{+a1}:
+      Eq.bit.absurd(&2, {T.render.go(T.VPair{name, T.VWhen{a1}} <> rest, gap, trail)
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VWhen{a1})) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VArr{+a1}:
+      Eq.bit.absurd(&2, {T.render.go(T.VPair{name, T.VArr{a1}} <> rest, gap, trail)
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VArr{a1})) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VInl{+a1}:
+      Eq.bit.absurd(&2, {T.render.go(T.VPair{name, T.VInl{a1}} <> rest, gap, trail)
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VInl{a1})) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VHead{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.go(T.VPair{name, T.VHead{a1, a2}} <> rest, gap, trail)
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VHead{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VAot{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.go(T.VPair{name, T.VAot{a1, a2}} <> rest, gap, trail)
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VAot{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VAots{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.go(T.VPair{name, T.VAots{a1, a2}} <> rest, gap, trail)
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VAots{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VPair{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.go(T.VPair{name, T.VPair{a1, a2}} <> rest, gap, trail)
+        == T.key(name) ++ " = " ++ T.key.basic(T.string(T.VPair{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2,
+          T.Val, rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+
+# a string item in an array
+def Laws.array_string(v, rest, gap, trail, h):
+  match v:
+    case T.VStr{_a1}:
+      {==}
+    case T.VSpan{+a1, +a2}:
+      Equal.cong(String, String, zz => zz ++
+        T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)) ++ T.render.go(rest, gap, trail),
+        T.span.quote(a1, a2), T.key.basic(T.span.str(a1, a2, U32.is_zero(a2))), Laws.span_quote_basic(a1, a2))
+    case T.VInt{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.go(T.VInt{a1, a2} <> rest, gap, trail)
+        == T.key.basic(T.string(T.VInt{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val,
+          rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VFlo{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.go(T.VFlo{a1, a2} <> rest, gap, trail)
+        == T.key.basic(T.string(T.VFlo{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val,
+          rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VBool{+a1}:
+      Eq.bit.absurd(&2, {T.render.go(T.VBool{a1} <> rest, gap, trail)
+        == T.key.basic(T.string(T.VBool{a1})) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val,
+          rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VWhen{+a1}:
+      Eq.bit.absurd(&2, {T.render.go(T.VWhen{a1} <> rest, gap, trail)
+        == T.key.basic(T.string(T.VWhen{a1})) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val,
+          rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VArr{+a1}:
+      Eq.bit.absurd(&2, {T.render.go(T.VArr{a1} <> rest, gap, trail)
+        == T.key.basic(T.string(T.VArr{a1})) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val,
+          rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VInl{+a1}:
+      Eq.bit.absurd(&2, {T.render.go(T.VInl{a1} <> rest, gap, trail)
+        == T.key.basic(T.string(T.VInl{a1})) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val,
+          rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VHead{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.go(T.VHead{a1, a2} <> rest, gap, trail)
+        == T.key.basic(T.string(T.VHead{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val,
+          rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VAot{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.go(T.VAot{a1, a2} <> rest, gap, trail)
+        == T.key.basic(T.string(T.VAot{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val,
+          rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VAots{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.go(T.VAots{a1, a2} <> rest, gap, trail)
+        == T.key.basic(T.string(T.VAots{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val,
+          rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+    case T.VPair{+a1, +a2}:
+      Eq.bit.absurd(&2, {T.render.go(T.VPair{a1, a2} <> rest, gap, trail)
+        == T.key.basic(T.string(T.VPair{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val,
+          rest)) ++ T.render.go(rest, gap, trail) : String}, h)
+
