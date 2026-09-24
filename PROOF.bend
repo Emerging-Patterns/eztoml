@@ -859,3 +859,676 @@ def Laws.date_day_past_month(yy, mm, dd, rest, e):
     Equal.trans(Bool, False{}, Bool.and(U32.is_ge(dd, 1), U32.is_le(dd, Laws.days_in(yy, mm))),
       T.bound.rng(dd, 1, T.when.days(yy, Laws.month.num(mm))), e, day.test(yy, mm, dd)),
     yy, Laws.month.num(mm), dd, rest)
+
+# The scanner's refusals. A failed scanner sits in LSink with nothing held:
+# every character leaves it as it is, and the end of the text reads its first
+# error back. A refusal law then only follows one character from the state it
+# names to that failed state.
+
+# a failed scanner, its first error written as a first char and the rest
+def sk(
+  lead: Bool,
+  b0: Char,
+  bs: String,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: T.Lex,
+  qkind: T.QKind,
+  stack: List<&2, T.Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> T.St:
+  T.St{SCon{b0, bs}, rows, heads, here, parts, buf, T.LSink{}, back, qkind, stack,
+    T.HNone{}, uni, left, arrtab, lead}
+
+# the mode a failed scanner is read in: after a carriage return, or not
+def sk.mode(cr: Bool, st: T.St) -> T.Mode:
+  match cr:
+    case True{}:
+      T.MCr{st}
+    case False{}:
+      T.MScan{st}
+
+# the end of the text reads the first error back, open frames or not
+def sk.fin(
+  stack: List<&2, T.Ctx>,
+  b0: Char,
+  bs: String,
+  rows: List<&2, T.Val>
+) -> {T.bad(T.read.fin.stack(stack, SCon{b0, bs}, rows)) == SCon{b0, bs} : String}:
+  match stack:
+    case []:
+      {==}
+    case _h <> _t:
+      {==}
+
+# a byte-order mark or not, the first character leaves the failed scanner
+def sk.bom(
+  bom: Bool,
+  b0: Char,
+  bs: String,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: T.Lex,
+  qkind: T.QKind,
+  stack: List<&2, T.Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  hh: Char
+) -> {T.read.once2(T.read.step.bom(bom, sk(False{}, b0, bs, rows, heads, here, parts, buf,
+  back, qkind, stack, uni, left, arrtab), hh)) == sk(False{}, b0, bs, rows, heads, here,
+  parts, buf, back, qkind, stack, uni, left, arrtab) : T.St}:
+  match bom:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# one character leaves the failed scanner as it is, past the first character
+def sk.fast(
+  lead: Bool,
+  b0: Char,
+  bs: String,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: T.Lex,
+  qkind: T.QKind,
+  stack: List<&2, T.Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +hh: Char
+) -> {T.read.fast(sk(lead, b0, bs, rows, heads, here, parts, buf, back, qkind, stack, uni,
+  left, arrtab), hh) == sk(False{}, b0, bs, rows, heads, here, parts, buf, back, qkind,
+  stack, uni, left, arrtab) : T.St}:
+  match lead:
+    case False{}:
+      {==}
+    case True{}:
+      sk.bom(U32.is_eq(Char.to_u32(hh), 65279), b0, bs, rows, heads, here, parts, buf, back,
+        qkind, stack, uni, left, arrtab, hh)
+
+# the rest of the text reads a failed scanner's first error back
+def sk.ok(
+  tt: String,
+  cr: Bool,
+  lead: Bool,
+  b0: Char,
+  bs: String,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: T.Lex,
+  qkind: T.QKind,
+  stack: List<&2, T.Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> Type:
+  {T.bad(T.doc.read(tt, sk.mode(cr, sk(lead, b0, bs, rows, heads, here, parts, buf, back,
+    qkind, stack, uni, left, arrtab)))) == SCon{b0, bs} : String}
+
+# a character read in the scan mode: whichever way doc.scan turns, the failed
+# scanner comes out as it went in
+def sk.scan(
+  dq: Bool,
+  sq: Bool,
+  cr: Bool,
+  +lead: Bool,
+  +b0: Char,
+  +bs: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +hh: Char,
+  tt: String,
+  ih0: sk.ok(tt, False{}, False{}, b0, bs, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab),
+  ih1: sk.ok(tt, True{}, False{}, b0, bs, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab)
+) -> {T.bad(T.doc.read(tt, T.doc.scan.q(dq, sq, cr, sk(lead, b0, bs, rows, heads, here,
+  parts, buf, back, qkind, stack, uni, left, arrtab), hh))) == SCon{b0, bs} : String}:
+  match dq:
+    case True{}:
+      Equal.trans(String,
+        T.bad(T.doc.read(tt, T.doc.wrap(T.read.fast(sk(lead, b0, bs, rows, heads, here,
+          parts, buf, back, qkind, stack, uni, left, arrtab), hh)))),
+        T.bad(T.doc.read(tt, T.doc.wrap(sk(False{}, b0, bs, rows, heads, here, parts, buf,
+          back, qkind, stack, uni, left, arrtab)))),
+        SCon{b0, bs},
+        Equal.cong(T.St, String, s => T.bad(T.doc.read(tt, T.doc.wrap(s))),
+          T.read.fast(sk(lead, b0, bs, rows, heads, here, parts, buf, back, qkind, stack,
+            uni, left, arrtab), hh),
+          sk(False{}, b0, bs, rows, heads, here, parts, buf, back, qkind, stack, uni, left,
+            arrtab),
+          sk.fast(lead, b0, bs, rows, heads, here, parts, buf, back, qkind, stack, uni,
+            left, arrtab, hh)),
+        ih0)
+    case False{}:
+      match sq:
+        case True{}:
+          Equal.trans(String,
+            T.bad(T.doc.read(tt, T.doc.wrap(T.read.fast(sk(lead, b0, bs, rows, heads, here,
+              parts, buf, back, qkind, stack, uni, left, arrtab), hh)))),
+            T.bad(T.doc.read(tt, T.doc.wrap(sk(False{}, b0, bs, rows, heads, here, parts,
+              buf, back, qkind, stack, uni, left, arrtab)))),
+            SCon{b0, bs},
+            Equal.cong(T.St, String, s => T.bad(T.doc.read(tt, T.doc.wrap(s))),
+              T.read.fast(sk(lead, b0, bs, rows, heads, here, parts, buf, back, qkind,
+                stack, uni, left, arrtab), hh),
+              sk(False{}, b0, bs, rows, heads, here, parts, buf, back, qkind, stack, uni,
+                left, arrtab),
+              sk.fast(lead, b0, bs, rows, heads, here, parts, buf, back, qkind, stack, uni,
+                left, arrtab, hh)),
+            ih0)
+        case False{}:
+          match cr:
+            case True{}:
+              Equal.trans(String,
+                T.bad(T.doc.read(tt, T.MCr{T.read.fast(sk(lead, b0, bs, rows, heads, here,
+                  parts, buf, back, qkind, stack, uni, left, arrtab), hh)})),
+                T.bad(T.doc.read(tt, T.MCr{sk(False{}, b0, bs, rows, heads, here, parts,
+                  buf, back, qkind, stack, uni, left, arrtab)})),
+                SCon{b0, bs},
+                Equal.cong(T.St, String, s => T.bad(T.doc.read(tt, T.MCr{s})),
+                  T.read.fast(sk(lead, b0, bs, rows, heads, here, parts, buf, back, qkind,
+                    stack, uni, left, arrtab), hh),
+                  sk(False{}, b0, bs, rows, heads, here, parts, buf, back, qkind, stack,
+                    uni, left, arrtab),
+                  sk.fast(lead, b0, bs, rows, heads, here, parts, buf, back, qkind, stack,
+                    uni, left, arrtab, hh)),
+                ih1)
+            case False{}:
+              Equal.trans(String,
+                T.bad(T.doc.read(tt, T.MScan{T.read.fast(sk(lead, b0, bs, rows, heads,
+                  here, parts, buf, back, qkind, stack, uni, left, arrtab), hh)})),
+                T.bad(T.doc.read(tt, T.MScan{sk(False{}, b0, bs, rows, heads, here, parts,
+                  buf, back, qkind, stack, uni, left, arrtab)})),
+                SCon{b0, bs},
+                Equal.cong(T.St, String, s => T.bad(T.doc.read(tt, T.MScan{s})),
+                  T.read.fast(sk(lead, b0, bs, rows, heads, here, parts, buf, back, qkind,
+                    stack, uni, left, arrtab), hh),
+                  sk(False{}, b0, bs, rows, heads, here, parts, buf, back, qkind, stack,
+                    uni, left, arrtab),
+                  sk.fast(lead, b0, bs, rows, heads, here, parts, buf, back, qkind, stack,
+                    uni, left, arrtab, hh)),
+                ih0)
+
+# the character after a carriage return: a line feed is read, anything else
+# sets an error the scanner already has
+def sk.cr(
+  lf: Bool,
+  +lead: Bool,
+  +b0: Char,
+  +bs: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +hh: Char,
+  tt: String,
+  ih0: sk.ok(tt, False{}, False{}, b0, bs, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab),
+  ihl: sk.ok(tt, False{}, lead, b0, bs, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab)
+) -> {T.bad(T.doc.read(tt, T.doc.cr(lf, sk(lead, b0, bs, rows, heads, here, parts, buf,
+  back, qkind, stack, uni, left, arrtab), hh))) == SCon{b0, bs} : String}:
+  match lf:
+    case True{}:
+      Equal.trans(String,
+        T.bad(T.doc.read(tt, T.MScan{T.read.fast(sk(lead, b0, bs, rows, heads, here,
+          parts, buf, back, qkind, stack, uni, left, arrtab), hh)})),
+        T.bad(T.doc.read(tt, T.MScan{sk(False{}, b0, bs, rows, heads, here, parts, buf,
+          back, qkind, stack, uni, left, arrtab)})),
+        SCon{b0, bs},
+        Equal.cong(T.St, String, s => T.bad(T.doc.read(tt, T.MScan{s})),
+          T.read.fast(sk(lead, b0, bs, rows, heads, here, parts, buf, back, qkind, stack,
+            uni, left, arrtab), hh),
+          sk(False{}, b0, bs, rows, heads, here, parts, buf, back, qkind, stack, uni, left,
+            arrtab),
+          sk.fast(lead, b0, bs, rows, heads, here, parts, buf, back, qkind, stack, uni,
+            left, arrtab, hh)),
+        ih0)
+    case False{}:
+      ihl
+
+# by induction on the text, in either mode, from either side of the first
+# character
+def sk.go(
+  tt: String,
+  cr: Bool,
+  +lead: Bool,
+  +b0: Char,
+  +bs: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool
+) -> {T.bad(T.doc.read(tt, sk.mode(cr, sk(lead, b0, bs, rows, heads, here, parts, buf,
+  back, qkind, stack, uni, left, arrtab)))) == SCon{b0, bs} : String}:
+  match tt:
+    case SNil{}:
+      match cr:
+        case True{}:
+          sk.fin(stack, b0, bs, rows)
+        case False{}:
+          sk.fin(stack, b0, bs, rows)
+    case SCon{+hh, +rest}:
+      match cr:
+        case False{}:
+          sk.scan(Char.is_eq(hh, '"'), Char.is_eq(hh, '\''), U32.is_eq(Char.to_u32(hh), 13),
+            lead, b0, bs, rows, heads, here, parts, buf, back, qkind, stack, uni, left,
+            arrtab, hh, rest,
+            sk.go(rest, False{}, False{}, b0, bs, rows, heads, here, parts, buf, back,
+              qkind, stack, uni, left, arrtab),
+            sk.go(rest, True{}, False{}, b0, bs, rows, heads, here, parts, buf, back,
+              qkind, stack, uni, left, arrtab))
+        case True{}:
+          sk.cr(Char.is_eq(hh, '\n'), lead, b0, bs, rows, heads, here, parts, buf, back,
+            qkind, stack, uni, left, arrtab, hh, rest,
+            sk.go(rest, False{}, False{}, b0, bs, rows, heads, here, parts, buf, back,
+              qkind, stack, uni, left, arrtab),
+            sk.go(rest, False{}, lead, b0, bs, rows, heads, here, parts, buf, back, qkind,
+              stack, uni, left, arrtab))
+
+def Laws.fail_stays(
+  bad,
+  rows,
+  heads,
+  here,
+  parts,
+  buf,
+  back,
+  qkind,
+  stack,
+  uni,
+  left,
+  arrtab,
+  lead,
+  e,
+  t
+):
+  match bad:
+    case SNil{}:
+      Eq.bit.absurd2(&2, {T.bad(T.doc.read(t, T.MScan{T.St{SNil{}, rows, heads, here, parts,
+        buf, T.LSink{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, lead}})) == SNil{}
+        : String}, e)
+    case SCon{b0, bs}:
+      sk.go(t, False{}, lead, b0, bs, rows, heads, here, parts, buf, back, qkind, stack,
+        uni, left, arrtab)
+
+# any scanner that sets an error comes to the failed state, and the error it
+# has then, its own or the new one, is never empty
+def err.sinks(
+  st: T.St,
+  w0: Char,
+  ws: String,
+  +tt: String
+) -> {String.is_empty(T.bad(T.doc.read(tt, T.MScan{T.st.err(st, SCon{w0, ws})})))
+  == False{} : Bool}:
+  match st:
+    case T.St{bad, rows, heads, here, parts, buf, _lex, back, qkind, stack, _hold, uni,
+      left, arrtab, lead}:
+      match bad:
+        case SNil{}:
+          Equal.cong(String, Bool, s => String.is_empty(s),
+            T.bad(T.doc.read(tt, T.MScan{sk(lead, w0, ws, rows, heads, here, parts, buf,
+              back, qkind, stack, uni, left, arrtab)})),
+            SCon{w0, ws},
+            sk.go(tt, False{}, lead, w0, ws, rows, heads, here, parts, buf, back, qkind,
+              stack, uni, left, arrtab))
+        case SCon{b0, bs}:
+          Equal.cong(String, Bool, s => String.is_empty(s),
+            T.bad(T.doc.read(tt, T.MScan{sk(lead, b0, bs, rows, heads, here, parts, buf,
+              back, qkind, stack, uni, left, arrtab)})),
+            SCon{b0, bs},
+            sk.go(tt, False{}, lead, b0, bs, rows, heads, here, parts, buf, back, qkind,
+              stack, uni, left, arrtab))
+
+# a character that is neither quote nor a carriage return is read in the scan
+# mode. A law names such a character by a predicate that the three fail
+def scan.other(
+  dq: Bool,
+  sq: Bool,
+  cr: Bool,
+  st: T.St,
+  +cc: Char,
+  edq: {Char.is_eq(cc, '"') == dq : Bool},
+  esq: {Char.is_eq(cc, '\'') == sq : Bool},
+  ecr: {Char.is_eq(cc, Chr{13}) == cr : Bool},
+  pp: Char -> Bool,
+  yes: {pp(cc) == True{} : Bool},
+  n1: {pp('"') == False{} : Bool},
+  n2: {pp('\'') == False{} : Bool},
+  n3: {pp(Chr{13}) == False{} : Bool}
+) -> {T.doc.scan.q(dq, sq, cr, st, cc) == T.MScan{T.read.fast(st, cc)} : T.Mode}:
+  match dq:
+    case True{}:
+      Eq.bit.gone(&2, {T.doc.scan.q(True{}, sq, cr, st, cc) == T.MScan{T.read.fast(st, cc)}
+        : T.Mode}, Eq.refute_char(cc, '"', pp, edq, yes, n1))
+    case False{}:
+      match sq:
+        case True{}:
+          Eq.bit.gone(&2, {T.doc.scan.q(False{}, True{}, cr, st, cc)
+            == T.MScan{T.read.fast(st, cc)} : T.Mode},
+            Eq.refute_char(cc, '\'', pp, esq, yes, n2))
+        case False{}:
+          match cr:
+            case True{}:
+              Eq.bit.gone(&2, {T.doc.scan.q(False{}, False{}, True{}, st, cc)
+                == T.MScan{T.read.fast(st, cc)} : T.Mode},
+                Eq.refute_char(cc, Chr{13}, pp, ecr, yes, n3))
+            case False{}:
+              {==}
+
+# an equation between the two bits proves anything
+def clash(a, -A: Kind(a), no: {False{} == True{} : Bool}) -> A:
+  Eq.bit.absurd(a, A, no)
+
+# a comment character that is a control, no newline and no tab fails the step
+def com.go(
+  nl: Bool,
+  ctl: Bool,
+  tab: Bool,
+  st: T.St,
+  cc: Char,
+  enl: {T.ch.nl(cc) == nl : Bool},
+  ectl: {T.ch.ctl(cc) == ctl : Bool},
+  etab: {U32.is_eq(Char.to_u32(cc), 9) == tab : Bool},
+  no_nl: {T.ch.nl(cc) == False{} : Bool},
+  is_ctl: {T.ch.ctl(cc) == True{} : Bool},
+  no_tab: {U32.is_eq(Char.to_u32(cc), 9) == False{} : Bool}
+) -> {T.lex.com.go(nl, ctl, tab, st, cc) == T.st.err(st, "invalid control in comment")
+  : T.St}:
+  match nl:
+    case True{}:
+      clash(&2, {T.lex.com.go(True{}, ctl, tab, st, cc)
+        == T.st.err(st, "invalid control in comment") : T.St},
+        Equal.trans(Bool, False{}, T.ch.nl(cc), True{},
+          Equal.sym(Bool, T.ch.nl(cc), False{}, no_nl), enl))
+    case False{}:
+      match ctl:
+        case False{}:
+          clash(&2, {T.lex.com.go(False{}, False{}, tab, st, cc)
+            == T.st.err(st, "invalid control in comment") : T.St},
+            Equal.trans(Bool, False{}, T.ch.ctl(cc), True{},
+              Equal.sym(Bool, T.ch.ctl(cc), False{}, ectl), is_ctl))
+        case True{}:
+          match tab:
+            case True{}:
+              clash(&2, {T.lex.com.go(False{}, True{}, True{}, st, cc)
+                == T.st.err(st, "invalid control in comment") : T.St},
+                Equal.trans(Bool, False{}, U32.is_eq(Char.to_u32(cc), 9), True{},
+                  Equal.sym(Bool, U32.is_eq(Char.to_u32(cc), 9), False{}, no_tab), etab))
+            case False{}:
+              {==}
+
+# the fast path sends a control in a comment to the full step, which fails it
+def com.fast(
+  ctl: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +xx: U32,
+  ectl: {T.ch.ctl(Chr{xx}) == ctl : Bool},
+  no_nl: {T.ch.nl(Chr{xx}) == False{} : Bool},
+  is_ctl: {T.ch.ctl(Chr{xx}) == True{} : Bool},
+  no_tab: {U32.is_eq(xx, 9) == False{} : Bool}
+) -> {T.read.fast.com(ctl, bad, rows, heads, here, parts, buf, back, qkind, stack, uni,
+  left, arrtab, Chr{xx}) == T.st.err(T.St{bad, rows, heads, here, parts, buf, T.LCom{},
+  back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, "invalid control in comment")
+  : T.St}:
+  match ctl:
+    case False{}:
+      clash(&2, {T.read.fast.com(False{}, bad, rows, heads, here, parts, buf, back, qkind,
+        stack, uni, left, arrtab, Chr{xx}) == T.st.err(T.St{bad, rows, heads, here, parts,
+        buf, T.LCom{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}},
+        "invalid control in comment") : T.St},
+        Equal.trans(Bool, False{}, T.ch.ctl(Chr{xx}), True{},
+          Equal.sym(Bool, T.ch.ctl(Chr{xx}), False{}, ectl), is_ctl))
+    case True{}:
+      Equal.cong(T.St, T.St, s => T.read.once2(s),
+        T.lex.com.go(T.ch.nl(Chr{xx}), T.ch.ctl(Chr{xx}), U32.is_eq(xx, 9),
+          T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack, T.HNone{},
+            uni, left, arrtab, False{}}, Chr{xx}),
+        T.st.err(T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack,
+          T.HNone{}, uni, left, arrtab, False{}}, "invalid control in comment"),
+        com.go(T.ch.nl(Chr{xx}), T.ch.ctl(Chr{xx}), U32.is_eq(xx, 9),
+          T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack, T.HNone{},
+            uni, left, arrtab, False{}}, Chr{xx}, {==}, {==}, {==}, no_nl, is_ctl, no_tab))
+
+# one comment character: the scan step and then the fast step, each past the
+# branches the character cannot take
+def com.step(
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +xx: U32,
+  +ee: {Laws.com.ctl(Chr{xx}) == True{} : Bool}
+) -> {T.doc.scan(T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack,
+  T.HNone{}, uni, left, arrtab, False{}}, Chr{xx}) == T.MScan{T.st.err(T.St{bad, rows,
+  heads, here, parts, buf, T.LCom{}, back, qkind, stack, T.HNone{}, uni, left, arrtab,
+  False{}}, "invalid control in comment")} : T.Mode}:
+  +nots = {Eq.and.right(T.ch.ctl(Chr{xx}), Bool.not(Bool.or(T.ch.nl(Chr{xx}),
+    U32.is_eq(xx, 9))), ee) : {Bool.not(Bool.or(T.ch.nl(Chr{xx}), U32.is_eq(xx, 9)))
+    == True{} : Bool}}
+  +ors = {Eq.not.true(Bool.or(T.ch.nl(Chr{xx}), U32.is_eq(xx, 9)), nots)
+    : {Bool.or(T.ch.nl(Chr{xx}), U32.is_eq(xx, 9)) == False{} : Bool}}
+  Equal.trans(T.Mode,
+    T.doc.scan(T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack,
+      T.HNone{}, uni, left, arrtab, False{}}, Chr{xx}),
+    T.MScan{T.read.fast(T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind,
+      stack, T.HNone{}, uni, left, arrtab, False{}}, Chr{xx})},
+    T.MScan{T.st.err(T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack,
+      T.HNone{}, uni, left, arrtab, False{}}, "invalid control in comment")},
+    scan.other(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), U32.is_eq(xx, 13),
+      T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack, T.HNone{},
+        uni, left, arrtab, False{}}, Chr{xx}, {==}, {==}, {==}, ch => Laws.com.ctl(ch), ee, {==},
+      {==}, {==}),
+    Equal.cong(T.St, T.Mode, s => T.MScan{s},
+      T.read.fast(T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack,
+        T.HNone{}, uni, left, arrtab, False{}}, Chr{xx}),
+      T.st.err(T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack,
+        T.HNone{}, uni, left, arrtab, False{}}, "invalid control in comment"),
+      com.fast(T.ch.ctl(Chr{xx}), bad, rows, heads, here, parts, buf, back, qkind, stack,
+        uni, left, arrtab, xx, {==}, Eq.or.left_false(T.ch.nl(Chr{xx}), U32.is_eq(xx, 9),
+        ors), Eq.and.left(T.ch.ctl(Chr{xx}), Bool.not(Bool.or(T.ch.nl(Chr{xx}),
+        U32.is_eq(xx, 9))), ee), Eq.or.right_false(T.ch.nl(Chr{xx}), U32.is_eq(xx, 9),
+        ors))))
+
+def Laws.comment_control_refused(
+  bad,
+  rows,
+  heads,
+  here,
+  parts,
+  buf,
+  back,
+  qkind,
+  stack,
+  uni,
+  left,
+  arrtab,
+  c,
+  e,
+  t
+):
+  match c:
+    case Chr{+xx}:
+      Equal.trans(Bool,
+        String.is_empty(T.bad(T.doc.read(t, T.doc.scan(T.St{bad, rows, heads, here, parts,
+          buf, T.LCom{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}},
+          Chr{xx})))),
+        String.is_empty(T.bad(T.doc.read(t, T.MScan{T.st.err(T.St{bad, rows, heads, here,
+          parts, buf, T.LCom{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}},
+          "invalid control in comment")}))),
+        False{},
+        Equal.cong(T.Mode, Bool, m => String.is_empty(T.bad(T.doc.read(t, m))),
+          T.doc.scan(T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack,
+            T.HNone{}, uni, left, arrtab, False{}}, Chr{xx}),
+          T.MScan{T.st.err(T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind,
+            stack, T.HNone{}, uni, left, arrtab, False{}}, "invalid control in comment")},
+          com.step(bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab,
+            xx, e)),
+        err.sinks(T.St{bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack,
+          T.HNone{}, uni, left, arrtab, False{}}, 'i', "nvalid control in comment", t))
+
+def Laws.lone_cr_refused(st, c, e, t):
+  Equal.trans(Bool,
+    String.is_empty(T.bad(T.doc.read(t, T.doc.cr(Char.is_eq(c, '\n'),
+      T.read.fast(st, '\r'), c)))),
+    String.is_empty(T.bad(T.doc.read(t, T.doc.cr(False{}, T.read.fast(st, '\r'), c)))),
+    False{},
+    Equal.cong(Bool, Bool,
+      bb => String.is_empty(T.bad(T.doc.read(t, T.doc.cr(bb, T.read.fast(st, '\r'), c)))),
+      Char.is_eq(c, '\n'), False{}, e),
+    err.sinks(T.read.fast(st, '\r'), 'c', "arriage return without line feed", t))
+
+def Laws.last_cr_refused(st):
+  err.sinks(T.read.fast(st, '\r'), 'c', "arriage return without line feed", "")
+
+# a line feed where the value should start fails the step, inside an inline
+# table or not
+def val.nl(
+  stack: List<&2, T.Ctx>,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +tt: String
+) -> {String.is_empty(T.bad(T.doc.read(tt, T.MScan{T.read.fast(T.St{bad, rows, heads,
+  here, parts, buf, T.LVal{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}},
+  '\n')}))) == False{} : Bool}:
+  match stack:
+    case []:
+      err.sinks(T.St{bad, rows, heads, here, parts, buf, T.LVal{}, back, qkind, [],
+        T.HNone{}, uni, left, arrtab, False{}}, 'n', "ewline before value", tt)
+    case T.CArr{items, ps, hs} <> rest:
+      err.sinks(T.St{bad, rows, heads, here, parts, buf, T.LVal{}, back, qkind,
+        T.CArr{items, ps, hs} <> rest, T.HNone{}, uni, left, arrtab, False{}}, 'n',
+        "ewline before value", tt)
+    case T.CInl{items, ps, hs} <> rest:
+      err.sinks(T.St{bad, rows, heads, here, parts, buf, T.LVal{}, back, qkind,
+        T.CInl{items, ps, hs} <> rest, T.HNone{}, uni, left, arrtab, False{}}, 'n',
+        "ewline in inline table", tt)
+
+def Laws.value_on_key_line(
+  bad,
+  rows,
+  heads,
+  here,
+  parts,
+  buf,
+  back,
+  qkind,
+  stack,
+  uni,
+  left,
+  arrtab,
+  t
+):
+  val.nl(stack, bad, rows, heads, here, parts, buf, back, qkind, uni, left, arrtab, t)
+
+# the carriage return fails the step, and the line feed after it changes nothing
+def val.crlf(
+  stack: List<&2, T.Ctx>,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +tt: String
+) -> {String.is_empty(T.bad(T.doc.read(tt, T.MScan{T.read.fast(T.read.fast(T.St{bad, rows,
+  heads, here, parts, buf, T.LVal{}, back, qkind, stack, T.HNone{}, uni, left, arrtab,
+  False{}}, '\r'), '\n')}))) == False{} : Bool}:
+  match stack:
+    case []:
+      err.sinks(T.St{bad, rows, heads, here, parts, buf, T.LVal{}, back, qkind, [],
+        T.HNone{}, uni, left, arrtab, False{}}, 'n', "ewline before value", tt)
+    case T.CArr{items, ps, hs} <> rest:
+      err.sinks(T.St{bad, rows, heads, here, parts, buf, T.LVal{}, back, qkind,
+        T.CArr{items, ps, hs} <> rest, T.HNone{}, uni, left, arrtab, False{}}, 'n',
+        "ewline before value", tt)
+    case T.CInl{items, ps, hs} <> rest:
+      err.sinks(T.St{bad, rows, heads, here, parts, buf, T.LVal{}, back, qkind,
+        T.CInl{items, ps, hs} <> rest, T.HNone{}, uni, left, arrtab, False{}}, 'n',
+        "ewline in inline table", tt)
+
+def Laws.value_on_key_line_crlf(
+  bad,
+  rows,
+  heads,
+  here,
+  parts,
+  buf,
+  back,
+  qkind,
+  stack,
+  uni,
+  left,
+  arrtab,
+  t
+):
+  val.crlf(stack, bad, rows, heads, here, parts, buf, back, qkind, uni, left, arrtab, t)

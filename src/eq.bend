@@ -672,3 +672,85 @@ def eq_fin_rec(_h1, _h2, r):
       match ts:
         case (t1, t2):
           {==}
+
+# A test that answered True was given one thing twice. Base states no such
+# fact, so a proof that follows the scanner past a comparison with a
+# character it did not match needs these: two words that compare equal are
+# one word by induction on the width, and two chars are two code points.
+# They are ez's check/str.bend lemmas, restated here.
+
+# LAW: two code points that compare equal are one char
+law u32_eq:
+  for xx: U32
+  for yy: U32
+  for ee: {U32.is_eq(xx, yy) == True{} : Bool}
+  {Chr{xx} == Chr{yy} : Char}
+
+# a code point is a word of thirty-two bits
+def u32_eq(xx, yy, ee):
+  match xx yy:
+    case U32{+wx} U32{+wy}:
+      Equal.cong(Word(32n), Char, w => Chr{U32{w}}, wx, wy,
+        word_eq(32n, wx, wy, cmp_is_eq(Word.cmp(32n, wx, wy), ee)))
+
+# LAW: two chars that compare equal are one char
+law char_eq_true:
+  for aa: Char
+  for bb: Char
+  for ee: {Char.is_eq(aa, bb) == True{} : Bool}
+  {aa == bb : Char}
+
+# a char is a code point
+def char_eq_true(aa, bb, ee):
+  match aa bb:
+    case Chr{x} Chr{y}:
+      u32_eq(x, y, ee)
+
+# LAW: a char a test found equal to k passes a predicate only where k does.
+# This is how a proof leaves a branch the scanner takes on one character: the
+# character it tested for fails the predicate the law gave the character.
+law refute_char:
+  for cc: Char
+  for kk: Char
+  for pp: Char -> Bool
+  for ee: {Char.is_eq(cc, kk) == True{} : Bool}
+  for yes: {pp(cc) == True{} : Bool}
+  for no: {pp(kk) == False{} : Bool}
+  Empty
+
+# the char is k, so the predicate's two answers are one answer
+def refute_char(cc, kk, pp, ee, yes, no):
+  bit.clash(Equal.trans(Bool, False{}, pp(kk), True{},
+    Equal.sym(Bool, pp(kk), False{}, no),
+    Equal.trans(Bool, pp(kk), pp(cc), True{},
+      Equal.cong(Char, Bool, pp, kk, cc,
+        Equal.sym(Char, cc, kk, char_eq_true(cc, kk, ee))),
+      yes)))
+
+# LAW: an `or` that answered False had a left half that answered False
+law or.left_false:
+  for u: Bool
+  for v: Bool
+  for e: {Bool.or(u, v) == False{} : Bool}
+  {u == False{} : Bool}
+
+def or.left_false(u, _v, e):
+  match u:
+    case True{}:
+      bit.absurd2(&2, {True{} == False{} : Bool}, e)
+    case False{}:
+      {==}
+
+# LAW: and a right half that answered False
+law or.right_false:
+  for u: Bool
+  for v: Bool
+  for e: {Bool.or(u, v) == False{} : Bool}
+  {v == False{} : Bool}
+
+def or.right_false(u, v, e):
+  match u:
+    case True{}:
+      bit.absurd2(&2, {v == False{} : Bool}, e)
+    case False{}:
+      e

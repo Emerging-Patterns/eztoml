@@ -2323,6 +2323,10 @@ def ch.sp(+cc: Char) -> Bool:
 def ch.nl(+cc: Char) -> Bool:
   Bool.or(U32.is_eq(Char.to_u32(cc), 10), U32.is_eq(Char.to_u32(cc), 13))
 
+# a control: U+0000 to U+001F, or U+007F
+def ch.ctl(+cc: Char) -> Bool:
+  Bool.or(U32.is_lt(Char.to_u32(cc), 32), U32.is_eq(Char.to_u32(cc), 127))
+
 # a character that ends a bare value
 def ch.delim(+cc: Char) -> Bool:
   Bool.or(ch.sp(cc), Bool.or(ch.nl(cc), Bool.or(Char.is_eq(cc, '#'),
@@ -3198,15 +3202,15 @@ def lex.after(st: St, +cc: Char) -> St:
   lex.after.go(ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc, '#'),
     ch.nl(cc), st, cc)
 
-# a newline inside an inline table is rejected
+# a value starts on the line of its key
 def lex.val.nl3(inside: Bool, st: St) -> St:
   match inside:
     case True{}:
       st.err(st, "newline in inline table")
     case False{}:
-      st
+      st.err(st, "newline before value")
 
-# a newline inside an inline table is rejected
+# a newline before a value is rejected
 def lex.val.nl2(st: St, _c: Char) -> St:
   St{bad, rows, heads, here, parts, buf, lx, back, qkind, +stack, hold, uni, left,
     arrtab, lead} = st
@@ -3268,7 +3272,7 @@ def lex.val.hash(hash: Bool, qq: Bool, lit: Bool, br: Bool, inl: Bool, st: St, c
     case False{}:
       lex.val.q(qq, lit, br, inl, st, cc)
 
-# a newline is whitespace outside an inline table
+# a newline before a value is rejected
 def lex.val.nl(nl: Bool, hash: Bool, qq: Bool, lit: Bool, br: Bool, inl: Bool, st: St, cc: Char) -> St:
   match nl:
     case True{}:
@@ -3570,17 +3574,33 @@ def lex.com.nl(st: St, cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, back, back, qkind, stack, HChar{cc}, uni, left,
     arrtab, lead}
 
-# a comment runs to the end of the line
-def lex.com.go(nl: Bool, st: St, cc: Char) -> St:
-  match nl:
+# tab is the one control a comment may hold
+def lex.com.tab(tab: Bool, st: St) -> St:
+  match tab:
+    case True{}:
+      st
+    case False{}:
+      st.err(st, "invalid control in comment")
+
+# any other character is part of the comment
+def lex.com.ctl(ctl: Bool, tab: Bool, st: St) -> St:
+  match ctl:
     case False{}:
       st
+    case True{}:
+      lex.com.tab(tab, st)
+
+# a comment runs to the end of the line and holds no control but tab
+def lex.com.go(nl: Bool, ctl: Bool, tab: Bool, st: St, cc: Char) -> St:
+  match nl:
+    case False{}:
+      lex.com.ctl(ctl, tab, st)
     case True{}:
       lex.com.nl(st, cc)
 
 # a comment runs to the end of the line
 def lex.com(st: St, +cc: Char) -> St:
-  lex.com.go(ch.nl(cc), st, cc)
+  lex.com.go(ch.nl(cc), ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), st, cc)
 
 # the header is an array of tables
 def lex.head.arr(st: St) -> St:
@@ -4707,9 +4727,9 @@ def read.fast.bare(
       read.fast.old(bad, rows, heads, here, parts, buf, LBare{}, back, qkind, stack,
         uni, left, arrtab, cc)
 
-# one character of a comment
+# one character of a comment. a control, a newline among them, takes the full step
 def read.fast.com(
-  nl: Bool,
+  ctl: Bool,
   bad: String,
   rows: List<&2, Val>,
   heads: List<&2, String>,
@@ -4724,7 +4744,7 @@ def read.fast.com(
   arrtab: Bool,
   +cc: Char
 ) -> St:
-  match nl:
+  match ctl:
     case False{}:
       read.fast.st(bad, rows, heads, here, parts, buf, LCom{}, back, qkind, stack,
         uni, left, arrtab)
@@ -4841,7 +4861,7 @@ def read.fast.lex(
       read.fast.bare(ch.delim(cc), bad, rows, heads, here, parts, buf, back, qkind,
         stack, uni, left, arrtab, cc)
     case LCom{}:
-      read.fast.com(ch.nl(cc), bad, rows, heads, here, parts, buf, back, qkind, stack,
+      read.fast.com(ch.ctl(cc), bad, rows, heads, here, parts, buf, back, qkind, stack,
         uni, left, arrtab, cc)
     case LTop{}:
       read.fast.ws(ch.sp(cc), ch.nl(cc), True{}, bad, rows, heads, here, parts, buf,
@@ -4934,9 +4954,11 @@ def read.fast(st: St, +cc: Char) -> St:
   read.fast.hold(hold, lead, lex, qkind, bad, rows, heads, here, parts, buf, back,
     stack, uni, left, arrtab, cc)
 
-# where the next source character is read. MEat is the body of a plain string
+# where the next source character is read. MEat is the body of a plain string, and
+# MCr follows a carriage return, which only a line feed may follow
 type Mode is Data:
   MScan{st: St}
+  MCr{st: St}
   MOpen{basic: Bool, q: Char, qkind: QKind, bad: String, rows: List<&2, Val>,
     heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
     buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
@@ -5403,31 +5425,50 @@ def doc.wrap(st: St) -> Mode:
   doc.wrap.lex(lex, bad, rows, heads, here, parts, buf, back, qkind, stack, hold,
     uni, left, arrtab, lead)
 
+# a carriage return must be followed by a line feed
+def doc.scan.cr(cr: Bool, st: St, cc: Char) -> Mode:
+  match cr:
+    case True{}:
+      MCr{read.fast(st, cc)}
+    case False{}:
+      MScan{read.fast(st, cc)}
+
 # an apostrophe may open a literal string
-def doc.scan.sq(sq: Bool, st: St, cc: Char) -> Mode:
+def doc.scan.sq(sq: Bool, cr: Bool, st: St, cc: Char) -> Mode:
   match sq:
     case True{}:
       doc.wrap(read.fast(st, cc))
     case False{}:
-      MScan{read.fast(st, cc)}
+      doc.scan.cr(cr, st, cc)
 
 # a quote may open a basic string. any other character is the old step
-def doc.scan.q(dq: Bool, sq: Bool, st: St, cc: Char) -> Mode:
+def doc.scan.q(dq: Bool, sq: Bool, cr: Bool, st: St, cc: Char) -> Mode:
   match dq:
     case True{}:
       doc.wrap(read.fast(st, cc))
     case False{}:
-      doc.scan.sq(sq, st, cc)
+      doc.scan.sq(sq, cr, st, cc)
 
 # one source character outside a plain string
 def doc.scan(st: St, +cc: Char) -> Mode:
-  doc.scan.q(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), st, cc)
+  doc.scan.q(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13),
+    st, cc)
+
+# the character after a carriage return: a line feed ends the line, anything else fails
+def doc.cr(lf: Bool, st: St, cc: Char) -> Mode:
+  match lf:
+    case True{}:
+      MScan{read.fast(st, cc)}
+    case False{}:
+      MScan{st.err(st, "carriage return without line feed")}
 
 # one character at a time. a plain string keeps a span of this suffix
 def doc.read(text: String, mode: Mode) -> Doc:
   match text mode:
     case SNil{} MScan{st}:
       read.fin(read.once2(st))
+    case SNil{} MCr{st}:
+      read.fin(read.once2(st.err(st, "carriage return without line feed")))
     case SNil{} MOpen{_basic, _q, qkind, bad, rows, heads, here, parts, buf, back,
       stack, uni, left, arrtab}:
       read.fin(read.once2(St{bad, rows, heads, here, parts, buf, LQ{}, back, qkind,
@@ -5446,6 +5487,8 @@ def doc.read(text: String, mode: Mode) -> Doc:
         stack, uni, left, arrtab, h))
     case SCon{+h, t} MScan{st}:
       doc.read(t, doc.scan(st, h))
+    case SCon{+h, t} MCr{st}:
+      doc.read(t, doc.cr(Char.is_eq(h, '\n'), st, h))
 
 # a scanner at the start of a document
 def st.start() -> St:

@@ -36,7 +36,7 @@ A tag may name a proved or a pending requirement, never a Trusted one or an ID n
 
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
-| TOML-TEXT-1 | For every text `t` of Unicode scalar values: `bad(parse(t))` is `""` exactly when `t` matches toml.abnf's `toml` rule (TOML v1.0.0) and breaks none of the rules of TOML-TEXT-2 | Proved | pending |  |
+| TOML-TEXT-1 | For every text `t` of Unicode scalar values: `bad(parse(t))` is `""` exactly when `t` matches toml.abnf's `toml` rule (TOML v1.0.0) and breaks none of the rules of TOML-TEXT-2 | Proved | pending | LAWS.bend fail_stays; LAWS.bend comment_control_refused; LAWS.bend lone_cr_refused; LAWS.bend last_cr_refused; LAWS.bend value_on_key_line; LAWS.bend value_on_key_line_crlf |
 | TOML-TEXT-2 | For every text `t` that matches the `toml` rule, `bad(parse(t))` is `""` exactly when each key, table and array of tables is defined once; no `[table]` header names a table that dotted keys or an earlier header defined, or an array of tables; no dotted key adds to a table a header defined, or to an array of tables; no `[[array]]` header names a table or a static array; and inline tables and arrays are not extended after they are written. Each element of an array of tables is its own scope for these rules | Proved | pending |  |
 
 ### Keys (TOML-KEY)
@@ -79,6 +79,7 @@ TOML-KEY-1, TOML-GET-1, TOML-GET-2 and TOML-READ-1 are proved; every other row i
 
 | Row | Proved so far | Missing |
 | :---- | :---- | :---- |
+| TOML-TEXT-1 | a failed scanner keeps its first error to the end of the text (`fail_stays`); from every scanner state inside a comment, a control other than tab is refused (`comment_control_refused`); from every scanner state, a carriage return followed by anything but a line feed, or ending the text, is refused (`lone_cr_refused`, `last_cr_refused`); from every scanner state waiting for a value after `=`, a newline is refused (`value_on_key_line`, `value_on_key_line_crlf`) | the grammar relation, and `bad(parse(t))` is `""` exactly when `t` matches it; errors outside the scanner (tree errors) staying set; a carriage return inside a one-line string is refused by the string's own control check, which no law states yet |
 | TOML-KEY-2 | `key` picks `s` or `key.basic(s)` by `bare(s)` (`key_is_bare_when_it_can`, `key_is_quoted_when_it_must`) | that `key.basic(s)` reads back as `s` |
 | TOML-NUM-1 | a bare word, and its numeral scan, that starts with two signs, or with `0_` after an optional sign, holds no value, whatever follows (`num_two_signs`, `num_zero_underscore`, `num_signed_zero_underscore`, `word_two_signs`, `word_zero_underscore`, `word_signed_zero_underscore`); after one sign, a character that is not a sign is read as the first character of an unsigned numeral, with the sign kept (`num_one_sign`) | the rest of the `integer` rule in both directions (digits, underscores, prefixes, the signed 64-bit range), the digits read, and the same stated over `parse` |
 | TOML-NUM-2 | the same laws: a float's integer part is a `dec-int`, so two signs and `0_` are refused before any `.` or exponent (`0_0.5`, `0_1e2`, `-+1.5`) | the rest of the `float` rule in both directions, the spelling read, `render`, and the same stated over `parse` |

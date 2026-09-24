@@ -514,3 +514,115 @@ law date_day_past_month:
   for rest: List<&2, Char>
   for e: {False{} == Bool.and(U32.is_ge(dd, 1), U32.is_le(dd, days_in(yy, mm))) : Bool}
   {when_refused(T.when.date.ok(yy, month.num(mm), dd, rest)) == True{} : Bool}
+
+# LAW: once the scanner has failed, the rest of the text leaves the first error
+# as it is. Every refusal of the scanner lands here, so each law below only
+# has to show that one step fails
+# TOML-TEXT-1
+law fail_stays:
+  for +bad: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +parts: List<&2, String>
+  for +buf: List<&2, Char>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +stack: List<&2, T.Ctx>
+  for +uni: U32
+  for +left: U32
+  for +arrtab: Bool
+  for +lead: Bool
+  for e: {String.is_empty(bad) == False{} : Bool}
+  for +t: String
+  {T.bad(T.doc.read(t, T.MScan{T.St{bad, rows, heads, here, parts, buf, T.LSink{}, back,
+    qkind, stack, T.HNone{}, uni, left, arrtab, lead}})) == bad : String}
+
+# a character toml.abnf's non-eol leaves out, besides the line feed and the
+# carriage return a newline is made of: U+0000 to U+001F or U+007F, and not
+# U+000A, U+000D or tab
+def com.ctl(+cc: Char) -> Bool:
+  Bool.and(Bool.or(U32.is_lt(Char.to_u32(cc), 32), U32.is_eq(Char.to_u32(cc), 127)),
+    Bool.not(Bool.or(Bool.or(U32.is_eq(Char.to_u32(cc), 10),
+      U32.is_eq(Char.to_u32(cc), 13)), U32.is_eq(Char.to_u32(cc), 9))))
+
+# LAW: a comment holds no control but tab: from every scanner state inside a
+# comment, such a character fails the document, whatever follows it
+# TOML-TEXT-1
+law comment_control_refused:
+  for +bad: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +parts: List<&2, String>
+  for +buf: List<&2, Char>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +stack: List<&2, T.Ctx>
+  for +uni: U32
+  for +left: U32
+  for +arrtab: Bool
+  for +c: Char
+  for e: {com.ctl(c) == True{} : Bool}
+  for +t: String
+  {String.is_empty(T.bad(T.doc.read(SCon{c, t}, T.MScan{T.St{bad, rows, heads, here,
+    parts, buf, T.LCom{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}})))
+    == False{} : Bool}
+
+# LAW: a carriage return is a newline only with a line feed after it: from
+# every scanner state, one followed by any other character fails the document
+# TOML-TEXT-1
+law lone_cr_refused:
+  for +st: T.St
+  for +c: Char
+  for e: {Char.is_eq(c, '\n') == False{} : Bool}
+  for +t: String
+  {String.is_empty(T.bad(T.doc.read(SCon{'\r', SCon{c, t}}, T.MScan{st}))) == False{}
+    : Bool}
+
+# LAW: and one that ends the text fails it too
+# TOML-TEXT-1
+law last_cr_refused:
+  for +st: T.St
+  {String.is_empty(T.bad(T.doc.read("\r", T.MScan{st}))) == False{} : Bool}
+
+# LAW: a value is on its key's line: from every scanner state waiting for the
+# value after `=`, a line feed fails the document, whatever follows it
+# TOML-TEXT-1
+law value_on_key_line:
+  for +bad: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +parts: List<&2, String>
+  for +buf: List<&2, Char>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +stack: List<&2, T.Ctx>
+  for +uni: U32
+  for +left: U32
+  for +arrtab: Bool
+  for +t: String
+  {String.is_empty(T.bad(T.doc.read(SCon{'\n', t}, T.MScan{T.St{bad, rows, heads, here,
+    parts, buf, T.LVal{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}})))
+    == False{} : Bool}
+
+# LAW: and so does a carriage return and line feed
+# TOML-TEXT-1
+law value_on_key_line_crlf:
+  for +bad: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +parts: List<&2, String>
+  for +buf: List<&2, Char>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +stack: List<&2, T.Ctx>
+  for +uni: U32
+  for +left: U32
+  for +arrtab: Bool
+  for +t: String
+  {String.is_empty(T.bad(T.doc.read(SCon{'\r', SCon{'\n', t}}, T.MScan{T.St{bad, rows,
+    heads, here, parts, buf, T.LVal{}, back, qkind, stack, T.HNone{}, uni, left, arrtab,
+    False{}}}))) == False{} : Bool}
