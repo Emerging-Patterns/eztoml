@@ -43,7 +43,7 @@ A tag may name a proved or a pending requirement, never a Trusted one or an ID n
 
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
-| TOML-KEY-1 | `bare(s)` holds exactly when `s` is nonempty and every character of `s` is an ASCII letter, an ASCII digit, `_` or `-` (toml.abnf `unquoted-key`) | Proved | pending | LAWS.bend bare_needs_a_char |
+| TOML-KEY-1 | `bare(s)` holds exactly when `s` is nonempty and every character of `s` is an ASCII letter, an ASCII digit, `_` or `-` (toml.abnf `unquoted-key`) | Proved | proved | LAWS.bend bare_needs_a_char; LAWS.bend bare_is_unquoted_key |
 | TOML-KEY-2 | `key(s)` is `s` when `bare(s)`; otherwise it is a basic string, and for every `s` of Unicode scalar values, `parse(key(s) ++ " = 1")` has no error and one pair, named `s` | Proved | pending | LAWS.bend key_is_bare_when_it_can; LAWS.bend key_is_quoted_when_it_must |
 | TOML-KEY-3 | In a parsed document, a key's name is its characters however it was written: a bare key, a basic or literal string with its escapes decoded, or a segment of a dotted key or a header, so `get` and `at` find it by those characters | Proved | pending |  |
 
@@ -61,9 +61,9 @@ A tag may name a proved or a pending requirement, never a Trusted one or an ID n
 
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
-| TOML-GET-1 | `get(rows, k)` is `Found{v}` for the value `v` of the first `VPair{k, v}` in `rows`, and `Miss` when no pair in `rows` is named `k` | Proved | pending | LAWS.bend get_first |
-| TOML-GET-2 | `at(rows, [])` is `Miss`; `at(rows, [k])` is `get(rows, k)`; and `at(rows, k <> ks)` with `ks` nonempty is `at` of the rows of the value `get(rows, k)` finds, when that value is a table or an inline table, and `Miss` otherwise, an array of tables included | Proved | pending |  |
-| TOML-READ-1 | For every value `v`, `string(v)` is its characters when `v` is a string, owned or a span, and `""` otherwise; `digits(v)` is its digits when `v` is an integer, and `""` otherwise; `flag(v)` is its bit when `v` is a boolean, and `false` otherwise | Proved | pending | LAWS.bend string_of |
+| TOML-GET-1 | `get(rows, k)` is `Found{v}` for the value `v` of the first `VPair{k, v}` in `rows`, and `Miss` when no pair in `rows` is named `k` | Proved | proved | LAWS.bend get_first; LAWS.bend get_skips_other_name; LAWS.bend get_skips_non_pair; LAWS.bend get_finds_first; LAWS.bend get_misses |
+| TOML-GET-2 | `at(rows, [])` is `Miss`; `at(rows, [k])` is `get(rows, k)`; and `at(rows, k <> ks)` with `ks` nonempty is `at` of the rows of the value `get(rows, k)` finds, when that value is a table or an inline table, and `Miss` otherwise, an array of tables included | Proved | pending | LAWS.bend at_empty; LAWS.bend at_one; LAWS.bend at_table; LAWS.bend at_inline; LAWS.bend at_miss; LAWS.bend at_leaf |
+| TOML-READ-1 | For every value `v`, `string(v)` is its characters when `v` is a string, owned or a span, and `""` otherwise; `digits(v)` is its digits when `v` is an integer, and `""` otherwise; `flag(v)` is its bit when `v` is a boolean, and `false` otherwise | Proved | proved | LAWS.bend string_of; LAWS.bend string_of_span; LAWS.bend string_of_other; LAWS.bend digits_of; LAWS.bend digits_of_other; LAWS.bend flag_of; LAWS.bend flag_of_other |
 
 ### Trusted (TOML-TRUST)
 
@@ -79,10 +79,8 @@ Every row is pending. For the rows that name laws already:
 
 | Row | Proved so far | Missing |
 | :---- | :---- | :---- |
-| TOML-KEY-1 | the empty string is not bare (`bare_needs_a_char`) | a nonempty string is bare exactly when every character is in the class |
 | TOML-KEY-2 | `key` picks `s` or `key.basic(s)` by `bare(s)` (`key_is_bare_when_it_can`, `key_is_quoted_when_it_must`) | that `key.basic(s)` reads back as `s` |
-| TOML-GET-1 | a pair at the head of the rows is found (`get_first`) | a later pair, the first of a repeated name, and `Miss` |
-| TOML-READ-1 | `string` of an owned string (`string_of`) | spans, `digits`, `flag`, and the defaults on other kinds |
+| TOML-GET-2 | the empty path, one key, and a longer path through a table, an inline table, a miss, or a value with no rows (`at_empty`, `at_one`, `at_table`, `at_inline`, `at_miss`, `at_leaf`) | a longer path through a value `get` finds that is an element of an array of tables (`VAot`): `at.rows` reads its rows, and the row says `Miss` |
 
 The order of work is in the RFC's Rollout: the cheap readers first, then the conformance fixes each with its partial law, then `wf`, `same` and the renderer, then the round trip, then the grammar relation.
 
