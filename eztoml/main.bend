@@ -166,9 +166,9 @@ type Esc is Data:
   EBad{}
 
 # a character a bare key may hold
-def bare.at(+c: Char) -> Bool:
-  Bool.or(Char.is_alpha(c), Bool.or(Char.is_digit(c),
-    Bool.or(Char.is_eq(c, '_'), Char.is_eq(c, '-'))))
+def bare.at(+cc: Char) -> Bool:
+  Bool.or(Char.is_alpha(cc), Bool.or(Char.is_digit(cc),
+    Bool.or(Char.is_eq(cc, '_'), Char.is_eq(cc, '-'))))
 
 # one step of the bare-key walk, with the head's answer in hand
 def bare.all.step(here: Bool, rest: Unit -> Bool) -> Bool:
@@ -187,26 +187,26 @@ def bare.all(cs: List<&2, Char>) -> Bool:
       bare.all.step(bare.at(h), _u => bare.all(t))
 
 # whether a key can be written without quotes
-def bare(+s: String) -> Bool:
-  Bool.and(Bool.not(String.is_empty(s)), bare.all(String.to_list(s)))
+def bare(+ss: String) -> Bool:
+  Bool.and(Bool.not(String.is_empty(ss)), bare.all(String.to_list(ss)))
 
 # one hex nibble as a character
-def hex.char.go(dec: Bool, n: U32) -> Char:
+def hex.char.go(dec: Bool, nn: U32) -> Char:
   match dec:
     case True{}:
-      Chr{U32.add(48, n)}
+      Chr{U32.add(48, nn)}
     case False{}:
-      Chr{U32.add(87, n)}
+      Chr{U32.add(87, nn)}
 
 # one hex nibble as a character
-def hex.char(+n: U32) -> Char:
-  hex.char.go(U32.is_lt(n, 10), n)
+def hex.char(+nn: U32) -> Char:
+  hex.char.go(U32.is_lt(nn, 10), nn)
 
 # four lowercase hex digits of a code point, then the \u introducer, reversed
-def basic.hex(+u: U32, out: List<&2, Char>) -> List<&2, Char>:
-  hex.char(U32.mod(u, 16)) <> (hex.char(U32.mod(U32.shrn(u, 4n), 16)) <>
-    (hex.char(U32.mod(U32.shrn(u, 8n), 16)) <>
-      (hex.char(U32.mod(U32.shrn(u, 12n), 16)) <> ('u' <> ('\\' <> out)))))
+def basic.hex(+uu: U32, out: List<&2, Char>) -> List<&2, Char>:
+  hex.char(U32.mod(uu, 16)) <> (hex.char(U32.mod(U32.shrn(uu, 4n), 16)) <>
+    (hex.char(U32.mod(U32.shrn(uu, 8n), 16)) <>
+      (hex.char(U32.mod(U32.shrn(uu, 12n), 16)) <> ('u' <> ('\\' <> out)))))
 
 # an escape mark reversed onto the output: the mark, then the backslash
 def basic.esc(mark: Char, out: List<&2, Char>) -> List<&2, Char>:
@@ -221,79 +221,79 @@ def basic.cls.hex(hit: Bool) -> BK:
       BKCh{}
 
 # backslash
-def basic.cls.92(hit: Bool, +u: U32) -> BK:
+def basic.cls.92(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'\\'}
     case False{}:
-      basic.cls.hex(Bool.or(U32.is_lt(u, 32), U32.is_eq(u, 127)))
+      basic.cls.hex(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)))
 
 # quotation mark
-def basic.cls.34(hit: Bool, +u: U32) -> BK:
+def basic.cls.34(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'"'}
     case False{}:
-      basic.cls.92(U32.is_eq(u, 92), u)
+      basic.cls.92(U32.is_eq(uu, 92), uu)
 
 # carriage return
-def basic.cls.13(hit: Bool, +u: U32) -> BK:
+def basic.cls.13(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'r'}
     case False{}:
-      basic.cls.34(U32.is_eq(u, 34), u)
+      basic.cls.34(U32.is_eq(uu, 34), uu)
 
 # form feed
-def basic.cls.12(hit: Bool, +u: U32) -> BK:
+def basic.cls.12(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'f'}
     case False{}:
-      basic.cls.13(U32.is_eq(u, 13), u)
+      basic.cls.13(U32.is_eq(uu, 13), uu)
 
 # line feed
-def basic.cls.10(hit: Bool, +u: U32) -> BK:
+def basic.cls.10(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'n'}
     case False{}:
-      basic.cls.12(U32.is_eq(u, 12), u)
+      basic.cls.12(U32.is_eq(uu, 12), uu)
 
 # tab
-def basic.cls.9(hit: Bool, +u: U32) -> BK:
+def basic.cls.9(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'t'}
     case False{}:
-      basic.cls.10(U32.is_eq(u, 10), u)
+      basic.cls.10(U32.is_eq(uu, 10), uu)
 
 # backspace, then the rest
-def basic.cls.8(hit: Bool, +u: U32) -> BK:
+def basic.cls.8(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'b'}
     case False{}:
-      basic.cls.9(U32.is_eq(u, 9), u)
+      basic.cls.9(U32.is_eq(uu, 9), uu)
 
 # the class of a code point in a basic string
-def basic.cls(+u: U32) -> BK:
-  basic.cls.8(U32.is_eq(u, 8), u)
+def basic.cls(+uu: U32) -> BK:
+  basic.cls.8(U32.is_eq(uu, 8), uu)
 
 # one character of a basic string, reversed onto the output
-def basic.disp(k: BK, c: Char, u: U32, out: List<&2, Char>) -> List<&2, Char>:
-  match k:
+def basic.disp(kk: BK, cc: Char, uu: U32, out: List<&2, Char>) -> List<&2, Char>:
+  match kk:
     case BKCh{}:
-      c <> out
+      cc <> out
     case BKEsc{mark}:
       basic.esc(mark, out)
     case BKHex{}:
-      basic.hex(u, out)
+      basic.hex(uu, out)
 
 # one character of a basic string
-def basic.one(+c: Char, out: List<&2, Char>) -> List<&2, Char>:
-  +u = Char.to_u32(c)
-  basic.disp(basic.cls(u), c, u, out)
+def basic.one(+cc: Char, out: List<&2, Char>) -> List<&2, Char>:
+  +u = Char.to_u32(cc)
+  basic.disp(basic.cls(u), cc, u, out)
 
 # the escaped characters of a basic string, reversed
 def basic.go(cs: List<&2, Char>, out: List<&2, Char>) -> List<&2, Char>:
@@ -304,57 +304,57 @@ def basic.go(cs: List<&2, Char>, out: List<&2, Char>) -> List<&2, Char>:
       basic.go(t, basic.one(h, out))
 
 # a basic string: quotes, with controls and quotes escaped
-def key.basic(+s: String) -> String:
+def key.basic(+ss: String) -> String:
   "\"" ++ String.from_list(List.reverse(&2, Char,
-    basic.go(String.to_list(s), []))) ++ "\""
+    basic.go(String.to_list(ss), []))) ++ "\""
 
 # bare when the name allows it, otherwise a basic string
-def key.go(ok: Bool, +s: String) -> String:
+def key.go(ok: Bool, +ss: String) -> String:
   match ok:
     case True{}:
-      s
+      ss
     case False{}:
-      key.basic(s)
+      key.basic(ss)
 
 # a key as TOML writes it
-def key(+s: String) -> String:
-  key.go(bare(s), s)
+def key(+ss: String) -> String:
+  key.go(bare(ss), ss)
 
 # the overflow of a decimal step, least-significant digit first
-def dec.carry.c0(z: Bool, c: U32) -> List<&2, U32>:
-  match z:
+def dec.carry.c0(zz: Bool, cc: U32) -> List<&2, U32>:
+  match zz:
     case True{}:
       []
     case False{}:
-      [U32.mod(c, 10)]
+      [U32.mod(cc, 10)]
 
 # the overflow of a decimal step
-def dec.carry.c(+c: U32) -> List<&2, U32>:
-  dec.carry.c0(U32.is_zero(c), c)
+def dec.carry.c(+cc: U32) -> List<&2, U32>:
+  dec.carry.c0(U32.is_zero(cc), cc)
 
 # the next digit of an overflow
-def dec.carry.b0(z: Bool, +c: U32) -> List<&2, U32>:
-  match z:
+def dec.carry.b0(zz: Bool, +cc: U32) -> List<&2, U32>:
+  match zz:
     case True{}:
       []
     case False{}:
-      U32.mod(c, 10) <> dec.carry.c(U32.div(c, 10))
+      U32.mod(cc, 10) <> dec.carry.c(U32.div(cc, 10))
 
 # the next digit of an overflow
-def dec.carry.b(+c: U32) -> List<&2, U32>:
-  dec.carry.b0(U32.is_zero(c), c)
+def dec.carry.b(+cc: U32) -> List<&2, U32>:
+  dec.carry.b0(U32.is_zero(cc), cc)
 
 # the first digit of an overflow
-def dec.carry.a(z: Bool, +c: U32) -> List<&2, U32>:
-  match z:
+def dec.carry.a(zz: Bool, +cc: U32) -> List<&2, U32>:
+  match zz:
     case True{}:
       []
     case False{}:
-      U32.mod(c, 10) <> dec.carry.b(U32.div(c, 10))
+      U32.mod(cc, 10) <> dec.carry.b(U32.div(cc, 10))
 
 # the digits of a leftover carry
-def dec.carry(+c: U32) -> List<&2, U32>:
-  dec.carry.a(U32.is_zero(c), c)
+def dec.carry(+cc: U32) -> List<&2, U32>:
+  dec.carry.a(U32.is_zero(cc), cc)
 
 # multiply a decimal numeral by a radix and add a digit
 def dec.go(ds: List<&2, U32>, +radix: U32, +carry: U32) -> List<&2, U32>:
@@ -366,8 +366,8 @@ def dec.go(ds: List<&2, U32>, +radix: U32, +carry: U32) -> List<&2, U32>:
         U32.div(U32.add(U32.mul(d, radix), carry), 10))
 
 # a digit character
-def dec.ch(d: U32) -> Char:
-  Chr{U32.add(48, d)}
+def dec.ch(dd: U32) -> Char:
+  Chr{U32.add(48, dd)}
 
 # digits as characters, in the order given
 def dec.chars(ds: List<&2, U32>) -> List<&2, Char>:
@@ -378,28 +378,28 @@ def dec.chars(ds: List<&2, U32>) -> List<&2, Char>:
       dec.ch(d) <> dec.chars(t)
 
 # whether a leading zero is still being skipped
-def dec.drop.lead(lead: Bool, +h: Char) -> Bool:
+def dec.drop.lead(lead: Bool, +hh: Char) -> Bool:
   match lead:
     case False{}:
       False{}
     case True{}:
-      Char.is_eq(h, '0')
+      Char.is_eq(hh, '0')
 
 # a leading zero is skipped; any other character is kept
-def dec.drop.outz(z: Bool, h: Char, out: List<&2, Char>) -> List<&2, Char>:
-  match z:
+def dec.drop.outz(zz: Bool, hh: Char, out: List<&2, Char>) -> List<&2, Char>:
+  match zz:
     case True{}:
       out
     case False{}:
-      h <> out
+      hh <> out
 
 # the output after one character, reversed
-def dec.drop.out(lead: Bool, +h: Char, out: List<&2, Char>) -> List<&2, Char>:
+def dec.drop.out(lead: Bool, +hh: Char, out: List<&2, Char>) -> List<&2, Char>:
   match lead:
     case False{}:
-      h <> out
+      hh <> out
     case True{}:
-      dec.drop.outz(Char.is_eq(h, '0'), h, out)
+      dec.drop.outz(Char.is_eq(hh, '0'), hh, out)
 
 # the numeral, or 0 when every digit was zero
 def dec.drop.end(lead: Bool, out: List<&2, Char>) -> String:
@@ -422,125 +422,125 @@ def dec.text(ds: List<&2, U32>) -> String:
   dec.drop(dec.chars(List.reverse(&2, U32, ds)), True{}, [])
 
 # a code point's digit value, or 99 when the character is not a digit
-def dig.up(ok: Bool, u: U32) -> U32:
+def dig.up(ok: Bool, uu: U32) -> U32:
   match ok:
     case True{}:
-      U32.sub(u, 55)
+      U32.sub(uu, 55)
     case False{}:
       99
 
 # a lowercase hex digit, otherwise an uppercase one
-def dig.low(ok: Bool, +u: U32) -> U32:
+def dig.low(ok: Bool, +uu: U32) -> U32:
   match ok:
     case True{}:
-      U32.sub(u, 87)
+      U32.sub(uu, 87)
     case False{}:
-      dig.up(Bool.and(U32.is_ge(u, 65), U32.is_le(u, 70)), u)
+      dig.up(Bool.and(U32.is_ge(uu, 65), U32.is_le(uu, 70)), uu)
 
 # a decimal digit, otherwise a hex letter
-def dig.dec(ok: Bool, +u: U32) -> U32:
+def dig.dec(ok: Bool, +uu: U32) -> U32:
   match ok:
     case True{}:
-      U32.sub(u, 48)
+      U32.sub(uu, 48)
     case False{}:
-      dig.low(Bool.and(U32.is_ge(u, 97), U32.is_le(u, 102)), u)
+      dig.low(Bool.and(U32.is_ge(uu, 97), U32.is_le(uu, 102)), uu)
 
 # the value of a digit character, or 99
-def dig.val(+c: Char) -> U32:
-  +u = Char.to_u32(c)
+def dig.val(+cc: Char) -> U32:
+  +u = Char.to_u32(cc)
   dig.dec(Bool.and(U32.is_ge(u, 48), U32.is_le(u, 57)), u)
 
 # whether a digit value fits a base
-def dig.ok(d: U32, base: U32) -> Bool:
-  U32.is_lt(d, base)
+def dig.ok(dd: U32, base: U32) -> Bool:
+  U32.is_lt(dd, base)
 
 # exactly k digits, or DigBad
-def take.acc.d(digit: Bool, n: U32, +c: Char) -> U32:
+def take.acc.d(digit: Bool, nn: U32, +cc: Char) -> U32:
   match digit:
     case False{}:
-      n
+      nn
     case True{}:
-      U32.add(U32.mul(n, 10), U32.sub(Char.to_u32(c), 48))
+      U32.add(U32.mul(nn, 10), U32.sub(Char.to_u32(cc), 48))
 
 # the accumulator after one character
-def take.acc(ok: Bool, n: U32, +c: Char) -> U32:
+def take.acc(ok: Bool, nn: U32, +cc: Char) -> U32:
   match ok:
     case False{}:
-      n
+      nn
     case True{}:
-      take.acc.d(Char.is_digit(c), n, c)
+      take.acc.d(Char.is_digit(cc), nn, cc)
 
 # the scan stays well only while every character is a digit
-def take.ok(ok: Bool, +c: Char) -> Bool:
+def take.ok(ok: Bool, +cc: Char) -> Bool:
   match ok:
     case False{}:
       False{}
     case True{}:
-      Char.is_digit(c)
+      Char.is_digit(cc)
 
 # the finished take
-def take.fin(ok: Bool, n: U32, cs: List<&2, Char>) -> Dig:
+def take.fin(ok: Bool, nn: U32, cs: List<&2, Char>) -> Dig:
   match ok:
     case True{}:
-      DigOk{n, cs}
+      DigOk{nn, cs}
     case False{}:
       DigBad{}
 
 # exactly k digits from the front of a list
-def take.n(k: Nat, cs: List<&2, Char>, n: U32, +ok: Bool) -> Dig:
-  match k:
+def take.n(kk: Nat, cs: List<&2, Char>, nn: U32, +ok: Bool) -> Dig:
+  match kk:
     case 0n:
-      take.fin(ok, n, cs)
+      take.fin(ok, nn, cs)
     case 1n+p:
       match cs:
         case []:
           DigBad{}
         case +h <> t:
-          take.n(p, t, take.acc(ok, n, h), take.ok(ok, h))
+          take.n(p, t, take.acc(ok, nn, h), take.ok(ok, h))
 
 # a number is inside the inclusive bounds
-def bound.rng(+n: U32, lo: U32, hi: U32) -> Bool:
-  Bool.and(U32.is_ge(n, lo), U32.is_le(n, hi))
+def bound.rng(+nn: U32, lo: U32, hi: U32) -> Bool:
+  Bool.and(U32.is_ge(nn, lo), U32.is_le(nn, hi))
 
 # two digits, zero padded
-def pad2.go(small: Bool, n: U32) -> String:
+def pad2.go(small: Bool, nn: U32) -> String:
   match small:
     case True{}:
-      "0" ++ U32.show(n)
+      "0" ++ U32.show(nn)
     case False{}:
-      U32.show(n)
+      U32.show(nn)
 
 # two digits, zero padded
-def text.pad2(+n: U32) -> String:
-  pad2.go(U32.is_lt(n, 10), n)
+def text.pad2(+nn: U32) -> String:
+  pad2.go(U32.is_lt(nn, 10), nn)
 
 # the one-zero pad, or the digits themselves
-def pad4.big(n: U32, big: Bool) -> String:
+def pad4.big(nn: U32, big: Bool) -> String:
   match big:
     case True{}:
-      "0" ++ U32.show(n)
+      "0" ++ U32.show(nn)
     case False{}:
-      U32.show(n)
+      U32.show(nn)
 
 # the three-digit and two-digit pads
-def pad4.mid(n: U32, mid: Bool, big: Bool) -> String:
+def pad4.mid(nn: U32, mid: Bool, big: Bool) -> String:
   match mid:
     case True{}:
-      "00" ++ U32.show(n)
+      "00" ++ U32.show(nn)
     case False{}:
-      pad4.big(n, big)
+      pad4.big(nn, big)
 
 # four digits, zero padded
-def pad4.go(n: U32, small: Bool, mid: Bool, big: Bool) -> String:
+def pad4.go(nn: U32, small: Bool, mid: Bool, big: Bool) -> String:
   match small:
     case True{}:
-      "000" ++ U32.show(n)
+      "000" ++ U32.show(nn)
     case False{}:
-      pad4.mid(n, mid, big)
+      pad4.mid(nn, mid, big)
 
 # four digits, zero padded
-def text.pad4(+n: U32) -> String:
-  pad4.go(n, U32.is_lt(n, 10), U32.is_lt(n, 100), U32.is_lt(n, 1000))
+def text.pad4(+nn: U32) -> String:
+  pad4.go(nn, U32.is_lt(nn, 10), U32.is_lt(nn, 100), U32.is_lt(nn, 1000))
 
 # the sign of a zone offset
 def zone.mark(sign: Sign) -> String:
@@ -551,12 +551,12 @@ def zone.mark(sign: Sign) -> String:
       "-"
 
 # a numeric zone offset
-def zone.shift(sign: Sign, h: U32, mi: U32) -> String:
-  zone.mark(sign) ++ text.pad2(h) ++ ":" ++ text.pad2(mi)
+def zone.shift(sign: Sign, hh: U32, mi: U32) -> String:
+  zone.mark(sign) ++ text.pad2(hh) ++ ":" ++ text.pad2(mi)
 
 # a zone suffix
-def zone.text(z: Zone) -> String:
-  match z:
+def zone.text(zz: Zone) -> String:
+  match zz:
     case Zulu{}:
       "Z"
     case Shift{sign, h, mi}:
@@ -575,18 +575,18 @@ def clock.frac(+frac: String) -> String:
   clock.frac.go(String.is_empty(frac), frac)
 
 # a clock, with a fractional second when it has one
-def clock.text(c: Clock) -> String:
-  Clock{h, mi, s, frac} = c
+def clock.text(cc: Clock) -> String:
+  Clock{h, mi, s, frac} = cc
   text.pad2(h) ++ ":" ++ text.pad2(mi) ++ ":" ++ text.pad2(s) ++ clock.frac(frac)
 
 # a date
-def date.text(d: Date) -> String:
-  Date{y, mo, day} = d
+def date.text(dd: Date) -> String:
+  Date{y, mo, day} = dd
   text.pad4(y) ++ "-" ++ text.pad2(mo) ++ "-" ++ text.pad2(day)
 
 # a datetime in TOML spelling
-def when.text(w: When) -> String:
-  match w:
+def when.text(ww: When) -> String:
+  match ww:
     case WOff{date, clock, zone}:
       date.text(date) ++ "T" ++ clock.text(clock) ++ zone.text(zone)
     case WLocal{date, clock}:
@@ -629,111 +629,114 @@ def cs.tail(cs: List<&2, Char>) -> List<&2, Char>:
       t
 
 # a clock with its fraction filled in
-def clock.with(c: Clock, frac: String) -> Clock:
-  Clock{h, mi, s, _f} = c
+def clock.with(cc: Clock, frac: String) -> Clock:
+  Clock{h, mi, s, _f} = cc
   Clock{h, mi, s, frac}
 
 # a finished local datetime, or one with a zone still to read
-def when.done(_date: Date, _clock: Clock, w: When) -> WhenOut:
-  WSome{w}
+def when.done(_date: Date, _clock: Clock, ww: When) -> WhenOut:
+  WSome{ww}
 
 # Z ends the token
-def when.zone.z(t: List<&2, Char>, clock: Clock, date: Date) -> WhenOut:
-  match t:
+def when.zone.z(tt: List<&2, Char>, clock: Clock, date: Date) -> WhenOut:
+  match tt:
     case []:
       WSome{WOff{date, clock, Zulu{}}}
     case _ <> _:
       WFail{"invalid zone"}
 
 # the offset minute is in range
-def when.zone.mm.ok2(mi_ok: Bool, sign: Sign, h: U32, mi: U32, clock: Clock,
-  date: Date) -> WhenOut:
+def when.zone.mm.ok2(mi_ok: Bool, sign: Sign, hh: U32, mi: U32, clock: Clock, date: Date) -> WhenOut:
   match mi_ok:
     case False{}:
       WFail{"zone minute is out of range"}
     case True{}:
-      WSome{WOff{date, clock, Shift{sign, h, mi}}}
+      WSome{WOff{date, clock, Shift{sign, hh, mi}}}
 
 # the offset fields are in range
-def when.zone.mm.ok(h_ok: Bool, mi_ok: Bool, sign: Sign, h: U32, mi: U32,
-  clock: Clock, date: Date) -> WhenOut:
+def when.zone.mm.ok(h_ok: Bool, mi_ok: Bool, sign: Sign, hh: U32, mi: U32, clock: Clock, date: Date) -> WhenOut:
   match h_ok:
     case False{}:
       WFail{"zone hour is out of range"}
     case True{}:
-      when.zone.mm.ok2(mi_ok, sign, h, mi, clock, date)
+      when.zone.mm.ok2(mi_ok, sign, hh, mi, clock, date)
 
 # nothing follows an offset, and its fields are in range
-def when.zone.mm.end(cs: List<&2, Char>, h_ok: Bool, mi_ok: Bool, sign: Sign,
-  h: U32, mi: U32, clock: Clock, date: Date) -> WhenOut:
+def when.zone.mm.end(
+  cs: List<&2, Char>,
+  h_ok: Bool,
+  mi_ok: Bool,
+  sign: Sign,
+  hh: U32,
+  mi: U32,
+  clock: Clock,
+  date: Date
+) -> WhenOut:
   match cs:
     case []:
-      when.zone.mm.ok(h_ok, mi_ok, sign, h, mi, clock, date)
+      when.zone.mm.ok(h_ok, mi_ok, sign, hh, mi, clock, date)
     case _ <> _:
       WFail{"invalid zone"}
 
 # the offset minute is in range
-def when.zone.mm.go(d: Dig, sign: Sign, +h: U32, clock: Clock, date: Date) -> WhenOut:
-  match d:
+def when.zone.mm.go(dd: Dig, sign: Sign, +hh: U32, clock: Clock, date: Date) -> WhenOut:
+  match dd:
     case DigBad{}:
       WFail{"invalid zone"}
     case DigOk{+n, cs}:
-      when.zone.mm.end(cs, bound.rng(h, 0, 23), bound.rng(n, 0, 59), sign, h, n, clock, date)
+      when.zone.mm.end(cs, bound.rng(hh, 0, 23), bound.rng(n, 0, 59), sign, hh, n, clock, date)
 
 # the offset minute
-def when.zone.mm(hit: Bool, d: Dig, sign: Sign, h: U32, clock: Clock, date: Date) -> WhenOut:
+def when.zone.mm(hit: Bool, dd: Dig, sign: Sign, hh: U32, clock: Clock, date: Date) -> WhenOut:
   match hit:
     case False{}:
       WFail{"invalid zone"}
     case True{}:
-      when.zone.mm.go(d, sign, h, clock, date)
+      when.zone.mm.go(dd, sign, hh, clock, date)
 
 # the colon in an offset
-def when.zone.hh.colon(cs: List<&2, Char>, sign: Sign, h: U32, clock: Clock,
-  date: Date) -> WhenOut:
+def when.zone.hh.colon(cs: List<&2, Char>, sign: Sign, hh: U32, clock: Clock, date: Date) -> WhenOut:
   match cs:
     case []:
       WFail{"invalid zone"}
     case +c <> t:
-      when.zone.mm(Char.is_eq(c, ':'), take.n(2n, t, 0, True{}), sign, h, clock, date)
+      when.zone.mm(Char.is_eq(c, ':'), take.n(2n, t, 0, True{}), sign, hh, clock, date)
 
 # the offset hour
-def when.zone.hh(d: Dig, sign: Sign, clock: Clock, date: Date) -> WhenOut:
-  match d:
+def when.zone.hh(dd: Dig, sign: Sign, clock: Clock, date: Date) -> WhenOut:
+  match dd:
     case DigBad{}:
       WFail{"invalid zone"}
     case DigOk{n, cs}:
       when.zone.hh.colon(cs, sign, n, clock, date)
 
 # HH:MM of a numeric offset
-def when.zone.off(sign: Sign, t: List<&2, Char>, clock: Clock, date: Date) -> WhenOut:
-  when.zone.hh(take.n(2n, t, 0, True{}), sign, clock, date)
+def when.zone.off(sign: Sign, tt: List<&2, Char>, clock: Clock, date: Date) -> WhenOut:
+  when.zone.hh(take.n(2n, tt, 0, True{}), sign, clock, date)
 
 # a minus starts a numeric offset
-def when.zone.minus(minus: Bool, t: List<&2, Char>, clock: Clock, date: Date) -> WhenOut:
+def when.zone.minus(minus: Bool, tt: List<&2, Char>, clock: Clock, date: Date) -> WhenOut:
   match minus:
     case True{}:
-      when.zone.off(Minus{}, t, clock, date)
+      when.zone.off(Minus{}, tt, clock, date)
     case False{}:
       WFail{"invalid zone"}
 
 # a plus or a minus starts a numeric offset
-def when.zone.sign(plus: Bool, minus: Bool, t: List<&2, Char>, clock: Clock,
-  date: Date) -> WhenOut:
+def when.zone.sign(plus: Bool, minus: Bool, tt: List<&2, Char>, clock: Clock, date: Date) -> WhenOut:
   match plus:
     case True{}:
-      when.zone.off(Plus{}, t, clock, date)
+      when.zone.off(Plus{}, tt, clock, date)
     case False{}:
-      when.zone.minus(minus, t, clock, date)
+      when.zone.minus(minus, tt, clock, date)
 
 # Z, or a signed numeric offset
-def when.zone.go(zee: Bool, plus: Bool, minus: Bool, t: List<&2, Char>,
-  clock: Clock, date: Date) -> WhenOut:
+def when.zone.go(zee: Bool, plus: Bool, minus: Bool, tt: List<&2, Char>, clock: Clock, date: Date) -> WhenOut:
   match zee:
     case True{}:
-      when.zone.z(t, clock, date)
+      when.zone.z(tt, clock, date)
     case False{}:
-      when.zone.sign(plus, minus, t, clock, date)
+      when.zone.sign(plus, minus, tt, clock, date)
 
 # a zone, or the end of a local datetime
 def when.zone(cs: List<&2, Char>, clock: Clock, date: Date) -> WhenOut:
@@ -745,8 +748,7 @@ def when.zone(cs: List<&2, Char>, clock: Clock, date: Date) -> WhenOut:
         Char.is_eq(c, '+'), Char.is_eq(c, '-'), t, clock, date)
 
 # the fraction must hold a digit
-def when.frac.end.go(some: Bool, rev: List<&2, Char>, clock: Clock, date: Date,
-  rest: List<&2, Char>) -> WhenOut:
+def when.frac.end.go(some: Bool, rev: List<&2, Char>, clock: Clock, date: Date, rest: List<&2, Char>) -> WhenOut:
   match some:
     case False{}:
       WFail{"invalid fraction"}
@@ -755,22 +757,27 @@ def when.frac.end.go(some: Bool, rev: List<&2, Char>, clock: Clock, date: Date,
         date)
 
 # the fraction must hold a digit
-def when.frac.end(+rev: List<&2, Char>, clock: Clock, date: Date,
-  rest: List<&2, Char>) -> WhenOut:
+def when.frac.end(+rev: List<&2, Char>, clock: Clock, date: Date, rest: List<&2, Char>) -> WhenOut:
   when.frac.end.go(cs.some(rev), rev, clock, date, rest)
 
 # one fractional digit, or the end of the fraction
-def when.frac.digit(digit: Bool, +c: Char, t: List<&2, Char>, rev: List<&2, Char>,
-  clock: Clock, date: Date, more: Unit -> WhenOut) -> WhenOut:
+def when.frac.digit(
+  digit: Bool,
+  +cc: Char,
+  tt: List<&2, Char>,
+  rev: List<&2, Char>,
+  clock: Clock,
+  date: Date,
+  more: Unit -> WhenOut
+) -> WhenOut:
   match digit:
     case True{}:
       more(Unit{})
     case False{}:
-      when.frac.end(rev, clock, date, c <> t)
+      when.frac.end(rev, clock, date, cc <> tt)
 
 # fractional digits
-def when.frac.digits(cs: List<&2, Char>, +rev: List<&2, Char>, +clock: Clock,
-  +date: Date) -> WhenOut:
+def when.frac.digits(cs: List<&2, Char>, +rev: List<&2, Char>, +clock: Clock, +date: Date) -> WhenOut:
   match cs:
     case []:
       when.frac.end(rev, clock, date, [])
@@ -779,13 +786,12 @@ def when.frac.digits(cs: List<&2, Char>, +rev: List<&2, Char>, +clock: Clock,
         _u => when.frac.digits(t, c <> rev, clock, date))
 
 # a dot starts a fraction; anything else is a zone
-def when.frac.go(dot: Bool, t: List<&2, Char>, clock: Clock, date: Date,
-  +c: Char) -> WhenOut:
+def when.frac.go(dot: Bool, tt: List<&2, Char>, clock: Clock, date: Date, +cc: Char) -> WhenOut:
   match dot:
     case True{}:
-      when.frac.digits(t, [], clock, date)
+      when.frac.digits(tt, [], clock, date)
     case False{}:
-      when.zone(c <> t, clock, date)
+      when.zone(cc <> tt, clock, date)
 
 # an optional fractional second
 def when.frac(cs: List<&2, Char>, +clock: Clock, +date: Date) -> WhenOut:
@@ -796,104 +802,110 @@ def when.frac(cs: List<&2, Char>, +clock: Clock, +date: Date) -> WhenOut:
       when.frac.go(Char.is_eq(c, '.'), t, clock, date, c)
 
 # the second is in range, then the fraction and the zone
-def when.clock.range.s(s_ok: Bool, h: U32, mi: U32, s: U32, cs: List<&2, Char>,
-  date: Date) -> WhenOut:
+def when.clock.range.s(s_ok: Bool, hh: U32, mi: U32, ss: U32, cs: List<&2, Char>, date: Date) -> WhenOut:
   match s_ok:
     case False{}:
       WFail{"second is out of range"}
     case True{}:
-      when.frac(cs, Clock{h, mi, s, ""}, date)
+      when.frac(cs, Clock{hh, mi, ss, ""}, date)
 
 # minute and second are in range
-def when.clock.range.m(mi_ok: Bool, s_ok: Bool, h: U32, mi: U32, s: U32,
-  cs: List<&2, Char>, date: Date) -> WhenOut:
+def when.clock.range.m(mi_ok: Bool, s_ok: Bool, hh: U32, mi: U32, ss: U32, cs: List<&2, Char>, date: Date) -> WhenOut:
   match mi_ok:
     case False{}:
       WFail{"minute is out of range"}
     case True{}:
-      when.clock.range.s(s_ok, h, mi, s, cs, date)
+      when.clock.range.s(s_ok, hh, mi, ss, cs, date)
 
 # hour, minute, and second are in range
-def when.clock.range(h_ok: Bool, mi_ok: Bool, s_ok: Bool, h: U32, mi: U32,
-  s: U32, cs: List<&2, Char>, date: Date) -> WhenOut:
+def when.clock.range(
+  h_ok: Bool,
+  mi_ok: Bool,
+  s_ok: Bool,
+  hh: U32,
+  mi: U32,
+  ss: U32,
+  cs: List<&2, Char>,
+  date: Date
+) -> WhenOut:
   match h_ok:
     case False{}:
       WFail{"hour is out of range"}
     case True{}:
-      when.clock.range.m(mi_ok, s_ok, h, mi, s, cs, date)
+      when.clock.range.m(mi_ok, s_ok, hh, mi, ss, cs, date)
 
 # seconds, then an optional fraction and zone
-def when.clock.ss.go(d: Dig, +h: U32, +mi: U32, date: Date) -> WhenOut:
-  match d:
+def when.clock.ss.go(dd: Dig, +hh: U32, +mi: U32, date: Date) -> WhenOut:
+  match dd:
     case DigBad{}:
       WFail{"invalid time"}
     case DigOk{+n, cs}:
-      when.clock.range(bound.rng(h, 0, 23), bound.rng(mi, 0, 59), bound.rng(n, 0, 60), h, mi, n,
+      when.clock.range(bound.rng(hh, 0, 23), bound.rng(mi, 0, 59), bound.rng(n, 0, 60), hh, mi, n,
         cs, date)
 
 # seconds after the colon
-def when.clock.ss(hit: Bool, d: Dig, h: U32, mi: U32, date: Date) -> WhenOut:
+def when.clock.ss(hit: Bool, dd: Dig, hh: U32, mi: U32, date: Date) -> WhenOut:
   match hit:
     case False{}:
       WFail{"invalid time"}
     case True{}:
-      when.clock.ss.go(d, h, mi, date)
+      when.clock.ss.go(dd, hh, mi, date)
 
 # the colon after the minutes
-def when.clock.mm.colon(cs: List<&2, Char>, h: U32, mi: U32, date: Date) -> WhenOut:
+def when.clock.mm.colon(cs: List<&2, Char>, hh: U32, mi: U32, date: Date) -> WhenOut:
   match cs:
     case []:
       WFail{"invalid time"}
     case +c <> t:
-      when.clock.ss(Char.is_eq(c, ':'), take.n(2n, t, 0, True{}), h, mi, date)
+      when.clock.ss(Char.is_eq(c, ':'), take.n(2n, t, 0, True{}), hh, mi, date)
 
 # minutes, then seconds
-def when.clock.mm(d: Dig, h: U32, date: Date) -> WhenOut:
-  match d:
+def when.clock.mm(dd: Dig, hh: U32, date: Date) -> WhenOut:
+  match dd:
     case DigBad{}:
       WFail{"invalid time"}
     case DigOk{n, cs}:
-      when.clock.mm.colon(cs, h, n, date)
+      when.clock.mm.colon(cs, hh, n, date)
 
 # the colon after the hour
-def when.clock.colon.go(hit: Bool, h: U32, t: List<&2, Char>, date: Date) -> WhenOut:
+def when.clock.colon.go(hit: Bool, hh: U32, tt: List<&2, Char>, date: Date) -> WhenOut:
   match hit:
     case False{}:
       WFail{"invalid time"}
     case True{}:
-      when.clock.mm(take.n(2n, t, 0, True{}), h, date)
+      when.clock.mm(take.n(2n, tt, 0, True{}), hh, date)
 
 # the colon after the hour
-def when.clock.colon(cs: List<&2, Char>, h: U32, date: Date) -> WhenOut:
+def when.clock.colon(cs: List<&2, Char>, hh: U32, date: Date) -> WhenOut:
   match cs:
     case []:
       WFail{"invalid time"}
     case +c <> t:
-      when.clock.colon.go(Char.is_eq(c, ':'), h, t, date)
+      when.clock.colon.go(Char.is_eq(c, ':'), hh, t, date)
 
 # a clock following a date
-def when.clock.of(d: Dig, date: Date) -> WhenOut:
-  match d:
+def when.clock.of(dd: Dig, date: Date) -> WhenOut:
+  match dd:
     case DigBad{}:
       WFail{"invalid time"}
     case DigOk{n, cs}:
       when.clock.colon(cs, n, date)
 
 # a space separates a date from a time
-def when.after.sp(sp: Bool, date: Date, t: List<&2, Char>) -> WhenOut:
+def when.after.sp(sp: Bool, date: Date, tt: List<&2, Char>) -> WhenOut:
   match sp:
     case True{}:
-      when.clock.of(take.n(2n, t, 0, True{}), date)
+      when.clock.of(take.n(2n, tt, 0, True{}), date)
     case False{}:
       WFail{"invalid datetime"}
 
 # T or a space separates a date from a time
-def when.after.sep(tee: Bool, sp: Bool, date: Date, t: List<&2, Char>) -> WhenOut:
+def when.after.sep(tee: Bool, sp: Bool, date: Date, tt: List<&2, Char>) -> WhenOut:
   match tee:
     case True{}:
-      when.clock.of(take.n(2n, t, 0, True{}), date)
+      when.clock.of(take.n(2n, tt, 0, True{}), date)
     case False{}:
-      when.after.sp(sp, date, t)
+      when.after.sp(sp, date, tt)
 
 # the character after a date: nothing, T, or a space, and then a time
 def when.after.date(date: Date, cs: List<&2, Char>) -> WhenOut:
@@ -905,34 +917,32 @@ def when.after.date(date: Date, cs: List<&2, Char>) -> WhenOut:
         Char.is_eq(c, ' '), date, t)
 
 # the day is in range, then the rest of the token is a time or nothing
-def when.date.ok.d(d_ok: Bool, y: U32, mo: U32, d: U32,
-  cs: List<&2, Char>) -> WhenOut:
+def when.date.ok.d(d_ok: Bool, yy: U32, mo: U32, dd: U32, cs: List<&2, Char>) -> WhenOut:
   match d_ok:
     case False{}:
       WFail{"day is out of range"}
     case True{}:
-      when.after.date(Date{y, mo, d}, cs)
+      when.after.date(Date{yy, mo, dd}, cs)
 
 # a date whose fields are in range
-def when.date.ok.go(mo_ok: Bool, d_ok: Bool, y: U32, mo: U32, d: U32,
-  cs: List<&2, Char>) -> WhenOut:
+def when.date.ok.go(mo_ok: Bool, d_ok: Bool, yy: U32, mo: U32, dd: U32, cs: List<&2, Char>) -> WhenOut:
   match mo_ok:
     case False{}:
       WFail{"month is out of range"}
     case True{}:
-      when.date.ok.d(d_ok, y, mo, d, cs)
+      when.date.ok.d(d_ok, yy, mo, dd, cs)
 
 # a date whose fields are in range
-def when.date.ok(y: U32, +mo: U32, +d: U32, cs: List<&2, Char>) -> WhenOut:
-  when.date.ok.go(bound.rng(mo, 1, 12), bound.rng(d, 1, 31), y, mo, d, cs)
+def when.date.ok(yy: U32, +mo: U32, +dd: U32, cs: List<&2, Char>) -> WhenOut:
+  when.date.ok.go(bound.rng(mo, 1, 12), bound.rng(dd, 1, 31), yy, mo, dd, cs)
 
 # a local time: HH:MM:SS, with the hour already taken
-def when.time.rest(t: List<&2, Char>, h: U32) -> WhenOut:
-  when.clock.mm(take.n(2n, t, 0, True{}), h, Date{0, 1, 1})
+def when.time.rest(tt: List<&2, Char>, hh: U32) -> WhenOut:
+  when.clock.mm(take.n(2n, tt, 0, True{}), hh, Date{0, 1, 1})
 
 # a local time uses a dummy date and then keeps only the clock
-def when.time.only(w: WhenOut) -> WhenOut:
-  match w:
+def when.time.only(ww: WhenOut) -> WhenOut:
+  match ww:
     case WSome{WLocal{_date, clock}}:
       WSome{WTime{clock}}
     case WSome{WOff{_date, clock, zone}}:
@@ -945,88 +955,88 @@ def when.time.only(w: WhenOut) -> WhenOut:
       WFail{"invalid time"}
 
 # a complete date, then whatever follows it
-def when.day.end(d: Dig, y: U32, mo: U32) -> WhenOut:
-  match d:
+def when.day.end(dd: Dig, yy: U32, mo: U32) -> WhenOut:
+  match dd:
     case DigBad{}:
       WFail{"invalid date"}
     case DigOk{n, cs}:
-      when.date.ok(y, mo, n, cs)
+      when.date.ok(yy, mo, n, cs)
 
 # the day is two digits
-def when.day.go(hit: Bool, d: Dig, y: U32, mo: U32) -> WhenOut:
+def when.day.go(hit: Bool, dd: Dig, yy: U32, mo: U32) -> WhenOut:
   match hit:
     case False{}:
       WFail{"invalid date"}
     case True{}:
-      when.day.end(d, y, mo)
+      when.day.end(dd, yy, mo)
 
 # the day
-def when.day(cs: List<&2, Char>, y: U32, mo: U32) -> WhenOut:
+def when.day(cs: List<&2, Char>, yy: U32, mo: U32) -> WhenOut:
   match cs:
     case []:
       WFail{"invalid date"}
     case +c <> t:
-      when.day.go(Char.is_eq(c, '-'), take.n(2n, t, 0, True{}), y, mo)
+      when.day.go(Char.is_eq(c, '-'), take.n(2n, t, 0, True{}), yy, mo)
 
 # the dash after the month
-def when.month.go(d: Dig, y: U32) -> WhenOut:
-  match d:
+def when.month.go(dd: Dig, yy: U32) -> WhenOut:
+  match dd:
     case DigBad{}:
       WFail{"invalid date"}
     case DigOk{n, cs}:
-      when.day(cs, y, n)
+      when.day(cs, yy, n)
 
 # the month
-def when.month(hit: Bool, d: Dig, y: U32) -> WhenOut:
+def when.month(hit: Bool, dd: Dig, yy: U32) -> WhenOut:
   match hit:
     case False{}:
       WFail{"invalid date"}
     case True{}:
-      when.month.go(d, y)
+      when.month.go(dd, yy)
 
 # the dash after the year
-def when.year.dash(cs: List<&2, Char>, y: U32) -> WhenOut:
+def when.year.dash(cs: List<&2, Char>, yy: U32) -> WhenOut:
   match cs:
     case []:
       WFail{"invalid date"}
     case +c <> t:
-      when.month(Char.is_eq(c, '-'), take.n(2n, t, 0, True{}), y)
+      when.month(Char.is_eq(c, '-'), take.n(2n, t, 0, True{}), yy)
 
 # the fourth year digit, then the month
-def when.year4(d: Dig) -> WhenOut:
-  match d:
+def when.year4(dd: Dig) -> WhenOut:
+  match dd:
     case DigBad{}:
       WFail{"invalid date"}
     case DigOk{n, cs}:
       when.year.dash(cs, n)
 
 # two more year digits, then a dash
-def when.year.more(digit: Bool, n: U32, +c: Char, t: List<&2, Char>) -> WhenOut:
+def when.year.more(digit: Bool, nn: U32, +cc: Char, tt: List<&2, Char>) -> WhenOut:
   match digit:
     case False{}:
       WFail{"invalid datetime"}
     case True{}:
-      when.year4(take.n(1n, t, U32.add(U32.mul(n, 10), dig.val(c)), True{}))
+      when.year4(take.n(1n, tt, U32.add(U32.mul(nn, 10), dig.val(cc)), True{}))
 
 # a colon means a local time; another digit continues a year
-def when.branch(colon: Bool, digit: Bool, n: U32, +c: Char, t: List<&2, Char>) -> WhenOut:
+def when.branch(colon: Bool, digit: Bool, nn: U32, +cc: Char, tt: List<&2, Char>) -> WhenOut:
   match colon:
     case True{}:
-      when.time.only(when.time.rest(t, n))
+      when.time.only(when.time.rest(tt, nn))
     case False{}:
-      when.year.more(digit, n, c, t)
+      when.year.more(digit, nn, cc, tt)
 
 # two digits decide a time or a date
-def when.after2.go(cs: List<&2, Char>, n: U32) -> WhenOut:
+def when.after2.go(cs: List<&2, Char>, nn: U32) -> WhenOut:
   match cs:
     case []:
       WFail{"invalid datetime"}
     case +c <> t:
-      when.branch(Char.is_eq(c, ':'), Char.is_digit(c), n, c, t)
+      when.branch(Char.is_eq(c, ':'), Char.is_digit(c), nn, c, t)
 
 # two digits decide a time (HH:) or a date (YYYY-)
-def when.after2(d: Dig) -> WhenOut:
-  match d:
+def when.after2(dd: Dig) -> WhenOut:
+  match dd:
     case DigBad{}:
       WFail{"invalid datetime"}
     case DigOk{n, cs}:
@@ -1037,20 +1047,20 @@ def when.read(cs: List<&2, Char>) -> WhenOut:
   when.after2(take.n(2n, cs, 0, True{}))
 
 # a dash after the first character
-def word.dash.hit(first: Bool, +c: Char) -> Bool:
+def word.dash.hit(first: Bool, +cc: Char) -> Bool:
   match first:
     case True{}:
       False{}
     case False{}:
-      Char.is_eq(c, '-')
+      Char.is_eq(cc, '-')
 
 # either flag
-def word.or(a: Bool, b: Bool) -> Bool:
-  match a:
+def word.or(aa: Bool, bb: Bool) -> Bool:
+  match aa:
     case True{}:
       True{}
     case False{}:
-      b
+      bb
 
 # a colon anywhere in the token
 def word.colon(cs: List<&2, Char>) -> Bool:
@@ -1061,8 +1071,8 @@ def word.colon(cs: List<&2, Char>) -> Bool:
       word.or(Char.is_eq(c, ':'), word.colon(t))
 
 # e or E: an exponent, so the token is a numeral rather than a datetime
-def word.ee.hit(+c: Char) -> Bool:
-  Bool.or(Char.is_eq(c, 'e'), Char.is_eq(c, 'E'))
+def word.ee.hit(+cc: Char) -> Bool:
+  Bool.or(Char.is_eq(cc, 'e'), Char.is_eq(cc, 'E'))
 
 # whether the token holds an exponent marker
 def word.ee(cs: List<&2, Char>) -> Bool:
@@ -1089,32 +1099,32 @@ def word.dash(cs: List<&2, Char>, first: Bool) -> Bool:
       word.or(word.dash.hit(first, c), word.dash(t, False{}))
 
 # a negative nan, or not a special
-def word.spec.nan3(c: Bool) -> Got:
-  match c:
+def word.spec.nan3(cc: Bool) -> Got:
+  match cc:
     case True{}:
       GotVal{VFlo{Minus{}, "nan"}}
     case False{}:
       GotBad{""}
 
 # a signed nan
-def word.spec.nan2(b: Bool, c: Bool) -> Got:
-  match b:
+def word.spec.nan2(bb: Bool, cc: Bool) -> Got:
+  match bb:
     case True{}:
       GotVal{VFlo{Plus{}, "nan"}}
     case False{}:
-      word.spec.nan3(c)
+      word.spec.nan3(cc)
 
 # nan
-def word.spec.nan(a: Bool, b: Bool, c: Bool) -> Got:
-  match a:
+def word.spec.nan(aa: Bool, bb: Bool, cc: Bool) -> Got:
+  match aa:
     case True{}:
       GotVal{VFlo{Plus{}, "nan"}}
     case False{}:
-      word.spec.nan2(b, c)
+      word.spec.nan2(bb, cc)
 
 # character-for-character equality. a mismatch drops the rest and stops
-def str.eq.step(a: String, b: String, same: Bool) -> Bool:
-  match a b same:
+def str.eq.step(aa: String, bb: String, same: Bool) -> Bool:
+  match aa bb same:
     case SNil{} SNil{} True{}:
       True{}
     case SCon{x, xt} SCon{y, yt} True{}:
@@ -1123,56 +1133,56 @@ def str.eq.step(a: String, b: String, same: Bool) -> Bool:
       False{}
 
 # the search only needs the bool, not a rebuilt copy of either string
-def str.eq(a: String, b: String) -> Bool:
-  str.eq.step(a, b, True{})
+def str.eq(aa: String, bb: String) -> Bool:
+  str.eq.step(aa, bb, True{})
 
 # a negative inf, or nan
-def word.spec.inf3(c: Bool, +s: String) -> Got:
-  match c:
+def word.spec.inf3(cc: Bool, +ss: String) -> Got:
+  match cc:
     case True{}:
       GotVal{VFlo{Minus{}, "inf"}}
     case False{}:
-      word.spec.nan(str.eq(s, "nan"), str.eq(s, "+nan"), str.eq(s, "-nan"))
+      word.spec.nan(str.eq(ss, "nan"), str.eq(ss, "+nan"), str.eq(ss, "-nan"))
 
 # a signed inf, or nan
-def word.spec.inf2(b: Bool, c: Bool, +s: String) -> Got:
-  match b:
+def word.spec.inf2(bb: Bool, cc: Bool, +ss: String) -> Got:
+  match bb:
     case True{}:
       GotVal{VFlo{Plus{}, "inf"}}
     case False{}:
-      word.spec.inf3(c, s)
+      word.spec.inf3(cc, ss)
 
 # inf, or nan
-def word.spec.inf(a: Bool, b: Bool, c: Bool, +s: String) -> Got:
-  match a:
+def word.spec.inf(aa: Bool, bb: Bool, cc: Bool, +ss: String) -> Got:
+  match aa:
     case True{}:
       GotVal{VFlo{Plus{}, "inf"}}
     case False{}:
-      word.spec.inf2(b, c, s)
+      word.spec.inf2(bb, cc, ss)
 
 # false, or the rest of the specials
-def word.spec.f(hit: Bool, +s: String) -> Got:
+def word.spec.f(hit: Bool, +ss: String) -> Got:
   match hit:
     case True{}:
       GotVal{VBool{False{}}}
     case False{}:
-      word.spec.inf(str.eq(s, "inf"), str.eq(s, "+inf"), str.eq(s, "-inf"), s)
+      word.spec.inf(str.eq(ss, "inf"), str.eq(ss, "+inf"), str.eq(ss, "-inf"), ss)
 
 # true, or the rest of the specials
-def word.spec.t(hit: Bool, other: Bool, +s: String) -> Got:
+def word.spec.t(hit: Bool, other: Bool, +ss: String) -> Got:
   match hit:
     case True{}:
       GotVal{VBool{True{}}}
     case False{}:
-      word.spec.f(other, s)
+      word.spec.f(other, ss)
 
 # true, false, inf, and nan, including a sign on inf and nan
-def word.spec(+s: String) -> Got:
-  word.spec.t(str.eq(s, "true"), str.eq(s, "false"), s)
+def word.spec(+ss: String) -> Got:
+  word.spec.t(str.eq(ss, "true"), str.eq(ss, "false"), ss)
 
 # a datetime result as a value
-def word.from.when(w: WhenOut) -> Got:
-  match w:
+def word.from.when(ww: WhenOut) -> Got:
+  match ww:
     case WSome{when}:
       GotVal{VWhen{when}}
     case WFail{why}:
@@ -1181,28 +1191,28 @@ def word.from.when(w: WhenOut) -> Got:
       GotBad{"invalid datetime"}
 
 # the spelling of a numeral with the leading sign and underscores removed
-def word.body.put.sign(is_sign: Bool, c: Char, out: List<&2, Char>) -> List<&2, Char>:
+def word.body.put.sign(is_sign: Bool, cc: Char, out: List<&2, Char>) -> List<&2, Char>:
   match is_sign:
     case True{}:
       out
     case False{}:
-      c <> out
+      cc <> out
 
 # an underscore is dropped; every other character is kept
-def word.body.put.us(is_us: Bool, c: Char, out: List<&2, Char>) -> List<&2, Char>:
+def word.body.put.us(is_us: Bool, cc: Char, out: List<&2, Char>) -> List<&2, Char>:
   match is_us:
     case True{}:
       out
     case False{}:
-      c <> out
+      cc <> out
 
 # one character of a numeral spelling
-def word.body.put(lead: Bool, +c: Char, out: List<&2, Char>) -> List<&2, Char>:
+def word.body.put(lead: Bool, +cc: Char, out: List<&2, Char>) -> List<&2, Char>:
   match lead:
     case True{}:
-      word.body.put.sign(Bool.or(Char.is_eq(c, '+'), Char.is_eq(c, '-')), c, out)
+      word.body.put.sign(Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')), cc, out)
     case False{}:
-      word.body.put.us(Char.is_eq(c, '_'), c, out)
+      word.body.put.us(Char.is_eq(cc, '_'), cc, out)
 
 # the spelling, reversed, then put back in order at the end
 def word.body.go(cs: List<&2, Char>, lead: Bool, out: List<&2, Char>) -> List<&2, Char>:
@@ -1229,26 +1239,24 @@ def num.sign(_st: Num, sign: Sign) -> Num:
   Num{NLead{}, sign, 10, [], False{}, False{}, ""}
 
 # a digit that fits the base
-def num.digit.ok(ok: Bool, +c: Char, nk: NK, sign: Sign, +base: U32,
-  ds: List<&2, U32>) -> Num:
+def num.digit.ok(ok: Bool, +cc: Char, nk: NK, sign: Sign, +base: U32, ds: List<&2, U32>) -> Num:
   match ok:
     case False{}:
       num.bad(Num{NLead{}, Plus{}, 10, [], False{}, False{}, ""}, "invalid digit")
     case True{}:
-      Num{nk, sign, base, dec.go(ds, base, dig.val(c)), False{}, True{}, ""}
+      Num{nk, sign, base, dec.go(ds, base, dig.val(cc)), False{}, True{}, ""}
 
 # a decimal digit joined to the numeral
-def num.digit.go(st: Num, +c: Char, nk: NK) -> Num:
+def num.digit.go(st: Num, +cc: Char, nk: NK) -> Num:
   Num{_nk, sign, +base, ds, _us, _saw, _why} = st
-  num.digit.ok(dig.ok(dig.val(c), base), c, nk, sign, base, ds)
+  num.digit.ok(dig.ok(dig.val(cc), base), cc, nk, sign, base, ds)
 
 # a decimal digit joined to the numeral
-def num.digit(st: Num, +c: Char, nk: NK) -> Num:
-  num.digit.go(st, c, nk)
+def num.digit(st: Num, +cc: Char, nk: NK) -> Num:
+  num.digit.go(st, cc, nk)
 
 # an underscore between digits
-def num.us.go(ok: Bool, nk: NK, sign: Sign, base: U32, ds: List<&2, U32>,
-  why: String) -> Num:
+def num.us.go(ok: Bool, nk: NK, sign: Sign, base: U32, ds: List<&2, U32>, why: String) -> Num:
   match ok:
     case False{}:
       num.bad(Num{NLead{}, Plus{}, 10, [], False{}, False{}, ""}, "invalid underscore")
@@ -1297,42 +1305,41 @@ def num.sign.of(st: Num) -> Sign:
   sign
 
 # a first digit
-def num.lead.digit(digit: Bool, st: Num, +c: Char) -> Num:
+def num.lead.digit(digit: Bool, st: Num, +cc: Char) -> Num:
   match digit:
     case True{}:
-      num.digit(st, c, NDig{})
+      num.digit(st, cc, NDig{})
     case False{}:
       num.bad(st, "invalid number")
 
 # a leading zero, or another digit
-def num.lead.zero(zero: Bool, digit: Bool, st: Num, +c: Char) -> Num:
+def num.lead.zero(zero: Bool, digit: Bool, st: Num, +cc: Char) -> Num:
   match zero:
     case True{}:
       Num{NZero{}, num.sign.of(st), 10, [], False{}, True{}, ""}
     case False{}:
-      num.lead.digit(digit, st, c)
+      num.lead.digit(digit, st, cc)
 
 # a minus, a zero, or a digit
-def num.lead.minus(minus: Bool, zero: Bool, digit: Bool, st: Num, +c: Char) -> Num:
+def num.lead.minus(minus: Bool, zero: Bool, digit: Bool, st: Num, +cc: Char) -> Num:
   match minus:
     case True{}:
       num.sign(st, Minus{})
     case False{}:
-      num.lead.zero(zero, digit, st, c)
+      num.lead.zero(zero, digit, st, cc)
 
 # a sign, a zero, or a digit
-def num.lead.go(plus: Bool, minus: Bool, zero: Bool, digit: Bool, st: Num,
-  +c: Char) -> Num:
+def num.lead.go(plus: Bool, minus: Bool, zero: Bool, digit: Bool, st: Num, +cc: Char) -> Num:
   match plus:
     case True{}:
       num.sign(st, Plus{})
     case False{}:
-      num.lead.minus(minus, zero, digit, st, c)
+      num.lead.minus(minus, zero, digit, st, cc)
 
 # the first character after an optional sign
-def num.lead(st: Num, +c: Char) -> Num:
-  num.lead.go(Char.is_eq(c, '+'), Char.is_eq(c, '-'), Char.is_eq(c, '0'),
-    Char.is_digit(c), st, c)
+def num.lead(st: Num, +cc: Char) -> Num:
+  num.lead.go(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'), Char.is_eq(cc, '0'),
+    Char.is_digit(cc), st, cc)
 
 # the leading zero becomes a decimal digit, with an underscore open
 def num.zero.dig(st: Num) -> Num:
@@ -1348,58 +1355,57 @@ def num.zero.us(us: Bool, st: Num) -> Num:
       num.bad(st, "invalid number")
 
 # a capital exponent, or an underscore after the leading zero
-def num.zero.exp2(ee: Bool, st: Num, +c: Char) -> Num:
+def num.zero.exp2(ee: Bool, st: Num, +cc: Char) -> Num:
   match ee:
     case True{}:
       num.exp(st)
     case False{}:
-      num.zero.us(Char.is_eq(c, '_'), st)
+      num.zero.us(Char.is_eq(cc, '_'), st)
 
 # an exponent after zero, or a rejected extra digit
-def num.zero.exp(e: Bool, ee: Bool, st: Num, +c: Char) -> Num:
-  match e:
+def num.zero.exp(eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
+  match eee:
     case True{}:
       num.exp(st)
     case False{}:
-      num.zero.exp2(ee, st, c)
+      num.zero.exp2(ee, st, cc)
 
 # a fraction or an exponent after zero
-def num.zero.dot(dot: Bool, e: Bool, ee: Bool, st: Num, +c: Char) -> Num:
+def num.zero.dot(dot: Bool, eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
   match dot:
     case True{}:
       num.dot(st)
     case False{}:
-      num.zero.exp(e, ee, st, c)
+      num.zero.exp(eee, ee, st, cc)
 
 # a binary prefix, or a float
-def num.zero.b(b: Bool, dot: Bool, e: Bool, ee: Bool, st: Num, +c: Char) -> Num:
-  match b:
+def num.zero.b(bb: Bool, dot: Bool, eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
+  match bb:
     case True{}:
       num.base(st, 2)
     case False{}:
-      num.zero.dot(dot, e, ee, st, c)
+      num.zero.dot(dot, eee, ee, st, cc)
 
 # an octal prefix, or the rest
-def num.zero.o(o: Bool, b: Bool, dot: Bool, e: Bool, ee: Bool, st: Num, +c: Char) -> Num:
-  match o:
+def num.zero.o(oo: Bool, bb: Bool, dot: Bool, eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
+  match oo:
     case True{}:
       num.base(st, 8)
     case False{}:
-      num.zero.b(b, dot, e, ee, st, c)
+      num.zero.b(bb, dot, eee, ee, st, cc)
 
 # a base prefix, a fraction, or an exponent
-def num.zero.go(x: Bool, o: Bool, b: Bool, dot: Bool, e: Bool, ee: Bool, st: Num,
-  +c: Char) -> Num:
-  match x:
+def num.zero.go(xx: Bool, oo: Bool, bb: Bool, dot: Bool, eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
+  match xx:
     case True{}:
       num.base(st, 16)
     case False{}:
-      num.zero.o(o, b, dot, e, ee, st, c)
+      num.zero.o(oo, bb, dot, eee, ee, st, cc)
 
 # the character after a lone zero
-def num.zero(st: Num, +c: Char) -> Num:
-  num.zero.go(Char.is_eq(c, 'x'), Char.is_eq(c, 'o'), Char.is_eq(c, 'b'),
-    Char.is_eq(c, '.'), Char.is_eq(c, 'e'), Char.is_eq(c, 'E'), st, c)
+def num.zero(st: Num, +cc: Char) -> Num:
+  num.zero.go(Char.is_eq(cc, 'x'), Char.is_eq(cc, 'o'), Char.is_eq(cc, 'b'),
+    Char.is_eq(cc, '.'), Char.is_eq(cc, 'e'), Char.is_eq(cc, 'E'), st, cc)
 
 # a capital exponent, or a rejected character
 def num.digs.exp2(ee: Bool, st: Num, _c: Char) -> Num:
@@ -1410,54 +1416,53 @@ def num.digs.exp2(ee: Bool, st: Num, _c: Char) -> Num:
       num.bad(st, "invalid number")
 
 # an exponent
-def num.digs.exp(e: Bool, ee: Bool, st: Num, +c: Char) -> Num:
-  match e:
+def num.digs.exp(eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
+  match eee:
     case True{}:
       num.exp(st)
     case False{}:
-      num.digs.exp2(ee, st, c)
+      num.digs.exp2(ee, st, cc)
 
 # a dot or an exponent
-def num.digs.dot(dot: Bool, e: Bool, ee: Bool, st: Num, +c: Char) -> Num:
+def num.digs.dot(dot: Bool, eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
   match dot:
     case True{}:
       num.dot(st)
     case False{}:
-      num.digs.exp(e, ee, st, c)
+      num.digs.exp(eee, ee, st, cc)
 
 # an underscore, a dot, or an exponent
-def num.digs.us(us: Bool, dot: Bool, e: Bool, ee: Bool, st: Num, +c: Char) -> Num:
+def num.digs.us(us: Bool, dot: Bool, eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
   match us:
     case True{}:
       num.us(st)
     case False{}:
-      num.digs.dot(dot, e, ee, st, c)
+      num.digs.dot(dot, eee, ee, st, cc)
 
 # a decimal digit, an underscore, a dot, or an exponent
-def num.digs.go(digit: Bool, us: Bool, dot: Bool, e: Bool, ee: Bool, st: Num,
-  +c: Char) -> Num:
+def num.digs.go(digit: Bool, us: Bool, dot: Bool, eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
   match digit:
     case True{}:
-      num.digit(st, c, NDig{})
+      num.digit(st, cc, NDig{})
     case False{}:
-      num.digs.us(us, dot, e, ee, st, c)
+      num.digs.us(us, dot, eee, ee, st, cc)
 
 # a decimal digit, an underscore, a dot, or an exponent
-def num.digs(st: Num, +c: Char) -> Num:
-  num.digs.go(Char.is_digit(c), Char.is_eq(c, '_'), Char.is_eq(c, '.'),
-    Char.is_eq(c, 'e'), Char.is_eq(c, 'E'), st, c)
+def num.digs(st: Num, +cc: Char) -> Num:
+  num.digs.go(Char.is_digit(cc), Char.is_eq(cc, '_'), Char.is_eq(cc, '.'),
+    Char.is_eq(cc, 'e'), Char.is_eq(cc, 'E'), st, cc)
 
 # an underscore, or a digit of the base
-def num.based.go(us: Bool, st: Num, +c: Char) -> Num:
+def num.based.go(us: Bool, st: Num, +cc: Char) -> Num:
   match us:
     case True{}:
       num.us(st)
     case False{}:
-      num.digit(st, c, NBase{})
+      num.digit(st, cc, NBase{})
 
 # a digit of a prefixed integer, or an underscore
-def num.based(st: Num, +c: Char) -> Num:
-  num.based.go(Char.is_eq(c, '_'), st, c)
+def num.based(st: Num, +cc: Char) -> Num:
+  num.based.go(Char.is_eq(cc, '_'), st, cc)
 
 # a capital exponent, or a rejected character
 def num.frac.exp2(ee: Bool, st: Num, _c: Char) -> Num:
@@ -1468,33 +1473,33 @@ def num.frac.exp2(ee: Bool, st: Num, _c: Char) -> Num:
       num.bad(st, "invalid fraction")
 
 # an exponent in a fraction
-def num.frac.exp(e: Bool, ee: Bool, st: Num, +c: Char) -> Num:
-  match e:
+def num.frac.exp(eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
+  match eee:
     case True{}:
       num.exp(st)
     case False{}:
-      num.frac.exp2(ee, st, c)
+      num.frac.exp2(ee, st, cc)
 
 # an underscore or an exponent in a fraction
-def num.frac.us(us: Bool, e: Bool, ee: Bool, st: Num, +c: Char) -> Num:
+def num.frac.us(us: Bool, eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
   match us:
     case True{}:
       num.us(st)
     case False{}:
-      num.frac.exp(e, ee, st, c)
+      num.frac.exp(eee, ee, st, cc)
 
 # a fraction digit, an underscore, or an exponent
-def num.frac.go(digit: Bool, us: Bool, e: Bool, ee: Bool, st: Num, +c: Char) -> Num:
+def num.frac.go(digit: Bool, us: Bool, eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
   match digit:
     case True{}:
-      num.digit(st, c, NFrac{})
+      num.digit(st, cc, NFrac{})
     case False{}:
-      num.frac.us(us, e, ee, st, c)
+      num.frac.us(us, eee, ee, st, cc)
 
 # a fraction digit, an underscore, or an exponent
-def num.frac(st: Num, +c: Char) -> Num:
-  num.frac.go(Char.is_digit(c), Char.is_eq(c, '_'), Char.is_eq(c, 'e'),
-    Char.is_eq(c, 'E'), st, c)
+def num.frac(st: Num, +cc: Char) -> Num:
+  num.frac.go(Char.is_digit(cc), Char.is_eq(cc, '_'), Char.is_eq(cc, 'e'),
+    Char.is_eq(cc, 'E'), st, cc)
 
 # the exponent sign is part of the spelling; digits follow
 def num.exp.sign(st: Num) -> Num:
@@ -1502,32 +1507,32 @@ def num.exp.sign(st: Num) -> Num:
   Num{NEDig{}, sign, 10, [], False{}, False{}, ""}
 
 # a digit of the exponent
-def num.expon.digit(digit: Bool, st: Num, +c: Char) -> Num:
+def num.expon.digit(digit: Bool, st: Num, +cc: Char) -> Num:
   match digit:
     case True{}:
-      num.digit(st, c, NEDig{})
+      num.digit(st, cc, NEDig{})
     case False{}:
       num.bad(st, "invalid exponent")
 
 # a minus or a digit in an exponent
-def num.expon.minus(minus: Bool, digit: Bool, st: Num, +c: Char) -> Num:
+def num.expon.minus(minus: Bool, digit: Bool, st: Num, +cc: Char) -> Num:
   match minus:
     case True{}:
       num.exp.sign(st)
     case False{}:
-      num.expon.digit(digit, st, c)
+      num.expon.digit(digit, st, cc)
 
 # the sign or the first digit of an exponent
-def num.expon.go(plus: Bool, minus: Bool, digit: Bool, st: Num, +c: Char) -> Num:
+def num.expon.go(plus: Bool, minus: Bool, digit: Bool, st: Num, +cc: Char) -> Num:
   match plus:
     case True{}:
       num.exp.sign(st)
     case False{}:
-      num.expon.minus(minus, digit, st, c)
+      num.expon.minus(minus, digit, st, cc)
 
 # the sign or the first digit of an exponent
-def num.expon(st: Num, +c: Char) -> Num:
-  num.expon.go(Char.is_eq(c, '+'), Char.is_eq(c, '-'), Char.is_digit(c), st, c)
+def num.expon(st: Num, +cc: Char) -> Num:
+  num.expon.go(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'), Char.is_digit(cc), st, cc)
 
 # an underscore in an exponent
 def num.edig.us(us: Bool, st: Num, _c: Char) -> Num:
@@ -1538,45 +1543,45 @@ def num.edig.us(us: Bool, st: Num, _c: Char) -> Num:
       num.bad(st, "invalid exponent")
 
 # an exponent digit or an underscore
-def num.edig.go(digit: Bool, us: Bool, st: Num, +c: Char) -> Num:
+def num.edig.go(digit: Bool, us: Bool, st: Num, +cc: Char) -> Num:
   match digit:
     case True{}:
-      num.digit(st, c, NEDig{})
+      num.digit(st, cc, NEDig{})
     case False{}:
-      num.edig.us(us, st, c)
+      num.edig.us(us, st, cc)
 
 # an exponent digit or an underscore
-def num.edig(st: Num, +c: Char) -> Num:
-  num.edig.go(Char.is_digit(c), Char.is_eq(c, '_'), st, c)
+def num.edig(st: Num, +cc: Char) -> Num:
+  num.edig.go(Char.is_digit(cc), Char.is_eq(cc, '_'), st, cc)
 
 # one character of a numeral
-def num.on(nk: NK, st: Num, +c: Char) -> Num:
+def num.on(nk: NK, st: Num, +cc: Char) -> Num:
   match nk:
     case NLead{}:
-      num.lead(st, c)
+      num.lead(st, cc)
     case NZero{}:
-      num.zero(st, c)
+      num.zero(st, cc)
     case NDig{}:
-      num.digs(st, c)
+      num.digs(st, cc)
     case NBase{}:
-      num.based(st, c)
+      num.based(st, cc)
     case NFrac{}:
-      num.frac(st, c)
+      num.frac(st, cc)
     case NExp{}:
-      num.expon(st, c)
+      num.expon(st, cc)
     case NEDig{}:
-      num.edig(st, c)
+      num.edig(st, cc)
     case NBad{}:
       st
 
 # one character of a numeral
-def num.step.go(st: Num, +c: Char) -> Num:
+def num.step.go(st: Num, +cc: Char) -> Num:
   Num{+nk, sign, base, ds, us, saw, why} = st
-  num.on(nk, Num{nk, sign, base, ds, us, saw, why}, c)
+  num.on(nk, Num{nk, sign, base, ds, us, saw, why}, cc)
 
 # one character of a numeral
-def num.step(st: Num, +c: Char) -> Num:
-  num.step.go(st, c)
+def num.step(st: Num, +cc: Char) -> Num:
+  num.step.go(st, cc)
 
 # the walk over a numeral
 def num.go(cs: List<&2, Char>, st: Num) -> Num:
@@ -1662,8 +1667,7 @@ def num.fin.base(signed: Bool, saw: Bool, sign: Sign, ds: List<&2, U32>) -> Got:
       num.fin.int(saw, sign, dec.text(ds))
 
 # the kind of numeral the scan finished in
-def num.fin.nk(nk: NK, sign: Sign, ds: List<&2, U32>, saw: Bool, why: String,
-  cs: List<&2, Char>) -> Got:
+def num.fin.nk(nk: NK, sign: Sign, ds: List<&2, U32>, saw: Bool, why: String, cs: List<&2, Char>) -> Got:
   match nk:
     case NBad{}:
       GotBad{why}
@@ -1683,8 +1687,7 @@ def num.fin.nk(nk: NK, sign: Sign, ds: List<&2, U32>, saw: Bool, why: String,
       num.fin.saw(saw, VFlo{sign, word.body(cs)})
 
 # a trailing underscore is rejected
-def num.fin.us(us: Bool, nk: NK, sign: Sign, ds: List<&2, U32>, saw: Bool,
-  why: String, cs: List<&2, Char>) -> Got:
+def num.fin.us(us: Bool, nk: NK, sign: Sign, ds: List<&2, U32>, saw: Bool, why: String, cs: List<&2, Char>) -> Got:
   match us:
     case True{}:
       GotBad{"invalid underscore"}
@@ -1709,60 +1712,60 @@ def word.route.date(date: Bool, cs: List<&2, Char>) -> Got:
       word.num(cs)
 
 # a special word, or a numeral
-def word.route(g: Got, date: Bool, +cs: List<&2, Char>) -> Got:
-  match g:
+def word.route(gg: Got, date: Bool, +cs: List<&2, Char>) -> Got:
+  match gg:
     case GotVal{val}:
       GotVal{val}
     case GotBad{_}:
       word.route.date(word.as_date(date, word.ee(cs)), cs)
 
 # '-' can start a signed inf or nan
-def word.special.minus(+c: Char) -> Bool:
-  Char.is_eq(c, '-')
+def word.special.minus(+cc: Char) -> Bool:
+  Char.is_eq(cc, '-')
 
 # '+' or '-'
-def word.special.plus(hit: Bool, +c: Char) -> Bool:
+def word.special.plus(hit: Bool, +cc: Char) -> Bool:
   match hit:
     case True{}:
       True{}
     case False{}:
-      word.special.minus(c)
+      word.special.minus(cc)
 
 # 'n', or a sign
-def word.special.n(hit: Bool, +c: Char) -> Bool:
+def word.special.n(hit: Bool, +cc: Char) -> Bool:
   match hit:
     case True{}:
       True{}
     case False{}:
-      word.special.plus(Char.is_eq(c, '+'), c)
+      word.special.plus(Char.is_eq(cc, '+'), cc)
 
 # 'i', or nan, or a sign
-def word.special.i(hit: Bool, +c: Char) -> Bool:
+def word.special.i(hit: Bool, +cc: Char) -> Bool:
   match hit:
     case True{}:
       True{}
     case False{}:
-      word.special.n(Char.is_eq(c, 'n'), c)
+      word.special.n(Char.is_eq(cc, 'n'), cc)
 
 # 'f', or inf, or nan, or a sign
-def word.special.f(hit: Bool, +c: Char) -> Bool:
+def word.special.f(hit: Bool, +cc: Char) -> Bool:
   match hit:
     case True{}:
       True{}
     case False{}:
-      word.special.i(Char.is_eq(c, 'i'), c)
+      word.special.i(Char.is_eq(cc, 'i'), cc)
 
 # 't', or false, or inf, or nan, or a sign
-def word.special.t(hit: Bool, +c: Char) -> Bool:
+def word.special.t(hit: Bool, +cc: Char) -> Bool:
   match hit:
     case True{}:
       True{}
     case False{}:
-      word.special.f(Char.is_eq(c, 'f'), c)
+      word.special.f(Char.is_eq(cc, 'f'), cc)
 
 # whether this character can start a special bare word
-def word.special(+c: Char) -> Bool:
-  word.special.t(Char.is_eq(c, 't'), c)
+def word.special(+cc: Char) -> Bool:
+  word.special.t(Char.is_eq(cc, 't'), cc)
 
 # the first character, when the word has one
 def word.lead(cs: List<&2, Char>) -> Bool:
@@ -1836,10 +1839,10 @@ def err.first(+bad: String, why: String) -> String:
   err.first.go(String.is_empty(bad), bad, why)
 
 # a key found earlier wins
-def find.step(eq: Bool, v: Val, more: Unit -> Hit) -> Hit:
+def find.step(eq: Bool, vv: Val, more: Unit -> Hit) -> Hit:
   match eq:
     case True{}:
-      Found{v}
+      Found{vv}
     case False{}:
       more(Unit{})
 
@@ -1858,13 +1861,12 @@ def get(rows: List<&2, Val>, +name: String) -> Hit:
   rows.find(rows, name)
 
 # replace the value of one pair
-def rows.repl.step(eq: Bool, n: String, old: Val, val: Val,
-  more: Unit -> List<&2, Val>) -> List<&2, Val>:
+def rows.repl.step(eq: Bool, nn: String, old: Val, val: Val, more: Unit -> List<&2, Val>) -> List<&2, Val>:
   match eq:
     case True{}:
-      VPair{n, val} <> more(Unit{})
+      VPair{nn, val} <> more(Unit{})
     case False{}:
-      VPair{n, old} <> more(Unit{})
+      VPair{nn, old} <> more(Unit{})
 
 # replace every pair of this name
 def rows.repl(rows: List<&2, Val>, +name: String, +val: Val) -> List<&2, Val>:
@@ -1877,20 +1879,20 @@ def rows.repl(rows: List<&2, Val>, +name: String, +val: Val) -> List<&2, Val>:
       h <> rows.repl(t, name, val)
 
 # either flag
-def heads.or(a: Bool, b: Bool) -> Bool:
-  match a:
+def heads.or(aa: Bool, bb: Bool) -> Bool:
+  match aa:
     case True{}:
       True{}
     case False{}:
-      b
+      bb
 
 # whether a header path was opened by a header
-def heads.has(hs: List<&2, String>, +p: String) -> Bool:
+def heads.has(hs: List<&2, String>, +pp: String) -> Bool:
   match hs:
     case []:
       False{}
     case h <> t:
-      heads.or(str.eq(h, p), heads.has(t, p))
+      heads.or(str.eq(h, pp), heads.has(t, pp))
 
 # a table defined by a dotted key is recorded once
 def heads.define.new(seen: Bool, path: String, heads: List<&2, String>) -> List<&2, String>:
@@ -1921,8 +1923,8 @@ def tree.pre(+pre: String, name: String) -> String:
   tree.pre.go(String.is_empty(pre), pre, name)
 
 # the value a key already holds
-def look.of(v: Val) -> Look:
-  match v:
+def look.of(vv: Val) -> Look:
+  match vv:
     case VHead{path, rows}:
       KHead{path, rows}
     case VInl{_rows}:
@@ -1933,10 +1935,10 @@ def look.of(v: Val) -> Look:
       KNo{"not a table"}
 
 # the matching pair, or the rest of the table
-def look.step(eq: Bool, v: Val, more: Unit -> Look) -> Look:
+def look.step(eq: Bool, vv: Val, more: Unit -> Look) -> Look:
   match eq:
     case True{}:
-      look.of(v)
+      look.of(vv)
     case False{}:
       more(Unit{})
 
@@ -1951,8 +1953,8 @@ def rows.look(rows: List<&2, Val>, +name: String) -> Look:
       rows.look(t, name)
 
 # the newest element. rows stay newest-first until the document is sealed
-def look.last.one(v: Val, path: String, older: List<&2, Val>) -> Last:
-  match v:
+def look.last.one(vv: Val, path: String, older: List<&2, Val>) -> Last:
+  match vv:
     case VAot{_p, rows}:
       LastSome{path, older, rows}
     case _:
@@ -1967,8 +1969,7 @@ def look.last(elems: List<&2, Val>, path: String) -> Last:
       look.last.one(h, path, t)
 
 # a new implicit table, inline or standard. the pair is consed, not copied on
-def tree.wrap.new(inl: Bool, name: String, parent: List<&2, Val>, path: String,
-  child: List<&2, Val>) -> List<&2, Val>:
+def tree.wrap.new(inl: Bool, name: String, parent: List<&2, Val>, path: String, child: List<&2, Val>) -> List<&2, Val>:
   match inl:
     case True{}:
       VPair{name, VInl{child}} <> parent
@@ -1986,8 +1987,7 @@ def tree.wrap(fr: Fr, child: List<&2, Val>) -> List<&2, Val>:
       rows.repl(parent, name, VAots{path, VAot{path, child} <> pre})
 
 # walk the frames back to the root
-def tree.rebuild(stack: List<&2, Fr>, vs: List<&2, Val>, bad: String,
-  heads: List<&2, String>) -> End:
+def tree.rebuild(stack: List<&2, Fr>, vs: List<&2, Val>, bad: String, heads: List<&2, String>) -> End:
   match stack:
     case []:
       End{vs, bad, heads}
@@ -1995,8 +1995,15 @@ def tree.rebuild(stack: List<&2, Fr>, vs: List<&2, Val>, bad: String,
       tree.rebuild(t, tree.wrap(fr, vs), bad, heads)
 
 # a key that is already present is a duplicate
-def tree.leaf.put(hit: Hit, name: String, vs: List<&2, Val>, val: Val,
-  stack: List<&2, Fr>, bad: String, heads: List<&2, String>) -> End:
+def tree.leaf.put(
+  hit: Hit,
+  name: String,
+  vs: List<&2, Val>,
+  val: Val,
+  stack: List<&2, Fr>,
+  bad: String,
+  heads: List<&2, String>
+) -> End:
   match hit:
     case Found{_v}:
       tree.rebuild(stack, vs, err.first(bad, "duplicate key"), heads)
@@ -2004,9 +2011,16 @@ def tree.leaf.put(hit: Hit, name: String, vs: List<&2, Val>, val: Val,
       tree.rebuild(stack, VPair{name, val} <> vs, bad, heads)
 
 # an explicit header for a table that already exists
-def tree.leaf.def.head(seen: Bool, name: String, vs: List<&2, Val>,
-  rows: List<&2, Val>, stack: List<&2, Fr>, bad: String, +path: String,
-  heads: List<&2, String>) -> End:
+def tree.leaf.def.head(
+  seen: Bool,
+  name: String,
+  vs: List<&2, Val>,
+  rows: List<&2, Val>,
+  stack: List<&2, Fr>,
+  bad: String,
+  +path: String,
+  heads: List<&2, String>
+) -> End:
   match seen:
     case True{}:
       tree.rebuild(stack, vs, err.first(bad, "duplicate table"), heads)
@@ -2014,8 +2028,15 @@ def tree.leaf.def.head(seen: Bool, name: String, vs: List<&2, Val>,
       tree.rebuild(stack, rows.repl(vs, name, VHead{path, rows}), bad, path <> heads)
 
 # open a standard table
-def tree.leaf.def.hit(hit: Look, name: String, vs: List<&2, Val>,
-  stack: List<&2, Fr>, bad: String, +path: String, +heads: List<&2, String>) -> End:
+def tree.leaf.def.hit(
+  hit: Look,
+  name: String,
+  vs: List<&2, Val>,
+  stack: List<&2, Fr>,
+  bad: String,
+  +path: String,
+  +heads: List<&2, String>
+) -> End:
   match hit:
     case KMiss{}:
       tree.rebuild(stack, VPair{name, VHead{path, []}} <> vs, bad, path <> heads)
@@ -2030,13 +2051,27 @@ def tree.leaf.def.hit(hit: Look, name: String, vs: List<&2, Val>,
       tree.rebuild(stack, vs, err.first(bad, why), heads)
 
 # open a standard table
-def tree.leaf.def(hit: Look, +name: String, vs: List<&2, Val>, stack: List<&2, Fr>,
-  bad: String, pre: String, heads: List<&2, String>) -> End:
+def tree.leaf.def(
+  hit: Look,
+  +name: String,
+  vs: List<&2, Val>,
+  stack: List<&2, Fr>,
+  bad: String,
+  pre: String,
+  heads: List<&2, String>
+) -> End:
   tree.leaf.def.hit(hit, name, vs, stack, bad, tree.pre(pre, name), heads)
 
 # append one element of an array of tables
-def tree.leaf.aot.hit(hit: Look, name: String, vs: List<&2, Val>,
-  stack: List<&2, Fr>, bad: String, +path: String, heads: List<&2, String>) -> End:
+def tree.leaf.aot.hit(
+  hit: Look,
+  name: String,
+  vs: List<&2, Val>,
+  stack: List<&2, Fr>,
+  bad: String,
+  +path: String,
+  heads: List<&2, String>
+) -> End:
   match hit:
     case KMiss{}:
       tree.rebuild(stack, VPair{name, VAots{path, [VAot{path, []}]}} <> vs, bad, heads)
@@ -2051,13 +2086,27 @@ def tree.leaf.aot.hit(hit: Look, name: String, vs: List<&2, Val>,
       tree.rebuild(stack, vs, err.first(bad, why), heads)
 
 # append one element of an array of tables
-def tree.leaf.aot(hit: Look, +name: String, vs: List<&2, Val>, stack: List<&2, Fr>,
-  bad: String, pre: String, heads: List<&2, String>) -> End:
+def tree.leaf.aot(
+  hit: Look,
+  +name: String,
+  vs: List<&2, Val>,
+  stack: List<&2, Fr>,
+  bad: String,
+  pre: String,
+  heads: List<&2, String>
+) -> End:
   tree.leaf.aot.hit(hit, name, vs, stack, bad, tree.pre(pre, name), heads)
 
 # the key at the end of the path
-def tree.leaf.job(job: Job, +name: String, +vs: List<&2, Val>, stack: List<&2, Fr>,
-  bad: String, pre: String, heads: List<&2, String>) -> End:
+def tree.leaf.job(
+  job: Job,
+  +name: String,
+  +vs: List<&2, Val>,
+  stack: List<&2, Fr>,
+  bad: String,
+  pre: String,
+  heads: List<&2, String>
+) -> End:
   match job:
     case JPut{val}:
       tree.leaf.put(get(vs, name), name, vs, val, stack, bad, heads)
@@ -2067,8 +2116,16 @@ def tree.leaf.job(job: Job, +name: String, +vs: List<&2, Val>, stack: List<&2, F
       tree.leaf.aot(rows.look(vs, name), name, vs, stack, bad, pre, heads)
 
 # a failed walk rebuilds what it has
-def tree.leaf.bad(ok: Bool, name: String, vs: List<&2, Val>, job: Job,
-  stack: List<&2, Fr>, bad: String, pre: String, heads: List<&2, String>) -> End:
+def tree.leaf.bad(
+  ok: Bool,
+  name: String,
+  vs: List<&2, Val>,
+  job: Job,
+  stack: List<&2, Fr>,
+  bad: String,
+  pre: String,
+  heads: List<&2, String>
+) -> End:
   match ok:
     case False{}:
       tree.rebuild(stack, vs, bad, heads)
@@ -2081,9 +2138,17 @@ def tree.leaf(name: String, tw: Tw) -> End:
   tree.leaf.bad(String.is_empty(bad), name, vs, job, stack, bad, pre, heads)
 
 # enter the last element of an array of tables
-def tree.sub.aots(last: Last, +name: String, +vs: List<&2, Val>, job: Job,
-  stack: List<&2, Fr>, +pre: String, heads: List<&2, String>, inl: Bool,
-  path: String) -> Tw:
+def tree.sub.aots(
+  last: Last,
+  +name: String,
+  +vs: List<&2, Val>,
+  job: Job,
+  stack: List<&2, Fr>,
+  +pre: String,
+  heads: List<&2, String>,
+  inl: Bool,
+  path: String
+) -> Tw:
   match last:
     case LastSome{_p, prefix, rows}:
       Tw{rows, job, FrAot{name, vs, prefix, path} <> stack, "", tree.pre(pre, name),
@@ -2100,9 +2165,17 @@ def tree.sub.job(mark: Bool, job: Job) -> Job:
       JDef{}
 
 # descend into one key, or record why it cannot be entered
-def tree.sub.look(hit: Look, +name: String, +vs: List<&2, Val>, +job: Job,
-  stack: List<&2, Fr>, +pre: String, heads: List<&2, String>, +inl: Bool,
-  mark: Bool) -> Tw:
+def tree.sub.look(
+  hit: Look,
+  +name: String,
+  +vs: List<&2, Val>,
+  +job: Job,
+  stack: List<&2, Fr>,
+  +pre: String,
+  heads: List<&2, String>,
+  +inl: Bool,
+  mark: Bool
+) -> Tw:
   match hit:
     case KMiss{}:
       Tw{[], job, FrNew{name, vs, tree.pre(pre, name), inl} <> stack, "",
@@ -2120,9 +2193,18 @@ def tree.sub.look(hit: Look, +name: String, +vs: List<&2, Val>, +job: Job,
       Tw{vs, job, stack, why, pre, heads, inl}
 
 # descend into one key when the walk is still well
-def tree.sub.bad(ok: Bool, +name: String, +vs: List<&2, Val>, job: Job,
-  stack: List<&2, Fr>, bad: String, pre: String, heads: List<&2, String>,
-  inl: Bool, mark: Bool) -> Tw:
+def tree.sub.bad(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, Val>,
+  job: Job,
+  stack: List<&2, Fr>,
+  bad: String,
+  pre: String,
+  heads: List<&2, String>,
+  inl: Bool,
+  mark: Bool
+) -> Tw:
   match ok:
     case False{}:
       Tw{vs, job, stack, bad, pre, heads, inl}
@@ -2135,16 +2217,16 @@ def tree.sub(name: String, tw: Tw, mark: Bool) -> Tw:
   tree.sub.bad(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, inl, mark)
 
 # how many segments are already the current table
-def path.len(xs: List<&2, String>, n: U32) -> U32:
+def path.len(xs: List<&2, String>, nn: U32) -> U32:
   match xs:
     case []:
-      n
+      nn
     case _ <> t:
-      path.len(t, U32.add(n, 1))
+      path.len(t, U32.add(nn, 1))
 
 # one fewer prefix segment, staying at zero
-def path.dec.z(z: Bool, skip: U32) -> U32:
-  match z:
+def path.dec.z(zz: Bool, skip: U32) -> U32:
+  match zz:
     case True{}:
       0
     case False{}:
@@ -2172,25 +2254,25 @@ def tree.walk(path: List<&2, String>, tw: Tw, +skip: U32) -> End:
           tree.walk(rest, tree.sub(name, tw, U32.is_zero(skip)), path.dec(skip))
 
 # space or tab
-def ch.sp(+c: Char) -> Bool:
-  Bool.or(U32.is_eq(Char.to_u32(c), 32), U32.is_eq(Char.to_u32(c), 9))
+def ch.sp(+cc: Char) -> Bool:
+  Bool.or(U32.is_eq(Char.to_u32(cc), 32), U32.is_eq(Char.to_u32(cc), 9))
 
 # line feed or carriage return
-def ch.nl(+c: Char) -> Bool:
-  Bool.or(U32.is_eq(Char.to_u32(c), 10), U32.is_eq(Char.to_u32(c), 13))
+def ch.nl(+cc: Char) -> Bool:
+  Bool.or(U32.is_eq(Char.to_u32(cc), 10), U32.is_eq(Char.to_u32(cc), 13))
 
 # a character that ends a bare value
-def ch.delim(+c: Char) -> Bool:
-  Bool.or(ch.sp(c), Bool.or(ch.nl(c), Bool.or(Char.is_eq(c, '#'),
-    Bool.or(Char.is_eq(c, ','), Bool.or(Char.is_eq(c, ']'), Char.is_eq(c, '}'))))))
+def ch.delim(+cc: Char) -> Bool:
+  Bool.or(ch.sp(cc), Bool.or(ch.nl(cc), Bool.or(Char.is_eq(cc, '#'),
+    Bool.or(Char.is_eq(cc, ','), Bool.or(Char.is_eq(cc, ']'), Char.is_eq(cc, '}'))))))
 
 # whitespace that a bare value swallows
-def ch.skip(+c: Char) -> Bool:
-  Bool.or(ch.sp(c), ch.nl(c))
+def ch.skip(+cc: Char) -> Bool:
+  Bool.or(ch.sp(cc), ch.nl(cc))
 
 # the quote character of a string kind
-def q.char(k: QKind) -> Char:
-  match k:
+def q.char(kk: QKind) -> Char:
+  match kk:
     case QLit{}:
       '\''
     case QMultiLit{}:
@@ -2199,8 +2281,8 @@ def q.char(k: QKind) -> Char:
       '"'
 
 # a multiline string
-def q.multi(k: QKind) -> Bool:
-  match k:
+def q.multi(kk: QKind) -> Bool:
+  match kk:
     case QMulti{}:
       True{}
     case QMultiLit{}:
@@ -2209,8 +2291,8 @@ def q.multi(k: QKind) -> Bool:
       False{}
 
 # a basic string, which has escapes
-def q.basic(k: QKind) -> Bool:
-  match k:
+def q.basic(kk: QKind) -> Bool:
+  match kk:
     case QBasic{}:
       True{}
     case QMulti{}:
@@ -2219,16 +2301,16 @@ def q.basic(k: QKind) -> Bool:
       False{}
 
 # the multiline kind of a one-line kind
-def q.as.multi(k: QKind) -> QKind:
-  match k:
+def q.as.multi(kk: QKind) -> QKind:
+  match kk:
     case QLit{}:
       QMultiLit{}
     case _:
       QMulti{}
 
 # a pattern character that stands for a digit
-def date.mode(p: Char) -> Bool:
-  U32.is_eq(Char.to_u32(p), 68)
+def date.mode(pp: Char) -> Bool:
+  U32.is_eq(Char.to_u32(pp), 68)
 
 # whether the rest of the shape matches
 def date.eq.go(ok: Bool, more: Unit -> Bool) -> Bool:
@@ -2284,24 +2366,24 @@ def buf.str(buf: List<&2, Char>) -> String:
   buf.str.go(buf, "")
 
 # the first n characters of a source span
-def span.str(src: String, +n: U32, z: Bool) -> String:
-  match src z:
+def span.str(src: String, +nn: U32, zz: Bool) -> String:
+  match src zz:
     case _s True{}:
       ""
     case SNil{} False{}:
       ""
     case SCon{+h, t} False{}:
-      SCon{h, span.str(t, U32.sub(n, 1), U32.is_zero(U32.sub(n, 1)))}
+      SCon{h, span.str(t, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1)))}
 
 # the first n characters, reversed, so an escape can keep copying
-def span.rev(src: String, +n: U32, z: Bool, acc: List<&2, Char>) -> List<&2, Char>:
-  match src z:
+def span.rev(src: String, +nn: U32, zz: Bool, acc: List<&2, Char>) -> List<&2, Char>:
+  match src zz:
     case _s True{}:
       acc
     case SNil{} False{}:
       acc
     case SCon{h, t} False{}:
-      span.rev(t, U32.sub(n, 1), U32.is_zero(U32.sub(n, 1)), h <> acc)
+      span.rev(t, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1)), h <> acc)
 
 # the unread suffix of a span that will not be stored
 def span.drop(src: String) -> Unit:
@@ -2340,9 +2422,9 @@ def str.bad.go(ctrl: Bool, tab: Bool, nl: Bool, multi: Bool) -> Bool:
       str.bad.tab(tab, nl, multi)
 
 # a raw control is rejected. Tab is kept. A multiline string also keeps newlines
-def str.bad(+u: U32, multi: Bool) -> Bool:
-  str.bad.go(Bool.or(U32.is_lt(u, 32), U32.is_eq(u, 127)), U32.is_eq(u, 9),
-    Bool.or(U32.is_eq(u, 10), U32.is_eq(u, 13)), multi)
+def str.bad(+uu: U32, multi: Bool) -> Bool:
+  str.bad.go(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), U32.is_eq(uu, 9),
+    Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), multi)
 
 # the scanner has failed
 def st.err(st: St, why: String) -> St:
@@ -2359,17 +2441,17 @@ def st.lex(st: St, lex: Lex) -> St:
     arrtab, lead}
 
 # hold one character and set the lex state
-def st.hold(st: St, +lex: Lex, c: Char) -> St:
+def st.hold(st: St, +lex: Lex, cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, _lex, _back, qkind, stack, _hold, uni, left,
     arrtab, lead} = st
-  St{bad, rows, heads, here, parts, buf, lex, lex, qkind, stack, HChar{c}, uni, left,
+  St{bad, rows, heads, here, parts, buf, lex, lex, qkind, stack, HChar{cc}, uni, left,
     arrtab, lead}
 
 # append one character
-def st.push(st: St, c: Char, lex: Lex) -> St:
+def st.push(st: St, cc: Char, lex: Lex) -> St:
   St{bad, rows, heads, here, parts, buf, _lex, back, qkind, stack, hold, uni, left,
     arrtab, lead} = st
-  St{bad, rows, heads, here, parts, c <> buf, lex, back, qkind, stack, hold, uni, left,
+  St{bad, rows, heads, here, parts, cc <> buf, lex, back, qkind, stack, hold, uni, left,
     arrtab, lead}
 
 # the segment in the buffer joins the key, and the buffer is cleared
@@ -2380,24 +2462,55 @@ def seg.push(st: St, lex: Lex) -> St:
     uni, left, arrtab, lead}
 
 # a finished value at the document root
-def take.root(end: End, here: List<&2, String>, back: Lex, qkind: QKind, uni: U32,
-  left: U32, arrtab: Bool, lead: Bool) -> St:
+def take.root(
+  end: End,
+  here: List<&2, String>,
+  back: Lex,
+  qkind: QKind,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  lead: Bool
+) -> St:
   End{rows, bad, heads} = end
   St{bad, rows, heads, here, [], [], LLine{}, back, qkind, [], HNone{}, uni, left, arrtab,
     lead}
 
 # a finished value inside an inline table
-def take.inl(end: End, rows: List<&2, Val>, heads: List<&2, String>,
-  +here: List<&2, String>, +parts: List<&2, String>, rest: List<&2, Ctx>, back: Lex,
-  qkind: QKind, uni: U32, left: U32, arrtab: Bool, lead: Bool) -> St:
+def take.inl(
+  end: End,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  rest: List<&2, Ctx>,
+  back: Lex,
+  qkind: QKind,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  lead: Bool
+) -> St:
   End{inl, bad, _h} = end
   St{bad, rows, heads, here, [], [], LInlC{}, back, qkind,
     CInl{inl, parts, here} <> rest, HNone{}, uni, left, arrtab, lead}
 
 # place a finished value into the current table, array, or inline table
-def take.top(stack: List<&2, Ctx>, val: Val, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, +here: List<&2, String>, parts: List<&2, String>, back: Lex,
-  qkind: QKind, uni: U32, left: U32, arrtab: Bool, lead: Bool) -> St:
+def take.top(
+  stack: List<&2, Ctx>,
+  val: Val,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  +here: List<&2, String>,
+  parts: List<&2, String>,
+  back: Lex,
+  qkind: QKind,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  lead: Bool
+) -> St:
   match stack:
     case []:
       take.root(tree.walk(path.cat(here, parts),
@@ -2420,10 +2533,10 @@ def val.take(st: St, val: Val) -> St:
     lead)
 
 # hold the delimiter when the following state must see it
-def bare.hold.on(st: St, c: Char) -> St:
+def bare.hold.on(st: St, cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, _h, uni, left,
     arrtab, lead} = st
-  St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, HChar{c}, uni, left,
+  St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, HChar{cc}, uni, left,
     arrtab, lead}
 
 # hold the delimiter when the following state must see it
@@ -2451,40 +2564,48 @@ def bare.line(st: St, nl: Bool) -> St:
       st
 
 # hold the delimiter when the following state must see it
-def bare.hold(st: St, c: Char, hold: Bool) -> St:
+def bare.hold(st: St, cc: Char, hold: Bool) -> St:
   match hold:
     case False{}:
-      bare.line(st, ch.nl(c))
+      bare.line(st, ch.nl(cc))
     case True{}:
-      bare.hold.on(st, c)
+      bare.hold.on(st, cc)
 
 # a bare word has been classified
-def bare.got(g: Got, st: St, c: Char, hold: Bool) -> St:
-  match g:
+def bare.got(gg: Got, st: St, cc: Char, hold: Bool) -> St:
+  match gg:
     case GotBad{why}:
       st.err(st, why)
     case GotVal{val}:
-      bare.hold(val.take(st, val), c, hold)
+      bare.hold(val.take(st, val), cc, hold)
 
 # finish a bare word. hold is true when the delimiter is not whitespace
-def bare.finish(st: St, c: Char, hold: Bool) -> St:
+def bare.finish(st: St, cc: Char, hold: Bool) -> St:
   St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, h, uni, left, arrtab,
     lead} = st
   bare.got(word.val(List.reverse(&2, Char, buf)),
     St{bad, rows, heads, here, parts, [], lex, back, qkind, stack, h, uni, left, arrtab,
-      lead}, c, hold)
+      lead}, cc, hold)
 
 # close the header that was just read
-def head.apply(end: End, segs: List<&2, String>, back: Lex, qkind: QKind, uni: U32,
-  left: U32, lead: Bool) -> St:
+def head.apply(end: End, segs: List<&2, String>, back: Lex, qkind: QKind, uni: U32, left: U32, lead: Bool) -> St:
   End{rows, bad, heads} = end
   St{bad, rows, heads, segs, [], [], LLine{}, back, qkind, [], HNone{}, uni, left,
     False{}, lead}
 
 # an array-of-tables header, or a table header
-def head.job(arr: Bool, bad: String, rows: List<&2, Val>, heads: List<&2, String>,
-  +segs: List<&2, String>, back: Lex, qkind: QKind, uni: U32, left: U32, lead: Bool)
-  -> St:
+def head.job(
+  arr: Bool,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  +segs: List<&2, String>,
+  back: Lex,
+  qkind: QKind,
+  uni: U32,
+  left: U32,
+  lead: Bool
+) -> St:
   match arr:
     case True{}:
       head.apply(tree.walk(segs, Tw{rows, JAot{}, [], bad, "", heads, False{}}, 0),
@@ -2534,9 +2655,18 @@ def head.fin(st: St) -> St:
       arrtab, lead})
 
 # close an array and place it
-def arr.top(stack: List<&2, Ctx>, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, back: Lex, qkind: QKind, uni: U32, left: U32, arrtab: Bool,
-  lead: Bool) -> St:
+def arr.top(
+  stack: List<&2, Ctx>,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  back: Lex,
+  qkind: QKind,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  lead: Bool
+) -> St:
   match stack:
     case CArr{items, parts, here} <> rest:
       val.take(St{bad, rows, heads, here, parts, [], LTop{}, back, qkind, rest, HNone{},
@@ -2552,9 +2682,18 @@ def arr.close(st: St) -> St:
   arr.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)
 
 # close an inline table and place it
-def inl.top(stack: List<&2, Ctx>, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, back: Lex, qkind: QKind, uni: U32, left: U32, arrtab: Bool,
-  lead: Bool) -> St:
+def inl.top(
+  stack: List<&2, Ctx>,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  back: Lex,
+  qkind: QKind,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  lead: Bool
+) -> St:
   match stack:
     case CInl{inl, parts, here} <> rest:
       val.take(St{bad, rows, heads, here, parts, [], LTop{}, back, qkind, rest, HNone{},
@@ -2585,63 +2724,63 @@ def str.fin(st: St) -> St:
     arrtab, lead}, VStr{buf.str(buf)})
 
 # one or two quotes that did not close a multiline string
-def mq.put(one: Bool, +q: Char, buf: List<&2, Char>) -> List<&2, Char>:
+def mq.put(one: Bool, +qq: Char, buf: List<&2, Char>) -> List<&2, Char>:
   match one:
     case True{}:
-      q <> buf
+      qq <> buf
     case False{}:
-      q <> (q <> buf)
+      qq <> (qq <> buf)
 
 # a code point may be written as a character
-def uni.ok(+u: U32) -> Bool:
-  Bool.and(U32.is_le(u, 1114111),
-    Bool.not(Bool.and(U32.is_ge(u, 55296), U32.is_le(u, 57343))))
+def uni.ok(+uu: U32) -> Bool:
+  Bool.and(U32.is_le(uu, 1114111),
+    Bool.not(Bool.and(U32.is_ge(uu, 55296), U32.is_le(uu, 57343))))
 
 # a finished unicode escape written into the buffer
-def uni.finish.on(st: St, u: U32, back: Lex) -> St:
+def uni.finish.on(st: St, uu: U32, back: Lex) -> St:
   St{bad, rows, heads, here, parts, buf, _lex, b, qkind, stack, _hold, _uni, _left,
     arrtab, lead} = st
-  St{bad, rows, heads, here, parts, Char.from_u32(u) <> buf, back, b, qkind, stack,
+  St{bad, rows, heads, here, parts, Char.from_u32(uu) <> buf, back, b, qkind, stack,
     HNone{}, 0, 0, arrtab, lead}
 
 # a finished unicode escape
-def uni.finish(ok: Bool, st: St, u: U32, back: Lex) -> St:
+def uni.finish(ok: Bool, st: St, uu: U32, back: Lex) -> St:
   match ok:
     case False{}:
       st.err(st, "invalid escape")
     case True{}:
-      uni.finish.on(st, u, back)
+      uni.finish.on(st, uu, back)
 
 # another hex digit is still required
-def uni.next.more(st: St, u: U32, left: U32) -> St:
+def uni.next.more(st: St, uu: U32, left: U32) -> St:
   St{bad, rows, heads, here, parts, buf, lex, b, qkind, stack, hold, _uni, _left,
     arrtab, lead} = st
-  St{bad, rows, heads, here, parts, buf, lex, b, qkind, stack, hold, u,
+  St{bad, rows, heads, here, parts, buf, lex, b, qkind, stack, hold, uu,
     U32.sub(left, 1), arrtab, lead}
 
 # the escape is finished, or another hex digit is required
-def uni.next(last: Bool, st: St, +u: U32, back: Lex, left: U32) -> St:
+def uni.next(last: Bool, st: St, +uu: U32, back: Lex, left: U32) -> St:
   match last:
     case True{}:
-      uni.finish(uni.ok(u), st, u, back)
+      uni.finish(uni.ok(uu), st, uu, back)
     case False{}:
-      uni.next.more(st, u, left)
+      uni.next.more(st, uu, left)
 
 # one hex digit of a unicode escape
-def uni.go(ok: Bool, st: St, +c: Char, back: Lex, uni: U32, +left: U32) -> St:
+def uni.go(ok: Bool, st: St, +cc: Char, back: Lex, uni: U32, +left: U32) -> St:
   match ok:
     case False{}:
       st.err(st, "invalid escape")
     case True{}:
-      uni.next(U32.is_eq(left, 1), st, U32.add(U32.mul(uni, 16), dig.val(c)), back, left)
+      uni.next(U32.is_eq(left, 1), st, U32.add(U32.mul(uni, 16), dig.val(cc)), back, left)
 
 # one hex digit of a unicode escape
-def uni.step(st: St, +c: Char, back: Lex) -> St:
+def uni.step(st: St, +cc: Char, back: Lex) -> St:
   St{bad, rows, heads, here, parts, buf, lex, b, qkind, stack, hold, +uni, +left, arrtab,
     lead} = st
-  uni.go(dig.ok(dig.val(c), 16),
+  uni.go(dig.ok(dig.val(cc), 16),
     St{bad, rows, heads, here, parts, buf, lex, b, qkind, stack, hold, uni, left, arrtab,
-      lead}, c, back, uni, left)
+      lead}, cc, back, uni, left)
 
 # a long unicode escape, or an unknown escape
 def esc.uu(uu: Bool) -> Esc:
@@ -2652,94 +2791,102 @@ def esc.uu(uu: Bool) -> Esc:
       EBad{}
 
 # a unicode escape
-def esc.u(u: Bool, uu: Bool) -> Esc:
-  match u:
+def esc.u(uuu: Bool, uu: Bool) -> Esc:
+  match uuu:
     case True{}:
       EUni{4}
     case False{}:
       esc.uu(uu)
 
 # carriage return or a unicode escape
-def esc.r(r: Bool, u: Bool, uu: Bool) -> Esc:
-  match r:
+def esc.r(rr: Bool, uuu: Bool, uu: Bool) -> Esc:
+  match rr:
     case True{}:
       EChar{'\r'}
     case False{}:
-      esc.u(u, uu)
+      esc.u(uuu, uu)
 
 # form feed or the rest
-def esc.f(f: Bool, r: Bool, u: Bool, uu: Bool) -> Esc:
-  match f:
+def esc.f(ff: Bool, rr: Bool, uuu: Bool, uu: Bool) -> Esc:
+  match ff:
     case True{}:
       EChar{Chr{12}}
     case False{}:
-      esc.r(r, u, uu)
+      esc.r(rr, uuu, uu)
 
 # newline or the rest
-def esc.n(n: Bool, f: Bool, r: Bool, u: Bool, uu: Bool) -> Esc:
-  match n:
+def esc.n(nn: Bool, ff: Bool, rr: Bool, uuu: Bool, uu: Bool) -> Esc:
+  match nn:
     case True{}:
       EChar{'\n'}
     case False{}:
-      esc.f(f, r, u, uu)
+      esc.f(ff, rr, uuu, uu)
 
 # tab, newline, form feed, carriage return, or a unicode escape
-def esc.t(t: Bool, n: Bool, f: Bool, r: Bool, u: Bool, uu: Bool) -> Esc:
-  match t:
+def esc.t(tt: Bool, nn: Bool, ff: Bool, rr: Bool, uuu: Bool, uu: Bool) -> Esc:
+  match tt:
     case True{}:
       EChar{'\t'}
     case False{}:
-      esc.n(n, f, r, u, uu)
+      esc.n(nn, ff, rr, uuu, uu)
 
 # backslash, quotation mark, or a letter escape
-def esc.letter(b: Bool, t: Bool, n: Bool, f: Bool, r: Bool, u: Bool, uu: Bool) -> Esc:
-  match b:
+def esc.letter(bb: Bool, tt: Bool, nn: Bool, ff: Bool, rr: Bool, uuu: Bool, uu: Bool) -> Esc:
+  match bb:
     case True{}:
       EChar{Chr{8}}
     case False{}:
-      esc.t(t, n, f, r, u, uu)
+      esc.t(tt, nn, ff, rr, uuu, uu)
 
 # spaces before the newline of a line-ending backslash
-def esc.sp(sp: Bool, b: Bool, t: Bool, n: Bool, f: Bool, r: Bool, u: Bool, uu: Bool)
-  -> Esc:
+def esc.sp(sp: Bool, bb: Bool, tt: Bool, nn: Bool, ff: Bool, rr: Bool, uuu: Bool, uu: Bool) -> Esc:
   match sp:
     case True{}:
       EFold{False{}}
     case False{}:
-      esc.letter(b, t, n, f, r, u, uu)
+      esc.letter(bb, tt, nn, ff, rr, uuu, uu)
 
 # a line-ending backslash, or a letter
-def esc.fold(nl: Bool, sp: Bool, b: Bool, t: Bool, n: Bool, f: Bool, r: Bool, u: Bool,
-  uu: Bool) -> Esc:
+def esc.fold(nl: Bool, sp: Bool, bb: Bool, tt: Bool, nn: Bool, ff: Bool, rr: Bool, uuu: Bool, uu: Bool) -> Esc:
   match nl:
     case True{}:
       EFold{True{}}
     case False{}:
-      esc.sp(sp, b, t, n, f, r, u, uu)
+      esc.sp(sp, bb, tt, nn, ff, rr, uuu, uu)
 
 # a backslash or a letter
-def esc.bs(bs: Bool, b: Bool, t: Bool, n: Bool, f: Bool, r: Bool, u: Bool, uu: Bool,
-  nl: Bool, sp: Bool) -> Esc:
+def esc.bs(bs: Bool, bb: Bool, tt: Bool, nn: Bool, ff: Bool, rr: Bool, uuu: Bool, uu: Bool, nl: Bool, sp: Bool) -> Esc:
   match bs:
     case True{}:
       EChar{'\\'}
     case False{}:
-      esc.fold(nl, sp, b, t, n, f, r, u, uu)
+      esc.fold(nl, sp, bb, tt, nn, ff, rr, uuu, uu)
 
 # a quote, a backslash, or a letter
-def esc.of.go(q: Bool, bs: Bool, b: Bool, t: Bool, n: Bool, f: Bool, r: Bool, u: Bool,
-  uu: Bool, nl: Bool, sp: Bool) -> Esc:
-  match q:
+def esc.of.go(
+  qq: Bool,
+  bs: Bool,
+  bb: Bool,
+  tt: Bool,
+  nn: Bool,
+  ff: Bool,
+  rr: Bool,
+  uuu: Bool,
+  uu: Bool,
+  nl: Bool,
+  sp: Bool
+) -> Esc:
+  match qq:
     case True{}:
       EChar{'"'}
     case False{}:
-      esc.bs(bs, b, t, n, f, r, u, uu, nl, sp)
+      esc.bs(bs, bb, tt, nn, ff, rr, uuu, uu, nl, sp)
 
 # classify one escaped character
-def esc.of(+c: Char) -> Esc:
-  esc.of.go(Char.is_eq(c, '"'), Char.is_eq(c, '\\'), Char.is_eq(c, 'b'),
-    Char.is_eq(c, 't'), Char.is_eq(c, 'n'), Char.is_eq(c, 'f'), Char.is_eq(c, 'r'),
-    Char.is_eq(c, 'u'), Char.is_eq(c, 'U'), ch.nl(c), ch.sp(c))
+def esc.of(+cc: Char) -> Esc:
+  esc.of.go(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), Char.is_eq(cc, 'b'),
+    Char.is_eq(cc, 't'), Char.is_eq(cc, 'n'), Char.is_eq(cc, 'f'), Char.is_eq(cc, 'r'),
+    Char.is_eq(cc, 'u'), Char.is_eq(cc, 'U'), ch.nl(cc), ch.sp(cc))
 
 # the lex state that reads the hex digits of an escape
 def esc.uni.lex(back: Lex) -> Lex:
@@ -2752,10 +2899,10 @@ def esc.uni.lex(back: Lex) -> Lex:
       LUni{}
 
 # a unicode escape starts with no digits seen
-def esc.uni(st: St, back: Lex, n: U32) -> St:
+def esc.uni(st: St, back: Lex, nn: U32) -> St:
   St{bad, rows, heads, here, parts, buf, _lex, b, qkind, stack, hold, _uni, _left,
     arrtab, lead} = st
-  St{bad, rows, heads, here, parts, buf, esc.uni.lex(back), b, qkind, stack, hold, 0, n,
+  St{bad, rows, heads, here, parts, buf, esc.uni.lex(back), b, qkind, stack, hold, 0, nn,
     arrtab, lead}
 
 # 1 once a newline has been seen
@@ -2782,8 +2929,8 @@ def esc.fold.use(back: Lex, st: St, saw: Bool) -> St:
       st.err(st, "invalid escape")
 
 # apply one escape and return to the string
-def esc.use(e: Esc, st: St, back: Lex) -> St:
-  match e:
+def esc.use(ee: Esc, st: St, back: Lex) -> St:
+  match ee:
     case EChar{c}:
       st.push(st, c, back)
     case EUni{n}:
@@ -2801,10 +2948,10 @@ def com.enter(st: St, back: Lex) -> St:
     arrtab, lead}
 
 # a bare key, or a rejected character
-def lex.top.bare(bare: Bool, st: St, c: Char) -> St:
+def lex.top.bare(bare: Bool, st: St, cc: Char) -> St:
   match bare:
     case True{}:
-      st.push(st, c, LKey{})
+      st.push(st, cc, LKey{})
     case False{}:
       st.err(st, "invalid key")
 
@@ -2823,60 +2970,57 @@ def lex.qkey(st: St, kind: QKind, lex: Lex) -> St:
     lead}
 
 # a literal key or a bare key
-def lex.top.lit(lit: Bool, bare: Bool, st: St, c: Char) -> St:
+def lex.top.lit(lit: Bool, bare: Bool, st: St, cc: Char) -> St:
   match lit:
     case True{}:
       lex.qkey(st, QLit{}, LKeyQ{})
     case False{}:
-      lex.top.bare(bare, st, c)
+      lex.top.bare(bare, st, cc)
 
 # a quoted key or a bare key
-def lex.top.q(q: Bool, lit: Bool, bare: Bool, st: St, c: Char) -> St:
-  match q:
+def lex.top.q(qq: Bool, lit: Bool, bare: Bool, st: St, cc: Char) -> St:
+  match qq:
     case True{}:
       lex.qkey(st, QBasic{}, LKeyQ{})
     case False{}:
-      lex.top.lit(lit, bare, st, c)
+      lex.top.lit(lit, bare, st, cc)
 
 # a header or a key
-def lex.top.br(br: Bool, q: Bool, lit: Bool, bare: Bool, st: St, c: Char) -> St:
+def lex.top.br(br: Bool, qq: Bool, lit: Bool, bare: Bool, st: St, cc: Char) -> St:
   match br:
     case True{}:
       lex.bracket(st)
     case False{}:
-      lex.top.q(q, lit, bare, st, c)
+      lex.top.q(qq, lit, bare, st, cc)
 
 # a comment, a header, or a key
-def lex.top.hash(hash: Bool, br: Bool, q: Bool, lit: Bool, bare: Bool, st: St, c: Char)
-  -> St:
+def lex.top.hash(hash: Bool, br: Bool, qq: Bool, lit: Bool, bare: Bool, st: St, cc: Char) -> St:
   match hash:
     case True{}:
       com.enter(st, LTop{})
     case False{}:
-      lex.top.br(br, q, lit, bare, st, c)
+      lex.top.br(br, qq, lit, bare, st, cc)
 
 # a newline, a comment, a header, or a key
-def lex.top.nl(nl: Bool, hash: Bool, br: Bool, q: Bool, lit: Bool, bare: Bool, st: St,
-  c: Char) -> St:
+def lex.top.nl(nl: Bool, hash: Bool, br: Bool, qq: Bool, lit: Bool, bare: Bool, st: St, cc: Char) -> St:
   match nl:
     case True{}:
       st
     case False{}:
-      lex.top.hash(hash, br, q, lit, bare, st, c)
+      lex.top.hash(hash, br, qq, lit, bare, st, cc)
 
 # whitespace, a comment, a header, or a key
-def lex.top.go(sp: Bool, nl: Bool, hash: Bool, br: Bool, q: Bool, lit: Bool, bare: Bool,
-  st: St, c: Char) -> St:
+def lex.top.go(sp: Bool, nl: Bool, hash: Bool, br: Bool, qq: Bool, lit: Bool, bare: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
-      lex.top.nl(nl, hash, br, q, lit, bare, st, c)
+      lex.top.nl(nl, hash, br, qq, lit, bare, st, cc)
 
 # top level: a key, a header, a comment, or whitespace
-def lex.top(st: St, +c: Char) -> St:
-  lex.top.go(ch.sp(c), ch.nl(c), Char.is_eq(c, '#'), Char.is_eq(c, '['),
-    Char.is_eq(c, '"'), Char.is_eq(c, '\''), bare.at(c), st, c)
+def lex.top(st: St, +cc: Char) -> St:
+  lex.top.go(ch.sp(cc), ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '['),
+    Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), bare.at(cc), st, cc)
 
 # a newline before equals is rejected
 def lex.key.nl(nl: Bool, st: St, _c: Char) -> St:
@@ -2903,51 +3047,49 @@ def lex.key.end(st: St, next: Lex) -> St:
       arrtab, lead}, next)
 
 # a comment ends the segment and waits for equals
-def lex.key.hash(hash: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.key.hash(hash: Bool, nl: Bool, st: St, cc: Char) -> St:
   match hash:
     case True{}:
       com.enter(lex.key.end(st, LAfter{}), LAfter{})
     case False{}:
-      lex.key.nl(nl, st, c)
+      lex.key.nl(nl, st, cc)
 
 # an equals ends the key
-def lex.key.eq(eq: Bool, hash: Bool, nl: Bool, st: St, +c: Char) -> St:
+def lex.key.eq(eq: Bool, hash: Bool, nl: Bool, st: St, +cc: Char) -> St:
   match eq:
     case True{}:
       lex.key.end(st, LVal{})
     case False{}:
-      lex.key.hash(hash, nl, st, c)
+      lex.key.hash(hash, nl, st, cc)
 
 # a dot ends the segment and skips whitespace before the next one
-def lex.key.dot(dot: Bool, eq: Bool, hash: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.key.dot(dot: Bool, eq: Bool, hash: Bool, nl: Bool, st: St, cc: Char) -> St:
   match dot:
     case True{}:
       lex.key.end(st, LKeyDot{})
     case False{}:
-      lex.key.eq(eq, hash, nl, st, c)
+      lex.key.eq(eq, hash, nl, st, cc)
 
 # whitespace ends the segment
-def lex.key.sp(sp: Bool, dot: Bool, eq: Bool, hash: Bool, nl: Bool, st: St, c: Char)
-  -> St:
+def lex.key.sp(sp: Bool, dot: Bool, eq: Bool, hash: Bool, nl: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       lex.key.end(st, LAfter{})
     case False{}:
-      lex.key.dot(dot, eq, hash, nl, st, c)
+      lex.key.dot(dot, eq, hash, nl, st, cc)
 
 # a bare character, whitespace, a dot, or an equals
-def lex.key.go(bare: Bool, sp: Bool, dot: Bool, eq: Bool, hash: Bool, nl: Bool, st: St,
-  c: Char) -> St:
+def lex.key.go(bare: Bool, sp: Bool, dot: Bool, eq: Bool, hash: Bool, nl: Bool, st: St, cc: Char) -> St:
   match bare:
     case True{}:
-      st.push(st, c, LKey{})
+      st.push(st, cc, LKey{})
     case False{}:
-      lex.key.sp(sp, dot, eq, hash, nl, st, c)
+      lex.key.sp(sp, dot, eq, hash, nl, st, cc)
 
 # inside a bare key segment
-def lex.key(st: St, +c: Char) -> St:
-  lex.key.go(bare.at(c), ch.sp(c), Char.is_eq(c, '.'), Char.is_eq(c, '='),
-    Char.is_eq(c, '#'), ch.nl(c), st, c)
+def lex.key(st: St, +cc: Char) -> St:
+  lex.key.go(bare.at(cc), ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='),
+    Char.is_eq(cc, '#'), ch.nl(cc), st, cc)
 
 # a newline before equals is rejected
 def lex.after.nl(nl: Bool, st: St, _c: Char) -> St:
@@ -2958,42 +3100,41 @@ def lex.after.nl(nl: Bool, st: St, _c: Char) -> St:
       st.err(st, "invalid key")
 
 # a comment waits for equals
-def lex.after.hash(hash: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.after.hash(hash: Bool, nl: Bool, st: St, cc: Char) -> St:
   match hash:
     case True{}:
       com.enter(st, LAfter{})
     case False{}:
-      lex.after.nl(nl, st, c)
+      lex.after.nl(nl, st, cc)
 
 # equals starts the value
-def lex.after.eq(eq: Bool, hash: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.after.eq(eq: Bool, hash: Bool, nl: Bool, st: St, cc: Char) -> St:
   match eq:
     case True{}:
       st.lex(st, LVal{})
     case False{}:
-      lex.after.hash(hash, nl, st, c)
+      lex.after.hash(hash, nl, st, cc)
 
 # a dot starts the next segment, after any whitespace
-def lex.after.dot(dot: Bool, eq: Bool, hash: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.after.dot(dot: Bool, eq: Bool, hash: Bool, nl: Bool, st: St, cc: Char) -> St:
   match dot:
     case True{}:
       st.lex(st, LKeyDot{})
     case False{}:
-      lex.after.eq(eq, hash, nl, st, c)
+      lex.after.eq(eq, hash, nl, st, cc)
 
 # whitespace, a dot, or an equals
-def lex.after.go(sp: Bool, dot: Bool, eq: Bool, hash: Bool, nl: Bool, st: St, c: Char)
-  -> St:
+def lex.after.go(sp: Bool, dot: Bool, eq: Bool, hash: Bool, nl: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
-      lex.after.dot(dot, eq, hash, nl, st, c)
+      lex.after.dot(dot, eq, hash, nl, st, cc)
 
 # after a key segment, before equals or a dot
-def lex.after(st: St, +c: Char) -> St:
-  lex.after.go(ch.sp(c), Char.is_eq(c, '.'), Char.is_eq(c, '='), Char.is_eq(c, '#'),
-    ch.nl(c), st, c)
+def lex.after(st: St, +cc: Char) -> St:
+  lex.after.go(ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc, '#'),
+    ch.nl(cc), st, cc)
 
 # a newline inside an inline table is rejected
 def lex.val.nl3(inside: Bool, st: St) -> St:
@@ -3026,84 +3167,81 @@ def lex.inline(st: St) -> St:
     CInl{[], parts, here} <> stack, hold, uni, left, arrtab, lead}
 
 # an inline table, or a bare value
-def lex.val.inl(inl: Bool, st: St, c: Char) -> St:
+def lex.val.inl(inl: Bool, st: St, cc: Char) -> St:
   match inl:
     case True{}:
       lex.inline(st)
     case False{}:
-      st.push(st, c, LBare{})
+      st.push(st, cc, LBare{})
 
 # an array, or another value
-def lex.val.br(br: Bool, inl: Bool, st: St, c: Char) -> St:
+def lex.val.br(br: Bool, inl: Bool, st: St, cc: Char) -> St:
   match br:
     case True{}:
       lex.array(st)
     case False{}:
-      lex.val.inl(inl, st, c)
+      lex.val.inl(inl, st, cc)
 
 # a literal string, or another value
-def lex.val.lit(lit: Bool, br: Bool, inl: Bool, st: St, c: Char) -> St:
+def lex.val.lit(lit: Bool, br: Bool, inl: Bool, st: St, cc: Char) -> St:
   match lit:
     case True{}:
       lex.qkey(st, QLit{}, LQ{})
     case False{}:
-      lex.val.br(br, inl, st, c)
+      lex.val.br(br, inl, st, cc)
 
 # a basic string, or another value
-def lex.val.q(q: Bool, lit: Bool, br: Bool, inl: Bool, st: St, c: Char) -> St:
-  match q:
+def lex.val.q(qq: Bool, lit: Bool, br: Bool, inl: Bool, st: St, cc: Char) -> St:
+  match qq:
     case True{}:
       lex.qkey(st, QBasic{}, LQ{})
     case False{}:
-      lex.val.lit(lit, br, inl, st, c)
+      lex.val.lit(lit, br, inl, st, cc)
 
 # a comment, a string, an array, an inline table, or a bare value
-def lex.val.hash(hash: Bool, q: Bool, lit: Bool, br: Bool, inl: Bool, st: St, c: Char)
-  -> St:
+def lex.val.hash(hash: Bool, qq: Bool, lit: Bool, br: Bool, inl: Bool, st: St, cc: Char) -> St:
   match hash:
     case True{}:
       com.enter(st, LVal{})
     case False{}:
-      lex.val.q(q, lit, br, inl, st, c)
+      lex.val.q(qq, lit, br, inl, st, cc)
 
 # a newline is whitespace outside an inline table
-def lex.val.nl(nl: Bool, hash: Bool, q: Bool, lit: Bool, br: Bool, inl: Bool, st: St,
-  c: Char) -> St:
+def lex.val.nl(nl: Bool, hash: Bool, qq: Bool, lit: Bool, br: Bool, inl: Bool, st: St, cc: Char) -> St:
   match nl:
     case True{}:
-      lex.val.nl2(st, c)
+      lex.val.nl2(st, cc)
     case False{}:
-      lex.val.hash(hash, q, lit, br, inl, st, c)
+      lex.val.hash(hash, qq, lit, br, inl, st, cc)
 
 # whitespace or the value itself
-def lex.val.go(sp: Bool, nl: Bool, hash: Bool, q: Bool, lit: Bool, br: Bool, inl: Bool,
-  st: St, c: Char) -> St:
+def lex.val.go(sp: Bool, nl: Bool, hash: Bool, qq: Bool, lit: Bool, br: Bool, inl: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
-      lex.val.nl(nl, hash, q, lit, br, inl, st, c)
+      lex.val.nl(nl, hash, qq, lit, br, inl, st, cc)
 
 # the start of a value
-def lex.val(st: St, +c: Char) -> St:
-  lex.val.go(ch.sp(c), ch.nl(c), Char.is_eq(c, '#'), Char.is_eq(c, '"'),
-    Char.is_eq(c, '\''), Char.is_eq(c, '['), Char.is_eq(c, '{'), st, c)
+def lex.val(st: St, +cc: Char) -> St:
+  lex.val.go(ch.sp(cc), ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'),
+    Char.is_eq(cc, '\''), Char.is_eq(cc, '['), Char.is_eq(cc, '{'), st, cc)
 
 # a second quote may start a multiline string; otherwise the first character is held
-def lex.q.go(same: Bool, st: St, c: Char) -> St:
+def lex.q.go(same: Bool, st: St, cc: Char) -> St:
   match same:
     case True{}:
       st.lex(st, LQ2{})
     case False{}:
-      st.hold(st.lex(st, LStr{}), LStr{}, c)
+      st.hold(st.lex(st, LStr{}), LStr{}, cc)
 
 # the first quote has been seen
-def lex.q(st: St, +c: Char) -> St:
+def lex.q(st: St, +cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, lx, back, +qkind, stack, hold, uni, left,
     arrtab, lead} = st
-  lex.q.go(Char.is_eq(c, q.char(qkind)),
+  lex.q.go(Char.is_eq(cc, q.char(qkind)),
     St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
-      arrtab, lead}, c)
+      arrtab, lead}, cc)
 
 # a multiline string, about to trim one opening newline
 def lex.multi(st: St, kind: QKind) -> St:
@@ -3113,86 +3251,86 @@ def lex.multi(st: St, kind: QKind) -> St:
     uni, left, arrtab, lead}
 
 # a third quote starts a multiline string; two quotes are an empty string
-def lex.q2.go(same: Bool, st: St, c: Char, kind: QKind) -> St:
+def lex.q2.go(same: Bool, st: St, cc: Char, kind: QKind) -> St:
   match same:
     case True{}:
       lex.multi(st, kind)
     case False{}:
-      bare.hold(val.take(st, VStr{""}), c, True{})
+      bare.hold(val.take(st, VStr{""}), cc, True{})
 
 # two quotes have been seen
-def lex.q2(st: St, +c: Char) -> St:
+def lex.q2(st: St, +cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, lx, back, +qkind, stack, hold, uni, left,
     arrtab, lead} = st
-  lex.q2.go(Char.is_eq(c, q.char(qkind)),
+  lex.q2.go(Char.is_eq(cc, q.char(qkind)),
     St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
-      arrtab, lead}, c, qkind)
+      arrtab, lead}, cc, qkind)
 
 # a line feed is trimmed; any other character is the first of the string
-def lex.trim.nl(nl: Bool, st: St, c: Char) -> St:
+def lex.trim.nl(nl: Bool, st: St, cc: Char) -> St:
   match nl:
     case True{}:
       st.lex(st, LStr{})
     case False{}:
-      st.hold(st.lex(st, LStr{}), LStr{}, c)
+      st.hold(st.lex(st, LStr{}), LStr{}, cc)
 
 # a carriage return may still have a line feed after it
-def lex.trim.go(cr: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.trim.go(cr: Bool, nl: Bool, st: St, cc: Char) -> St:
   match cr:
     case True{}:
       st.lex(st, LTrim2{})
     case False{}:
-      lex.trim.nl(nl, st, c)
+      lex.trim.nl(nl, st, cc)
 
 # trim one opening newline of a multiline string
-def lex.trim(st: St, +c: Char) -> St:
-  lex.trim.go(U32.is_eq(Char.to_u32(c), 13), ch.nl(c), st, c)
+def lex.trim(st: St, +cc: Char) -> St:
+  lex.trim.go(U32.is_eq(Char.to_u32(cc), 13), ch.nl(cc), st, cc)
 
 # the line feed of a CRLF opening newline
-def lex.trim2.go(lf: Bool, st: St, c: Char) -> St:
+def lex.trim2.go(lf: Bool, st: St, cc: Char) -> St:
   match lf:
     case True{}:
       st.lex(st, LStr{})
     case False{}:
-      st.hold(st.lex(st, LStr{}), LStr{}, c)
+      st.hold(st.lex(st, LStr{}), LStr{}, cc)
 
 # the line feed of a CRLF opening newline
-def lex.trim2(st: St, +c: Char) -> St:
-  lex.trim2.go(U32.is_eq(Char.to_u32(c), 10), st, c)
+def lex.trim2(st: St, +cc: Char) -> St:
+  lex.trim2.go(U32.is_eq(Char.to_u32(cc), 10), st, cc)
 
 # a forbidden control, or one character of the string
-def lex.str.char.go(bad: Bool, st: St, c: Char) -> St:
+def lex.str.char.go(bad: Bool, st: St, cc: Char) -> St:
   match bad:
     case True{}:
       st.err(st, "invalid control")
     case False{}:
-      st.push(st, c, LStr{})
+      st.push(st, cc, LStr{})
 
 # a raw character, rejected when it is a forbidden control
-def lex.str.char(multi: Bool, st: St, +c: Char) -> St:
-  lex.str.char.go(str.bad(Char.to_u32(c), multi), st, c)
+def lex.str.char(multi: Bool, st: St, +cc: Char) -> St:
+  lex.str.char.go(str.bad(Char.to_u32(cc), multi), st, cc)
 
 # an escape, or a plain character
-def lex.str.bs(bs: Bool, multi: Bool, st: St, c: Char, _kind: QKind) -> St:
+def lex.str.bs(bs: Bool, multi: Bool, st: St, cc: Char, _kind: QKind) -> St:
   match bs:
     case True{}:
       st.lex(st, LEsc{})
     case False{}:
-      lex.str.char(multi, st, c)
+      lex.str.char(multi, st, cc)
 
 # a backslash starts an escape in a basic string
-def lex.str.esc(basic: Bool, multi: Bool, st: St, +c: Char, kind: QKind) -> St:
+def lex.str.esc(basic: Bool, multi: Bool, st: St, +cc: Char, kind: QKind) -> St:
   match basic:
     case True{}:
-      lex.str.bs(Char.is_eq(c, '\\'), multi, st, c, kind)
+      lex.str.bs(Char.is_eq(cc, '\\'), multi, st, cc, kind)
     case False{}:
-      lex.str.char(multi, st, c)
+      lex.str.char(multi, st, cc)
 
 # count closing quotes of a multiline string
-def lex.mq(st: St, n: U32) -> St:
+def lex.mq(st: St, nn: U32) -> St:
   St{bad, rows, heads, here, parts, buf, _lex, back, qkind, stack, hold, _uni, _left,
     arrtab, lead} = st
-  St{bad, rows, heads, here, parts, buf, LMq{}, back, qkind, stack, hold, 0, n, arrtab,
+  St{bad, rows, heads, here, parts, buf, LMq{}, back, qkind, stack, hold, 0, nn, arrtab,
     lead}
 
 # one quote closes a one-line string and may close a multiline string
@@ -3204,21 +3342,20 @@ def lex.str.quote(multi: Bool, st: St) -> St:
       lex.mq(st, 1)
 
 # a quote, an escape, or a character
-def lex.str.go(quote: Bool, multi: Bool, basic: Bool, st: St, +c: Char, kind: QKind)
-  -> St:
+def lex.str.go(quote: Bool, multi: Bool, basic: Bool, st: St, +cc: Char, kind: QKind) -> St:
   match quote:
     case True{}:
       lex.str.quote(multi, st)
     case False{}:
-      lex.str.esc(basic, multi, st, c, kind)
+      lex.str.esc(basic, multi, st, cc, kind)
 
 # inside a string
-def lex.str(st: St, +c: Char) -> St:
+def lex.str(st: St, +cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, lx, back, +qkind, stack, hold, uni, left,
     arrtab, lead} = st
-  lex.str.go(Char.is_eq(c, q.char(qkind)), q.multi(qkind), q.basic(qkind),
+  lex.str.go(Char.is_eq(cc, q.char(qkind)), q.multi(qkind), q.basic(qkind),
     St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
-      arrtab, lead}, c, qkind)
+      arrtab, lead}, cc, qkind)
 
 # the second quote waits; the third closes
 def lex.mq.one(one: Bool, st: St) -> St:
@@ -3229,32 +3366,31 @@ def lex.mq.one(one: Bool, st: St) -> St:
       str.fin(st)
 
 # quotes that were not a closer return to the string, and the character is held
-def lex.mq.back(st: St, c: Char, buf: List<&2, Char>) -> St:
+def lex.mq.back(st: St, cc: Char, buf: List<&2, Char>) -> St:
   St{bad, rows, heads, here, parts, _buf, _lex, back, qkind, stack, _hold, uni, _left,
     arrtab, lead} = st
-  St{bad, rows, heads, here, parts, buf, LStr{}, back, qkind, stack, HChar{c}, uni, 0,
+  St{bad, rows, heads, here, parts, buf, LStr{}, back, qkind, stack, HChar{cc}, uni, 0,
     arrtab, lead}
 
 # a quote continues the closer; anything else is content
-def lex.mq.go(quote: Bool, one: Bool, st: St, c: Char, buf: List<&2, Char>, kind: QKind,
-  _left: U32) -> St:
+def lex.mq.go(quote: Bool, one: Bool, st: St, cc: Char, buf: List<&2, Char>, kind: QKind, _left: U32) -> St:
   match quote:
     case True{}:
       lex.mq.one(one, st)
     case False{}:
-      lex.mq.back(st, c, mq.put(one, q.char(kind), buf))
+      lex.mq.back(st, cc, mq.put(one, q.char(kind), buf))
 
 # one character while closing a multiline string
-def lex.mq.step(st: St, +c: Char) -> St:
+def lex.mq.step(st: St, +cc: Char) -> St:
   St{bad, rows, heads, here, parts, +buf, lx, back, +qkind, stack, hold, uni, +left,
     arrtab, lead} = st
-  lex.mq.go(Char.is_eq(c, q.char(qkind)), U32.is_eq(left, 1),
+  lex.mq.go(Char.is_eq(cc, q.char(qkind)), U32.is_eq(left, 1),
     St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
-      arrtab, lead}, c, buf, qkind, left)
+      arrtab, lead}, cc, buf, qkind, left)
 
 # one escaped character
-def lex.esc(st: St, +c: Char) -> St:
-  esc.use(esc.of(c), st, LStr{})
+def lex.esc(st: St, +cc: Char) -> St:
+  esc.use(esc.of(cc), st, LStr{})
 
 # remember that a newline was seen
 def lex.fold.saw(st: St) -> St:
@@ -3264,125 +3400,125 @@ def lex.fold.saw(st: St) -> St:
     lead}
 
 # a character before the newline is rejected
-def lex.fold.end.go(saw: Bool, st: St, c: Char) -> St:
+def lex.fold.end.go(saw: Bool, st: St, cc: Char) -> St:
   match saw:
     case True{}:
-      st.hold(st.lex(st, LStr{}), LStr{}, c)
+      st.hold(st.lex(st, LStr{}), LStr{}, cc)
     case False{}:
       st.err(st, "invalid escape")
 
 # the next character ends the fold only after a newline
-def lex.fold.end(st: St, c: Char) -> St:
+def lex.fold.end(st: St, cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, +left,
     arrtab, lead} = st
   lex.fold.end.go(U32.is_eq(left, 1),
     St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
-      arrtab, lead}, c)
+      arrtab, lead}, cc)
 
 # a newline has been seen, so later whitespace may still be skipped
-def lex.fold.nl(nl: Bool, st: St, c: Char) -> St:
+def lex.fold.nl(nl: Bool, st: St, cc: Char) -> St:
   match nl:
     case True{}:
       lex.fold.saw(st)
     case False{}:
-      lex.fold.end(st, c)
+      lex.fold.end(st, cc)
 
 # more whitespace, or the next character of the string
-def lex.fold.go(sp: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.fold.go(sp: Bool, nl: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
-      lex.fold.nl(nl, st, c)
+      lex.fold.nl(nl, st, cc)
 
 # whitespace after a line-ending backslash
-def lex.fold(st: St, +c: Char) -> St:
-  lex.fold.go(ch.sp(c), ch.nl(c), st, c)
+def lex.fold(st: St, +cc: Char) -> St:
+  lex.fold.go(ch.sp(cc), ch.nl(cc), st, cc)
 
 # keep the space only when the buffer is a date; otherwise it ends the token
-def lex.bare.date.go(date: Bool, st: St, c: Char) -> St:
+def lex.bare.date.go(date: Bool, st: St, cc: Char) -> St:
   match date:
     case True{}:
       st.lex(st, LDate{})
     case False{}:
-      bare.finish(st, c, False{})
+      bare.finish(st, cc, False{})
 
 # a date may continue after one space
-def lex.bare.date(st: St, c: Char) -> St:
+def lex.bare.date(st: St, cc: Char) -> St:
   St{bad, rows, heads, here, parts, +buf, lx, back, qkind, stack, hold, uni, left,
     arrtab, lead} = st
   lex.bare.date.go(date.shaped(buf),
     St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
-      arrtab, lead}, c)
+      arrtab, lead}, cc)
 
 # a newline inside an inline table is held, and so is any other delimiter
 def lex.bare.hold(skip: Bool, nl: Bool, inside: Bool) -> Bool:
   Bool.or(Bool.not(skip), Bool.and(nl, inside))
 
 # a delimiter other than a date-space is held unless it is whitespace
-def lex.bare.end(st: St, +c: Char) -> St:
+def lex.bare.end(st: St, +cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, lx, back, qkind, +stack, hold, uni, left,
     arrtab, lead} = st
   bare.finish(St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold,
-    uni, left, arrtab, lead}, c, lex.bare.hold(ch.skip(c), ch.nl(c), inl.open(stack)))
+    uni, left, arrtab, lead}, cc, lex.bare.hold(ch.skip(cc), ch.nl(cc), inl.open(stack)))
 
 # a space may be the space inside a datetime
-def lex.bare.sp(sp: Bool, st: St, c: Char) -> St:
+def lex.bare.sp(sp: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
-      lex.bare.date(st, c)
+      lex.bare.date(st, cc)
     case False{}:
-      lex.bare.end(st, c)
+      lex.bare.end(st, cc)
 
 # a delimiter ends the token
-def lex.bare.go(delim: Bool, sp: Bool, st: St, c: Char) -> St:
+def lex.bare.go(delim: Bool, sp: Bool, st: St, cc: Char) -> St:
   match delim:
     case False{}:
-      st.push(st, c, LBare{})
+      st.push(st, cc, LBare{})
     case True{}:
-      lex.bare.sp(sp, st, c)
+      lex.bare.sp(sp, st, cc)
 
 # a bare value
-def lex.bare(st: St, +c: Char) -> St:
-  lex.bare.go(ch.delim(c), ch.sp(c), st, c)
+def lex.bare(st: St, +cc: Char) -> St:
+  lex.bare.go(ch.delim(cc), ch.sp(cc), st, cc)
 
 # the space and the digit belong to the datetime
-def lex.date.digit(st: St, c: Char) -> St:
+def lex.date.digit(st: St, cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, _lex, back, qkind, stack, hold, uni, left,
     arrtab, lead} = st
-  St{bad, rows, heads, here, parts, c <> (' ' <> buf), LBare{}, back, qkind, stack, hold,
+  St{bad, rows, heads, here, parts, cc <> (' ' <> buf), LBare{}, back, qkind, stack, hold,
     uni, left, arrtab, lead}
 
 # the character after the space of a possible datetime
-def lex.date.go(digit: Bool, st: St, c: Char) -> St:
+def lex.date.go(digit: Bool, st: St, cc: Char) -> St:
   match digit:
     case True{}:
-      lex.date.digit(st, c)
+      lex.date.digit(st, cc)
     case False{}:
-      bare.finish(st, c, True{})
+      bare.finish(st, cc, True{})
 
 # the character after the space of a possible datetime
-def lex.date(st: St, +c: Char) -> St:
-  lex.date.go(Char.is_digit(c), st, c)
+def lex.date(st: St, +cc: Char) -> St:
+  lex.date.go(Char.is_digit(cc), st, cc)
 
 # the newline is read again in the state that was waiting
-def lex.com.nl(st: St, c: Char) -> St:
+def lex.com.nl(st: St, cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, _lex, +back, qkind, stack, _hold, uni, left,
     arrtab, lead} = st
-  St{bad, rows, heads, here, parts, buf, back, back, qkind, stack, HChar{c}, uni, left,
+  St{bad, rows, heads, here, parts, buf, back, back, qkind, stack, HChar{cc}, uni, left,
     arrtab, lead}
 
 # a comment runs to the end of the line
-def lex.com.go(nl: Bool, st: St, c: Char) -> St:
+def lex.com.go(nl: Bool, st: St, cc: Char) -> St:
   match nl:
     case False{}:
       st
     case True{}:
-      lex.com.nl(st, c)
+      lex.com.nl(st, cc)
 
 # a comment runs to the end of the line
-def lex.com(st: St, +c: Char) -> St:
-  lex.com.go(ch.nl(c), st, c)
+def lex.com(st: St, +cc: Char) -> St:
+  lex.com.go(ch.nl(cc), st, cc)
 
 # the header is an array of tables
 def lex.head.arr(st: St) -> St:
@@ -3417,21 +3553,21 @@ def lex.head.br(st: St) -> St:
       arrtab, lead})
 
 # between segments a dot is required
-def lex.head.ch.go(gap: Bool, st: St, c: Char) -> St:
+def lex.head.ch.go(gap: Bool, st: St, cc: Char) -> St:
   match gap:
     case True{}:
       st.err(st, "invalid header")
     case False{}:
-      st.push(st, c, LHead{})
+      st.push(st, cc, LHead{})
 
 # a bare character continues the segment, or starts one at the beginning
-def lex.head.ch(st: St, c: Char) -> St:
+def lex.head.ch(st: St, cc: Char) -> St:
   St{bad, rows, heads, here, +parts, +buf, lx, back, qkind, stack, hold, uni, left,
     arrtab, lead} = st
   lex.head.ch.go(Bool.and(Bool.not(List.is_empty(&2, String, parts)),
     List.is_empty(&2, Char, buf)),
     St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
-      arrtab, lead}, c)
+      arrtab, lead}, cc)
 
 # an empty buffer was already between segments
 def lex.head.gap.go(empty: Bool, st: St) -> St:
@@ -3506,62 +3642,69 @@ def lex.head.lit(lit: Bool, hash: Bool, st: St) -> St:
       lex.head.hash(hash, st)
 
 # a quoted header segment or a comment
-def lex.head.q(q: Bool, lit: Bool, hash: Bool, st: St, _c: Char) -> St:
-  match q:
+def lex.head.q(qq: Bool, lit: Bool, hash: Bool, st: St, _c: Char) -> St:
+  match qq:
     case True{}:
       lex.qkey(st, QBasic{}, LHeadQ{})
     case False{}:
       lex.head.lit(lit, hash, st)
 
 # the closing bracket, a quoted key, or a comment
-def lex.head.end(end: Bool, q: Bool, lit: Bool, hash: Bool, st: St, c: Char) -> St:
+def lex.head.end(end: Bool, qq: Bool, lit: Bool, hash: Bool, st: St, cc: Char) -> St:
   match end:
     case True{}:
       lex.head.close(st)
     case False{}:
-      lex.head.q(q, lit, hash, st, c)
+      lex.head.q(qq, lit, hash, st, cc)
 
 # a dot, the end, or a quoted segment
-def lex.head.dot(dot: Bool, end: Bool, q: Bool, lit: Bool, hash: Bool, st: St, c: Char)
-  -> St:
+def lex.head.dot(dot: Bool, end: Bool, qq: Bool, lit: Bool, hash: Bool, st: St, cc: Char) -> St:
   match dot:
     case True{}:
       lex.head.dot2(st)
     case False{}:
-      lex.head.end(end, q, lit, hash, st, c)
+      lex.head.end(end, qq, lit, hash, st, cc)
 
 # whitespace, a dot, or the closing bracket
-def lex.head.sp(sp: Bool, dot: Bool, end: Bool, q: Bool, lit: Bool, hash: Bool, st: St,
-  c: Char) -> St:
+def lex.head.sp(sp: Bool, dot: Bool, end: Bool, qq: Bool, lit: Bool, hash: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       lex.head.gap(st)
     case False{}:
-      lex.head.dot(dot, end, q, lit, hash, st, c)
+      lex.head.dot(dot, end, qq, lit, hash, st, cc)
 
 # a bare character, whitespace, a dot, or the end
-def lex.head.bare(bare: Bool, sp: Bool, dot: Bool, end: Bool, q: Bool, lit: Bool,
-  hash: Bool, st: St, c: Char) -> St:
+def lex.head.bare(bare: Bool, sp: Bool, dot: Bool, end: Bool, qq: Bool, lit: Bool, hash: Bool, st: St, cc: Char) -> St:
   match bare:
     case True{}:
-      lex.head.ch(st, c)
+      lex.head.ch(st, cc)
     case False{}:
-      lex.head.sp(sp, dot, end, q, lit, hash, st, c)
+      lex.head.sp(sp, dot, end, qq, lit, hash, st, cc)
 
 # a second bracket, a key character, or whitespace
-def lex.head.go(br: Bool, bare: Bool, sp: Bool, dot: Bool, end: Bool, q: Bool,
-  lit: Bool, hash: Bool, st: St, c: Char) -> St:
+def lex.head.go(
+  br: Bool,
+  bare: Bool,
+  sp: Bool,
+  dot: Bool,
+  end: Bool,
+  qq: Bool,
+  lit: Bool,
+  hash: Bool,
+  st: St,
+  cc: Char
+) -> St:
   match br:
     case True{}:
       lex.head.br(st)
     case False{}:
-      lex.head.bare(bare, sp, dot, end, q, lit, hash, st, c)
+      lex.head.bare(bare, sp, dot, end, qq, lit, hash, st, cc)
 
 # inside a header
-def lex.head(st: St, +c: Char) -> St:
-  lex.head.go(Char.is_eq(c, '['), bare.at(c), ch.sp(c), Char.is_eq(c, '.'),
-    Char.is_eq(c, ']'), Char.is_eq(c, '"'), Char.is_eq(c, '\''), Char.is_eq(c, '#'),
-    st, c)
+def lex.head(st: St, +cc: Char) -> St:
+  lex.head.go(Char.is_eq(cc, '['), bare.at(cc), ch.sp(cc), Char.is_eq(cc, '.'),
+    Char.is_eq(cc, ']'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '#'),
+    st, cc)
 
 # the end, or a comment
 def lex.hgap.end(end: Bool, hash: Bool, st: St) -> St:
@@ -3588,8 +3731,8 @@ def lex.hgap(sp: Bool, dot: Bool, end: Bool, hash: Bool, st: St, _c: Char) -> St
       lex.hgap.dot(dot, end, hash, st)
 
 # between header segments
-def lex.head.gap.step(st: St, +c: Char) -> St:
-  lex.hgap(ch.sp(c), Char.is_eq(c, '.'), Char.is_eq(c, ']'), Char.is_eq(c, '#'), st, c)
+def lex.head.gap.step(st: St, +cc: Char) -> St:
+  lex.hgap(ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, ']'), Char.is_eq(cc, '#'), st, cc)
 
 # a literal segment, or a rejected character
 def lex.hdot.lit(lit: Bool, st: St, _c: Char) -> St:
@@ -3600,52 +3743,52 @@ def lex.hdot.lit(lit: Bool, st: St, _c: Char) -> St:
       st.err(st, "invalid header")
 
 # a quoted segment
-def lex.hdot.q(q: Bool, lit: Bool, st: St, c: Char) -> St:
-  match q:
+def lex.hdot.q(qq: Bool, lit: Bool, st: St, cc: Char) -> St:
+  match qq:
     case True{}:
       lex.qkey(st, QBasic{}, LHeadQ{})
     case False{}:
-      lex.hdot.lit(lit, st, c)
+      lex.hdot.lit(lit, st, cc)
 
 # a bare segment or a quoted one
-def lex.hdot.bare(bare: Bool, q: Bool, lit: Bool, st: St, c: Char) -> St:
+def lex.hdot.bare(bare: Bool, qq: Bool, lit: Bool, st: St, cc: Char) -> St:
   match bare:
     case True{}:
-      st.push(st, c, LHead{})
+      st.push(st, cc, LHead{})
     case False{}:
-      lex.hdot.q(q, lit, st, c)
+      lex.hdot.q(qq, lit, st, cc)
 
 # whitespace or the next segment
-def lex.hdot(sp: Bool, bare: Bool, q: Bool, lit: Bool, st: St, c: Char) -> St:
+def lex.hdot(sp: Bool, bare: Bool, qq: Bool, lit: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
-      lex.hdot.bare(bare, q, lit, st, c)
+      lex.hdot.bare(bare, qq, lit, st, cc)
 
 # after a dot, a segment must start
-def lex.head.dot.step(st: St, +c: Char) -> St:
-  lex.hdot(ch.sp(c), bare.at(c), Char.is_eq(c, '"'), Char.is_eq(c, '\''), st, c)
+def lex.head.dot.step(st: St, +cc: Char) -> St:
+  lex.hdot(ch.sp(cc), bare.at(cc), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), st, cc)
 
 # a forbidden control, or one character of the key
-def lex.kq.char.go(bad: Bool, st: St, c: Char, stay: Lex) -> St:
+def lex.kq.char.go(bad: Bool, st: St, cc: Char, stay: Lex) -> St:
   match bad:
     case True{}:
       st.err(st, "invalid control")
     case False{}:
-      st.push(st, c, stay)
+      st.push(st, cc, stay)
 
 # one character of a quoted key
-def lex.kq.char(st: St, +c: Char, stay: Lex) -> St:
-  lex.kq.char.go(str.bad(Char.to_u32(c), False{}), st, c, stay)
+def lex.kq.char(st: St, +cc: Char, stay: Lex) -> St:
+  lex.kq.char.go(str.bad(Char.to_u32(cc), False{}), st, cc, stay)
 
 # a newline in a key is rejected
-def lex.kq.nl(nl: Bool, st: St, +c: Char, stay: Lex) -> St:
+def lex.kq.nl(nl: Bool, st: St, +cc: Char, stay: Lex) -> St:
   match nl:
     case True{}:
       st.err(st, "newline in key")
     case False{}:
-      lex.kq.char(st, c, stay)
+      lex.kq.char(st, cc, stay)
 
 # the escape state for a quoted key
 def lex.esc.lex(stay: Lex) -> Lex:
@@ -3671,33 +3814,32 @@ def lex.kq.esc(basic: Bool, st: St, stay: Lex) -> St:
       st.push(st, '\\', stay)
 
 # an escape in a basic key
-def lex.kq.bs(bs: Bool, basic: Bool, nl: Bool, st: St, c: Char, stay: Lex) -> St:
+def lex.kq.bs(bs: Bool, basic: Bool, nl: Bool, st: St, cc: Char, stay: Lex) -> St:
   match bs:
     case True{}:
       lex.kq.esc(basic, st, stay)
     case False{}:
-      lex.kq.nl(nl, st, c, stay)
+      lex.kq.nl(nl, st, cc, stay)
 
 # a quoted segment may be empty
 def lex.qkey.end(st: St, next: Lex) -> St:
   seg.push(st, next)
 
 # the closer, an escape, or a character
-def lex.kq.go(quote: Bool, bs: Bool, basic: Bool, nl: Bool, st: St, c: Char, back: Lex,
-  stay: Lex) -> St:
+def lex.kq.go(quote: Bool, bs: Bool, basic: Bool, nl: Bool, st: St, cc: Char, back: Lex, stay: Lex) -> St:
   match quote:
     case True{}:
       lex.qkey.end(st, back)
     case False{}:
-      lex.kq.bs(bs, basic, nl, st, c, stay)
+      lex.kq.bs(bs, basic, nl, st, cc, stay)
 
 # a quoted key segment. back is the state after the closer; stay is this quote
-def lex.kq(st: St, +c: Char, back: Lex, stay: Lex) -> St:
+def lex.kq(st: St, +cc: Char, back: Lex, stay: Lex) -> St:
   St{bad, rows, heads, here, parts, buf, lex, b, +qkind, stack, hold, uni, left, arrtab,
     lead} = st
-  lex.kq.go(Char.is_eq(c, q.char(qkind)), Char.is_eq(c, '\\'), q.basic(qkind), ch.nl(c),
+  lex.kq.go(Char.is_eq(cc, q.char(qkind)), Char.is_eq(cc, '\\'), q.basic(qkind), ch.nl(cc),
     St{bad, rows, heads, here, parts, buf, lex, b, qkind, stack, hold, uni, left, arrtab,
-      lead}, c, back, stay)
+      lead}, cc, back, stay)
 
 # the second ] of an array of tables
 def lex.head.r.go(end: Bool, st: St) -> St:
@@ -3708,44 +3850,44 @@ def lex.head.r.go(end: Bool, st: St) -> St:
       st.err(st, "invalid header")
 
 # the second ] of an array of tables
-def lex.head.r(st: St, +c: Char) -> St:
-  lex.head.r.go(Char.is_eq(c, ']'), st)
+def lex.head.r(st: St, +cc: Char) -> St:
+  lex.head.r.go(Char.is_eq(cc, ']'), st)
 
 # ] closes; anything else is a value
-def lex.arr.end(end: Bool, st: St, c: Char) -> St:
+def lex.arr.end(end: Bool, st: St, cc: Char) -> St:
   match end:
     case True{}:
       arr.close(st)
     case False{}:
-      st.hold(st.lex(st, LVal{}), LVal{}, c)
+      st.hold(st.lex(st, LVal{}), LVal{}, cc)
 
 # a comment, the end, or a value
-def lex.arr.hash(hash: Bool, end: Bool, st: St, c: Char) -> St:
+def lex.arr.hash(hash: Bool, end: Bool, st: St, cc: Char) -> St:
   match hash:
     case True{}:
       com.enter(st, LArr{})
     case False{}:
-      lex.arr.end(end, st, c)
+      lex.arr.end(end, st, cc)
 
 # a newline is whitespace in an array
-def lex.arr.nl(nl: Bool, hash: Bool, end: Bool, st: St, c: Char) -> St:
+def lex.arr.nl(nl: Bool, hash: Bool, end: Bool, st: St, cc: Char) -> St:
   match nl:
     case True{}:
       st
     case False{}:
-      lex.arr.hash(hash, end, st, c)
+      lex.arr.hash(hash, end, st, cc)
 
 # whitespace, a comment, the end, or a value
-def lex.arr.go(sp: Bool, nl: Bool, hash: Bool, end: Bool, st: St, c: Char) -> St:
+def lex.arr.go(sp: Bool, nl: Bool, hash: Bool, end: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
-      lex.arr.nl(nl, hash, end, st, c)
+      lex.arr.nl(nl, hash, end, st, cc)
 
 # an array waits for a value or ]
-def lex.arr(st: St, +c: Char) -> St:
-  lex.arr.go(ch.sp(c), ch.nl(c), Char.is_eq(c, '#'), Char.is_eq(c, ']'), st, c)
+def lex.arr(st: St, +cc: Char) -> St:
+  lex.arr.go(ch.sp(cc), ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ']'), st, cc)
 
 # ] closes the array
 def lex.arrc.end(end: Bool, st: St) -> St:
@@ -3772,26 +3914,25 @@ def lex.arrc.hash(hash: Bool, comma: Bool, end: Bool, st: St, _c: Char) -> St:
       lex.arrc.comma(comma, end, st)
 
 # a newline is whitespace
-def lex.arrc.nl(nl: Bool, hash: Bool, comma: Bool, end: Bool, st: St, c: Char) -> St:
+def lex.arrc.nl(nl: Bool, hash: Bool, comma: Bool, end: Bool, st: St, cc: Char) -> St:
   match nl:
     case True{}:
       st
     case False{}:
-      lex.arrc.hash(hash, comma, end, st, c)
+      lex.arrc.hash(hash, comma, end, st, cc)
 
 # whitespace, a comment, a comma, or the end
-def lex.arrc.go(sp: Bool, nl: Bool, hash: Bool, comma: Bool, end: Bool, st: St, c: Char)
-  -> St:
+def lex.arrc.go(sp: Bool, nl: Bool, hash: Bool, comma: Bool, end: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
-      lex.arrc.nl(nl, hash, comma, end, st, c)
+      lex.arrc.nl(nl, hash, comma, end, st, cc)
 
 # after an array value: a comma, ], or whitespace
-def lex.arrc(st: St, +c: Char) -> St:
-  lex.arrc.go(ch.sp(c), ch.nl(c), Char.is_eq(c, '#'), Char.is_eq(c, ','),
-    Char.is_eq(c, ']'), st, c)
+def lex.arrc(st: St, +cc: Char) -> St:
+  lex.arrc.go(ch.sp(cc), ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','),
+    Char.is_eq(cc, ']'), st, cc)
 
 # a new key starts with an empty segment list
 def lex.key.clear(st: St) -> St:
@@ -3801,88 +3942,88 @@ def lex.key.clear(st: St) -> St:
     arrtab, lead}
 
 # a bare character opens the key
-def lex.key.bare(ok: Bool, st: St, c: Char) -> St:
+def lex.key.bare(ok: Bool, st: St, cc: Char) -> St:
   match ok:
     case True{}:
-      st.push(st, c, LKey{})
+      st.push(st, cc, LKey{})
     case False{}:
       st.err(st, "invalid key")
 
 # a literal quote or a bare character opens the key
-def lex.key.lit(lit: Bool, st: St, +c: Char) -> St:
+def lex.key.lit(lit: Bool, st: St, +cc: Char) -> St:
   match lit:
     case True{}:
       lex.qkey(st, QLit{}, LKeyQ{})
     case False{}:
-      lex.key.bare(bare.at(c), st, c)
+      lex.key.bare(bare.at(cc), st, cc)
 
 # a quote or a bare character opens the key
-def lex.key.q(q: Bool, st: St, +c: Char) -> St:
-  match q:
+def lex.key.q(qq: Bool, st: St, +cc: Char) -> St:
+  match qq:
     case True{}:
       lex.qkey(st, QBasic{}, LKeyQ{})
     case False{}:
-      lex.key.lit(Char.is_eq(c, '\''), st, c)
+      lex.key.lit(Char.is_eq(cc, '\''), st, cc)
 
 # the first character of a key inside an inline table
-def lex.key.start(st: St, +c: Char) -> St:
-  lex.key.q(Char.is_eq(c, '"'), lex.key.clear(st), c)
+def lex.key.start(st: St, +cc: Char) -> St:
+  lex.key.q(Char.is_eq(cc, '"'), lex.key.clear(st), cc)
 
 # a newline is rejected; anything else is a key
-def lex.inl.nl(nl: Bool, st: St, c: Char) -> St:
+def lex.inl.nl(nl: Bool, st: St, cc: Char) -> St:
   match nl:
     case True{}:
       st.err(st, "newline in inline table")
     case False{}:
-      lex.key.start(st, c)
+      lex.key.start(st, cc)
 
 # } closes an empty inline table
-def lex.inl.end(end: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.inl.end(end: Bool, nl: Bool, st: St, cc: Char) -> St:
   match end:
     case True{}:
       inl.close(st)
     case False{}:
-      lex.inl.nl(nl, st, c)
+      lex.inl.nl(nl, st, cc)
 
 # a comment, the end, or a key
-def lex.inl.hash(hash: Bool, end: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.inl.hash(hash: Bool, end: Bool, nl: Bool, st: St, cc: Char) -> St:
   match hash:
     case True{}:
       com.enter(st, LInl{})
     case False{}:
-      lex.inl.end(end, nl, st, c)
+      lex.inl.end(end, nl, st, cc)
 
 # whitespace, a comment, the end, or a key
-def lex.inl.go(sp: Bool, hash: Bool, end: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.inl.go(sp: Bool, hash: Bool, end: Bool, nl: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
-      lex.inl.hash(hash, end, nl, st, c)
+      lex.inl.hash(hash, end, nl, st, cc)
 
 # an inline table waits for a key or }
-def lex.inl(st: St, +c: Char) -> St:
-  lex.inl.go(ch.sp(c), Char.is_eq(c, '#'), Char.is_eq(c, '}'), ch.nl(c), st, c)
+def lex.inl(st: St, +cc: Char) -> St:
+  lex.inl.go(ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '}'), ch.nl(cc), st, cc)
 
 # a comment or a key
-def lex.inlk.hash(hash: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.inlk.hash(hash: Bool, nl: Bool, st: St, cc: Char) -> St:
   match hash:
     case True{}:
       com.enter(st, LInlK{})
     case False{}:
-      lex.inl.nl(nl, st, c)
+      lex.inl.nl(nl, st, cc)
 
 # whitespace or a key
-def lex.inlk.go(sp: Bool, hash: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.inlk.go(sp: Bool, hash: Bool, nl: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
-      lex.inlk.hash(hash, nl, st, c)
+      lex.inlk.hash(hash, nl, st, cc)
 
 # after a comma, a key is required
-def lex.inlk(st: St, +c: Char) -> St:
-  lex.inlk.go(ch.sp(c), Char.is_eq(c, '#'), ch.nl(c), st, c)
+def lex.inlk(st: St, +cc: Char) -> St:
+  lex.inlk.go(ch.sp(cc), Char.is_eq(cc, '#'), ch.nl(cc), st, cc)
 
 # a newline is rejected
 def lex.inlc.nl(nl: Bool, st: St) -> St:
@@ -3901,34 +4042,33 @@ def lex.inlc.end(end: Bool, nl: Bool, st: St, _c: Char) -> St:
       lex.inlc.nl(nl, st)
 
 # a comma requires another key
-def lex.inlc.comma(comma: Bool, end: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.inlc.comma(comma: Bool, end: Bool, nl: Bool, st: St, cc: Char) -> St:
   match comma:
     case True{}:
       st.lex(st, LInlK{})
     case False{}:
-      lex.inlc.end(end, nl, st, c)
+      lex.inlc.end(end, nl, st, cc)
 
 # a comment, a comma, or the end
-def lex.inlc.hash(hash: Bool, comma: Bool, end: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.inlc.hash(hash: Bool, comma: Bool, end: Bool, nl: Bool, st: St, cc: Char) -> St:
   match hash:
     case True{}:
       com.enter(st, LInlC{})
     case False{}:
-      lex.inlc.comma(comma, end, nl, st, c)
+      lex.inlc.comma(comma, end, nl, st, cc)
 
 # whitespace, a comment, a comma, or the end
-def lex.inlc.go(sp: Bool, hash: Bool, comma: Bool, end: Bool, nl: Bool, st: St, c: Char)
-  -> St:
+def lex.inlc.go(sp: Bool, hash: Bool, comma: Bool, end: Bool, nl: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
-      lex.inlc.hash(hash, comma, end, nl, st, c)
+      lex.inlc.hash(hash, comma, end, nl, st, cc)
 
 # after an inline value: a comma or }
-def lex.inlc(st: St, +c: Char) -> St:
-  lex.inlc.go(ch.sp(c), Char.is_eq(c, '#'), Char.is_eq(c, ','), Char.is_eq(c, '}'),
-    ch.nl(c), st, c)
+def lex.inlc(st: St, +cc: Char) -> St:
+  lex.inlc.go(ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, '}'),
+    ch.nl(cc), st, cc)
 
 # the rest of a failed document is ignored
 def lex.sink(st: St, _c: Char) -> St:
@@ -3951,16 +4091,16 @@ def lex.line.hash(hash: Bool, nl: Bool, st: St, _c: Char) -> St:
       lex.line.nl(nl, st)
 
 # whitespace, a comment, or a newline after an expression
-def lex.line.go(sp: Bool, hash: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.line.go(sp: Bool, hash: Bool, nl: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
-      lex.line.hash(hash, nl, st, c)
+      lex.line.hash(hash, nl, st, cc)
 
 # after an expression, the rest of the line is whitespace or a comment
-def lex.line(st: St, +c: Char) -> St:
-  lex.line.go(ch.sp(c), Char.is_eq(c, '#'), ch.nl(c), st, c)
+def lex.line(st: St, +cc: Char) -> St:
+  lex.line.go(ch.sp(cc), Char.is_eq(cc, '#'), ch.nl(cc), st, cc)
 
 # a newline in a dotted key is rejected
 def lex.kdot.nl(nl: Bool, st: St) -> St:
@@ -3979,148 +4119,147 @@ def lex.kdot.dot(dot: Bool, nl: Bool, st: St) -> St:
       lex.kdot.nl(nl, st)
 
 # a bare character starts the segment
-def lex.kdot.bare(bare: Bool, dot: Bool, nl: Bool, st: St, c: Char) -> St:
+def lex.kdot.bare(bare: Bool, dot: Bool, nl: Bool, st: St, cc: Char) -> St:
   match bare:
     case True{}:
-      st.push(st, c, LKey{})
+      st.push(st, cc, LKey{})
     case False{}:
       lex.kdot.dot(dot, nl, st)
 
 # a literal quote starts the segment
-def lex.kdot.lit(lit: Bool, dot: Bool, nl: Bool, st: St, +c: Char) -> St:
+def lex.kdot.lit(lit: Bool, dot: Bool, nl: Bool, st: St, +cc: Char) -> St:
   match lit:
     case True{}:
       lex.qkey(st, QLit{}, LKeyQ{})
     case False{}:
-      lex.kdot.bare(bare.at(c), dot, nl, st, c)
+      lex.kdot.bare(bare.at(cc), dot, nl, st, cc)
 
 # a quote starts the segment
-def lex.kdot.q(q: Bool, lit: Bool, dot: Bool, nl: Bool, st: St, c: Char) -> St:
-  match q:
+def lex.kdot.q(qq: Bool, lit: Bool, dot: Bool, nl: Bool, st: St, cc: Char) -> St:
+  match qq:
     case True{}:
       lex.qkey(st, QBasic{}, LKeyQ{})
     case False{}:
-      lex.kdot.lit(lit, dot, nl, st, c)
+      lex.kdot.lit(lit, dot, nl, st, cc)
 
 # whitespace or the next segment
-def lex.kdot.go(sp: Bool, q: Bool, lit: Bool, dot: Bool, nl: Bool, st: St, c: Char)
-  -> St:
+def lex.kdot.go(sp: Bool, qq: Bool, lit: Bool, dot: Bool, nl: Bool, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
-      lex.kdot.q(q, lit, dot, nl, st, c)
+      lex.kdot.q(qq, lit, dot, nl, st, cc)
 
 # after a dot, whitespace and then a segment
-def lex.kdot(st: St, +c: Char) -> St:
-  lex.kdot.go(ch.sp(c), Char.is_eq(c, '"'), Char.is_eq(c, '\''), Char.is_eq(c, '.'),
-    ch.nl(c), st, c)
+def lex.kdot(st: St, +cc: Char) -> St:
+  lex.kdot.go(ch.sp(cc), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '.'),
+    ch.nl(cc), st, cc)
 
 # a quoted header segment
-def lex.hq(st: St, +c: Char) -> St:
-  lex.kq(st, c, LHeadGap{}, LHeadQ{})
+def lex.hq(st: St, +cc: Char) -> St:
+  lex.kq(st, cc, LHeadGap{}, LHeadQ{})
 
 # one character, dispatched on the lex state
-def read.on(lex: Lex, st: St, c: Char) -> St:
+def read.on(lex: Lex, st: St, cc: Char) -> St:
   match lex:
     case LTop{}:
-      lex.top(st, c)
+      lex.top(st, cc)
     case LLine{}:
-      lex.line(st, c)
+      lex.line(st, cc)
     case LKey{}:
-      lex.key(st, c)
+      lex.key(st, cc)
     case LKeyDot{}:
-      lex.kdot(st, c)
+      lex.kdot(st, cc)
     case LAfter{}:
-      lex.after(st, c)
+      lex.after(st, cc)
     case LKeyQ{}:
-      lex.kq(st, c, LAfter{}, LKeyQ{})
+      lex.kq(st, cc, LAfter{}, LKeyQ{})
     case LKeyE{}:
-      esc.use(esc.of(c), st, LKeyQ{})
+      esc.use(esc.of(cc), st, LKeyQ{})
     case LKeyU{}:
-      uni.step(st, c, LKeyQ{})
+      uni.step(st, cc, LKeyQ{})
     case LVal{}:
-      lex.val(st, c)
+      lex.val(st, cc)
     case LQ{}:
-      lex.q(st, c)
+      lex.q(st, cc)
     case LQ2{}:
-      lex.q2(st, c)
+      lex.q2(st, cc)
     case LStr{}:
-      lex.str(st, c)
+      lex.str(st, cc)
     case LEsc{}:
-      lex.esc(st, c)
+      lex.esc(st, cc)
     case LUni{}:
-      uni.step(st, c, LStr{})
+      uni.step(st, cc, LStr{})
     case LFold{}:
-      lex.fold(st, c)
+      lex.fold(st, cc)
     case LMq{}:
-      lex.mq.step(st, c)
+      lex.mq.step(st, cc)
     case LTrim{}:
-      lex.trim(st, c)
+      lex.trim(st, cc)
     case LTrim2{}:
-      lex.trim2(st, c)
+      lex.trim2(st, cc)
     case LBare{}:
-      lex.bare(st, c)
+      lex.bare(st, cc)
     case LDate{}:
-      lex.date(st, c)
+      lex.date(st, cc)
     case LCom{}:
-      lex.com(st, c)
+      lex.com(st, cc)
     case LHead{}:
-      lex.head(st, c)
+      lex.head(st, cc)
     case LHeadGap{}:
-      lex.head.gap.step(st, c)
+      lex.head.gap.step(st, cc)
     case LHeadDot{}:
-      lex.head.dot.step(st, c)
+      lex.head.dot.step(st, cc)
     case LHeadQ{}:
-      lex.hq(st, c)
+      lex.hq(st, cc)
     case LHeadE{}:
-      esc.use(esc.of(c), st, LHeadQ{})
+      esc.use(esc.of(cc), st, LHeadQ{})
     case LHeadU{}:
-      uni.step(st, c, LHeadQ{})
+      uni.step(st, cc, LHeadQ{})
     case LHeadR{}:
-      lex.head.r(st, c)
+      lex.head.r(st, cc)
     case LArr{}:
-      lex.arr(st, c)
+      lex.arr(st, cc)
     case LArrC{}:
-      lex.arrc(st, c)
+      lex.arrc(st, cc)
     case LInl{}:
-      lex.inl(st, c)
+      lex.inl(st, cc)
     case LInlK{}:
-      lex.inlk(st, c)
+      lex.inlk(st, cc)
     case LInlC{}:
-      lex.inlc(st, c)
+      lex.inlc(st, cc)
     case LSink{}:
-      lex.sink(st, c)
+      lex.sink(st, cc)
 
 # read the lex state and step
-def read.on.st(st: St, c: Char) -> St:
+def read.on.st(st: St, cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, +lex, back, qkind, stack, hold, uni, left,
     arrtab, lead} = st
   read.on(lex, St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni,
-    left, arrtab, lead}, c)
+    left, arrtab, lead}, cc)
 
 # one character, after a leading mark has been decided
-def read.step.bom(bom: Bool, st: St, c: Char) -> St:
+def read.step.bom(bom: Bool, st: St, cc: Char) -> St:
   match bom:
     case True{}:
       st
     case False{}:
-      read.on.st(st, c)
+      read.on.st(st, cc)
 
 # the first character may be a byte-order mark
-def read.step.lead(lead: Bool, st: St, +c: Char) -> St:
+def read.step.lead(lead: Bool, st: St, +cc: Char) -> St:
   match lead:
     case False{}:
-      read.on.st(st, c)
+      read.on.st(st, cc)
     case True{}:
-      read.step.bom(U32.is_eq(Char.to_u32(c), 65279), st, c)
+      read.step.bom(U32.is_eq(Char.to_u32(cc), 65279), st, cc)
 
 # one character of the document
-def read.step(st: St, +c: Char) -> St:
+def read.step(st: St, +cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
     arrtab, +lead} = st
   read.step.lead(lead, St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack,
-    hold, uni, left, arrtab, False{}}, c)
+    hold, uni, left, arrtab, False{}}, cc)
 
 # a held character is read once
 def read.once.hold(hold: Hold, st: St) -> St:
@@ -4138,8 +4277,8 @@ def read.once2(st: St) -> St:
     HNone{}, uni, left, arrtab, lead})
 
 # one new character, then a held character if the step asked for one
-def read.once(st: St, c: Char) -> St:
-  read.once2(read.step(st, c))
+def read.once(st: St, cc: Char) -> St:
+  read.once2(read.step(st, cc))
 
 # a bare token still open at the end is closed
 def read.fin.lex(lex: Lex, st: St) -> St:
@@ -4272,256 +4411,466 @@ def read.fin(st: St) -> Doc:
   read.fin2(read.fin.close(st))
 
 # one scanner state, with the hold cleared and the first character already taken
-def read.fast.st(bad: String, rows: List<&2, Val>, heads: List<&2, String>,
-  here: List<&2, String>, parts: List<&2, String>, buf: List<&2, Char>, lex: Lex,
-  back: Lex, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool)
-  -> St:
+def read.fast.st(
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  lex: Lex,
+  back: Lex,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> St:
   St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, HNone{}, uni, left,
     arrtab, False{}}
 
 # the character joins the buffer and the state stays
-def read.fast.cons(bad: String, rows: List<&2, Val>, heads: List<&2, String>,
-  here: List<&2, String>, parts: List<&2, String>, buf: List<&2, Char>, lex: Lex,
-  back: Lex, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool,
-  +c: Char) -> St:
-  read.fast.st(bad, rows, heads, here, parts, c <> buf, lex, back, qkind, stack, uni,
+def read.fast.cons(
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  lex: Lex,
+  back: Lex,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
+  read.fast.st(bad, rows, heads, here, parts, cc <> buf, lex, back, qkind, stack, uni,
     left, arrtab)
 
 # a quote, an escape, or a state this step does not special-case
-def read.fast.old(bad: String, rows: List<&2, Val>, heads: List<&2, String>,
-  here: List<&2, String>, parts: List<&2, String>, buf: List<&2, Char>, lex: Lex,
-  back: Lex, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool,
-  +c: Char) -> St:
+def read.fast.old(
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  lex: Lex,
+  back: Lex,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   read.once2(read.on.st(read.fast.st(bad, rows, heads, here, parts, buf, lex, back,
-    qkind, stack, uni, left, arrtab), c))
+    qkind, stack, uni, left, arrtab), cc))
 
 # a forbidden control takes the full step; a plain character is stored
-def read.fast.push(ctrl: Bool, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, lex: Lex, back: Lex, qkind: QKind, stack: List<&2, Ctx>,
-  uni: U32, left: U32, arrtab: Bool, +c: Char) -> St:
+def read.fast.push(
+  ctrl: Bool,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  lex: Lex,
+  back: Lex,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match ctrl:
     case False{}:
       read.fast.cons(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
-        left, arrtab, c)
+        left, arrtab, cc)
     case True{}:
       read.fast.old(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
-        left, arrtab, c)
+        left, arrtab, cc)
 
 # a basic-string character that is not a quote
-def read.fast.basic.bs(bs: Bool, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool, +c: Char) -> St:
+def read.fast.basic.bs(
+  bs: Bool,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match bs:
     case True{}:
       read.fast.old(bad, rows, heads, here, parts, buf, LStr{}, back, QBasic{}, stack,
-        uni, left, arrtab, c)
+        uni, left, arrtab, cc)
     case False{}:
-      read.fast.push(str.bad(Char.to_u32(c), False{}), bad, rows, heads, here, parts,
-        buf, LStr{}, back, QBasic{}, stack, uni, left, arrtab, c)
+      read.fast.push(str.bad(Char.to_u32(cc), False{}), bad, rows, heads, here, parts,
+        buf, LStr{}, back, QBasic{}, stack, uni, left, arrtab, cc)
 
 # a basic-string character: a quote or a backslash still takes the full step
-def read.fast.basic(quote: Bool, bs: Bool, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool, +c: Char) -> St:
+def read.fast.basic(
+  quote: Bool,
+  bs: Bool,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match quote:
     case True{}:
       read.fast.old(bad, rows, heads, here, parts, buf, LStr{}, back, QBasic{}, stack,
-        uni, left, arrtab, c)
+        uni, left, arrtab, cc)
     case False{}:
       read.fast.basic.bs(bs, bad, rows, heads, here, parts, buf, back, stack, uni, left,
-        arrtab, c)
+        arrtab, cc)
 
 # a literal-string character: a quote still takes the full step
-def read.fast.lit(quote: Bool, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool, +c: Char) -> St:
+def read.fast.lit(
+  quote: Bool,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match quote:
     case True{}:
       read.fast.old(bad, rows, heads, here, parts, buf, LStr{}, back, QLit{}, stack,
-        uni, left, arrtab, c)
+        uni, left, arrtab, cc)
     case False{}:
-      read.fast.push(str.bad(Char.to_u32(c), False{}), bad, rows, heads, here, parts,
-        buf, LStr{}, back, QLit{}, stack, uni, left, arrtab, c)
+      read.fast.push(str.bad(Char.to_u32(cc), False{}), bad, rows, heads, here, parts,
+        buf, LStr{}, back, QLit{}, stack, uni, left, arrtab, cc)
 
 # one character of a string
-def read.fast.str(qkind: QKind, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool, +c: Char) -> St:
+def read.fast.str(
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match qkind:
     case QBasic{}:
-      read.fast.basic(Char.is_eq(c, '"'), Char.is_eq(c, '\\'), bad, rows, heads, here,
-        parts, buf, back, stack, uni, left, arrtab, c)
+      read.fast.basic(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), bad, rows, heads, here,
+        parts, buf, back, stack, uni, left, arrtab, cc)
     case QLit{}:
-      read.fast.lit(Char.is_eq(c, '\''), bad, rows, heads, here, parts, buf, back,
-        stack, uni, left, arrtab, c)
+      read.fast.lit(Char.is_eq(cc, '\''), bad, rows, heads, here, parts, buf, back,
+        stack, uni, left, arrtab, cc)
     case other:
       read.fast.old(bad, rows, heads, here, parts, buf, LStr{}, back, other, stack,
-        uni, left, arrtab, c)
+        uni, left, arrtab, cc)
 
 # one character of a bare key
-def read.fast.key(ok: Bool, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, qkind: QKind, stack: List<&2, Ctx>, uni: U32,
-  left: U32, arrtab: Bool, +c: Char) -> St:
+def read.fast.key(
+  ok: Bool,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match ok:
     case True{}:
       read.fast.cons(bad, rows, heads, here, parts, buf, LKey{}, back, qkind, stack,
-        uni, left, arrtab, c)
+        uni, left, arrtab, cc)
     case False{}:
       read.fast.old(bad, rows, heads, here, parts, buf, LKey{}, back, qkind, stack,
-        uni, left, arrtab, c)
+        uni, left, arrtab, cc)
 
 # one character of a bare value
-def read.fast.bare(delim: Bool, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, qkind: QKind, stack: List<&2, Ctx>, uni: U32,
-  left: U32, arrtab: Bool, +c: Char) -> St:
+def read.fast.bare(
+  delim: Bool,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match delim:
     case False{}:
       read.fast.cons(bad, rows, heads, here, parts, buf, LBare{}, back, qkind, stack,
-        uni, left, arrtab, c)
+        uni, left, arrtab, cc)
     case True{}:
       read.fast.old(bad, rows, heads, here, parts, buf, LBare{}, back, qkind, stack,
-        uni, left, arrtab, c)
+        uni, left, arrtab, cc)
 
 # one character of a comment
-def read.fast.com(nl: Bool, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, qkind: QKind, stack: List<&2, Ctx>, uni: U32,
-  left: U32, arrtab: Bool, +c: Char) -> St:
+def read.fast.com(
+  nl: Bool,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match nl:
     case False{}:
       read.fast.st(bad, rows, heads, here, parts, buf, LCom{}, back, qkind, stack,
         uni, left, arrtab)
     case True{}:
       read.fast.old(bad, rows, heads, here, parts, buf, LCom{}, back, qkind, stack,
-        uni, left, arrtab, c)
+        uni, left, arrtab, cc)
 
 # whitespace that this state ignores. keep is true when a newline is also ignored
-def read.fast.ws.keep(keep: Bool, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, lex: Lex, back: Lex, qkind: QKind, stack: List<&2, Ctx>,
-  uni: U32, left: U32, arrtab: Bool, +c: Char) -> St:
+def read.fast.ws.keep(
+  keep: Bool,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  lex: Lex,
+  back: Lex,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match keep:
     case True{}:
       read.fast.st(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
         left, arrtab)
     case False{}:
       read.fast.old(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
-        left, arrtab, c)
+        left, arrtab, cc)
 
 # a newline this state ignores, or the full step
-def read.fast.ws.nl(nl: Bool, keep: Bool, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, lex: Lex, back: Lex, qkind: QKind, stack: List<&2, Ctx>,
-  uni: U32, left: U32, arrtab: Bool, +c: Char) -> St:
+def read.fast.ws.nl(
+  nl: Bool,
+  keep: Bool,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  lex: Lex,
+  back: Lex,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match nl:
     case True{}:
       read.fast.ws.keep(keep, bad, rows, heads, here, parts, buf, lex, back, qkind,
-        stack, uni, left, arrtab, c)
+        stack, uni, left, arrtab, cc)
     case False{}:
       read.fast.old(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
-        left, arrtab, c)
+        left, arrtab, cc)
 
 # space stays in this state; a newline stays only when keep is set
-def read.fast.ws(sp: Bool, nl: Bool, keep: Bool, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, lex: Lex, back: Lex, qkind: QKind, stack: List<&2, Ctx>,
-  uni: U32, left: U32, arrtab: Bool, +c: Char) -> St:
+def read.fast.ws(
+  sp: Bool,
+  nl: Bool,
+  keep: Bool,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  lex: Lex,
+  back: Lex,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match sp:
     case True{}:
       read.fast.st(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
         left, arrtab)
     case False{}:
       read.fast.ws.nl(nl, keep, bad, rows, heads, here, parts, buf, lex, back, qkind,
-        stack, uni, left, arrtab, c)
+        stack, uni, left, arrtab, cc)
 
 # the states whose plain characters do not change the scanner
-def read.fast.lex(lex: Lex, qkind: QKind, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool, +c: Char) -> St:
+def read.fast.lex(
+  lex: Lex,
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match lex:
     case LStr{}:
       read.fast.str(qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left,
-        arrtab, c)
+        arrtab, cc)
     case LKey{}:
-      read.fast.key(bare.at(c), bad, rows, heads, here, parts, buf, back, qkind,
-        stack, uni, left, arrtab, c)
+      read.fast.key(bare.at(cc), bad, rows, heads, here, parts, buf, back, qkind,
+        stack, uni, left, arrtab, cc)
     case LBare{}:
-      read.fast.bare(ch.delim(c), bad, rows, heads, here, parts, buf, back, qkind,
-        stack, uni, left, arrtab, c)
+      read.fast.bare(ch.delim(cc), bad, rows, heads, here, parts, buf, back, qkind,
+        stack, uni, left, arrtab, cc)
     case LCom{}:
-      read.fast.com(ch.nl(c), bad, rows, heads, here, parts, buf, back, qkind, stack,
-        uni, left, arrtab, c)
+      read.fast.com(ch.nl(cc), bad, rows, heads, here, parts, buf, back, qkind, stack,
+        uni, left, arrtab, cc)
     case LTop{}:
-      read.fast.ws(ch.sp(c), ch.nl(c), True{}, bad, rows, heads, here, parts, buf,
-        LTop{}, back, qkind, stack, uni, left, arrtab, c)
+      read.fast.ws(ch.sp(cc), ch.nl(cc), True{}, bad, rows, heads, here, parts, buf,
+        LTop{}, back, qkind, stack, uni, left, arrtab, cc)
     case LArr{}:
-      read.fast.ws(ch.sp(c), ch.nl(c), True{}, bad, rows, heads, here, parts, buf,
-        LArr{}, back, qkind, stack, uni, left, arrtab, c)
+      read.fast.ws(ch.sp(cc), ch.nl(cc), True{}, bad, rows, heads, here, parts, buf,
+        LArr{}, back, qkind, stack, uni, left, arrtab, cc)
     case LArrC{}:
-      read.fast.ws(ch.sp(c), ch.nl(c), True{}, bad, rows, heads, here, parts, buf,
-        LArrC{}, back, qkind, stack, uni, left, arrtab, c)
+      read.fast.ws(ch.sp(cc), ch.nl(cc), True{}, bad, rows, heads, here, parts, buf,
+        LArrC{}, back, qkind, stack, uni, left, arrtab, cc)
     case LLine{}:
-      read.fast.ws(ch.sp(c), ch.nl(c), False{}, bad, rows, heads, here, parts, buf,
-        LLine{}, back, qkind, stack, uni, left, arrtab, c)
+      read.fast.ws(ch.sp(cc), ch.nl(cc), False{}, bad, rows, heads, here, parts, buf,
+        LLine{}, back, qkind, stack, uni, left, arrtab, cc)
     case LVal{}:
-      read.fast.ws(ch.sp(c), ch.nl(c), False{}, bad, rows, heads, here, parts, buf,
-        LVal{}, back, qkind, stack, uni, left, arrtab, c)
+      read.fast.ws(ch.sp(cc), ch.nl(cc), False{}, bad, rows, heads, here, parts, buf,
+        LVal{}, back, qkind, stack, uni, left, arrtab, cc)
     case LAfter{}:
-      read.fast.ws(ch.sp(c), ch.nl(c), False{}, bad, rows, heads, here, parts, buf,
-        LAfter{}, back, qkind, stack, uni, left, arrtab, c)
+      read.fast.ws(ch.sp(cc), ch.nl(cc), False{}, bad, rows, heads, here, parts, buf,
+        LAfter{}, back, qkind, stack, uni, left, arrtab, cc)
     case LInl{}:
-      read.fast.ws(ch.sp(c), ch.nl(c), False{}, bad, rows, heads, here, parts, buf,
-        LInl{}, back, qkind, stack, uni, left, arrtab, c)
+      read.fast.ws(ch.sp(cc), ch.nl(cc), False{}, bad, rows, heads, here, parts, buf,
+        LInl{}, back, qkind, stack, uni, left, arrtab, cc)
     case LInlK{}:
-      read.fast.ws(ch.sp(c), ch.nl(c), False{}, bad, rows, heads, here, parts, buf,
-        LInlK{}, back, qkind, stack, uni, left, arrtab, c)
+      read.fast.ws(ch.sp(cc), ch.nl(cc), False{}, bad, rows, heads, here, parts, buf,
+        LInlK{}, back, qkind, stack, uni, left, arrtab, cc)
     case LInlC{}:
-      read.fast.ws(ch.sp(c), ch.nl(c), False{}, bad, rows, heads, here, parts, buf,
-        LInlC{}, back, qkind, stack, uni, left, arrtab, c)
+      read.fast.ws(ch.sp(cc), ch.nl(cc), False{}, bad, rows, heads, here, parts, buf,
+        LInlC{}, back, qkind, stack, uni, left, arrtab, cc)
     case other:
       read.fast.old(bad, rows, heads, here, parts, buf, other, back, qkind, stack,
-        uni, left, arrtab, c)
+        uni, left, arrtab, cc)
 
 # the first character may be a byte-order mark; later characters take the fast step
-def read.fast.lead(lead: Bool, lex: Lex, qkind: QKind, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool, +c: Char) -> St:
+def read.fast.lead(
+  lead: Bool,
+  lex: Lex,
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match lead:
     case True{}:
       read.once(St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack,
-        HNone{}, uni, left, arrtab, True{}}, c)
+        HNone{}, uni, left, arrtab, True{}}, cc)
     case False{}:
       read.fast.lex(lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni,
-        left, arrtab, c)
+        left, arrtab, cc)
 
 # a held character is still read by the full step, then this character
-def read.fast.hold(hold: Hold, lead: Bool, lex: Lex, qkind: QKind, bad: String,
-  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
-  parts: List<&2, String>, buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>,
-  uni: U32, left: U32, arrtab: Bool, +c: Char) -> St:
+def read.fast.hold(
+  hold: Hold,
+  lead: Bool,
+  lex: Lex,
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> St:
   match hold:
     case HChar{held}:
       read.once(read.once2(St{bad, rows, heads, here, parts, buf, lex, back, qkind,
-        stack, HChar{held}, uni, left, arrtab, lead}), c)
+        stack, HChar{held}, uni, left, arrtab, lead}), cc)
     case HNone{}:
       read.fast.lead(lead, lex, qkind, bad, rows, heads, here, parts, buf, back,
-        stack, uni, left, arrtab, c)
+        stack, uni, left, arrtab, cc)
 
 # one source character
-def read.fast(st: St, +c: Char) -> St:
+def read.fast(st: St, +cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
     arrtab, lead} = st
   read.fast.hold(hold, lead, lex, qkind, bad, rows, heads, here, parts, buf, back,
-    stack, uni, left, arrtab, c)
+    stack, uni, left, arrtab, cc)
 
 # where the next source character is read. MEat is the body of a plain string
 type Mode is Data:
@@ -4535,84 +4884,186 @@ type Mode is Data:
     qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool}
 
 # an unclosed string
-def eat.fin(_n: U32, _u: Unit, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool) -> Doc:
+def eat.fin(
+  _n: U32,
+  _u: Unit,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> Doc:
   read.fin.unclosed(St{bad, rows, heads, here, parts, [], LStr{}, LStr{}, qkind, stack,
     HNone{}, uni, left, arrtab, False{}})
 
 # a plain string is the first n characters of the source suffix
-def eat.close(cut: String, n: U32, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool) -> St:
+def eat.close(
+  cut: String,
+  nn: U32,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> St:
   val.take(St{bad, rows, heads, here, parts, [], LStr{}, LStr{}, qkind, stack, HNone{},
-    uni, left, arrtab, False{}}, VSpan{cut, n})
+    uni, left, arrtab, False{}}, VSpan{cut, nn})
 
 # an escape or a forbidden control copies the span so far and continues
-def eat.copy(+c: Char, cut: String, +n: U32, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool) -> Mode:
-  MScan{lex.str(St{bad, rows, heads, here, parts, span.rev(cut, n, U32.is_zero(n), []),
-    LStr{}, LStr{}, qkind, stack, HNone{}, uni, left, arrtab, False{}}, c)}
+def eat.copy(
+  +cc: Char,
+  cut: String,
+  +nn: U32,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> Mode:
+  MScan{lex.str(St{bad, rows, heads, here, parts, span.rev(cut, nn, U32.is_zero(nn), []),
+    LStr{}, LStr{}, qkind, stack, HNone{}, uni, left, arrtab, False{}}, cc)}
 
 # a forbidden control leaves the span; a plain character extends it
-def eat.ctrl(badc: Bool, basic: Bool, q: Char, c: Char, cut: String, n: U32,
-  bad: String, rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
-  parts: List<&2, String>, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool) -> Mode:
+def eat.ctrl(
+  badc: Bool,
+  basic: Bool,
+  qq: Char,
+  cc: Char,
+  cut: String,
+  nn: U32,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> Mode:
   match badc:
     case True{}:
-      eat.copy(c, cut, n, bad, rows, heads, here, parts, qkind, stack, uni, left,
+      eat.copy(cc, cut, nn, bad, rows, heads, here, parts, qkind, stack, uni, left,
         arrtab)
     case False{}:
-      MEat{basic, q, cut, U32.add(n, 1), bad, rows, heads, here, parts, qkind, stack,
+      MEat{basic, qq, cut, U32.add(nn, 1), bad, rows, heads, here, parts, qkind, stack,
         uni, left, arrtab}
 
 # a backslash in a basic string leaves the span
-def eat.bs(bs: Bool, basic: Bool, q: Char, +c: Char, cut: String, n: U32, bad: String,
-  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
-  parts: List<&2, String>, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool) -> Mode:
+def eat.bs(
+  bs: Bool,
+  basic: Bool,
+  qq: Char,
+  +cc: Char,
+  cut: String,
+  nn: U32,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> Mode:
   match bs:
     case True{}:
-      eat.copy(c, cut, n, bad, rows, heads, here, parts, qkind, stack, uni, left,
+      eat.copy(cc, cut, nn, bad, rows, heads, here, parts, qkind, stack, uni, left,
         arrtab)
     case False{}:
-      eat.ctrl(str.bad(Char.to_u32(c), False{}), basic, q, c, cut, n, bad, rows, heads,
+      eat.ctrl(str.bad(Char.to_u32(cc), False{}), basic, qq, cc, cut, nn, bad, rows, heads,
         here, parts, qkind, stack, uni, left, arrtab)
 
 # a literal string keeps a backslash; a basic string does not
-def eat.basic(basic: Bool, q: Char, +c: Char, cut: String, n: U32, bad: String,
-  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
-  parts: List<&2, String>, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool) -> Mode:
+def eat.basic(
+  basic: Bool,
+  qq: Char,
+  +cc: Char,
+  cut: String,
+  nn: U32,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> Mode:
   match basic:
     case False{}:
-      eat.ctrl(str.bad(Char.to_u32(c), False{}), False{}, q, c, cut, n, bad, rows, heads,
+      eat.ctrl(str.bad(Char.to_u32(cc), False{}), False{}, qq, cc, cut, nn, bad, rows, heads,
         here, parts, qkind, stack, uni, left, arrtab)
     case True{}:
-      eat.bs(Char.is_eq(c, '\\'), True{}, q, c, cut, n, bad, rows, heads, here, parts,
+      eat.bs(Char.is_eq(cc, '\\'), True{}, qq, cc, cut, nn, bad, rows, heads, here, parts,
         qkind, stack, uni, left, arrtab)
 
 # a quote closes the span
-def eat.feed.q(quote: Bool, basic: Bool, q: Char, c: Char, cut: String, n: U32,
-  bad: String, rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
-  parts: List<&2, String>, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool) -> Mode:
+def eat.feed.q(
+  quote: Bool,
+  basic: Bool,
+  qq: Char,
+  cc: Char,
+  cut: String,
+  nn: U32,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> Mode:
   match quote:
     case True{}:
-      MScan{eat.close(cut, n, bad, rows, heads, here, parts, qkind, stack, uni, left,
+      MScan{eat.close(cut, nn, bad, rows, heads, here, parts, qkind, stack, uni, left,
         arrtab)}
     case False{}:
-      eat.basic(basic, q, c, cut, n, bad, rows, heads, here, parts, qkind, stack, uni,
+      eat.basic(basic, qq, cc, cut, nn, bad, rows, heads, here, parts, qkind, stack, uni,
         left, arrtab)
 
 # one character of a plain string. cut is the suffix where the text began
-def eat.feed(basic: Bool, +q: Char, cut: String, n: U32, bad: String,
-  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
-  parts: List<&2, String>, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool, +c: Char) -> Mode:
-  eat.feed.q(Char.is_eq(c, q), basic, q, c, cut, n, bad, rows, heads, here, parts,
+def eat.feed(
+  basic: Bool,
+  +qq: Char,
+  cut: String,
+  nn: U32,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char
+) -> Mode:
+  eat.feed.q(Char.is_eq(cc, qq), basic, qq, cc, cut, nn, bad, rows, heads, here, parts,
     qkind, stack, uni, left, arrtab)
 
 # the opening quote's back state is not kept on the span
@@ -4624,83 +5075,179 @@ def doc.drop(_tail: String, mode: Mode) -> Mode:
   mode
 
 # an empty buffer starts a span; a buffer already in use stays on the old path
-def doc.open.buf(basic: Bool, q: Char, qkind: QKind, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool, c: Char, tail: String) -> Mode:
+def doc.open.buf(
+  basic: Bool,
+  qq: Char,
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  cc: Char,
+  tail: String
+) -> Mode:
   match buf:
     case []:
-      doc.open.eat(back, MEat{basic, q, SCon{c, tail}, 1, bad, rows, heads, here, parts,
+      doc.open.eat(back, MEat{basic, qq, SCon{cc, tail}, 1, bad, rows, heads, here, parts,
         qkind, stack, uni, left, arrtab})
     case h <> t:
       doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, bad, rows, heads, here, parts,
-        h <> t, back, stack, uni, left, arrtab, c)})
+        h <> t, back, stack, uni, left, arrtab, cc)})
 
 # a forbidden control leaves the span
-def doc.open.ok(badc: Bool, basic: Bool, q: Char, qkind: QKind, bad: String,
-  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
-  parts: List<&2, String>, buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>,
-  uni: U32, left: U32, arrtab: Bool, c: Char, tail: String) -> Mode:
+def doc.open.ok(
+  badc: Bool,
+  basic: Bool,
+  qq: Char,
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  cc: Char,
+  tail: String
+) -> Mode:
   match badc:
     case True{}:
       doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, bad, rows, heads, here, parts,
-        buf, back, stack, uni, left, arrtab, c)})
+        buf, back, stack, uni, left, arrtab, cc)})
     case False{}:
-      doc.open.buf(basic, q, qkind, bad, rows, heads, here, parts, buf, back, stack,
-        uni, left, arrtab, c, tail)
+      doc.open.buf(basic, qq, qkind, bad, rows, heads, here, parts, buf, back, stack,
+        uni, left, arrtab, cc, tail)
 
 # a backslash in a basic string leaves the span
-def doc.open.bs(bs: Bool, q: Char, qkind: QKind, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool, +c: Char, tail: String) -> Mode:
+def doc.open.bs(
+  bs: Bool,
+  qq: Char,
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char,
+  tail: String
+) -> Mode:
   match bs:
     case True{}:
       doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, bad, rows, heads, here, parts,
-        buf, back, stack, uni, left, arrtab, c)})
+        buf, back, stack, uni, left, arrtab, cc)})
     case False{}:
-      doc.open.ok(str.bad(Char.to_u32(c), False{}), True{}, q, qkind, bad, rows, heads,
-        here, parts, buf, back, stack, uni, left, arrtab, c, tail)
+      doc.open.ok(str.bad(Char.to_u32(cc), False{}), True{}, qq, qkind, bad, rows, heads,
+        here, parts, buf, back, stack, uni, left, arrtab, cc, tail)
 
 # a literal string keeps a backslash; a basic string does not
-def doc.open.b(basic: Bool, q: Char, qkind: QKind, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool, +c: Char, tail: String) -> Mode:
+def doc.open.b(
+  basic: Bool,
+  qq: Char,
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char,
+  tail: String
+) -> Mode:
   match basic:
     case False{}:
-      doc.open.ok(str.bad(Char.to_u32(c), False{}), False{}, q, qkind, bad, rows, heads,
-        here, parts, buf, back, stack, uni, left, arrtab, c, tail)
+      doc.open.ok(str.bad(Char.to_u32(cc), False{}), False{}, qq, qkind, bad, rows, heads,
+        here, parts, buf, back, stack, uni, left, arrtab, cc, tail)
     case True{}:
-      doc.open.bs(Char.is_eq(c, '\\'), q, qkind, bad, rows, heads, here, parts, buf,
-        back, stack, uni, left, arrtab, c, tail)
+      doc.open.bs(Char.is_eq(cc, '\\'), qq, qkind, bad, rows, heads, here, parts, buf,
+        back, stack, uni, left, arrtab, cc, tail)
 
 # a second quote is an empty string or the start of a multiline string
-def doc.open.q(same: Bool, basic: Bool, q: Char, qkind: QKind, bad: String,
-  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
-  parts: List<&2, String>, buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>,
-  uni: U32, left: U32, arrtab: Bool, c: Char, tail: String) -> Mode:
+def doc.open.q(
+  same: Bool,
+  basic: Bool,
+  qq: Char,
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  cc: Char,
+  tail: String
+) -> Mode:
   match same:
     case True{}:
       doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, bad, rows, heads, here, parts,
-        buf, back, stack, uni, left, arrtab, c)})
+        buf, back, stack, uni, left, arrtab, cc)})
     case False{}:
-      doc.open.b(basic, q, qkind, bad, rows, heads, here, parts, buf, back, stack, uni,
-        left, arrtab, c, tail)
+      doc.open.b(basic, qq, qkind, bad, rows, heads, here, parts, buf, back, stack, uni,
+        left, arrtab, cc, tail)
 
 # the character after an opening quote
-def doc.open(basic: Bool, +q: Char, qkind: QKind, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool, +c: Char, tail: String) -> Mode:
-  doc.open.q(Char.is_eq(c, q), basic, q, qkind, bad, rows, heads, here, parts, buf,
-    back, stack, uni, left, arrtab, c, tail)
+def doc.open(
+  basic: Bool,
+  +qq: Char,
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char,
+  tail: String
+) -> Mode:
+  doc.open.q(Char.is_eq(cc, qq), basic, qq, qkind, bad, rows, heads, here, parts, buf,
+    back, stack, uni, left, arrtab, cc, tail)
 
 # a one-line string may be a span; a multiline string stays on the old path
-def doc.scan.kind(qkind: QKind, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool) -> Mode:
+def doc.scan.kind(
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> Mode:
   match qkind:
     case QBasic{}:
       MOpen{True{}, '"', QBasic{}, bad, rows, heads, here, parts, buf, back, stack,
@@ -4713,10 +5260,21 @@ def doc.scan.kind(qkind: QKind, bad: String, rows: List<&2, Val>,
         uni, left, arrtab, False{}}}
 
 # the first character of the file is still the old step
-def doc.scan.lead(lead: Bool, qkind: QKind, bad: String, rows: List<&2, Val>,
-  heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
-  buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>, uni: U32, left: U32,
-  arrtab: Bool) -> Mode:
+def doc.scan.lead(
+  lead: Bool,
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> Mode:
   match lead:
     case True{}:
       MScan{St{bad, rows, heads, here, parts, buf, LQ{}, back, qkind, stack, HNone{},
@@ -4726,10 +5284,22 @@ def doc.scan.lead(lead: Bool, qkind: QKind, bad: String, rows: List<&2, Val>,
         arrtab)
 
 # a held character is not the start of a span
-def doc.scan.hold(hold: Hold, lead: Bool, qkind: QKind, bad: String,
-  rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
-  parts: List<&2, String>, buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>,
-  uni: U32, left: U32, arrtab: Bool) -> Mode:
+def doc.scan.hold(
+  hold: Hold,
+  lead: Bool,
+  qkind: QKind,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  stack: List<&2, Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool
+) -> Mode:
   match hold:
     case HChar{held}:
       MScan{St{bad, rows, heads, here, parts, buf, LQ{}, back, qkind, stack,
@@ -4739,10 +5309,23 @@ def doc.scan.hold(hold: Hold, lead: Bool, qkind: QKind, bad: String,
         left, arrtab)
 
 # a quote opened a one-line string, or the state is rebuilt around that quote
-def doc.wrap.lex(lex: Lex, bad: String, rows: List<&2, Val>, heads: List<&2, String>,
-  here: List<&2, String>, parts: List<&2, String>, buf: List<&2, Char>, back: Lex,
-  qkind: QKind, stack: List<&2, Ctx>, hold: Hold, uni: U32, left: U32, arrtab: Bool,
-  lead: Bool) -> Mode:
+def doc.wrap.lex(
+  lex: Lex,
+  bad: String,
+  rows: List<&2, Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  back: Lex,
+  qkind: QKind,
+  stack: List<&2, Ctx>,
+  hold: Hold,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  lead: Bool
+) -> Mode:
   match lex:
     case LQ{}:
       doc.scan.hold(hold, lead, qkind, bad, rows, heads, here, parts, buf, back, stack,
@@ -4759,24 +5342,24 @@ def doc.wrap(st: St) -> Mode:
     uni, left, arrtab, lead)
 
 # an apostrophe may open a literal string
-def doc.scan.sq(sq: Bool, st: St, c: Char) -> Mode:
+def doc.scan.sq(sq: Bool, st: St, cc: Char) -> Mode:
   match sq:
     case True{}:
-      doc.wrap(read.fast(st, c))
+      doc.wrap(read.fast(st, cc))
     case False{}:
-      MScan{read.fast(st, c)}
+      MScan{read.fast(st, cc)}
 
 # a quote may open a basic string. any other character is the old step
-def doc.scan.q(dq: Bool, sq: Bool, st: St, c: Char) -> Mode:
+def doc.scan.q(dq: Bool, sq: Bool, st: St, cc: Char) -> Mode:
   match dq:
     case True{}:
-      doc.wrap(read.fast(st, c))
+      doc.wrap(read.fast(st, cc))
     case False{}:
-      doc.scan.sq(sq, st, c)
+      doc.scan.sq(sq, st, cc)
 
 # one source character outside a plain string
-def doc.scan(st: St, +c: Char) -> Mode:
-  doc.scan.q(Char.is_eq(c, '"'), Char.is_eq(c, '\''), st, c)
+def doc.scan(st: St, +cc: Char) -> Mode:
+  doc.scan.q(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), st, cc)
 
 # one character at a time. a plain string keeps a span of this suffix
 def doc.read(text: String, mode: Mode) -> Doc:
@@ -4818,19 +5401,19 @@ type SqAcc is Data:
   SqStop{}
 
 # quote, backslash, or a control. those still take the escaping writer
-def span.esc(+u: U32) -> Bool:
-  Bool.or(U32.is_lt(u, 32), Bool.or(U32.is_eq(u, 34), Bool.or(U32.is_eq(u, 92),
-    U32.is_eq(u, 127))))
+def span.esc(+uu: U32) -> Bool:
+  Bool.or(U32.is_lt(uu, 32), Bool.or(U32.is_eq(uu, 34), Bool.or(U32.is_eq(uu, 92),
+    U32.is_eq(uu, 127))))
 
 # cons one plain character. an escape, or a stop already seen, stays stopped
-def span.quote.push(esc: Bool, acc: SqAcc, +h: Char) -> SqAcc:
+def span.quote.push(esc: Bool, acc: SqAcc, +hh: Char) -> SqAcc:
   match esc acc:
     case True{} _a:
       SqStop{}
     case False{} SqStop{}:
       SqStop{}
     case False{} SqRun{rev}:
-      SqRun{h <> rev}
+      SqRun{hh <> rev}
 
 # the reversed body, or a stop, as the quoting result
 def span.quote.end(acc: SqAcc) -> Sq:
@@ -4841,27 +5424,27 @@ def span.quote.end(acc: SqAcc) -> Sq:
       SqOk{rev}
 
 # the first n characters, reversed onto acc. a character that needs an escape stops
-def span.quote.go(src: String, +n: U32, z: Bool, acc: SqAcc) -> Sq:
-  match src z:
+def span.quote.go(src: String, +nn: U32, zz: Bool, acc: SqAcc) -> Sq:
+  match src zz:
     case _s True{}:
       span.quote.end(acc)
     case SNil{} False{}:
       span.quote.end(acc)
     case SCon{+h, t} False{}:
-      span.quote.go(t, U32.sub(n, 1), U32.is_zero(U32.sub(n, 1)),
+      span.quote.go(t, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1)),
         span.quote.push(span.esc(Char.to_u32(h)), acc, h))
 
 # quotes around a plain span, or the escaping writer when a character needs it
-def span.quote.fin(hit: Sq, src: String, +n: U32) -> String:
+def span.quote.fin(hit: Sq, src: String, +nn: U32) -> String:
   match hit:
     case SqNo{}:
-      key.basic(span.str(src, n, U32.is_zero(n)))
+      key.basic(span.str(src, nn, U32.is_zero(nn)))
     case SqOk{rev}:
       String.from_list(List.reverse(&2, Char, '"' <> rev))
 
 # a plain string span, quoted without rebuilding an escaped copy
-def span.quote(+src: String, +n: U32) -> String:
-  span.quote.fin(span.quote.go(src, n, U32.is_zero(n), SqRun{'"' <> []}), src, n)
+def span.quote(+src: String, +nn: U32) -> String:
+  span.quote.fin(span.quote.go(src, nn, U32.is_zero(nn), SqRun{'"' <> []}), src, nn)
 
 # true or false
 def render.bool(bit: Bool) -> String:
@@ -4872,8 +5455,8 @@ def render.bool(bit: Bool) -> String:
       "false"
 
 # a scalar value
-def render.atom(v: Val) -> String:
-  match v:
+def render.atom(vv: Val) -> String:
+  match vv:
     case VStr{text}:
       key.basic(text)
     case VSpan{src, +n}:
@@ -4939,8 +5522,15 @@ def render.go(vs: List<&2, Val>, +gap: String, +trail: Bool) -> String:
         render.go(t, gap, trail)
 
 # a nested table rendering that this pass does not print
-def render.skip(_path: String, _rows: List<&2, Val>, _tail: List<&2, Val>, _gap: String,
-  _trail: Bool, nest: Unit -> String, rest: Unit -> String) -> String:
+def render.skip(
+  _path: String,
+  _rows: List<&2, Val>,
+  _tail: List<&2, Val>,
+  _gap: String,
+  _trail: Bool,
+  nest: Unit -> String,
+  rest: Unit -> String
+) -> String:
   _n = nest
   rest(Unit{})
 
@@ -4949,13 +5539,20 @@ def render.use(_rows: List<&2, Val>, text: String) -> String:
   text
 
 # a header already ends in a newline
-def render.rest(_tail: List<&2, Val>, _gap: String, _trail: Bool, rest: Unit -> String)
-  -> String:
+def render.rest(_tail: List<&2, Val>, _gap: String, _trail: Bool, rest: Unit -> String) -> String:
   rest(Unit{})
 
 # a table header. Direct keys are printed by the other pass
-def render.head(tabs: Bool, path: String, rows: List<&2, Val>, tail: List<&2, Val>,
-  gap: String, trail: Bool, nest: Unit -> String, rest: Unit -> String) -> String:
+def render.head(
+  tabs: Bool,
+  path: String,
+  rows: List<&2, Val>,
+  tail: List<&2, Val>,
+  gap: String,
+  trail: Bool,
+  nest: Unit -> String,
+  rest: Unit -> String
+) -> String:
   match tabs:
     case False{}:
       render.skip(path, rows, tail, gap, trail, nest, rest)
@@ -4964,8 +5561,15 @@ def render.head(tabs: Bool, path: String, rows: List<&2, Val>, tail: List<&2, Va
         render.rest(tail, gap, trail, rest)
 
 # an array of tables. Its elements are headers
-def render.aots(tabs: Bool, elems: List<&2, Val>, tail: List<&2, Val>, gap: String,
-  trail: Bool, nest: Unit -> String, rest: Unit -> String) -> String:
+def render.aots(
+  tabs: Bool,
+  elems: List<&2, Val>,
+  tail: List<&2, Val>,
+  gap: String,
+  trail: Bool,
+  nest: Unit -> String,
+  rest: Unit -> String
+) -> String:
   match tabs:
     case False{}:
       render.skip("", elems, tail, gap, trail, nest, rest)
@@ -4973,8 +5577,16 @@ def render.aots(tabs: Bool, elems: List<&2, Val>, tail: List<&2, Val>, gap: Stri
       render.use(elems, nest(Unit{})) ++ render.rest(tail, gap, trail, rest)
 
 # one element of an array of tables
-def render.aot(tabs: Bool, path: String, rows: List<&2, Val>, tail: List<&2, Val>,
-  gap: String, trail: Bool, nest: Unit -> String, rest: Unit -> String) -> String:
+def render.aot(
+  tabs: Bool,
+  path: String,
+  rows: List<&2, Val>,
+  tail: List<&2, Val>,
+  gap: String,
+  trail: Bool,
+  nest: Unit -> String,
+  rest: Unit -> String
+) -> String:
   match tabs:
     case False{}:
       render.skip(path, rows, tail, gap, trail, nest, rest)
@@ -4983,13 +5595,11 @@ def render.aot(tabs: Bool, path: String, rows: List<&2, Val>, tail: List<&2, Val
         render.rest(tail, gap, trail, rest)
 
 # a value left out of the table pass
-def render.val.skip(_text: String, _tail: List<&2, Val>, _gap: String, _trail: Bool,
-  rest: Unit -> String) -> String:
+def render.val.skip(_text: String, _tail: List<&2, Val>, _gap: String, _trail: Bool, rest: Unit -> String) -> String:
   rest(Unit{})
 
 # a key, an array, or an inline table. The table pass leaves it
-def render.val(tabs: Bool, text: String, tail: List<&2, Val>, gap: String, trail: Bool,
-  rest: Unit -> String) -> String:
+def render.val(tabs: Bool, text: String, tail: List<&2, Val>, gap: String, trail: Bool, rest: Unit -> String) -> String:
   match tabs:
     case True{}:
       render.val.skip(text, tail, gap, trail, rest)
@@ -5040,8 +5650,8 @@ def render.both(+vs: List<&2, Val>, +gap: String, +trail: Bool) -> String:
   render.pass(vs, gap, trail, False{}) ++ render.pass(vs, gap, trail, True{})
 
 # the text of a string value
-def string(v: Val) -> String:
-  match v:
+def string(vv: Val) -> String:
+  match vv:
     case VStr{text}:
       text
     case VSpan{src, +n}:
@@ -5050,24 +5660,24 @@ def string(v: Val) -> String:
       ""
 
 # the digits of an integer value
-def digits(v: Val) -> String:
-  match v:
+def digits(vv: Val) -> String:
+  match vv:
     case VInt{_sign, text}:
       text
     case _:
       ""
 
 # the bit of a boolean value
-def flag(v: Val) -> Bool:
-  match v:
+def flag(vv: Val) -> Bool:
+  match vv:
     case VBool{bit}:
       bit
     case _:
       False{}
 
 # the rows of a table value
-def at.rows(v: Val) -> List<&2, Val>:
-  match v:
+def at.rows(vv: Val) -> List<&2, Val>:
+  match vv:
     case VHead{_path, rows}:
       rows
     case VInl{rows}:
@@ -5078,8 +5688,8 @@ def at.rows(v: Val) -> List<&2, Val>:
       []
 
 # the rows of a hit, when it is a table
-def at.rows_of(h: Hit) -> List<&2, Val>:
-  match h:
+def at.rows_of(hh: Hit) -> List<&2, Val>:
+  match hh:
     case Found{val}:
       at.rows(val)
     case Miss{}:

@@ -130,8 +130,8 @@ def why(text: String) -> String:
   T.bad(T.parse(text))
 
 # the value at a hit, or an empty string when it missed
-def read(h: T.Hit) -> T.Val:
-  match h:
+def read(hh: T.Hit) -> T.Val:
+  match hh:
     case T.Found{v}:
       v
     case T.Miss{}:
@@ -158,8 +158,8 @@ def bit_at(+text: String, +name: String) -> String:
   bit_at.go(T.flag(read(T.get(T.root(T.parse(text)), name))))
 
 # the string at a two-key path
-def path_at(+text: String, +a: String, +b: String) -> String:
-  T.string(read(T.at(T.root(T.parse(text)), a <> (b <> []))))
+def path_at(+text: String, +aa: String, +bb: String) -> String:
+  T.string(read(T.at(T.root(T.parse(text)), aa <> (bb <> []))))
 
 # TOML v1.0.0 / toml.abnf comment: a comment line is ignored and the key is kept
 law toml_comment:

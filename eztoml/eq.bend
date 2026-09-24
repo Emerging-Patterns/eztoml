@@ -114,37 +114,37 @@ def char_eq_self(c):
 # state.
 
 # the type that is empty exactly where a bit is True
-def bit.emp(b: Bool) -> Type:
-  match b:
+def bit.emp(bb: Bool) -> Type:
+  match bb:
     case False{}:
       Unit
     case True{}:
       Empty
 
-def bit.clash(e: {False{} == True{} : Bool}) -> Empty:
-  %e : bit.emp(_)
+def bit.clash(ee: {False{} == True{} : Bool}) -> Empty:
+  %ee : bit.emp(_)
   Unit{}
 
-def bit.gone(a, -A: Kind(a), e: Empty) -> A:
-  match e:
+def bit.gone(a, -A: Kind(a), ee: Empty) -> A:
+  match ee:
 
-def bit.absurd(a, -A: Kind(a), e: {False{} == True{} : Bool}) -> A:
-  bit.gone(a, A, bit.clash(e))
+def bit.absurd(a, -A: Kind(a), ee: {False{} == True{} : Bool}) -> A:
+  bit.gone(a, A, bit.clash(ee))
 
 # and the same read the other way round
-def bit.emp2(b: Bool) -> Type:
-  match b:
+def bit.emp2(bb: Bool) -> Type:
+  match bb:
     case False{}:
       Empty
     case True{}:
       Unit
 
-def bit.clash2(e: {True{} == False{} : Bool}) -> Empty:
-  %e : bit.emp2(_)
+def bit.clash2(ee: {True{} == False{} : Bool}) -> Empty:
+  %ee : bit.emp2(_)
   Unit{}
 
-def bit.absurd2(a, -A: Kind(a), e: {True{} == False{} : Bool}) -> A:
-  bit.gone(a, A, bit.clash2(e))
+def bit.absurd2(a, -A: Kind(a), ee: {True{} == False{} : Bool}) -> A:
+  bit.gone(a, A, bit.clash2(ee))
 
 # LAW: the left half of an `and` that answered True
 law and.left:
