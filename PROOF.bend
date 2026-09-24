@@ -5119,3 +5119,227 @@ def Laws.header_records_implicit_table(p, rows, name, vs, stack, bad, path, head
         bad, path, heads)), path),
       T.heads.has(heads, path), False{}, e),
     rebuild.head(stack, T.rows.repl(vs, name, T.VHead{path, rows}), bad, path, heads))
+
+# TOML-TEXT-2, each element of an array of tables its own scope. That a path
+# is no longer defined turns on str.eq answering True only for one string.
+
+# a step of str.eq that answered True was handed True
+def str.eq.step.true(
+  aa: String,
+  bb: String,
+  same: Bool,
+  ee: {T.str.eq.step(aa, bb, same) == True{} : Bool}
+) -> {same == True{} : Bool}:
+  match same:
+    case True{}:
+      {==}
+    case False{}:
+      Eq.bit.absurd(&2, {False{} == True{} : Bool},
+        Equal.trans(Bool, False{}, T.str.eq.step(aa, bb, False{}), True{},
+          Equal.sym(Bool, T.str.eq.step(aa, bb, False{}), False{},
+            str.eq.step.false(aa, bb)),
+          ee))
+
+# and the rest of the walk answered True too
+def str.eq.step.rest(
+  aa: String,
+  bb: String,
+  same: Bool,
+  ee: {T.str.eq.step(aa, bb, same) == True{} : Bool}
+) -> {T.str.eq(aa, bb) == True{} : Bool}:
+  match same:
+    case True{}:
+      ee
+    case False{}:
+      Eq.bit.absurd(&2, {T.str.eq(aa, bb) == True{} : Bool},
+        Equal.trans(Bool, False{}, T.str.eq.step(aa, bb, False{}), True{},
+          Equal.sym(Bool, T.str.eq.step(aa, bb, False{}), False{},
+            str.eq.step.false(aa, bb)),
+          ee))
+
+# two strings str.eq calls equal are one string
+def str.eq.true(
+  aa: String,
+  bb: String,
+  +ee: {T.str.eq(aa, bb) == True{} : Bool}
+) -> {aa == bb : String}:
+  match aa bb:
+    case SNil{} SNil{}:
+      {==}
+    case SNil{} SCon{hh, tt}:
+      Eq.bit.absurd(&2, {SNil{} == SCon{hh, tt} : String}, ee)
+    case SCon{hh, tt} SNil{}:
+      Eq.bit.absurd(&2, {SCon{hh, tt} == SNil{} : String}, ee)
+    case SCon{+xh, +xt} SCon{+yh, +yt}:
+      Equal.trans(String, SCon{xh, xt}, SCon{yh, xt}, SCon{yh, yt},
+        Equal.cong(Char, String, cc => SCon{cc, xt}, xh, yh,
+          Eq.char_eq_true(xh, yh, str.eq.step.true(xt, yt, Char.is_eq(xh, yh), ee))),
+        Equal.cong(String, String, ss => SCon{yh, ss}, xt, yt,
+          str.eq.true(xt, yt, str.eq.step.rest(xt, yt, Char.is_eq(xh, yh), ee))))
+
+# a table the drop kept does not name a path under the prefix
+def drop.kept.gone(
+  bb: Bool,
+  +hh: String,
+  +pre: String,
+  +ss: String,
+  rest: List<&2, String>,
+  eb: {T.str.eq(hh, String.append(pre, ss)) == bb : Bool},
+  eu: {String.starts_with(hh, pre) == False{} : Bool},
+  ih: {T.heads.has(rest, String.append(pre, ss)) == False{} : Bool}
+) -> {T.heads.or(bb, T.heads.has(rest, String.append(pre, ss))) == False{} : Bool}:
+  match bb:
+    case False{}:
+      ih
+    case True{}:
+      Eq.bit.absurd(&2,
+        {T.heads.or(True{}, T.heads.has(rest, String.append(pre, ss))) == False{}
+          : Bool},
+        Equal.trans(Bool, False{}, String.starts_with(hh, pre), True{},
+          Equal.sym(Bool, String.starts_with(hh, pre), False{}, eu),
+          Equal.trans(Bool, String.starts_with(hh, pre),
+            String.starts_with(String.append(pre, ss), pre), True{},
+            Equal.cong(String, Bool, xx => String.starts_with(xx, pre), hh,
+              String.append(pre, ss), str.eq.true(hh, String.append(pre, ss), eb)),
+            Eq.starts_append(pre, ss))))
+
+# one step of the drop keeps no table under the prefix
+def drop.step.gone(
+  under: Bool,
+  mm: Char,
+  +hh: String,
+  +pre: String,
+  +ss: String,
+  rest: List<&2, String>,
+  eu: {String.starts_with(hh, pre) == under : Bool},
+  ih: {T.heads.has(rest, String.append(pre, ss)) == False{} : Bool}
+) -> {T.heads.has(T.heads.drop.step(under, mm, hh, rest), String.append(pre, ss))
+  == False{} : Bool}:
+  match under:
+    case True{}:
+      ih
+    case False{}:
+      drop.kept.gone(T.str.eq(hh, String.append(pre, ss)), hh, pre, ss, rest, {==}, eu,
+        ih)
+
+# the drop keeps no table under the prefix
+def drop.gone(
+  hs: List<&2, String>,
+  +pre: String,
+  +ss: String
+) -> {T.heads.has(T.heads.drop(hs, pre), String.append(pre, ss)) == False{} : Bool}:
+  match hs:
+    case []:
+      {==}
+    case SCon{mm, +hh} <> +tt:
+      drop.step.gone(String.starts_with(hh, pre), mm, hh, pre, ss, T.heads.drop(tt, pre),
+        {==}, drop.gone(tt, pre, ss))
+    case SNil{} <> tt:
+      drop.gone(tt, pre, ss)
+
+# a table the drop removed does not name a path outside the prefix
+def drop.under.keeps(
+  bb: Bool,
+  +hh: String,
+  +pre: String,
+  +qq: String,
+  rest: List<&2, String>,
+  tt: List<&2, String>,
+  eb: {T.str.eq(hh, qq) == bb : Bool},
+  eu: {String.starts_with(hh, pre) == True{} : Bool},
+  ee: {String.starts_with(qq, pre) == False{} : Bool},
+  ih: {T.heads.has(rest, qq) == T.heads.has(tt, qq) : Bool}
+) -> {T.heads.has(rest, qq) == T.heads.or(bb, T.heads.has(tt, qq)) : Bool}:
+  match bb:
+    case False{}:
+      ih
+    case True{}:
+      Eq.bit.absurd(&2,
+        {T.heads.has(rest, qq) == T.heads.or(True{}, T.heads.has(tt, qq)) : Bool},
+        Equal.trans(Bool, False{}, String.starts_with(qq, pre), True{},
+          Equal.sym(Bool, String.starts_with(qq, pre), False{}, ee),
+          Equal.trans(Bool, String.starts_with(qq, pre), String.starts_with(hh, pre),
+            True{},
+            Equal.cong(String, Bool, xx => String.starts_with(xx, pre), qq, hh,
+              Equal.sym(String, hh, qq, str.eq.true(hh, qq, eb))),
+            eu)))
+
+# one step of the drop leaves a path outside the prefix as defined as it was
+def drop.step.keeps(
+  under: Bool,
+  mm: Char,
+  +hh: String,
+  +pre: String,
+  +qq: String,
+  rest: List<&2, String>,
+  tt: List<&2, String>,
+  eu: {String.starts_with(hh, pre) == under : Bool},
+  ee: {String.starts_with(qq, pre) == False{} : Bool},
+  ih: {T.heads.has(rest, qq) == T.heads.has(tt, qq) : Bool}
+) -> {T.heads.has(T.heads.drop.step(under, mm, hh, rest), qq)
+  == T.heads.has(SCon{mm, hh} <> tt, qq) : Bool}:
+  match under:
+    case True{}:
+      drop.under.keeps(T.str.eq(hh, qq), hh, pre, qq, rest, tt, {==}, eu, ee, ih)
+    case False{}:
+      Equal.cong(Bool, Bool, xx => T.heads.or(T.str.eq(hh, qq), xx),
+        T.heads.has(rest, qq), T.heads.has(tt, qq), ih)
+
+# the drop leaves a path outside the prefix as defined as it was
+def drop.keeps(
+  hs: List<&2, String>,
+  +pre: String,
+  +qq: String,
+  +ee: {String.starts_with(qq, pre) == False{} : Bool}
+) -> {T.heads.has(T.heads.drop(hs, pre), qq) == T.heads.has(hs, qq) : Bool}:
+  match hs:
+    case []:
+      {==}
+    case SCon{mm, +hh} <> +tt:
+      drop.step.keeps(String.starts_with(hh, pre), mm, hh, pre, qq,
+        T.heads.drop(tt, pre), tt, {==}, ee, drop.keeps(tt, pre, qq, ee))
+    case SNil{} <> tt:
+      drop.keeps(tt, pre, qq, ee)
+
+# a new element's tables are the old ones with those under the array dropped
+def aot.heads(
+  pp: String,
+  elems: List<&2, T.Val>,
+  name: String,
+  vs: List<&2, T.Val>,
+  stack: List<&2, T.Fr>,
+  bad: String,
+  +path: String,
+  heads: List<&2, String>
+) -> {Laws.end_heads(T.tree.leaf.aot.hit(T.KAots{pp, elems}, name, vs, stack, bad, path,
+  heads)) == T.heads.drop(heads, String.append(path, ".")) : List<&2, String>}:
+  rebuild.heads(stack, T.rows.repl(vs, name, T.VAots{path, T.VAot{path, []} <> elems}),
+    bad, T.heads.drop(heads, String.append(path, ".")))
+
+def Laws.new_element_forgets_tables_under_it(p, elems, name, vs, stack, bad, path, heads, rest):
+  Equal.trans(Bool,
+    T.heads.has(Laws.end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack,
+      bad, path, heads)), String.append(String.append(path, "."), rest)),
+    T.heads.has(T.heads.drop(heads, String.append(path, ".")),
+      String.append(String.append(path, "."), rest)),
+    False{},
+    Equal.cong(List<&2, String>, Bool,
+      ll => T.heads.has(ll, String.append(String.append(path, "."), rest)),
+      Laws.end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack, bad, path,
+        heads)),
+      T.heads.drop(heads, String.append(path, ".")),
+      aot.heads(p, elems, name, vs, stack, bad, path, heads)),
+    drop.gone(heads, String.append(path, "."), rest))
+
+def Laws.new_element_keeps_other_tables(p, elems, name, vs, stack, bad, path, heads, q, e):
+  Equal.trans(Bool,
+    T.heads.has(Laws.end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack,
+      bad, path, heads)), q),
+    T.heads.has(T.heads.drop(heads, String.append(path, ".")), q),
+    T.heads.has(heads, q),
+    Equal.cong(List<&2, String>, Bool, ll => T.heads.has(ll, q),
+      Laws.end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack, bad, path,
+        heads)),
+      T.heads.drop(heads, String.append(path, ".")),
+      aot.heads(p, elems, name, vs, stack, bad, path, heads)),
+    drop.keeps(heads, String.append(path, "."), q, e))

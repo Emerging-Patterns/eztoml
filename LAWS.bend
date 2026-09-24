@@ -1346,3 +1346,37 @@ law header_records_implicit_table:
   for e: {T.heads.has(heads, path) == False{} : Bool}
   {T.heads.head(end_heads(T.tree.leaf.def.hit(T.KHead{p, rows}, name, vs,
     stack, bad, path, heads)), path) == True{} : Bool}
+
+# LAW: a new element of an array of tables starts with no table under the
+# array defined, so each element is its own scope for defining tables
+# TOML-TEXT-2
+law new_element_forgets_tables_under_it:
+  for p: String
+  for elems: List<&2, T.Val>
+  for name: String
+  for vs: List<&2, T.Val>
+  for stack: List<&2, T.Fr>
+  for bad: String
+  for +path: String
+  for +heads: List<&2, String>
+  for rest: String
+  {T.heads.has(end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack,
+    bad, path, heads)), String.append(String.append(path, "."), rest))
+    == False{} : Bool}
+
+# LAW: a new element of an array of tables leaves every table not under the
+# array defined as it was
+# TOML-TEXT-2
+law new_element_keeps_other_tables:
+  for p: String
+  for elems: List<&2, T.Val>
+  for name: String
+  for vs: List<&2, T.Val>
+  for stack: List<&2, T.Fr>
+  for bad: String
+  for +path: String
+  for +heads: List<&2, String>
+  for +q: String
+  for e: {String.starts_with(q, String.append(path, ".")) == False{} : Bool}
+  {T.heads.has(end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack,
+    bad, path, heads)), q) == T.heads.has(heads, q) : Bool}

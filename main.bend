@@ -1978,6 +1978,30 @@ def heads.head(hs: List<&2, String>, +pp: String) -> Bool:
     case SNil{} <> t:
       heads.head(t, pp)
 
+# a recorded table under the prefix is dropped
+def heads.drop.step(
+  under: Bool,
+  mark: Char,
+  path: String,
+  rest: List<&2, String>
+) -> List<&2, String>:
+  match under:
+    case True{}:
+      rest
+    case False{}:
+      SCon{mark, path} <> rest
+
+# forget every table whose path starts with the prefix. A new element of an
+# array of tables starts with none of the tables the element before defined
+def heads.drop(hs: List<&2, String>, +pre: String) -> List<&2, String>:
+  match hs:
+    case []:
+      []
+    case SCon{mark, +path} <> t:
+      heads.drop.step(String.starts_with(path, pre), mark, path, heads.drop(t, pre))
+    case SNil{} <> t:
+      heads.drop(t, pre)
+
 # a table defined by a dotted key is recorded once
 def heads.define.new(seen: Bool, path: String, heads: List<&2, String>) -> List<&2, String>:
   match seen:
@@ -2163,7 +2187,7 @@ def tree.leaf.aot.hit(
       tree.rebuild(stack, VPair{name, VAots{path, [VAot{path, []}]}} <> vs, bad, heads)
     case KAots{_p, elems}:
       tree.rebuild(stack, rows.repl(vs, name, VAots{path, VAot{path, []} <> elems}),
-        bad, heads)
+        bad, heads.drop(heads, path ++ "."))
     case KHead{_p, _rows}:
       tree.rebuild(stack, vs, err.first(bad, "not a table"), heads)
     case KInl{}:
