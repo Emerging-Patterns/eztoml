@@ -1228,3 +1228,335 @@ law array_string:
   {T.render.go(v <> rest, gap, trail)
     == T.key.basic(T.string(v)) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)) ++
       T.render.go(rest, gap, trail) : String}
+
+# The table-definition rules (TOML-TEXT-2), stated over the walk that follows
+# a key path through the tables. A walk step either enters the table a key
+# names or records why it cannot.
+
+# the error a walk step holds, "" while it has none
+def tw_bad(tw: T.Tw) -> String:
+  match tw:
+    case T.Tw{_vs, _job, _stack, bad, _pre, _heads, _inl}:
+      bad
+
+# the tables a finished walk has recorded as defined
+def end_heads(end: T.End) -> List<&2, String>:
+  match end:
+    case T.End{_vs, _bad, heads}:
+      heads
+
+# the job of a table header: an array of tables, or a table
+def header_job(arr: Bool) -> T.Job:
+  match arr:
+    case True{}:
+      T.JAot{}
+    case False{}:
+      T.JDef{}
+
+# LAW: a dotted key cannot add to a table a header defined: the segment of
+# the key that reaches it is refused
+# TOML-TEXT-2
+law dotted_key_refused_in_header_table:
+  for path: String
+  for rows: List<&2, T.Val>
+  for +name: String
+  for vs: List<&2, T.Val>
+  for val: T.Val
+  for stack: List<&2, T.Fr>
+  for +pre: String
+  for heads: List<&2, String>
+  for inl: Bool
+  for e: {T.heads.head(heads, T.tree.pre(pre, name)) == True{} : Bool}
+  {String.is_empty(tw_bad(T.tree.sub.look(T.KHead{path, rows}, name, vs,
+    T.JPut{val}, stack, pre, heads, inl, True{}))) == False{} : Bool}
+
+# LAW: a dotted key goes on into a table no header defined, such as one other
+# dotted keys defined
+# TOML-TEXT-2
+law dotted_key_enters_other_table:
+  for path: String
+  for rows: List<&2, T.Val>
+  for +name: String
+  for vs: List<&2, T.Val>
+  for val: T.Val
+  for stack: List<&2, T.Fr>
+  for +pre: String
+  for heads: List<&2, String>
+  for inl: Bool
+  for e: {T.heads.head(heads, T.tree.pre(pre, name)) == False{} : Bool}
+  {tw_bad(T.tree.sub.look(T.KHead{path, rows}, name, vs, T.JPut{val}, stack,
+    pre, heads, inl, True{})) == "" : String}
+
+# LAW: a dotted key cannot add to an array of tables
+# TOML-TEXT-2
+law dotted_key_refused_in_array_of_tables:
+  for path: String
+  for elems: List<&2, T.Val>
+  for name: String
+  for vs: List<&2, T.Val>
+  for val: T.Val
+  for stack: List<&2, T.Fr>
+  for pre: String
+  for heads: List<&2, String>
+  for inl: Bool
+  {String.is_empty(tw_bad(T.tree.sub.look(T.KAots{path, elems}, name, vs,
+    T.JPut{val}, stack, pre, heads, inl, True{}))) == False{} : Bool}
+
+# LAW: a header goes on through every table on its path, whoever defined it
+# TOML-TEXT-2
+law header_enters_any_table:
+  for path: String
+  for rows: List<&2, T.Val>
+  for name: String
+  for vs: List<&2, T.Val>
+  for arr: Bool
+  for stack: List<&2, T.Fr>
+  for pre: String
+  for heads: List<&2, String>
+  for inl: Bool
+  for mark: Bool
+  {tw_bad(T.tree.sub.look(T.KHead{path, rows}, name, vs, header_job(arr),
+    stack, pre, heads, inl, mark)) == "" : String}
+
+# LAW: a [table] header that makes a new table records it as defined by a
+# header
+# TOML-TEXT-2
+law header_records_new_table:
+  for name: String
+  for vs: List<&2, T.Val>
+  for stack: List<&2, T.Fr>
+  for bad: String
+  for +path: String
+  for heads: List<&2, String>
+  {T.heads.head(end_heads(T.tree.leaf.def.hit(T.KMiss{}, name, vs, stack, bad,
+    path, heads)), path) == True{} : Bool}
+
+# LAW: a [table] header that defines a table only made on the way to another
+# records it as defined by a header
+# TOML-TEXT-2
+law header_records_implicit_table:
+  for p: String
+  for rows: List<&2, T.Val>
+  for name: String
+  for vs: List<&2, T.Val>
+  for stack: List<&2, T.Fr>
+  for bad: String
+  for +path: String
+  for +heads: List<&2, String>
+  for e: {T.heads.has(heads, path) == False{} : Bool}
+  {T.heads.head(end_heads(T.tree.leaf.def.hit(T.KHead{p, rows}, name, vs,
+    stack, bad, path, heads)), path) == True{} : Bool}
+
+# LAW: a new element of an array of tables starts with no table under the
+# array defined, so each element is its own scope for defining tables
+# TOML-TEXT-2
+law new_element_forgets_tables_under_it:
+  for p: String
+  for elems: List<&2, T.Val>
+  for name: String
+  for vs: List<&2, T.Val>
+  for stack: List<&2, T.Fr>
+  for bad: String
+  for +path: String
+  for +heads: List<&2, String>
+  for rest: String
+  {T.heads.has(end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack,
+    bad, path, heads)), String.append(String.append(path, "."), rest))
+    == False{} : Bool}
+
+# LAW: a new element of an array of tables leaves every table not under the
+# array defined as it was
+# TOML-TEXT-2
+law new_element_keeps_other_tables:
+  for p: String
+  for elems: List<&2, T.Val>
+  for name: String
+  for vs: List<&2, T.Val>
+  for stack: List<&2, T.Fr>
+  for bad: String
+  for +path: String
+  for +heads: List<&2, String>
+  for +q: String
+  for e: {String.starts_with(q, String.append(path, ".")) == False{} : Bool}
+  {T.heads.has(end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack,
+    bad, path, heads)), q) == T.heads.has(heads, q) : Bool}
+
+# the rows of a finished walk
+def end_rows(end: T.End) -> List<&2, T.Val>:
+  match end:
+    case T.End{vs, _bad, _heads}:
+      vs
+
+# the error of a finished walk, "" when it has none
+def end_bad(end: T.End) -> String:
+  match end:
+    case T.End{_vs, bad, _heads}:
+      bad
+
+# whether no pair of the rows holds a table a later key could go on in
+def holds_no_open_table(rows: List<&2, T.Val>) -> Bool:
+  match rows:
+    case []:
+      True{}
+    case T.VPair{_nn, T.VHead{_pp, _rr}} <> _tt:
+      False{}
+    case _ <> tt:
+      holds_no_open_table(tt)
+
+# LAW: in an inline table, two dotted keys that share their first segment
+# are both read: once `b.c = v` is in the inline table, `b.d = w` is read
+# with no error when c is not d. The walk is the one an inline table's key
+# takes, starting from its rows with no error
+# TOML-TEXT-1
+law inline_dotted_keys_share_a_prefix:
+  for +inl: List<&2, T.Val>
+  for +b: String
+  for +c: String
+  for +d: String
+  for +v: T.Val
+  for w: T.Val
+  for e: {has_pair(inl, b) == False{} : Bool}
+  for f: {String.eq(c, d) == False{} : Bool}
+  {end_bad(T.tree.walk([b, d], T.Tw{end_rows(T.tree.walk([b, c],
+    T.Tw{inl, T.JPut{v}, [], "", "", [], True{}}, 0)), T.JPut{w}, [], "", "", [],
+    True{}}, 0)) == "" : String}
+
+# LAW: an inline table, once closed, holds no table a later key could go on
+# in: the tables its dotted keys made close with it
+# TOML-TEXT-2
+law closed_inline_table_holds_no_open_table:
+  for rows: List<&2, T.Val>
+  {holds_no_open_table(T.inl.seal(rows)) == True{} : Bool}
+
+# LAW: no key goes on in an inline table: a dotted key or a header that
+# reaches one is refused
+# TOML-TEXT-2
+law inline_table_refuses_keys:
+  for name: String
+  for vs: List<&2, T.Val>
+  for job: T.Job
+  for stack: List<&2, T.Fr>
+  for pre: String
+  for heads: List<&2, String>
+  for inl: Bool
+  for mark: Bool
+  {String.is_empty(tw_bad(T.tree.sub.look(T.KInl{}, name, vs, job, stack, pre,
+    heads, inl, mark))) == False{} : Bool}
+
+
+# The header scanner. Each law below holds from every scanner state inside a
+# header with the buffer it names, whatever the other fields hold. A refusal
+# fails the document whatever follows (fail_stays).
+
+# a quote: a literal one or a basic one
+def quote_char(lit: Bool) -> Char:
+  match lit:
+    case True{}:
+      '\''
+    case False{}:
+      '"'
+
+# the kind of key a quote starts
+def quote_kind(lit: Bool) -> T.QKind:
+  match lit:
+    case True{}:
+      T.QLit{}
+    case False{}:
+      T.QBasic{}
+
+# a space or a tab
+def blank_char(tab: Bool) -> Char:
+  match tab:
+    case True{}:
+      '\t'
+    case False{}:
+      ' '
+
+# LAW: in a header, a quote right after a bare character fails the document,
+# whatever follows: a segment is one bare key or one quoted key, so no bare
+# part of a header's name is dropped
+# TOML-TEXT-1
+# TOML-KEY-3
+law header_quote_after_bare_refused:
+  for bad: String
+  for rows: List<&2, T.Val>
+  for heads: List<&2, String>
+  for here: List<&2, String>
+  for parts: List<&2, String>
+  for c: Char
+  for cs: List<&2, Char>
+  for back: T.Lex
+  for qkind: T.QKind
+  for stack: List<&2, T.Ctx>
+  for uni: U32
+  for left: U32
+  for arrtab: Bool
+  for lit: Bool
+  for +t: String
+  {String.is_empty(T.bad(T.doc.read(SCon{quote_char(lit), t}, T.MScan{T.St{bad, rows,
+    heads, here, parts, c <> cs, T.LHead{}, back, qkind, stack, T.HNone{}, uni, left,
+    arrtab, False{}}}))) == False{} : Bool}
+
+# LAW: a quote right after a header's opening bracket starts a quoted segment
+# TOML-TEXT-1
+# TOML-KEY-3
+law header_quote_at_start_opens_segment:
+  for bad: String
+  for rows: List<&2, T.Val>
+  for heads: List<&2, String>
+  for here: List<&2, String>
+  for back: T.Lex
+  for qkind: T.QKind
+  for stack: List<&2, T.Ctx>
+  for uni: U32
+  for left: U32
+  for arrtab: Bool
+  for lit: Bool
+  {T.doc.scan(T.St{bad, rows, heads, here, [], [], T.LHead{}, back, qkind, stack,
+    T.HNone{}, uni, left, arrtab, False{}}, quote_char(lit))
+    == T.MScan{T.St{bad, rows, heads, here, [], [], T.LHeadQ{}, back, quote_kind(lit),
+    stack, T.HNone{}, uni, left, arrtab, False{}}} : T.Mode}
+
+# LAW: in a header, blank space with no segment open and then a bracket fail
+# the document, whatever follows: the two brackets of `[[` are adjacent, so
+# `[ [` does not open an array of tables
+# TOML-TEXT-1
+law header_blank_then_bracket_refused:
+  for bad: String
+  for rows: List<&2, T.Val>
+  for heads: List<&2, String>
+  for here: List<&2, String>
+  for parts: List<&2, String>
+  for back: T.Lex
+  for qkind: T.QKind
+  for stack: List<&2, T.Ctx>
+  for uni: U32
+  for left: U32
+  for arrtab: Bool
+  for tab: Bool
+  for +t: String
+  {String.is_empty(T.bad(T.doc.read(SCon{blank_char(tab), SCon{'[', t}},
+    T.MScan{T.St{bad, rows, heads, here, parts, [], T.LHead{}, back, qkind, stack,
+    T.HNone{}, uni, left, arrtab, False{}}}))) == False{} : Bool}
+
+# LAW: in a header, blank space with no segment open leaves the scanner
+# waiting for a segment, as it does after a dot: a bare or quoted key may
+# follow
+# TOML-TEXT-1
+law header_blank_waits_for_segment:
+  for bad: String
+  for rows: List<&2, T.Val>
+  for heads: List<&2, String>
+  for here: List<&2, String>
+  for parts: List<&2, String>
+  for back: T.Lex
+  for qkind: T.QKind
+  for stack: List<&2, T.Ctx>
+  for uni: U32
+  for left: U32
+  for arrtab: Bool
+  for tab: Bool
+  {T.doc.scan(T.St{bad, rows, heads, here, parts, [], T.LHead{}, back, qkind, stack,
+    T.HNone{}, uni, left, arrtab, False{}}, blank_char(tab))
+    == T.MScan{T.St{bad, rows, heads, here, parts, [], T.LHeadDot{}, back, qkind,
+    stack, T.HNone{}, uni, left, arrtab, False{}}} : T.Mode}

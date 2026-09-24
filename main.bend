@@ -1863,7 +1863,7 @@ type Job is Data:
 
 # one table the walk has entered
 type Fr is Data:
-  FrNew{name: String, parent: List<&2, Val>, path: String, inl: Bool}
+  FrNew{name: String, parent: List<&2, Val>, path: String}
   FrRep{name: String, parent: List<&2, Val>, path: String}
   FrAot{name: String, parent: List<&2, Val>, pre: List<&2, Val>, path: String}
 
@@ -1949,13 +1949,58 @@ def heads.or(aa: Bool, bb: Bool) -> Bool:
     case False{}:
       bb
 
-# whether a header path was opened by a header
+# heads records each table the document has defined as its path behind one
+# mark: `[` when a header defined it, `.` when dotted keys did
+def heads.by.head(path: String) -> String:
+  SCon{'[', path}
+
+# a table dotted keys defined, as heads records it
+def heads.by.dot(path: String) -> String:
+  SCon{'.', path}
+
+# whether a table path was defined, by a header or by dotted keys
 def heads.has(hs: List<&2, String>, +pp: String) -> Bool:
   match hs:
     case []:
       False{}
-    case h <> t:
+    case SCon{_mark, h} <> t:
       heads.or(str.eq(h, pp), heads.has(t, pp))
+    case SNil{} <> t:
+      heads.has(t, pp)
+
+# whether a table path was defined by a header
+def heads.head(hs: List<&2, String>, +pp: String) -> Bool:
+  match hs:
+    case []:
+      False{}
+    case SCon{mark, h} <> t:
+      heads.or(Bool.and(Char.is_eq(mark, '['), str.eq(h, pp)), heads.head(t, pp))
+    case SNil{} <> t:
+      heads.head(t, pp)
+
+# a recorded table under the prefix is dropped
+def heads.drop.step(
+  under: Bool,
+  mark: Char,
+  path: String,
+  rest: List<&2, String>
+) -> List<&2, String>:
+  match under:
+    case True{}:
+      rest
+    case False{}:
+      SCon{mark, path} <> rest
+
+# forget every table whose path starts with the prefix. A new element of an
+# array of tables starts with none of the tables the element before defined
+def heads.drop(hs: List<&2, String>, +pre: String) -> List<&2, String>:
+  match hs:
+    case []:
+      []
+    case SCon{mark, +path} <> t:
+      heads.drop.step(String.starts_with(path, pre), mark, path, heads.drop(t, pre))
+    case SNil{} <> t:
+      heads.drop(t, pre)
 
 # a table defined by a dotted key is recorded once
 def heads.define.new(seen: Bool, path: String, heads: List<&2, String>) -> List<&2, String>:
@@ -1963,7 +2008,7 @@ def heads.define.new(seen: Bool, path: String, heads: List<&2, String>) -> List<
     case True{}:
       heads
     case False{}:
-      path <> heads
+      heads.by.dot(path) <> heads
 
 # a dotted key defines each table before its last segment
 def heads.define(job: Job, +path: String, +heads: List<&2, String>) -> List<&2, String>:
@@ -2031,19 +2076,13 @@ def look.last(elems: List<&2, Val>, path: String) -> Last:
     case h <> t:
       look.last.one(h, path, t)
 
-# a new implicit table, inline or standard. the pair is consed, not copied on
-def tree.wrap.new(inl: Bool, name: String, parent: List<&2, Val>, path: String, child: List<&2, Val>) -> List<&2, Val>:
-  match inl:
-    case True{}:
-      VPair{name, VInl{child}} <> parent
-    case False{}:
-      VPair{name, VHead{path, child}} <> parent
-
-# put the child rows back into the parent table
+# put the child rows back into the parent table. A new implicit table is
+# consed, not copied on. Inside an inline table it is a table too until the
+# inline table closes, so the next dotted key can go on in it (inl.seal)
 def tree.wrap(fr: Fr, child: List<&2, Val>) -> List<&2, Val>:
   match fr:
-    case FrNew{name, parent, path, inl}:
-      tree.wrap.new(inl, name, parent, path, child)
+    case FrNew{name, parent, path}:
+      VPair{name, VHead{path, child}} <> parent
     case FrRep{name, parent, path}:
       rows.repl(parent, name, VHead{path, child})
     case FrAot{name, parent, pre, +path}:
@@ -2088,7 +2127,8 @@ def tree.leaf.def.head(
     case True{}:
       tree.rebuild(stack, vs, err.first(bad, "duplicate table"), heads)
     case False{}:
-      tree.rebuild(stack, rows.repl(vs, name, VHead{path, rows}), bad, path <> heads)
+      tree.rebuild(stack, rows.repl(vs, name, VHead{path, rows}), bad,
+        heads.by.head(path) <> heads)
 
 # open a standard table
 def tree.leaf.def.hit(
@@ -2102,7 +2142,8 @@ def tree.leaf.def.hit(
 ) -> End:
   match hit:
     case KMiss{}:
-      tree.rebuild(stack, VPair{name, VHead{path, []}} <> vs, bad, path <> heads)
+      tree.rebuild(stack, VPair{name, VHead{path, []}} <> vs, bad,
+        heads.by.head(path) <> heads)
     case KHead{_p, rows}:
       tree.leaf.def.head(heads.has(heads, path), name, vs, rows, stack, bad, path,
         heads)
@@ -2140,7 +2181,7 @@ def tree.leaf.aot.hit(
       tree.rebuild(stack, VPair{name, VAots{path, [VAot{path, []}]}} <> vs, bad, heads)
     case KAots{_p, elems}:
       tree.rebuild(stack, rows.repl(vs, name, VAots{path, VAot{path, []} <> elems}),
-        bad, heads)
+        bad, heads.drop(heads, path ++ "."))
     case KHead{_p, _rows}:
       tree.rebuild(stack, vs, err.first(bad, "not a table"), heads)
     case KInl{}:
@@ -2227,6 +2268,76 @@ def tree.sub.job(mark: Bool, job: Job) -> Job:
     case False{}:
       JDef{}
 
+# a segment of a dotted key, which defines tables as it goes
+def tree.sub.dot(job: Job) -> Bool:
+  match job:
+    case JPut{_val}:
+      True{}
+    case _:
+      False{}
+
+# enter a table, unless a dotted key would add to a table a header defined
+def tree.sub.head.go(
+  shut: Bool,
+  path: String,
+  rows: List<&2, Val>,
+  +name: String,
+  vs: List<&2, Val>,
+  +job: Job,
+  stack: List<&2, Fr>,
+  +pre: String,
+  heads: List<&2, String>,
+  inl: Bool,
+  mark: Bool
+) -> Tw:
+  match shut:
+    case True{}:
+      Tw{vs, job, stack, "duplicate table", pre, heads, inl}
+    case False{}:
+      Tw{rows, job, FrRep{name, vs, path} <> stack, "", tree.pre(pre, name),
+        heads.define(tree.sub.job(mark, job), tree.pre(pre, name), heads), inl}
+
+# a dotted key asks whether a header defined the table; a header walk does not
+def tree.sub.head(
+  dot: Bool,
+  path: String,
+  rows: List<&2, Val>,
+  +name: String,
+  vs: List<&2, Val>,
+  job: Job,
+  stack: List<&2, Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  inl: Bool,
+  mark: Bool
+) -> Tw:
+  match dot:
+    case True{}:
+      tree.sub.head.go(heads.head(heads, tree.pre(pre, name)), path, rows, name, vs, job,
+        stack, pre, heads, inl, mark)
+    case False{}:
+      tree.sub.head.go(False{}, path, rows, name, vs, job, stack, pre, heads, inl, mark)
+
+# a header enters the last element of an array of tables; a dotted key cannot
+# add to an array of tables
+def tree.sub.arr(
+  dot: Bool,
+  +path: String,
+  elems: List<&2, Val>,
+  +name: String,
+  +vs: List<&2, Val>,
+  job: Job,
+  stack: List<&2, Fr>,
+  +pre: String,
+  heads: List<&2, String>,
+  inl: Bool
+) -> Tw:
+  match dot:
+    case True{}:
+      Tw{vs, job, stack, "duplicate table", pre, heads, inl}
+    case False{}:
+      tree.sub.aots(look.last(elems, path), name, vs, job, stack, pre, heads, inl, path)
+
 # descend into one key, or record why it cannot be entered
 def tree.sub.look(
   hit: Look,
@@ -2237,21 +2348,21 @@ def tree.sub.look(
   +pre: String,
   heads: List<&2, String>,
   +inl: Bool,
-  mark: Bool
+  +mark: Bool
 ) -> Tw:
   match hit:
     case KMiss{}:
-      Tw{[], job, FrNew{name, vs, tree.pre(pre, name), inl} <> stack, "",
+      Tw{[], job, FrNew{name, vs, tree.pre(pre, name)} <> stack, "",
         tree.pre(pre, name), heads.define(tree.sub.job(mark, job), tree.pre(pre, name),
           heads), inl}
     case KHead{path, rows}:
-      Tw{rows, job, FrRep{name, vs, path} <> stack, "", tree.pre(pre, name),
-        heads.define(tree.sub.job(mark, job), tree.pre(pre, name), heads), inl}
+      tree.sub.head(tree.sub.dot(tree.sub.job(mark, job)), path, rows, name, vs, job,
+        stack, pre, heads, inl, mark)
     case KInl{}:
       Tw{vs, job, stack, "inline table is closed", pre, heads, inl}
-    case KAots{+path, elems}:
-      tree.sub.aots(look.last(elems, path), name, vs, job, stack, pre, heads, inl,
-        path)
+    case KAots{path, elems}:
+      tree.sub.arr(tree.sub.dot(tree.sub.job(mark, job)), path, elems, name, vs, job,
+        stack, pre, heads, inl)
     case KNo{why}:
       Tw{vs, job, stack, why, pre, heads, inl}
 
@@ -2748,6 +2859,17 @@ def arr.close(st: St) -> St:
     arrtab, lead} = st
   arr.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)
 
+# an inline table is closed once written: the tables its dotted keys made,
+# open while it was read, close with it
+def inl.seal(rows: List<&2, Val>) -> List<&2, Val>:
+  match rows:
+    case []:
+      []
+    case VPair{name, VHead{_path, sub}} <> t:
+      VPair{name, VInl{inl.seal(sub)}} <> inl.seal(t)
+    case h <> t:
+      h <> inl.seal(t)
+
 # close an inline table and place it
 def inl.top(
   stack: List<&2, Ctx>,
@@ -2764,7 +2886,7 @@ def inl.top(
   match stack:
     case CInl{inl, parts, here} <> rest:
       val.take(St{bad, rows, heads, here, parts, [], LTop{}, back, qkind, rest, HNone{},
-        uni, left, arrtab, lead}, VInl{inl})
+        uni, left, arrtab, lead}, VInl{inl.seal(inl)})
     case _:
       St{err.first(bad, "unclosed"), rows, heads, [], [], [], LSink{}, back, qkind, [],
         HNone{}, uni, left, arrtab, lead}
@@ -3694,11 +3816,12 @@ def lex.head.ch(st: St, cc: Char) -> St:
     St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
       arrtab, lead}, cc)
 
-# an empty buffer was already between segments
+# whitespace with no segment open still needs a segment after it, so a second
+# bracket there is refused: `[[` is two brackets with nothing between
 def lex.head.gap.go(empty: Bool, st: St) -> St:
   match empty:
     case True{}:
-      st
+      st.lex(st, LHeadDot{})
     case False{}:
       seg.push(st, LHeadGap{})
 
@@ -3758,11 +3881,29 @@ def lex.head.hash(hash: Bool, st: St) -> St:
     case False{}:
       st.err(st, "invalid header")
 
+# a quote opens a segment only where none has started. After a bare character
+# it would glue two keys into one segment, which toml.abnf does not allow
+def lex.head.quote.go(fresh: Bool, st: St, kind: QKind) -> St:
+  match fresh:
+    case True{}:
+      lex.qkey(st, kind, LHeadQ{})
+    case False{}:
+      st.err(st, "invalid header")
+
+# a quoted header segment, right after the bracket
+def lex.head.quote(st: St, kind: QKind) -> St:
+  St{bad, rows, heads, here, +parts, +buf, lx, back, qkind, stack, hold, uni, left,
+    arrtab, lead} = st
+  lex.head.quote.go(Bool.and(List.is_empty(&2, Char, buf),
+    List.is_empty(&2, String, parts)),
+    St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
+      arrtab, lead}, kind)
+
 # a literal header segment or a comment
 def lex.head.lit(lit: Bool, hash: Bool, st: St) -> St:
   match lit:
     case True{}:
-      lex.qkey(st, QLit{}, LHeadQ{})
+      lex.head.quote(st, QLit{})
     case False{}:
       lex.head.hash(hash, st)
 
@@ -3770,7 +3911,7 @@ def lex.head.lit(lit: Bool, hash: Bool, st: St) -> St:
 def lex.head.q(qq: Bool, lit: Bool, hash: Bool, st: St, _c: Char) -> St:
   match qq:
     case True{}:
-      lex.qkey(st, QBasic{}, LHeadQ{})
+      lex.head.quote(st, QBasic{})
     case False{}:
       lex.head.lit(lit, hash, st)
 

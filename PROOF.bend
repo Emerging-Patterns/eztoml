@@ -5035,3 +5035,579 @@ def Laws.array_string(v, rest, gap, trail, h):
         == T.key.basic(T.string(T.VPair{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val,
           rest)) ++ T.render.go(rest, gap, trail) : String}, h)
 
+# TOML-TEXT-2. The walk steps that decide whether a key may add to a table.
+
+# rebuilding the tables above a walk leaves the recorded definitions alone
+def rebuild.heads(
+  stack: List<&2, T.Fr>,
+  vs: List<&2, T.Val>,
+  bad: String,
+  heads: List<&2, String>
+) -> {Laws.end_heads(T.tree.rebuild(stack, vs, bad, heads)) == heads
+  : List<&2, String>}:
+  match stack:
+    case []:
+      {==}
+    case fr <> tt:
+      rebuild.heads(tt, T.tree.wrap(fr, vs), bad, heads)
+
+# a table a header just recorded is one a header defined
+def heads.head.first(
+  +pp: String,
+  hs: List<&2, String>
+) -> {T.heads.head(T.heads.by.head(pp) <> hs, pp) == True{} : Bool}:
+  Equal.cong(Bool, Bool, bb => T.heads.or(bb, T.heads.head(hs, pp)),
+    T.str.eq(pp, pp), True{}, str.eq.self(pp))
+
+# and it is still there once the walk is rebuilt
+def rebuild.head(
+  stack: List<&2, T.Fr>,
+  vs: List<&2, T.Val>,
+  bad: String,
+  +pp: String,
+  +hs: List<&2, String>
+) -> {T.heads.head(Laws.end_heads(T.tree.rebuild(stack, vs, bad, T.heads.by.head(pp) <> hs)),
+  pp) == True{} : Bool}:
+  Equal.trans(Bool,
+    T.heads.head(Laws.end_heads(T.tree.rebuild(stack, vs, bad, T.heads.by.head(pp) <> hs)), pp),
+    T.heads.head(T.heads.by.head(pp) <> hs, pp),
+    True{},
+    Equal.cong(List<&2, String>, Bool, ll => T.heads.head(ll, pp),
+      Laws.end_heads(T.tree.rebuild(stack, vs, bad, T.heads.by.head(pp) <> hs)),
+      T.heads.by.head(pp) <> hs, rebuild.heads(stack, vs, bad, T.heads.by.head(pp) <> hs)),
+    heads.head.first(pp, hs))
+
+def Laws.dotted_key_refused_in_header_table(path, rows, name, vs, val, stack, pre, heads, inl, e):
+  %Equal.sym(Bool, T.heads.head(heads, T.tree.pre(pre, name)), True{}, e)
+    : {String.is_empty(Laws.tw_bad(T.tree.sub.head.go(_, path, rows, name, vs,
+      T.JPut{val}, stack, pre, heads, inl, True{}))) == False{} : Bool}
+  {==}
+
+def Laws.dotted_key_enters_other_table(path, rows, name, vs, val, stack, pre, heads, inl, e):
+  %Equal.sym(Bool, T.heads.head(heads, T.tree.pre(pre, name)), False{}, e)
+    : {Laws.tw_bad(T.tree.sub.head.go(_, path, rows, name, vs, T.JPut{val}, stack,
+      pre, heads, inl, True{})) == "" : String}
+  {==}
+
+def Laws.dotted_key_refused_in_array_of_tables(_path, _elems, _name, _vs, _val, _stack, _pre, _heads, _inl):
+  {==}
+
+# a header's job never asks who defined the table, wherever the walk is
+def Laws.header_enters_any_table(_path, _rows, _name, _vs, arr, _stack, _pre, _heads, _inl, mark):
+  match arr mark:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      {==}
+    case False{} True{}:
+      {==}
+    case False{} False{}:
+      {==}
+
+def Laws.header_records_new_table(name, vs, stack, bad, path, heads):
+  rebuild.head(stack, T.VPair{name, T.VHead{path, []}} <> vs, bad, path, heads)
+
+def Laws.header_records_implicit_table(p, rows, name, vs, stack, bad, path, heads, e):
+  Equal.trans(Bool,
+    T.heads.head(Laws.end_heads(T.tree.leaf.def.hit(T.KHead{p, rows}, name, vs, stack,
+      bad, path, heads)), path),
+    T.heads.head(Laws.end_heads(T.tree.leaf.def.head(False{}, name, vs, rows, stack,
+      bad, path, heads)), path),
+    True{},
+    Equal.cong(Bool, Bool,
+      ss => T.heads.head(Laws.end_heads(T.tree.leaf.def.head(ss, name, vs, rows, stack,
+        bad, path, heads)), path),
+      T.heads.has(heads, path), False{}, e),
+    rebuild.head(stack, T.rows.repl(vs, name, T.VHead{path, rows}), bad, path, heads))
+
+# TOML-TEXT-2, each element of an array of tables its own scope. That a path
+# is no longer defined turns on str.eq answering True only for one string.
+
+# a step of str.eq that answered True was handed True
+def str.eq.step.true(
+  aa: String,
+  bb: String,
+  same: Bool,
+  ee: {T.str.eq.step(aa, bb, same) == True{} : Bool}
+) -> {same == True{} : Bool}:
+  match same:
+    case True{}:
+      {==}
+    case False{}:
+      Eq.bit.absurd(&2, {False{} == True{} : Bool},
+        Equal.trans(Bool, False{}, T.str.eq.step(aa, bb, False{}), True{},
+          Equal.sym(Bool, T.str.eq.step(aa, bb, False{}), False{},
+            str.eq.step.false(aa, bb)),
+          ee))
+
+# and the rest of the walk answered True too
+def str.eq.step.rest(
+  aa: String,
+  bb: String,
+  same: Bool,
+  ee: {T.str.eq.step(aa, bb, same) == True{} : Bool}
+) -> {T.str.eq(aa, bb) == True{} : Bool}:
+  match same:
+    case True{}:
+      ee
+    case False{}:
+      Eq.bit.absurd(&2, {T.str.eq(aa, bb) == True{} : Bool},
+        Equal.trans(Bool, False{}, T.str.eq.step(aa, bb, False{}), True{},
+          Equal.sym(Bool, T.str.eq.step(aa, bb, False{}), False{},
+            str.eq.step.false(aa, bb)),
+          ee))
+
+# two strings str.eq calls equal are one string
+def str.eq.true(
+  aa: String,
+  bb: String,
+  +ee: {T.str.eq(aa, bb) == True{} : Bool}
+) -> {aa == bb : String}:
+  match aa bb:
+    case SNil{} SNil{}:
+      {==}
+    case SNil{} SCon{hh, tt}:
+      Eq.bit.absurd(&2, {SNil{} == SCon{hh, tt} : String}, ee)
+    case SCon{hh, tt} SNil{}:
+      Eq.bit.absurd(&2, {SCon{hh, tt} == SNil{} : String}, ee)
+    case SCon{+xh, +xt} SCon{+yh, +yt}:
+      Equal.trans(String, SCon{xh, xt}, SCon{yh, xt}, SCon{yh, yt},
+        Equal.cong(Char, String, cc => SCon{cc, xt}, xh, yh,
+          Eq.char_eq_true(xh, yh, str.eq.step.true(xt, yt, Char.is_eq(xh, yh), ee))),
+        Equal.cong(String, String, ss => SCon{yh, ss}, xt, yt,
+          str.eq.true(xt, yt, str.eq.step.rest(xt, yt, Char.is_eq(xh, yh), ee))))
+
+# a table the drop kept does not name a path under the prefix
+def drop.kept.gone(
+  bb: Bool,
+  +hh: String,
+  +pre: String,
+  +ss: String,
+  rest: List<&2, String>,
+  eb: {T.str.eq(hh, String.append(pre, ss)) == bb : Bool},
+  eu: {String.starts_with(hh, pre) == False{} : Bool},
+  ih: {T.heads.has(rest, String.append(pre, ss)) == False{} : Bool}
+) -> {T.heads.or(bb, T.heads.has(rest, String.append(pre, ss))) == False{} : Bool}:
+  match bb:
+    case False{}:
+      ih
+    case True{}:
+      Eq.bit.absurd(&2,
+        {T.heads.or(True{}, T.heads.has(rest, String.append(pre, ss))) == False{}
+          : Bool},
+        Equal.trans(Bool, False{}, String.starts_with(hh, pre), True{},
+          Equal.sym(Bool, String.starts_with(hh, pre), False{}, eu),
+          Equal.trans(Bool, String.starts_with(hh, pre),
+            String.starts_with(String.append(pre, ss), pre), True{},
+            Equal.cong(String, Bool, xx => String.starts_with(xx, pre), hh,
+              String.append(pre, ss), str.eq.true(hh, String.append(pre, ss), eb)),
+            Eq.starts_append(pre, ss))))
+
+# one step of the drop keeps no table under the prefix
+def drop.step.gone(
+  under: Bool,
+  mm: Char,
+  +hh: String,
+  +pre: String,
+  +ss: String,
+  rest: List<&2, String>,
+  eu: {String.starts_with(hh, pre) == under : Bool},
+  ih: {T.heads.has(rest, String.append(pre, ss)) == False{} : Bool}
+) -> {T.heads.has(T.heads.drop.step(under, mm, hh, rest), String.append(pre, ss))
+  == False{} : Bool}:
+  match under:
+    case True{}:
+      ih
+    case False{}:
+      drop.kept.gone(T.str.eq(hh, String.append(pre, ss)), hh, pre, ss, rest, {==}, eu,
+        ih)
+
+# the drop keeps no table under the prefix
+def drop.gone(
+  hs: List<&2, String>,
+  +pre: String,
+  +ss: String
+) -> {T.heads.has(T.heads.drop(hs, pre), String.append(pre, ss)) == False{} : Bool}:
+  match hs:
+    case []:
+      {==}
+    case SCon{mm, +hh} <> +tt:
+      drop.step.gone(String.starts_with(hh, pre), mm, hh, pre, ss, T.heads.drop(tt, pre),
+        {==}, drop.gone(tt, pre, ss))
+    case SNil{} <> tt:
+      drop.gone(tt, pre, ss)
+
+# a table the drop removed does not name a path outside the prefix
+def drop.under.keeps(
+  bb: Bool,
+  +hh: String,
+  +pre: String,
+  +qq: String,
+  rest: List<&2, String>,
+  tt: List<&2, String>,
+  eb: {T.str.eq(hh, qq) == bb : Bool},
+  eu: {String.starts_with(hh, pre) == True{} : Bool},
+  ee: {String.starts_with(qq, pre) == False{} : Bool},
+  ih: {T.heads.has(rest, qq) == T.heads.has(tt, qq) : Bool}
+) -> {T.heads.has(rest, qq) == T.heads.or(bb, T.heads.has(tt, qq)) : Bool}:
+  match bb:
+    case False{}:
+      ih
+    case True{}:
+      Eq.bit.absurd(&2,
+        {T.heads.has(rest, qq) == T.heads.or(True{}, T.heads.has(tt, qq)) : Bool},
+        Equal.trans(Bool, False{}, String.starts_with(qq, pre), True{},
+          Equal.sym(Bool, String.starts_with(qq, pre), False{}, ee),
+          Equal.trans(Bool, String.starts_with(qq, pre), String.starts_with(hh, pre),
+            True{},
+            Equal.cong(String, Bool, xx => String.starts_with(xx, pre), qq, hh,
+              Equal.sym(String, hh, qq, str.eq.true(hh, qq, eb))),
+            eu)))
+
+# one step of the drop leaves a path outside the prefix as defined as it was
+def drop.step.keeps(
+  under: Bool,
+  mm: Char,
+  +hh: String,
+  +pre: String,
+  +qq: String,
+  rest: List<&2, String>,
+  tt: List<&2, String>,
+  eu: {String.starts_with(hh, pre) == under : Bool},
+  ee: {String.starts_with(qq, pre) == False{} : Bool},
+  ih: {T.heads.has(rest, qq) == T.heads.has(tt, qq) : Bool}
+) -> {T.heads.has(T.heads.drop.step(under, mm, hh, rest), qq)
+  == T.heads.has(SCon{mm, hh} <> tt, qq) : Bool}:
+  match under:
+    case True{}:
+      drop.under.keeps(T.str.eq(hh, qq), hh, pre, qq, rest, tt, {==}, eu, ee, ih)
+    case False{}:
+      Equal.cong(Bool, Bool, xx => T.heads.or(T.str.eq(hh, qq), xx),
+        T.heads.has(rest, qq), T.heads.has(tt, qq), ih)
+
+# the drop leaves a path outside the prefix as defined as it was
+def drop.keeps(
+  hs: List<&2, String>,
+  +pre: String,
+  +qq: String,
+  +ee: {String.starts_with(qq, pre) == False{} : Bool}
+) -> {T.heads.has(T.heads.drop(hs, pre), qq) == T.heads.has(hs, qq) : Bool}:
+  match hs:
+    case []:
+      {==}
+    case SCon{mm, +hh} <> +tt:
+      drop.step.keeps(String.starts_with(hh, pre), mm, hh, pre, qq,
+        T.heads.drop(tt, pre), tt, {==}, ee, drop.keeps(tt, pre, qq, ee))
+    case SNil{} <> tt:
+      drop.keeps(tt, pre, qq, ee)
+
+# a new element's tables are the old ones with those under the array dropped
+def aot.heads(
+  pp: String,
+  elems: List<&2, T.Val>,
+  name: String,
+  vs: List<&2, T.Val>,
+  stack: List<&2, T.Fr>,
+  bad: String,
+  +path: String,
+  heads: List<&2, String>
+) -> {Laws.end_heads(T.tree.leaf.aot.hit(T.KAots{pp, elems}, name, vs, stack, bad, path,
+  heads)) == T.heads.drop(heads, String.append(path, ".")) : List<&2, String>}:
+  rebuild.heads(stack, T.rows.repl(vs, name, T.VAots{path, T.VAot{path, []} <> elems}),
+    bad, T.heads.drop(heads, String.append(path, ".")))
+
+def Laws.new_element_forgets_tables_under_it(p, elems, name, vs, stack, bad, path, heads, rest):
+  Equal.trans(Bool,
+    T.heads.has(Laws.end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack,
+      bad, path, heads)), String.append(String.append(path, "."), rest)),
+    T.heads.has(T.heads.drop(heads, String.append(path, ".")),
+      String.append(String.append(path, "."), rest)),
+    False{},
+    Equal.cong(List<&2, String>, Bool,
+      ll => T.heads.has(ll, String.append(String.append(path, "."), rest)),
+      Laws.end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack, bad, path,
+        heads)),
+      T.heads.drop(heads, String.append(path, ".")),
+      aot.heads(p, elems, name, vs, stack, bad, path, heads)),
+    drop.gone(heads, String.append(path, "."), rest))
+
+def Laws.new_element_keeps_other_tables(p, elems, name, vs, stack, bad, path, heads, q, e):
+  Equal.trans(Bool,
+    T.heads.has(Laws.end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack,
+      bad, path, heads)), q),
+    T.heads.has(T.heads.drop(heads, String.append(path, ".")), q),
+    T.heads.has(heads, q),
+    Equal.cong(List<&2, String>, Bool, ll => T.heads.has(ll, q),
+      Laws.end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack, bad, path,
+        heads)),
+      T.heads.drop(heads, String.append(path, ".")),
+      aot.heads(p, elems, name, vs, stack, bad, path, heads)),
+    drop.keeps(heads, String.append(path, "."), q, e))
+
+# TOML-TEXT-1 and TOML-TEXT-2 for inline tables.
+
+# a pair whose name is not k is passed over by rows.look
+def look.skip(
+  +nn: String,
+  -vv: T.Val,
+  -rest: List<&2, T.Val>,
+  +kk: String,
+  ee: {String.eq(nn, kk) == False{} : Bool}
+) -> {T.rows.look(T.VPair{nn, vv} <> rest, kk) == T.rows.look(rest, kk) : T.Look}:
+  Equal.cong(Bool, T.Look, bb => T.look.step(bb, vv, _u => T.rows.look(rest, kk)),
+    T.str.eq(nn, kk), False{},
+    Equal.trans(Bool, T.str.eq(nn, kk), String.eq(nn, kk), False{},
+      str.eq.agree(nn, kk), ee))
+
+# rows.look misses when no pair in the rows is named k
+def look.misses(
+  rows: List<&2, T.Val>,
+  +kk: String,
+  +ee: {Laws.has_pair(rows, kk) == False{} : Bool}
+) -> {T.rows.look(rows, kk) == T.KMiss{} : T.Look}:
+  match rows:
+    case []:
+      {==}
+    case T.VPair{+nn, +vv} <> +tt:
+      Equal.trans(T.Look, T.rows.look(T.VPair{nn, vv} <> tt, kk), T.rows.look(tt, kk),
+        T.KMiss{},
+        look.skip(nn, vv, tt, kk,
+          Eq.or.false_left(String.eq(nn, kk), Laws.has_pair(tt, kk), ee)),
+        look.misses(tt, kk,
+          Eq.or.false_right(String.eq(nn, kk), Laws.has_pair(tt, kk), ee)))
+    case T.VStr{_a} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VSpan{_a, _b} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VInt{_a, _b} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VFlo{_a, _b} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VBool{_a} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VWhen{_a} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VArr{_a} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VInl{_a} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VHead{_a, _b} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VAot{_a, _b} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VAots{_a, _b} <> tt:
+      look.misses(tt, kk, ee)
+
+# the first key of an inline table makes a table there, and the key is in it
+def inl.first(
+  inl: List<&2, T.Val>,
+  +bb: String,
+  cc: String,
+  vv: T.Val,
+  ee: {Laws.has_pair(inl, bb) == False{} : Bool}
+) -> {Laws.end_rows(T.tree.walk([bb, cc], T.Tw{inl, T.JPut{vv}, [], "", "", [], True{}},
+  0)) == T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl
+  : List<&2, T.Val>}:
+  Equal.cong(T.Look, List<&2, T.Val>,
+    hh => Laws.end_rows(T.tree.leaf(cc, T.tree.sub.look(hh, bb, inl, T.JPut{vv}, [], "",
+      [], True{}, True{}))),
+    T.rows.look(inl, bb), T.KMiss{}, look.misses(inl, bb, ee))
+
+# the second key goes on in that table: bb finds it, and dd is not cc
+def inl.second(
+  inl: List<&2, T.Val>,
+  +bb: String,
+  +cc: String,
+  +dd: String,
+  vv: T.Val,
+  ww: T.Val,
+  ff: {String.eq(cc, dd) == False{} : Bool}
+) -> {Laws.end_bad(T.tree.walk([bb, dd], T.Tw{T.VPair{bb, T.VHead{T.tree.pre("", bb),
+  [T.VPair{cc, vv}]}} <> inl, T.JPut{ww}, [], "", "", [], True{}}, 0)) == "" : String}:
+  Equal.trans(String,
+    Laws.end_bad(T.tree.leaf(dd, T.tree.sub.look(T.look.step(T.str.eq(bb, bb),
+      T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}, _u => T.rows.look(inl, bb)), bb,
+      T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl, T.JPut{ww},
+      [], "", [], True{}, True{}))),
+    Laws.end_bad(T.tree.leaf(dd, T.tree.sub.look(T.KHead{T.tree.pre("", bb),
+      [T.VPair{cc, vv}]}, bb,
+      T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl, T.JPut{ww},
+      [], "", [], True{}, True{}))),
+    "",
+    Equal.cong(Bool, String,
+      xx => Laws.end_bad(T.tree.leaf(dd, T.tree.sub.look(T.look.step(xx,
+        T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}, _u => T.rows.look(inl, bb)), bb,
+        T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl, T.JPut{ww},
+        [], "", [], True{}, True{}))),
+      T.str.eq(bb, bb), True{}, str.eq.self(bb)),
+    Equal.cong(Bool, String,
+      xx => Laws.end_bad(T.tree.leaf.put(T.find.step(xx, vv, _u => T.rows.find([], dd)),
+        dd, [T.VPair{cc, vv}], ww,
+        [T.FrRep{bb, T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl,
+          T.tree.pre("", bb)}],
+        "", T.heads.define(T.JPut{ww}, T.tree.pre("", bb), []))),
+      T.str.eq(cc, dd), False{},
+      Equal.trans(Bool, T.str.eq(cc, dd), String.eq(cc, dd), False{},
+        str.eq.agree(cc, dd), ff)))
+
+def Laws.inline_dotted_keys_share_a_prefix(inl, b, c, d, v, w, e, f):
+  Equal.trans(String,
+    Laws.end_bad(T.tree.walk([b, d], T.Tw{Laws.end_rows(T.tree.walk([b, c],
+      T.Tw{inl, T.JPut{v}, [], "", "", [], True{}}, 0)), T.JPut{w}, [], "", "", [],
+      True{}}, 0)),
+    Laws.end_bad(T.tree.walk([b, d], T.Tw{T.VPair{b, T.VHead{T.tree.pre("", b),
+      [T.VPair{c, v}]}} <> inl, T.JPut{w}, [], "", "", [], True{}}, 0)),
+    "",
+    Equal.cong(List<&2, T.Val>, String,
+      rr => Laws.end_bad(T.tree.walk([b, d], T.Tw{rr, T.JPut{w}, [], "", "", [], True{}},
+        0)),
+      Laws.end_rows(T.tree.walk([b, c], T.Tw{inl, T.JPut{v}, [], "", "", [], True{}}, 0)),
+      T.VPair{b, T.VHead{T.tree.pre("", b), [T.VPair{c, v}]}} <> inl,
+      inl.first(inl, b, c, v, e)),
+    inl.second(inl, b, c, d, v, w, f))
+
+# by induction on the rows, each case as inl.seal takes it
+def Laws.closed_inline_table_holds_no_open_table(rows):
+  match rows:
+    case []:
+      {==}
+    case T.VPair{_n, T.VHead{_p, _r}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VStr{_a}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VSpan{_a, _b}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VInt{_a, _b}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VFlo{_a, _b}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VBool{_a}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VWhen{_a}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VArr{_a}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VInl{_a}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VAot{_a, _b}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VAots{_a, _b}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VPair{_a, _b}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VStr{_a} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VSpan{_a, _b} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VInt{_a, _b} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VFlo{_a, _b} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VBool{_a} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VWhen{_a} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VArr{_a} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VInl{_a} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VHead{_a, _b} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VAot{_a, _b} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VAots{_a, _b} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+
+def Laws.inline_table_refuses_keys(_name, _vs, _job, _stack, _pre, _heads, _inl, _mark):
+  {==}
+
+
+# TOML-TEXT-1 and TOML-KEY-3: the header scanner. Each character computes to
+# its step, and a refusal comes to the failed state through err.sinks.
+
+def Laws.header_quote_after_bare_refused(
+  bad,
+  rows,
+  heads,
+  here,
+  parts,
+  c,
+  cs,
+  back,
+  qkind,
+  stack,
+  uni,
+  left,
+  arrtab,
+  lit,
+  t
+):
+  match lit:
+    case True{}:
+      err.sinks(T.St{bad, rows, heads, here, parts, c <> cs, T.LHead{}, back, qkind,
+        stack, T.HNone{}, uni, left, arrtab, False{}}, 'i', "nvalid header", t)
+    case False{}:
+      err.sinks(T.St{bad, rows, heads, here, parts, c <> cs, T.LHead{}, back, qkind,
+        stack, T.HNone{}, uni, left, arrtab, False{}}, 'i', "nvalid header", t)
+
+def Laws.header_quote_at_start_opens_segment(
+  _bad,
+  _rows,
+  _heads,
+  _here,
+  _back,
+  _qkind,
+  _stack,
+  _uni,
+  _left,
+  _arrtab,
+  lit
+):
+  match lit:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def Laws.header_blank_then_bracket_refused(
+  bad,
+  rows,
+  heads,
+  here,
+  parts,
+  back,
+  qkind,
+  stack,
+  uni,
+  left,
+  arrtab,
+  tab,
+  t
+):
+  match tab:
+    case True{}:
+      err.sinks(T.St{bad, rows, heads, here, parts, [], T.LHeadDot{}, back, qkind, stack,
+        T.HNone{}, uni, left, arrtab, False{}}, 'i', "nvalid header", t)
+    case False{}:
+      err.sinks(T.St{bad, rows, heads, here, parts, [], T.LHeadDot{}, back, qkind, stack,
+        T.HNone{}, uni, left, arrtab, False{}}, 'i', "nvalid header", t)
+
+def Laws.header_blank_waits_for_segment(
+  _bad,
+  _rows,
+  _heads,
+  _here,
+  _parts,
+  _back,
+  _qkind,
+  _stack,
+  _uni,
+  _left,
+  _arrtab,
+  tab
+):
+  match tab:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
