@@ -19,6 +19,14 @@ def style() -> String:
 def laws() -> String:
   "warn"
 
-# a closed equality is a computed document, which is what these laws are
+# a law with no binder
 def closed() -> String:
-  "off"
+  "error"
+
+# an @unsafe def a law file reaches
+def unsafe() -> String:
+  "error"
+
+# SPEC.md's rows and the laws' tags agree
+def trace() -> String:
+  "error"

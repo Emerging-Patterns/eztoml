@@ -199,3 +199,18 @@ Invalid TOML that `parse` accepts. All confirmed:
 ### Requirements with no corresponding code
 
 - The README's "Compliance" says `nix flake check` proves the listed productions; what it runs are the closed laws above.
+
+## Rollout progress
+
+One row per step of the RFC's Rollout, kept current in every change.
+
+| Step | State | What landed |
+| :---- | :---- | :---- |
+| Docs | done | README: `mkdir -p bin` before the build; the import line names v0.2.2's hash, `0x60bccc8e…` |
+| Lint first | done | bolt v1.7.0 as a `[tools.bolt]` pin in ez.toml and ez.lock.toml, built by `ez.mkLint { src = self; }`; the ez flake input at `df6d616`; the bolt flake input removed; 578 S004 and 109 S003 fixed; bench and demo marked `noqa: L001`; `laws` at warn. Byte-identical parser output before and after on 6,784 documents |
+| Layout | done | `main.bend` at the root, whole (Bend does not re-export an imported type); LAWS.bend and PROOF.bend beside it; the lemmas in `src/eq.bend`; ez.toml's entry is `main.bend` |
+| One | in progress | SPEC.md; the 16 closed laws and 16 definitional laws deleted with their helpers; the five kept laws tagged (`get_first` TOML-GET-1, `bare_needs_a_char` TOML-KEY-1, `key_is_bare_when_it_can` and `key_is_quoted_when_it_must` TOML-KEY-2, `string_of` TOML-READ-1); `closed`, `unsafe` and `trace` at error; README's Compliance section replaced by a pointer to SPEC.md. The gate now takes 0.4 s instead of 35 s. Still to land in this step: TOML-KEY-1, TOML-GET-1, TOML-GET-2 and TOML-READ-1 proved |
+| Fixes | not started | |
+| Two | not started | |
+| Three | not started | |
+| Four | not started | |
