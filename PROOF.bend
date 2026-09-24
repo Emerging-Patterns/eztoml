@@ -5520,3 +5520,94 @@ def Laws.closed_inline_table_holds_no_open_table(rows):
 
 def Laws.inline_table_refuses_keys(_name, _vs, _job, _stack, _pre, _heads, _inl, _mark):
   {==}
+
+
+# TOML-TEXT-1 and TOML-KEY-3: the header scanner. Each character computes to
+# its step, and a refusal comes to the failed state through err.sinks.
+
+def Laws.header_quote_after_bare_refused(
+  bad,
+  rows,
+  heads,
+  here,
+  parts,
+  c,
+  cs,
+  back,
+  qkind,
+  stack,
+  uni,
+  left,
+  arrtab,
+  lit,
+  t
+):
+  match lit:
+    case True{}:
+      err.sinks(T.St{bad, rows, heads, here, parts, c <> cs, T.LHead{}, back, qkind,
+        stack, T.HNone{}, uni, left, arrtab, False{}}, 'i', "nvalid header", t)
+    case False{}:
+      err.sinks(T.St{bad, rows, heads, here, parts, c <> cs, T.LHead{}, back, qkind,
+        stack, T.HNone{}, uni, left, arrtab, False{}}, 'i', "nvalid header", t)
+
+def Laws.header_quote_at_start_opens_segment(
+  _bad,
+  _rows,
+  _heads,
+  _here,
+  _back,
+  _qkind,
+  _stack,
+  _uni,
+  _left,
+  _arrtab,
+  lit
+):
+  match lit:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def Laws.header_blank_then_bracket_refused(
+  bad,
+  rows,
+  heads,
+  here,
+  parts,
+  back,
+  qkind,
+  stack,
+  uni,
+  left,
+  arrtab,
+  tab,
+  t
+):
+  match tab:
+    case True{}:
+      err.sinks(T.St{bad, rows, heads, here, parts, [], T.LHeadDot{}, back, qkind, stack,
+        T.HNone{}, uni, left, arrtab, False{}}, 'i', "nvalid header", t)
+    case False{}:
+      err.sinks(T.St{bad, rows, heads, here, parts, [], T.LHeadDot{}, back, qkind, stack,
+        T.HNone{}, uni, left, arrtab, False{}}, 'i', "nvalid header", t)
+
+def Laws.header_blank_waits_for_segment(
+  _bad,
+  _rows,
+  _heads,
+  _here,
+  _parts,
+  _back,
+  _qkind,
+  _stack,
+  _uni,
+  _left,
+  _arrtab,
+  tab
+):
+  match tab:
+    case True{}:
+      {==}
+    case False{}:
+      {==}

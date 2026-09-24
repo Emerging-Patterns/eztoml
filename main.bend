@@ -3816,11 +3816,12 @@ def lex.head.ch(st: St, cc: Char) -> St:
     St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
       arrtab, lead}, cc)
 
-# an empty buffer was already between segments
+# whitespace with no segment open still needs a segment after it, so a second
+# bracket there is refused: `[[` is two brackets with nothing between
 def lex.head.gap.go(empty: Bool, st: St) -> St:
   match empty:
     case True{}:
-      st
+      st.lex(st, LHeadDot{})
     case False{}:
       seg.push(st, LHeadGap{})
 
@@ -3880,11 +3881,29 @@ def lex.head.hash(hash: Bool, st: St) -> St:
     case False{}:
       st.err(st, "invalid header")
 
+# a quote opens a segment only where none has started. After a bare character
+# it would glue two keys into one segment, which toml.abnf does not allow
+def lex.head.quote.go(fresh: Bool, st: St, kind: QKind) -> St:
+  match fresh:
+    case True{}:
+      lex.qkey(st, kind, LHeadQ{})
+    case False{}:
+      st.err(st, "invalid header")
+
+# a quoted header segment, right after the bracket
+def lex.head.quote(st: St, kind: QKind) -> St:
+  St{bad, rows, heads, here, +parts, +buf, lx, back, qkind, stack, hold, uni, left,
+    arrtab, lead} = st
+  lex.head.quote.go(Bool.and(List.is_empty(&2, Char, buf),
+    List.is_empty(&2, String, parts)),
+    St{bad, rows, heads, here, parts, buf, lx, back, qkind, stack, hold, uni, left,
+      arrtab, lead}, kind)
+
 # a literal header segment or a comment
 def lex.head.lit(lit: Bool, hash: Bool, st: St) -> St:
   match lit:
     case True{}:
-      lex.qkey(st, QLit{}, LHeadQ{})
+      lex.head.quote(st, QLit{})
     case False{}:
       lex.head.hash(hash, st)
 
@@ -3892,7 +3911,7 @@ def lex.head.lit(lit: Bool, hash: Bool, st: St) -> St:
 def lex.head.q(qq: Bool, lit: Bool, hash: Bool, st: St, _c: Char) -> St:
   match qq:
     case True{}:
-      lex.qkey(st, QBasic{}, LHeadQ{})
+      lex.head.quote(st, QBasic{})
     case False{}:
       lex.head.lit(lit, hash, st)
 

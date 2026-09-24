@@ -1442,3 +1442,121 @@ law inline_table_refuses_keys:
   for mark: Bool
   {String.is_empty(tw_bad(T.tree.sub.look(T.KInl{}, name, vs, job, stack, pre,
     heads, inl, mark))) == False{} : Bool}
+
+
+# The header scanner. Each law below holds from every scanner state inside a
+# header with the buffer it names, whatever the other fields hold. A refusal
+# fails the document whatever follows (fail_stays).
+
+# a quote: a literal one or a basic one
+def quote_char(lit: Bool) -> Char:
+  match lit:
+    case True{}:
+      '\''
+    case False{}:
+      '"'
+
+# the kind of key a quote starts
+def quote_kind(lit: Bool) -> T.QKind:
+  match lit:
+    case True{}:
+      T.QLit{}
+    case False{}:
+      T.QBasic{}
+
+# a space or a tab
+def blank_char(tab: Bool) -> Char:
+  match tab:
+    case True{}:
+      '\t'
+    case False{}:
+      ' '
+
+# LAW: in a header, a quote right after a bare character fails the document,
+# whatever follows: a segment is one bare key or one quoted key, so no bare
+# part of a header's name is dropped
+# TOML-TEXT-1
+# TOML-KEY-3
+law header_quote_after_bare_refused:
+  for bad: String
+  for rows: List<&2, T.Val>
+  for heads: List<&2, String>
+  for here: List<&2, String>
+  for parts: List<&2, String>
+  for c: Char
+  for cs: List<&2, Char>
+  for back: T.Lex
+  for qkind: T.QKind
+  for stack: List<&2, T.Ctx>
+  for uni: U32
+  for left: U32
+  for arrtab: Bool
+  for lit: Bool
+  for +t: String
+  {String.is_empty(T.bad(T.doc.read(SCon{quote_char(lit), t}, T.MScan{T.St{bad, rows,
+    heads, here, parts, c <> cs, T.LHead{}, back, qkind, stack, T.HNone{}, uni, left,
+    arrtab, False{}}}))) == False{} : Bool}
+
+# LAW: a quote right after a header's opening bracket starts a quoted segment
+# TOML-TEXT-1
+# TOML-KEY-3
+law header_quote_at_start_opens_segment:
+  for bad: String
+  for rows: List<&2, T.Val>
+  for heads: List<&2, String>
+  for here: List<&2, String>
+  for back: T.Lex
+  for qkind: T.QKind
+  for stack: List<&2, T.Ctx>
+  for uni: U32
+  for left: U32
+  for arrtab: Bool
+  for lit: Bool
+  {T.doc.scan(T.St{bad, rows, heads, here, [], [], T.LHead{}, back, qkind, stack,
+    T.HNone{}, uni, left, arrtab, False{}}, quote_char(lit))
+    == T.MScan{T.St{bad, rows, heads, here, [], [], T.LHeadQ{}, back, quote_kind(lit),
+    stack, T.HNone{}, uni, left, arrtab, False{}}} : T.Mode}
+
+# LAW: in a header, blank space with no segment open and then a bracket fail
+# the document, whatever follows: the two brackets of `[[` are adjacent, so
+# `[ [` does not open an array of tables
+# TOML-TEXT-1
+law header_blank_then_bracket_refused:
+  for bad: String
+  for rows: List<&2, T.Val>
+  for heads: List<&2, String>
+  for here: List<&2, String>
+  for parts: List<&2, String>
+  for back: T.Lex
+  for qkind: T.QKind
+  for stack: List<&2, T.Ctx>
+  for uni: U32
+  for left: U32
+  for arrtab: Bool
+  for tab: Bool
+  for +t: String
+  {String.is_empty(T.bad(T.doc.read(SCon{blank_char(tab), SCon{'[', t}},
+    T.MScan{T.St{bad, rows, heads, here, parts, [], T.LHead{}, back, qkind, stack,
+    T.HNone{}, uni, left, arrtab, False{}}}))) == False{} : Bool}
+
+# LAW: in a header, blank space with no segment open leaves the scanner
+# waiting for a segment, as it does after a dot: a bare or quoted key may
+# follow
+# TOML-TEXT-1
+law header_blank_waits_for_segment:
+  for bad: String
+  for rows: List<&2, T.Val>
+  for heads: List<&2, String>
+  for here: List<&2, String>
+  for parts: List<&2, String>
+  for back: T.Lex
+  for qkind: T.QKind
+  for stack: List<&2, T.Ctx>
+  for uni: U32
+  for left: U32
+  for arrtab: Bool
+  for tab: Bool
+  {T.doc.scan(T.St{bad, rows, heads, here, parts, [], T.LHead{}, back, qkind, stack,
+    T.HNone{}, uni, left, arrtab, False{}}, blank_char(tab))
+    == T.MScan{T.St{bad, rows, heads, here, parts, [], T.LHeadDot{}, back, qkind,
+    stack, T.HNone{}, uni, left, arrtab, False{}}} : T.Mode}
