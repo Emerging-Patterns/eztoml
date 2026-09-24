@@ -1560,3 +1560,13 @@ law header_blank_waits_for_segment:
     T.HNone{}, uni, left, arrtab, False{}}, blank_char(tab))
     == T.MScan{T.St{bad, rows, heads, here, parts, [], T.LHeadDot{}, back, qkind,
     stack, T.HNone{}, uni, left, arrtab, False{}}} : T.Mode}
+# TOML-KEY-2's read-back. key writes a name bare, or as a basic string; the
+# scanner reads either back as the name's characters.
+
+# LAW: a key reads back as its name: for every string s, key(s) followed by
+# " = 1" parses with no error to one pair, named s, holding the integer 1
+# TOML-KEY-2
+law key_reads_back:
+  for +s: String
+  {T.parse(String.append(T.key(s), " = 1"))
+    == T.Doc{"", [T.VPair{s, T.VInt{T.Plus{}, "1"}}]} : T.Doc}
