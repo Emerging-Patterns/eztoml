@@ -484,3 +484,232 @@ def Laws.flag_of_other(v, e):
       {==}
     case T.VPair{_a, _b}:
       {==}
+
+# a scan refused with this reason
+def num.dead(why: String) -> T.Num:
+  T.Num{T.NBad{}, T.Plus{}, 10, [], False{}, False{}, why}
+
+# the claim that a refused scan stays as it is
+def num.Stays(rest: List<&2, Char>, +why: String) -> Type:
+  {T.num.go(rest, num.dead(why)) == num.dead(why) : T.Num}
+
+# a refused scan stays refused whatever follows, by induction on what follows
+def num.stays(rest: List<&2, Char>, +why: String) -> num.Stays(rest, why):
+  match rest:
+    case []:
+      {==}
+    case _h <> tt:
+      num.stays(tt, why)
+
+# each pair of signs is refused at its second sign, and stays refused
+def Laws.num_two_signs(s1, s2, rest):
+  match s1 s2:
+    case T.Plus{} T.Plus{}:
+      Equal.cong(T.Num, Bool,
+        xx => Laws.refused(T.num.fin(xx, '+' <> '+' <> rest)),
+        T.num.go(rest, num.dead("invalid number")), num.dead("invalid number"),
+        num.stays(rest, "invalid number"))
+    case T.Plus{} T.Minus{}:
+      Equal.cong(T.Num, Bool,
+        xx => Laws.refused(T.num.fin(xx, '+' <> '-' <> rest)),
+        T.num.go(rest, num.dead("invalid number")), num.dead("invalid number"),
+        num.stays(rest, "invalid number"))
+    case T.Minus{} T.Plus{}:
+      Equal.cong(T.Num, Bool,
+        xx => Laws.refused(T.num.fin(xx, '-' <> '+' <> rest)),
+        T.num.go(rest, num.dead("invalid number")), num.dead("invalid number"),
+        num.stays(rest, "invalid number"))
+    case T.Minus{} T.Minus{}:
+      Equal.cong(T.Num, Bool,
+        xx => Laws.refused(T.num.fin(xx, '-' <> '-' <> rest)),
+        T.num.go(rest, num.dead("invalid number")), num.dead("invalid number"),
+        num.stays(rest, "invalid number"))
+
+# the underscore after the zero is refused, and the scan stays refused
+def Laws.num_zero_underscore(rest):
+  Equal.cong(T.Num, Bool,
+    xx => Laws.refused(T.num.fin(xx, '0' <> '_' <> rest)),
+    T.num.go(rest, num.dead("invalid number")), num.dead("invalid number"),
+    num.stays(rest, "invalid number"))
+
+# the same after either sign
+def Laws.num_signed_zero_underscore(sg, rest):
+  match sg:
+    case T.Plus{}:
+      Equal.cong(T.Num, Bool,
+        xx => Laws.refused(T.num.fin(xx, '+' <> '0' <> '_' <> rest)),
+        T.num.go(rest, num.dead("invalid number")), num.dead("invalid number"),
+        num.stays(rest, "invalid number"))
+    case T.Minus{}:
+      Equal.cong(T.Num, Bool,
+        xx => Laws.refused(T.num.fin(xx, '-' <> '0' <> '_' <> rest)),
+        T.num.go(rest, num.dead("invalid number")), num.dead("invalid number"),
+        num.stays(rest, "invalid number"))
+
+# the character is not a sign, so the second-sign check lets it through
+def Laws.num_one_sign(sg, cc, e):
+  match sg:
+    case T.Plus{}:
+      %e : {T.num.after.sign.go(_, T.Plus{}, cc)
+        == T.num.lead(T.Num{T.NLead{}, T.Plus{}, 10, [], False{}, False{}, ""}, cc) : T.Num}
+      {==}
+    case T.Minus{}:
+      %e : {T.num.after.sign.go(_, T.Minus{}, cc)
+        == T.num.lead(T.Num{T.NLead{}, T.Minus{}, 10, [], False{}, False{}, ""}, cc) : T.Num}
+      {==}
+
+# a comparison that has already found a difference answers False
+def str.eq.off(aa: String, bb: String) -> {T.str.eq.step(aa, bb, False{}) == False{} : Bool}:
+  match aa:
+    case SNil{}:
+      match bb:
+        case SNil{}:
+          {==}
+        case SCon{_h, _t}:
+          {==}
+    case SCon{_x, _xt}:
+      match bb:
+        case SNil{}:
+          {==}
+        case SCon{_y, _yt}:
+          {==}
+
+# and the same once the characters compared last were told apart
+def str.eq.off2(
+  aa: String,
+  bb: String,
+  ff: Bool,
+  ef: {False{} == ff : Bool}
+) -> {T.str.eq.step(aa, bb, ff) == False{} : Bool}:
+  %ef : {T.str.eq.step(aa, bb, _) == False{} : Bool}
+  str.eq.off(aa, bb)
+
+# the claim that a word holds no value
+def word.No(gg: T.Got) -> Type:
+  {Laws.refused(gg) == True{} : Bool}
+
+# a word neither route reads is refused, whichever route it takes
+def route.no(
+  bb: Bool,
+  +cs: List<&2, Char>,
+  et: word.No(T.word.from.when(T.when.read(cs))),
+  en: word.No(T.word.num(cs))
+) -> word.No(T.word.route.date(bb, cs)):
+  match bb:
+    case True{}:
+      et
+    case False{}:
+      en
+
+# whether a word is routed to the datetime scan
+def word.date(+cs: List<&2, Char>) -> Bool:
+  T.word.or(T.word.colon(cs), T.word.dash(cs, True{}))
+
+# a word after a minus, read up to its comparison with -inf
+def minus.At(aa: Bool, +c2: Char, +rest: List<&2, Char>) -> Type:
+  word.No(T.word.route(T.word.spec.inf3(aa, String.from_list('-' <> c2 <> rest)),
+    word.date('-' <> c2 <> rest), '-' <> c2 <> rest))
+
+# a word after a minus, read up to its comparison with -nan
+def minus.Nan(aa: Bool, +c2: Char, +rest: List<&2, Char>) -> Type:
+  word.No(T.word.route(T.word.spec.nan3(aa), word.date('-' <> c2 <> rest), '-' <> c2 <> rest))
+
+# a word that starts with a minus and a character other than i and n is no
+# special, since it differs from -inf and -nan at that character; it then
+# reaches both routes, and the datetime scan wants a digit first
+def minus.no(
+  +c2: Char,
+  +rest: List<&2, Char>,
+  ei: {False{} == Char.is_eq(c2, 'i') : Bool},
+  en: {False{} == Char.is_eq(c2, 'n') : Bool},
+  nu: word.No(T.word.num('-' <> c2 <> rest))
+) -> minus.At(T.str.eq.step(String.from_list(rest), "nf", Char.is_eq(c2, 'i')), c2, rest):
+  Equal.trans(Bool,
+    Laws.refused(T.word.route(T.word.spec.inf3(
+      T.str.eq.step(String.from_list(rest), "nf", Char.is_eq(c2, 'i')),
+      String.from_list('-' <> c2 <> rest)), word.date('-' <> c2 <> rest), '-' <> c2 <> rest)),
+    Laws.refused(T.word.route(T.word.spec.inf3(False{}, String.from_list('-' <> c2 <> rest)),
+      word.date('-' <> c2 <> rest), '-' <> c2 <> rest)),
+    True{},
+    Equal.cong(Bool, Bool,
+      xx => Laws.refused(T.word.route(T.word.spec.inf3(xx, String.from_list('-' <> c2 <> rest)),
+        word.date('-' <> c2 <> rest), '-' <> c2 <> rest)),
+      T.str.eq.step(String.from_list(rest), "nf", Char.is_eq(c2, 'i')), False{},
+      str.eq.off2(String.from_list(rest), "nf", Char.is_eq(c2, 'i'), ei)),
+    Equal.trans(Bool,
+      Laws.refused(T.word.route(T.word.spec.nan3(
+        T.str.eq.step(String.from_list(rest), "an", Char.is_eq(c2, 'n'))),
+        word.date('-' <> c2 <> rest), '-' <> c2 <> rest)),
+      Laws.refused(T.word.route(T.word.spec.nan3(False{}), word.date('-' <> c2 <> rest), '-' <> c2 <> rest)),
+      True{},
+      Equal.cong(Bool, Bool,
+        xx => Laws.refused(T.word.route(T.word.spec.nan3(xx), word.date('-' <> c2 <> rest), '-' <> c2 <> rest)),
+        T.str.eq.step(String.from_list(rest), "an", Char.is_eq(c2, 'n')), False{},
+        str.eq.off2(String.from_list(rest), "an", Char.is_eq(c2, 'n'), en)),
+      route.no(T.word.as_date(word.date('-' <> c2 <> rest), T.word.ee('-' <> c2 <> rest)),
+        '-' <> c2 <> rest, {==}, nu)))
+
+# a word after a plus, read up to its comparison with +inf
+def plus.At(aa: Bool, +c2: Char, +rest: List<&2, Char>) -> Type:
+  word.No(T.word.route(T.word.spec.inf2(aa, False{}, String.from_list('+' <> c2 <> rest)),
+    word.date('+' <> c2 <> rest), '+' <> c2 <> rest))
+
+# a word after a plus, and a character other than i and n: the same as after
+# a minus, with +inf and +nan
+def plus.no(
+  +c2: Char,
+  +rest: List<&2, Char>,
+  ei: {False{} == Char.is_eq(c2, 'i') : Bool},
+  en: {False{} == Char.is_eq(c2, 'n') : Bool},
+  nu: word.No(T.word.num('+' <> c2 <> rest))
+) -> plus.At(T.str.eq.step(String.from_list(rest), "nf", Char.is_eq(c2, 'i')), c2, rest):
+  Equal.trans(Bool,
+    Laws.refused(T.word.route(T.word.spec.inf2(
+      T.str.eq.step(String.from_list(rest), "nf", Char.is_eq(c2, 'i')), False{},
+      String.from_list('+' <> c2 <> rest)), word.date('+' <> c2 <> rest), '+' <> c2 <> rest)),
+    Laws.refused(T.word.route(T.word.spec.inf2(False{}, False{}, String.from_list('+' <> c2 <> rest)),
+      word.date('+' <> c2 <> rest), '+' <> c2 <> rest)),
+    True{},
+    Equal.cong(Bool, Bool,
+      xx => Laws.refused(T.word.route(T.word.spec.inf2(xx, False{}, String.from_list('+' <> c2 <> rest)),
+        word.date('+' <> c2 <> rest), '+' <> c2 <> rest)),
+      T.str.eq.step(String.from_list(rest), "nf", Char.is_eq(c2, 'i')), False{},
+      str.eq.off2(String.from_list(rest), "nf", Char.is_eq(c2, 'i'), ei)),
+    Equal.trans(Bool,
+      Laws.refused(T.word.route(T.word.spec.nan2(
+        T.str.eq.step(String.from_list(rest), "an", Char.is_eq(c2, 'n')), False{}),
+        word.date('+' <> c2 <> rest), '+' <> c2 <> rest)),
+      Laws.refused(T.word.route(T.word.spec.nan2(False{}, False{}), word.date('+' <> c2 <> rest), '+' <> c2 <> rest)),
+      True{},
+      Equal.cong(Bool, Bool,
+        xx => Laws.refused(T.word.route(T.word.spec.nan2(xx, False{}),
+          word.date('+' <> c2 <> rest), '+' <> c2 <> rest)),
+        T.str.eq.step(String.from_list(rest), "an", Char.is_eq(c2, 'n')), False{},
+        str.eq.off2(String.from_list(rest), "an", Char.is_eq(c2, 'n'), en)),
+      route.no(T.word.as_date(word.date('+' <> c2 <> rest), T.word.ee('+' <> c2 <> rest)),
+        '+' <> c2 <> rest, {==}, nu)))
+
+# each pair of signs: no special, and both routes refuse it
+def Laws.word_two_signs(s1, s2, rest):
+  match s1 s2:
+    case T.Plus{} T.Plus{}:
+      plus.no('+', rest, {==}, {==}, Laws.num_two_signs(T.Plus{}, T.Plus{}, rest))
+    case T.Plus{} T.Minus{}:
+      plus.no('-', rest, {==}, {==}, Laws.num_two_signs(T.Plus{}, T.Minus{}, rest))
+    case T.Minus{} T.Plus{}:
+      minus.no('+', rest, {==}, {==}, Laws.num_two_signs(T.Minus{}, T.Plus{}, rest))
+    case T.Minus{} T.Minus{}:
+      minus.no('-', rest, {==}, {==}, Laws.num_two_signs(T.Minus{}, T.Minus{}, rest))
+
+# a word that starts with a digit is no special, and both routes refuse it
+def Laws.word_zero_underscore(rest):
+  route.no(T.word.as_date(word.date('0' <> '_' <> rest), T.word.ee('0' <> '_' <> rest)),
+    '0' <> '_' <> rest, {==}, Laws.num_zero_underscore(rest))
+
+# after either sign, as for two signs
+def Laws.word_signed_zero_underscore(sg, rest):
+  match sg:
+    case T.Plus{}:
+      plus.no('0', '_' <> rest, {==}, {==}, Laws.num_signed_zero_underscore(T.Plus{}, rest))
+    case T.Minus{}:
+      minus.no('0', '_' <> rest, {==}, {==}, Laws.num_signed_zero_underscore(T.Minus{}, rest))

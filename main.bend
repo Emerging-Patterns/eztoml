@@ -78,6 +78,7 @@ type WhenOut is Data:
 # a decimal numeral being built, least-significant digit first
 type NK is Data:
   NLead{}
+  NSign{}
   NZero{}
   NDig{}
   NBase{}
@@ -1236,7 +1237,7 @@ def num.bad(_st: Num, why: String) -> Num:
 
 # set the sign and wait for a digit
 def num.sign(_st: Num, sign: Sign) -> Num:
-  Num{NLead{}, sign, 10, [], False{}, False{}, ""}
+  Num{NSign{}, sign, 10, [], False{}, False{}, ""}
 
 # a digit that fits the base
 def num.digit.ok(ok: Bool, +cc: Char, nk: NK, sign: Sign, +base: U32, ds: List<&2, U32>) -> Num:
@@ -1341,26 +1342,27 @@ def num.lead(st: Num, +cc: Char) -> Num:
   num.lead.go(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'), Char.is_eq(cc, '0'),
     Char.is_digit(cc), st, cc)
 
-# the leading zero becomes a decimal digit, with an underscore open
-def num.zero.dig(st: Num) -> Num:
-  Num{_nk, sign, _b, _ds, _us, _saw, _why} = st
-  Num{NDig{}, sign, 10, dec.go([], 10, 0), True{}, True{}, ""}
-
-# 0_1 keeps the zero and requires another digit
-def num.zero.us(us: Bool, st: Num) -> Num:
-  match us:
+# a second sign is refused; any other character is read as the first one of
+# an unsigned numeral, with the sign kept
+def num.after.sign.go(twice: Bool, sign: Sign, +cc: Char) -> Num:
+  match twice:
     case True{}:
-      num.zero.dig(st)
+      num.bad(num.start(), "invalid number")
     case False{}:
-      num.bad(st, "invalid number")
+      num.lead(Num{NLead{}, sign, 10, [], False{}, False{}, ""}, cc)
 
-# a capital exponent, or an underscore after the leading zero
-def num.zero.exp2(ee: Bool, st: Num, +cc: Char) -> Num:
+# the character after a sign
+def num.after.sign(st: Num, +cc: Char) -> Num:
+  num.after.sign.go(Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')), num.sign.of(st), cc)
+
+# a capital exponent; any other character is refused, since a digit or an
+# underscore after a leading zero (`01`, `0_1`) would hide it
+def num.zero.exp2(ee: Bool, st: Num, _c: Char) -> Num:
   match ee:
     case True{}:
       num.exp(st)
     case False{}:
-      num.zero.us(Char.is_eq(cc, '_'), st)
+      num.bad(st, "invalid number")
 
 # an exponent after zero, or a rejected extra digit
 def num.zero.exp(eee: Bool, ee: Bool, st: Num, +cc: Char) -> Num:
@@ -1559,6 +1561,8 @@ def num.on(nk: NK, st: Num, +cc: Char) -> Num:
   match nk:
     case NLead{}:
       num.lead(st, cc)
+    case NSign{}:
+      num.after.sign(st, cc)
     case NZero{}:
       num.zero(st, cc)
     case NDig{}:
@@ -1672,6 +1676,8 @@ def num.fin.nk(nk: NK, sign: Sign, ds: List<&2, U32>, saw: Bool, why: String, cs
     case NBad{}:
       GotBad{why}
     case NLead{}:
+      GotBad{"invalid number"}
+    case NSign{}:
       GotBad{"invalid number"}
     case NZero{}:
       GotVal{VInt{sign, "0"}}

@@ -291,3 +291,91 @@ law flag_of_other:
   for v: T.Val
   for e: {is_bool(v) == False{} : Bool}
   {T.flag(v) == False{} : Bool}
+
+# The numeral scan (I6, R-I6). toml.abnf: `dec-int = [ minus / plus ]
+# unsigned-dec-int`, `unsigned-dec-int = DIGIT / digit1-9 1*( DIGIT /
+# underscore DIGIT )`, and `float-int-part = dec-int`: one sign at most, and
+# no leading zero but a lone 0, so no `_` after it.
+
+# the character a sign is written with
+def mark(sg: T.Sign) -> Char:
+  match sg:
+    case T.Plus{}:
+      '+'
+    case T.Minus{}:
+      '-'
+
+# a scan result that holds no value
+def refused(gg: T.Got) -> Bool:
+  match gg:
+    case T.GotVal{_val}:
+      False{}
+    case T.GotBad{_why}:
+      True{}
+
+# a sign character
+def is_sign(+cc: Char) -> Bool:
+  Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'))
+
+# LAW: a numeral that starts with two signs is refused, whatever follows
+# TOML-NUM-1
+# TOML-NUM-2
+law num_two_signs:
+  for s1: T.Sign
+  for s2: T.Sign
+  for +rest: List<&2, Char>
+  {refused(T.word.num(mark(s1) <> mark(s2) <> rest)) == True{} : Bool}
+
+# LAW: a numeral that starts with a zero and an underscore is refused,
+# whatever follows: the underscore would hide a leading zero
+# TOML-NUM-1
+# TOML-NUM-2
+law num_zero_underscore:
+  for +rest: List<&2, Char>
+  {refused(T.word.num('0' <> '_' <> rest)) == True{} : Bool}
+
+# LAW: a signed numeral that starts with a zero and an underscore is refused,
+# whatever follows
+# TOML-NUM-1
+# TOML-NUM-2
+law num_signed_zero_underscore:
+  for sg: T.Sign
+  for +rest: List<&2, Char>
+  {refused(T.word.num(mark(sg) <> '0' <> '_' <> rest)) == True{} : Bool}
+
+# LAW: after one sign, a character that is not a sign is read as the first
+# character of an unsigned numeral, and the sign is kept
+# TOML-NUM-1
+# TOML-NUM-2
+law num_one_sign:
+  for +sg: T.Sign
+  for +cc: Char
+  for e: {False{} == is_sign(cc) : Bool}
+  {T.num.step(T.num.step(T.num.start(), mark(sg)), cc)
+    == T.num.lead(T.Num{T.NLead{}, sg, 10, [], False{}, False{}, ""}, cc) : T.Num}
+
+# LAW: a bare word that starts with two signs holds no value, whatever
+# follows: it is neither a special, a datetime nor a numeral
+# TOML-NUM-1
+# TOML-NUM-2
+law word_two_signs:
+  for s1: T.Sign
+  for s2: T.Sign
+  for +rest: List<&2, Char>
+  {refused(T.word.val(mark(s1) <> mark(s2) <> rest)) == True{} : Bool}
+
+# LAW: a bare word that starts with a zero and an underscore, with or without
+# a sign, holds no value, whatever follows
+# TOML-NUM-1
+# TOML-NUM-2
+law word_zero_underscore:
+  for +rest: List<&2, Char>
+  {refused(T.word.val('0' <> '_' <> rest)) == True{} : Bool}
+
+# LAW: the same after a sign
+# TOML-NUM-1
+# TOML-NUM-2
+law word_signed_zero_underscore:
+  for sg: T.Sign
+  for +rest: List<&2, Char>
+  {refused(T.word.val(mark(sg) <> '0' <> '_' <> rest)) == True{} : Bool}
