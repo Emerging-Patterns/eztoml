@@ -5343,3 +5343,180 @@ def Laws.new_element_keeps_other_tables(p, elems, name, vs, stack, bad, path, he
       T.heads.drop(heads, String.append(path, ".")),
       aot.heads(p, elems, name, vs, stack, bad, path, heads)),
     drop.keeps(heads, String.append(path, "."), q, e))
+
+# TOML-TEXT-1 and TOML-TEXT-2 for inline tables.
+
+# a pair whose name is not k is passed over by rows.look
+def look.skip(
+  +nn: String,
+  -vv: T.Val,
+  -rest: List<&2, T.Val>,
+  +kk: String,
+  ee: {String.eq(nn, kk) == False{} : Bool}
+) -> {T.rows.look(T.VPair{nn, vv} <> rest, kk) == T.rows.look(rest, kk) : T.Look}:
+  Equal.cong(Bool, T.Look, bb => T.look.step(bb, vv, _u => T.rows.look(rest, kk)),
+    T.str.eq(nn, kk), False{},
+    Equal.trans(Bool, T.str.eq(nn, kk), String.eq(nn, kk), False{},
+      str.eq.agree(nn, kk), ee))
+
+# rows.look misses when no pair in the rows is named k
+def look.misses(
+  rows: List<&2, T.Val>,
+  +kk: String,
+  +ee: {Laws.has_pair(rows, kk) == False{} : Bool}
+) -> {T.rows.look(rows, kk) == T.KMiss{} : T.Look}:
+  match rows:
+    case []:
+      {==}
+    case T.VPair{+nn, +vv} <> +tt:
+      Equal.trans(T.Look, T.rows.look(T.VPair{nn, vv} <> tt, kk), T.rows.look(tt, kk),
+        T.KMiss{},
+        look.skip(nn, vv, tt, kk,
+          Eq.or.false_left(String.eq(nn, kk), Laws.has_pair(tt, kk), ee)),
+        look.misses(tt, kk,
+          Eq.or.false_right(String.eq(nn, kk), Laws.has_pair(tt, kk), ee)))
+    case T.VStr{_a} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VSpan{_a, _b} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VInt{_a, _b} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VFlo{_a, _b} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VBool{_a} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VWhen{_a} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VArr{_a} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VInl{_a} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VHead{_a, _b} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VAot{_a, _b} <> tt:
+      look.misses(tt, kk, ee)
+    case T.VAots{_a, _b} <> tt:
+      look.misses(tt, kk, ee)
+
+# the first key of an inline table makes a table there, and the key is in it
+def inl.first(
+  inl: List<&2, T.Val>,
+  +bb: String,
+  cc: String,
+  vv: T.Val,
+  ee: {Laws.has_pair(inl, bb) == False{} : Bool}
+) -> {Laws.end_rows(T.tree.walk([bb, cc], T.Tw{inl, T.JPut{vv}, [], "", "", [], True{}},
+  0)) == T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl
+  : List<&2, T.Val>}:
+  Equal.cong(T.Look, List<&2, T.Val>,
+    hh => Laws.end_rows(T.tree.leaf(cc, T.tree.sub.look(hh, bb, inl, T.JPut{vv}, [], "",
+      [], True{}, True{}))),
+    T.rows.look(inl, bb), T.KMiss{}, look.misses(inl, bb, ee))
+
+# the second key goes on in that table: bb finds it, and dd is not cc
+def inl.second(
+  inl: List<&2, T.Val>,
+  +bb: String,
+  +cc: String,
+  +dd: String,
+  vv: T.Val,
+  ww: T.Val,
+  ff: {String.eq(cc, dd) == False{} : Bool}
+) -> {Laws.end_bad(T.tree.walk([bb, dd], T.Tw{T.VPair{bb, T.VHead{T.tree.pre("", bb),
+  [T.VPair{cc, vv}]}} <> inl, T.JPut{ww}, [], "", "", [], True{}}, 0)) == "" : String}:
+  Equal.trans(String,
+    Laws.end_bad(T.tree.leaf(dd, T.tree.sub.look(T.look.step(T.str.eq(bb, bb),
+      T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}, _u => T.rows.look(inl, bb)), bb,
+      T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl, T.JPut{ww},
+      [], "", [], True{}, True{}))),
+    Laws.end_bad(T.tree.leaf(dd, T.tree.sub.look(T.KHead{T.tree.pre("", bb),
+      [T.VPair{cc, vv}]}, bb,
+      T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl, T.JPut{ww},
+      [], "", [], True{}, True{}))),
+    "",
+    Equal.cong(Bool, String,
+      xx => Laws.end_bad(T.tree.leaf(dd, T.tree.sub.look(T.look.step(xx,
+        T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}, _u => T.rows.look(inl, bb)), bb,
+        T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl, T.JPut{ww},
+        [], "", [], True{}, True{}))),
+      T.str.eq(bb, bb), True{}, str.eq.self(bb)),
+    Equal.cong(Bool, String,
+      xx => Laws.end_bad(T.tree.leaf.put(T.find.step(xx, vv, _u => T.rows.find([], dd)),
+        dd, [T.VPair{cc, vv}], ww,
+        [T.FrRep{bb, T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl,
+          T.tree.pre("", bb)}],
+        "", T.heads.define(T.JPut{ww}, T.tree.pre("", bb), []))),
+      T.str.eq(cc, dd), False{},
+      Equal.trans(Bool, T.str.eq(cc, dd), String.eq(cc, dd), False{},
+        str.eq.agree(cc, dd), ff)))
+
+def Laws.inline_dotted_keys_share_a_prefix(inl, b, c, d, v, w, e, f):
+  Equal.trans(String,
+    Laws.end_bad(T.tree.walk([b, d], T.Tw{Laws.end_rows(T.tree.walk([b, c],
+      T.Tw{inl, T.JPut{v}, [], "", "", [], True{}}, 0)), T.JPut{w}, [], "", "", [],
+      True{}}, 0)),
+    Laws.end_bad(T.tree.walk([b, d], T.Tw{T.VPair{b, T.VHead{T.tree.pre("", b),
+      [T.VPair{c, v}]}} <> inl, T.JPut{w}, [], "", "", [], True{}}, 0)),
+    "",
+    Equal.cong(List<&2, T.Val>, String,
+      rr => Laws.end_bad(T.tree.walk([b, d], T.Tw{rr, T.JPut{w}, [], "", "", [], True{}},
+        0)),
+      Laws.end_rows(T.tree.walk([b, c], T.Tw{inl, T.JPut{v}, [], "", "", [], True{}}, 0)),
+      T.VPair{b, T.VHead{T.tree.pre("", b), [T.VPair{c, v}]}} <> inl,
+      inl.first(inl, b, c, v, e)),
+    inl.second(inl, b, c, d, v, w, f))
+
+# by induction on the rows, each case as inl.seal takes it
+def Laws.closed_inline_table_holds_no_open_table(rows):
+  match rows:
+    case []:
+      {==}
+    case T.VPair{_n, T.VHead{_p, _r}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VStr{_a}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VSpan{_a, _b}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VInt{_a, _b}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VFlo{_a, _b}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VBool{_a}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VWhen{_a}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VArr{_a}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VInl{_a}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VAot{_a, _b}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VAots{_a, _b}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VPair{_n, T.VPair{_a, _b}} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VStr{_a} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VSpan{_a, _b} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VInt{_a, _b} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VFlo{_a, _b} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VBool{_a} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VWhen{_a} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VArr{_a} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VInl{_a} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VHead{_a, _b} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VAot{_a, _b} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+    case T.VAots{_a, _b} <> tt:
+      Laws.closed_inline_table_holds_no_open_table(tt)
+
+def Laws.inline_table_refuses_keys(_name, _vs, _job, _stack, _pre, _heads, _inl, _mark):
+  {==}

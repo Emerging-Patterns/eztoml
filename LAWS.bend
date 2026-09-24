@@ -1380,3 +1380,65 @@ law new_element_keeps_other_tables:
   for e: {String.starts_with(q, String.append(path, ".")) == False{} : Bool}
   {T.heads.has(end_heads(T.tree.leaf.aot.hit(T.KAots{p, elems}, name, vs, stack,
     bad, path, heads)), q) == T.heads.has(heads, q) : Bool}
+
+# the rows of a finished walk
+def end_rows(end: T.End) -> List<&2, T.Val>:
+  match end:
+    case T.End{vs, _bad, _heads}:
+      vs
+
+# the error of a finished walk, "" when it has none
+def end_bad(end: T.End) -> String:
+  match end:
+    case T.End{_vs, bad, _heads}:
+      bad
+
+# whether no pair of the rows holds a table a later key could go on in
+def holds_no_open_table(rows: List<&2, T.Val>) -> Bool:
+  match rows:
+    case []:
+      True{}
+    case T.VPair{_nn, T.VHead{_pp, _rr}} <> _tt:
+      False{}
+    case _ <> tt:
+      holds_no_open_table(tt)
+
+# LAW: in an inline table, two dotted keys that share their first segment
+# are both read: once `b.c = v` is in the inline table, `b.d = w` is read
+# with no error when c is not d. The walk is the one an inline table's key
+# takes, starting from its rows with no error
+# TOML-TEXT-1
+law inline_dotted_keys_share_a_prefix:
+  for +inl: List<&2, T.Val>
+  for +b: String
+  for +c: String
+  for +d: String
+  for +v: T.Val
+  for w: T.Val
+  for e: {has_pair(inl, b) == False{} : Bool}
+  for f: {String.eq(c, d) == False{} : Bool}
+  {end_bad(T.tree.walk([b, d], T.Tw{end_rows(T.tree.walk([b, c],
+    T.Tw{inl, T.JPut{v}, [], "", "", [], True{}}, 0)), T.JPut{w}, [], "", "", [],
+    True{}}, 0)) == "" : String}
+
+# LAW: an inline table, once closed, holds no table a later key could go on
+# in: the tables its dotted keys made close with it
+# TOML-TEXT-2
+law closed_inline_table_holds_no_open_table:
+  for rows: List<&2, T.Val>
+  {holds_no_open_table(T.inl.seal(rows)) == True{} : Bool}
+
+# LAW: no key goes on in an inline table: a dotted key or a header that
+# reaches one is refused
+# TOML-TEXT-2
+law inline_table_refuses_keys:
+  for name: String
+  for vs: List<&2, T.Val>
+  for job: T.Job
+  for stack: List<&2, T.Fr>
+  for pre: String
+  for heads: List<&2, String>
+  for inl: Bool
+  for mark: Bool
+  {String.is_empty(tw_bad(T.tree.sub.look(T.KInl{}, name, vs, job, stack, pre,
+    heads, inl, mark))) == False{} : Bool}

@@ -1863,7 +1863,7 @@ type Job is Data:
 
 # one table the walk has entered
 type Fr is Data:
-  FrNew{name: String, parent: List<&2, Val>, path: String, inl: Bool}
+  FrNew{name: String, parent: List<&2, Val>, path: String}
   FrRep{name: String, parent: List<&2, Val>, path: String}
   FrAot{name: String, parent: List<&2, Val>, pre: List<&2, Val>, path: String}
 
@@ -2076,19 +2076,13 @@ def look.last(elems: List<&2, Val>, path: String) -> Last:
     case h <> t:
       look.last.one(h, path, t)
 
-# a new implicit table, inline or standard. the pair is consed, not copied on
-def tree.wrap.new(inl: Bool, name: String, parent: List<&2, Val>, path: String, child: List<&2, Val>) -> List<&2, Val>:
-  match inl:
-    case True{}:
-      VPair{name, VInl{child}} <> parent
-    case False{}:
-      VPair{name, VHead{path, child}} <> parent
-
-# put the child rows back into the parent table
+# put the child rows back into the parent table. A new implicit table is
+# consed, not copied on. Inside an inline table it is a table too until the
+# inline table closes, so the next dotted key can go on in it (inl.seal)
 def tree.wrap(fr: Fr, child: List<&2, Val>) -> List<&2, Val>:
   match fr:
-    case FrNew{name, parent, path, inl}:
-      tree.wrap.new(inl, name, parent, path, child)
+    case FrNew{name, parent, path}:
+      VPair{name, VHead{path, child}} <> parent
     case FrRep{name, parent, path}:
       rows.repl(parent, name, VHead{path, child})
     case FrAot{name, parent, pre, +path}:
@@ -2358,7 +2352,7 @@ def tree.sub.look(
 ) -> Tw:
   match hit:
     case KMiss{}:
-      Tw{[], job, FrNew{name, vs, tree.pre(pre, name), inl} <> stack, "",
+      Tw{[], job, FrNew{name, vs, tree.pre(pre, name)} <> stack, "",
         tree.pre(pre, name), heads.define(tree.sub.job(mark, job), tree.pre(pre, name),
           heads), inl}
     case KHead{path, rows}:
@@ -2865,6 +2859,17 @@ def arr.close(st: St) -> St:
     arrtab, lead} = st
   arr.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)
 
+# an inline table is closed once written: the tables its dotted keys made,
+# open while it was read, close with it
+def inl.seal(rows: List<&2, Val>) -> List<&2, Val>:
+  match rows:
+    case []:
+      []
+    case VPair{name, VHead{_path, sub}} <> t:
+      VPair{name, VInl{inl.seal(sub)}} <> inl.seal(t)
+    case h <> t:
+      h <> inl.seal(t)
+
 # close an inline table and place it
 def inl.top(
   stack: List<&2, Ctx>,
@@ -2881,7 +2886,7 @@ def inl.top(
   match stack:
     case CInl{inl, parts, here} <> rest:
       val.take(St{bad, rows, heads, here, parts, [], LTop{}, back, qkind, rest, HNone{},
-        uni, left, arrtab, lead}, VInl{inl})
+        uni, left, arrtab, lead}, VInl{inl.seal(inl)})
     case _:
       St{err.first(bad, "unclosed"), rows, heads, [], [], [], LSink{}, back, qkind, [],
         HNone{}, uni, left, arrtab, lead}
