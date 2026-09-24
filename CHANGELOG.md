@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/Emerging-Patterns/eztoml/compare/v0.3.0...v0.3.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* table, dotted-key and header conformance (I1, R2, V2, R3, I8) ([35f8414](https://github.com/Emerging-Patterns/eztoml/commit/35f841424222c31f35eccb7ae6ec5582063ded97))
+
 ## [0.3.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.2.2...v0.3.0) (2026-09-24)
 
 
