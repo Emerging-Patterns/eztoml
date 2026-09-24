@@ -20,25 +20,25 @@ These are the IDs the RFC proposes, so the tables can point at them. Their wordi
 
 | ID | Short name |
 | :---- | :---- |
-| TOML-RT-1 | Headline. For every renderable document, `parse(render(d))` has no error and is `same` as `d`. |
-| TOML-RT-2 | For every text that parses, `render` of it parses back `same`, and rendering again gives the same bytes. |
-| TOML-RT-3 | Every document `parse` returns is renderable. |
-| TOML-TEXT-1 | `parse(t)` has no error exactly when `t` is a TOML v1.0.0 document (toml.abnf plus the prose rules on keys and tables). |
-| TOML-TEXT-2 | A document is read in one pass, and the first error is the one reported: `bad` is empty exactly when there is none. |
+| TOML-RT-1 | Headline. For every well-formed document `d`, `parse(render(d))` has no error and is `same` as `d`. |
+| TOML-RT-2 | For every text that parses, `render` of the result parses back `same`, and rendering that gives the same bytes. |
+| TOML-RT-3 | Every document `parse` returns with no error is well-formed. |
+| TOML-TEXT-1 | `parse(t)` has no error exactly when `t` matches toml.abnf's `toml` rule and breaks none of the specification's rules on defining keys and tables. |
+| TOML-TEXT-2 | The key and table rules, one by one: a key, table or array of tables is defined once, and dotted keys never extend a table a header defined, or the reverse. |
 | TOML-KEY-1 | `bare(s)` holds exactly when `s` is nonempty and every character is `A-Za-z0-9_-`. |
 | TOML-KEY-2 | `key(s)` is `s` when `bare(s)`, and otherwise a basic string that reads back as `s`. |
-| TOML-STR-1 | Every string value reads back as its characters: basic, literal and both multi-line forms, with each escape decoded. |
-| TOML-STR-2 | The renderer's basic string escapes exactly `"`, `\` and the controls, and reads back as the text. |
-| TOML-NUM-1 | Integers: every form the grammar allows reads to its value, range checked to signed 64 bits. |
+| TOML-KEY-3 | In a parsed document, a key reads the same however it was written: bare, basic, literal, or as a dotted segment or header. |
+| TOML-STR-1 | Every string form reads back as its characters, each escape decoded. |
+| TOML-STR-2 | `render` writes a string as a basic string escaping exactly `"`, `\` and the controls, which reads back as the text. |
+| TOML-NUM-1 | Integers: every form the grammar allows reads to its sign and decimal digits, and only those, range checked to signed 64 bits. |
 | TOML-NUM-2 | Floats keep their spelling, apart from the stated normalizations. |
-| TOML-TIME-1 | Datetimes: the four forms read to their fields, with RFC 3339 range checks. |
+| TOML-TIME-1 | Datetimes: the four forms read to their fields, with RFC 3339's range checks. |
 | TOML-GET-1 | `get(rows, k)` is the value of the first pair named `k`, and `Miss` when there is none. |
-| TOML-GET-2 | `at(rows, path)` walks tables, inline tables and the last array-of-tables element, key by key. |
-| TOML-GET-3 | For every parsed document, a key reads the same whether it was written bare, quoted or dotted. |
-| TOML-READ-1 | `string`, `digits` and `flag` read their kind, span or owned, and are `""` or `false` on every other kind. |
-| TOML-BUILD-1 | Every value built only through the builders is renderable. |
+| TOML-GET-2 | `at(rows, path)` walks tables and inline tables key by key, and misses at anything else. |
+| TOML-READ-1 | `string`, `digits` and `flag` read their kind, span or owned, and give `""`, `""` and `false` for every other kind. |
 | TOML-TRUST-1 | The Bend checker is sound. |
 | TOML-TRUST-2 | The proof-gate runner accepts only an exact `All terms check.` first line. |
+| TOML-TRUST-3 | A caller's bytes reach `parse` as the code points of their UTF-8 decoding. |
 
 ## The gate and the linter on eztoml itself
 
@@ -99,7 +99,7 @@ These are the IDs the RFC proposes, so the tables can point at them. Their wordi
 | `toml_invalid` | C | `{==}` | eight fixed invalid documents give the expected message | TOML-TEXT-1; pins wording |
 | `toml_miss` | C | `{==}` | `get` of an absent key in `a = 1` is `Miss` | TOML-GET-1 |
 | `toml_keyval` | C | `{==}` | two pairs on a line, and a pair with no value, are refused | TOML-TEXT-1 (`keyval`); pins wording |
-| `toml_dot` | C | `{==}` | six dotted and quoted keys render as expected | TOML-GET-3, TOML-KEY-2; pins layout |
+| `toml_dot` | C | `{==}` | six dotted and quoted keys render as expected | TOML-KEY-3, TOML-KEY-2; pins layout |
 | `toml_reopen` | C | `{==}` | a table defined by dotted keys is not reopened by a header | TOML-TEXT-1 (the prose rule); pins wording |
 | `toml_range` | C | `{==}` | integers at and past the signed 64-bit limits | TOML-NUM-1; pins wording |
 
@@ -113,7 +113,7 @@ All 14 are quantified and proved structurally in the same file, which PROOF.bend
 | :---- | :---- | :---- |
 | TOML-RT-1, TOML-RT-2, TOML-RT-3 | none | `toml_table` (layout only) |
 | TOML-TEXT-1 | `parse_empty` (one input) | 10 |
-| TOML-TEXT-2 | none | none |
+| TOML-TEXT-2 | none | `toml_aot`, `toml_invalid`, `toml_reopen` |
 | TOML-KEY-1 | `bare_needs_a_char` (one input) | none |
 | TOML-KEY-2 | `key_is_bare_when_it_can`, `key_is_quoted_when_it_must` (wiring, no read-back) | `toml_dot` |
 | TOML-STR-1, TOML-STR-2 | none | `toml_string` |
@@ -121,9 +121,8 @@ All 14 are quantified and proved structurally in the same file, which PROOF.bend
 | TOML-TIME-1 | none | `toml_datetime` |
 | TOML-GET-1 | `get_first` (head only) | `toml_miss` |
 | TOML-GET-2 | `at_one`, `at_empty` (wiring) | none |
-| TOML-GET-3 | none | `toml_dot` |
+| TOML-KEY-3 | none | `toml_dot` |
 | TOML-READ-1 | `string_of`, `digits_of`, `flag_of` (owned values only) | none |
-| TOML-BUILD-1 | the eight `*_builds` (definitional) | none |
 
 ## What each entry point reads
 
@@ -131,27 +130,72 @@ eztoml is a library with no IO in `eztoml/`. `parse` reads only its text argumen
 
 The one thing a caller reads that is not an argument is the package hash in the README's import line. See the findings below.
 
+## How the code was exercised
+
+Besides the gate and the linter, the audit ran the real parser and renderer, compiled with the pinned bend, three ways. None of it is committed, and none of it is evidence for a requirement (RFC, Abandoned Ideas); it is how the verdicts below were checked.
+
+- **toml-test.** Every case of [toml-test](https://github.com/toml-lang/toml-test)'s TOML 1.0.0 list: 208 valid documents, whose tagged JSON must match, and 501 invalid ones, which must be refused. A driver printed `bad`, the tagged JSON of the document and `render` of it, then the same three for `parse(render(parse t))`.
+- **A differential fuzzer against Python's `tomllib`.** About 43,000 generated documents, 20,000 of them over a small key set to force table collisions: `parse` against `tomllib.loads`, `tomllib.loads` of `render`, and the round trip.
+- **Targeted inputs** for keys, strings, numbers, datetimes, tables and the readers, below.
+
+| Measure | Result |
+| :---- | :---- |
+| toml-test valid documents accepted with the expected values | 203 of 208; every accepted one had the expected values |
+| toml-test invalid documents refused | 472 of 501 |
+| round trip on the 203: `render` reparses with no error, the same values, and rendering again gives the same bytes | 203 of 203; `tomllib` reads the same values from `render`'s output for all 203 |
+| round trip on fuzzed valid documents | no failure; every failure the fuzzer found was a valid document refused or an invalid one accepted |
+| round trip after an invalid document was accepted | fails: `a = 0_0.5` renders `a = 00.5`, which does not reparse (R-I6 below) |
+
 ## Findings
 
-Each finding is "Confirmed" (run against a binary built from this tree, with the command) or "by reading" (file and line). Findings are recorded here, not resolved; the RFC carries a REVIEW item for each one a requirement depends on.
+Each finding is "Confirmed" (run against a binary built from this tree) or "by reading" (file and line). Findings are recorded here, not resolved; the RFC carries a REVIEW item for each one a requirement depends on. The IDs (V, I, R) are used by the RFC's decided behavior changes.
 
 ### Bugs
 
 - **The README's build fails on a fresh clone.** Confirmed: in a directory made by `git archive HEAD`, `bend examples/demo/main.bend -o bin/demo.bin` fails with `ld: cannot open output file …/bin/demo.bin: No such file or directory`, and bend exits 0. With `mkdir -p bin` first the demo builds and prints the expected document. The same bug ez had.
 - **The README imports a different package.** Confirmed by hashing: the README's `import 0x04b9afdd6d6a56039c5ce6dfb1e55294/main.bend` is v0.1.0 (`ea1a73f`, the scaffold: `main.bend` plus `toml.bend`, a sectioned string-only document). That package has no `get`, `at`, `string` or `root`, and its `render` takes a list of sections, so the README's own example does not type-check against the hash it names. The tree at `d3c1356` hashes to `0x60bccc8edd34707613da7f8d2b8bfd47` by ez's rule (`"0x"` and the first 32 hex digits of the sha256 of the manifest), which was checked by reproducing v0.1.0's hash from the manifest in ez's lock. Whether the hub holds it could not be checked from here.
 
+Valid TOML that `parse` refuses. All confirmed:
+
+| ID | Input | What happens | toml-test cases |
+| :---- | :---- | :---- | :---- |
+| V1 | `a = """x""""` and `a = '''x''''`: one or two quotes just before a multi-line string's closing delimiter | `newline required`: the string closes at the first `"""` | spec-1.0.0/string-4, string-7, string/multiline-quotes, string/raw-multiline |
+| V2 | `t = {b.c = 1, b.d = 2}`: two dotted keys with a shared prefix in one inline table, also inside arrays and under a header | `inline table is closed` | inline-table/key-dotted-02, and about 50 fuzzer failures |
+| R1 | `a=""` or `a=''` as the last line, with no newline after it | `unclosed`; `a="x"`, `a=1` and `a=[]` without a newline are fine | none (found by the fuzzer) |
+| R2 | `[[a]]\n[a.b]\n[[a]]\n[a.b.c]\n[a.b]` | `duplicate table`: the headers a document has defined are one list of path strings, shared by every element of an array of tables | none |
+
+Invalid TOML that `parse` accepts. All confirmed:
+
+| ID | Input | What happens | toml-test cases |
+| :---- | :---- | :---- | :---- |
+| I1 | `[a.b]\nz=9\n[a]\nb.t=1`; `[[t.arr]]\n[t]\narr.v=1` | dotted keys add to a table or array of tables a header defined | array/extend-defined-aot, table/append-with-dotted-keys-01, -02, -03, -08 |
+| I2 | `a = 1 # \x01`, and each other control but tab in a comment | accepted | control/comment-cr, -del, -ff, -lf, -null, -us |
+| I3 | `a = "x"\rb = 1` | a lone CR ends a line | control/bare-cr |
+| I4 | `d = 2100-02-29`, `d = 2000-02-30` | the day is checked against 31 only, not the month or leap years | datetime, local-date and local-datetime feb-29 and feb-30 (6) |
+| I6 | `a = -+1` reads as **+1**; `a = ++99` as 99; `a = -+1.5` as `+1.5`; `0_0`, `0_1`, `-0_1`, `+0_1` read as numbers | a second sign is dropped, and a leading zero hidden by `_` is not caught. `-+1` silently changes the value | integer/double-sign-plus, leading-zero-03, leading-zero-sign-03 |
+| R-I6 | `a = 0_0.5`, `a = 0_1e2` | read as float text `00.5`, `01e2`; `render` writes `a = 00.5`, which `parse` refuses: the one round-trip failure found | none |
+| I7 | `key =\n1` | the value may start on the next line | key/newline-06 |
+| I8 | `[ [t]]` | read as `[[t]]` | table/llbrace |
+| R3 | `[a"b"]`, `[a.b"c"]`, `[[x'y']]` | a bare header segment followed by a quoted one is accepted and the bare part dropped: `[a"b"]` is table `b`. `a"b" = 1` is correctly refused | none |
+| I5 | invalid UTF-8 in a string or comment | not a parser finding: Bend's `File.read` decodes the bytes and puts U+FFFD for each bad one before `parse` sees a `String` (the driver's code dump shows 65533). Six toml-test cases (encoding/bad-codepoint, bad-utf8-in-*) | encoding/* (6) |
+
 ### Behavior the code guarantees that no requirement mentions
 
-- `get` returns the first pair of a name (`main.bend:1850`); with duplicate keys refused by `parse`, this only matters for documents built by hand.
-- `render` writes every table's direct keys before its sub-tables and arrays of tables (`render.both`, `main.bend:5039`), so a document written in any order comes back in one canonical order, and dotted keys come back as `[table]` headers (`a.b = 1` renders `[a]\nb = 1`). The closed laws record this but nothing states it.
-- `render` normalizes numbers: hex, octal and binary integers and underscores come back in decimal, a leading `+` is dropped from integers, floats, `+inf` and `+nan`, and float spelling is otherwise kept (`toml_integer`, `toml_float`).
+- `get` returns the first pair of a name (`main.bend:1850`); with duplicate keys refused by `parse`, this only matters for documents built by hand. A key written quoted (`"a.b" = 1`) is found by `get(root, "a.b")` and is distinct from the dotted `a.b = 2`, which `at(root, ["a", "b"])` finds. Confirmed.
+- How a table is stored: a table is `VPair{name, VHead{path, rows}}` in its parent's rows, where `path` is the full dotted path with each segment written by `key`; a table made by dotted keys is a `VHead` too, and inside an inline table a `VInl`. An array of tables is `VPair{name, VAots{path, elems}}` with each element a `VAot{path, rows}`. Rows are kept newest first while reading and put back in document order at the end (`rows.seal`). Confirmed with the driver.
+- `render` writes every table's direct keys before its sub-tables and arrays of tables (`render.both`, `main.bend:5039`), so a document written in any order comes back in one canonical order. Dotted keys come back as `[table]` headers (`a.b = 1` renders `[a]\nb = 1`), and an implicit table gets its own header. Blank lines and comments are dropped. Confirmed.
+- `render` normalizes numbers and datetimes: hex, octal and binary integers come back in decimal; underscores are dropped; a leading `+` is dropped from integers, floats, `+inf` and `+nan`; float spelling is otherwise kept (`1E+10`, `6.02e-023`); `-0`, `-0.0` and `-nan` are kept; a datetime's lowercase `t` and `z` and a space separator come back as `T` and `Z`, and fractions and `-00:00` are kept. Confirmed.
+- `render` escapes a string or key's `"`, `\` and controls (the short escapes where TOML has one, `\u00XX` otherwise, DEL as `\u007f`) and writes every other character raw, astral ones included. Keys holding `=`, `"`, `\`, a newline, a control, `.`, nothing, `é` or an emoji render quoted and read back. Confirmed.
+- A multi-line basic string keeps a CRLF inside it as `\r\n` in the value. Confirmed.
 
 ### Behavior that looks accidental
 
-- `bare` is ASCII-only (`Char.is_alpha` is `A-Z` or `a-z` in Base), as TOML v1.0.0 requires. By reading.
-- Table headers are written as `"[" ++ path ++ "]"` with the stored path, with no call to `key` (`render.go` and `render.head`, `main.bend:4908`, `4957`), while pair keys go through `key`. Whether a header whose name needed quotes reads back depends on what the parser stores in `path`.
-- The builders accept any `Val`, including shapes `parse` never makes (a `VHead` outside a `VPair`, a `VAot` outside a `VAots`, a table inside an array, a `VPair` inside an array), and `render` writes something for each. `table(path, rows)` writes `path` verbatim as the header, so the caller must quote it.
+- `at` cannot descend into an array of tables: `at.rows` (`main.bend:5069`) reads `VHead`, `VInl` and `VAot` rows but not `VAots`, so `at(root, ["arr", "z"])` is `Miss` although `arr` holds tables. Confirmed. The README says only that `at` "finds one by a dotted path".
+- `string`, `digits` and `flag` answer `""`, `""` and `false` for a value of another kind, which is also what they answer for an empty string, and `false`. By reading (`main.bend:5043` to `5066`).
+- Table headers are written as `"[" ++ path ++ "]"` with the stored path (`main.bend:4908`, `4957`). For a parsed document the path is already written by `key`, so it reads back (confirmed for `["x\ny"]`, `[a."b.c"]`, `[[""]]`). For a hand-built one, `table(path, rows)` writes `path` verbatim, so the caller must quote it, and must keep it equal to the keys above it.
+- The builders accept any `Val`, including shapes `parse` never makes (a `VHead` outside a `VPair`, a `VAot` outside a `VAots`, a table inside an array, a `VPair` inside an array, an integer whose digits are not digits), and `render` writes something for each, often not TOML. By reading `render.go`.
+- Parse time grows with the square of the keys in one table and of the tables in a document: 2,000 keys in one table parse in 0.39 s and 8,000 in 5.4 s; 2,000 headers in 0.63 s and 8,000 in 10.2 s; a generated 2 MB mixed document in 65 s. Long strings, arrays and arrays of tables are linear. The duplicate checks scan lists (`rows.find`, `heads.has`). Confirmed with the compiled driver. Interpreted (`bend file.bend`), a 400-key document takes 47 s.
 
 ### Requirements with no corresponding code
 
-- None beyond the README's "proves" claim, which describes closed laws.
+- The README's "Compliance" says `nix flake check` proves the listed productions; what it runs are the closed laws above.
