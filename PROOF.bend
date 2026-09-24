@@ -5035,3 +5035,87 @@ def Laws.array_string(v, rest, gap, trail, h):
         == T.key.basic(T.string(T.VPair{a1, a2})) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val,
           rest)) ++ T.render.go(rest, gap, trail) : String}, h)
 
+# TOML-TEXT-2. The walk steps that decide whether a key may add to a table.
+
+# rebuilding the tables above a walk leaves the recorded definitions alone
+def rebuild.heads(
+  stack: List<&2, T.Fr>,
+  vs: List<&2, T.Val>,
+  bad: String,
+  heads: List<&2, String>
+) -> {Laws.end_heads(T.tree.rebuild(stack, vs, bad, heads)) == heads
+  : List<&2, String>}:
+  match stack:
+    case []:
+      {==}
+    case fr <> tt:
+      rebuild.heads(tt, T.tree.wrap(fr, vs), bad, heads)
+
+# a table a header just recorded is one a header defined
+def heads.head.first(
+  +pp: String,
+  hs: List<&2, String>
+) -> {T.heads.head(T.heads.by.head(pp) <> hs, pp) == True{} : Bool}:
+  Equal.cong(Bool, Bool, bb => T.heads.or(bb, T.heads.head(hs, pp)),
+    T.str.eq(pp, pp), True{}, str.eq.self(pp))
+
+# and it is still there once the walk is rebuilt
+def rebuild.head(
+  stack: List<&2, T.Fr>,
+  vs: List<&2, T.Val>,
+  bad: String,
+  +pp: String,
+  +hs: List<&2, String>
+) -> {T.heads.head(Laws.end_heads(T.tree.rebuild(stack, vs, bad, T.heads.by.head(pp) <> hs)),
+  pp) == True{} : Bool}:
+  Equal.trans(Bool,
+    T.heads.head(Laws.end_heads(T.tree.rebuild(stack, vs, bad, T.heads.by.head(pp) <> hs)), pp),
+    T.heads.head(T.heads.by.head(pp) <> hs, pp),
+    True{},
+    Equal.cong(List<&2, String>, Bool, ll => T.heads.head(ll, pp),
+      Laws.end_heads(T.tree.rebuild(stack, vs, bad, T.heads.by.head(pp) <> hs)),
+      T.heads.by.head(pp) <> hs, rebuild.heads(stack, vs, bad, T.heads.by.head(pp) <> hs)),
+    heads.head.first(pp, hs))
+
+def Laws.dotted_key_refused_in_header_table(path, rows, name, vs, val, stack, pre, heads, inl, e):
+  %Equal.sym(Bool, T.heads.head(heads, T.tree.pre(pre, name)), True{}, e)
+    : {String.is_empty(Laws.tw_bad(T.tree.sub.head.go(_, path, rows, name, vs,
+      T.JPut{val}, stack, pre, heads, inl, True{}))) == False{} : Bool}
+  {==}
+
+def Laws.dotted_key_enters_other_table(path, rows, name, vs, val, stack, pre, heads, inl, e):
+  %Equal.sym(Bool, T.heads.head(heads, T.tree.pre(pre, name)), False{}, e)
+    : {Laws.tw_bad(T.tree.sub.head.go(_, path, rows, name, vs, T.JPut{val}, stack,
+      pre, heads, inl, True{})) == "" : String}
+  {==}
+
+def Laws.dotted_key_refused_in_array_of_tables(_path, _elems, _name, _vs, _val, _stack, _pre, _heads, _inl):
+  {==}
+
+# a header's job never asks who defined the table, wherever the walk is
+def Laws.header_enters_any_table(_path, _rows, _name, _vs, arr, _stack, _pre, _heads, _inl, mark):
+  match arr mark:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      {==}
+    case False{} True{}:
+      {==}
+    case False{} False{}:
+      {==}
+
+def Laws.header_records_new_table(name, vs, stack, bad, path, heads):
+  rebuild.head(stack, T.VPair{name, T.VHead{path, []}} <> vs, bad, path, heads)
+
+def Laws.header_records_implicit_table(p, rows, name, vs, stack, bad, path, heads, e):
+  Equal.trans(Bool,
+    T.heads.head(Laws.end_heads(T.tree.leaf.def.hit(T.KHead{p, rows}, name, vs, stack,
+      bad, path, heads)), path),
+    T.heads.head(Laws.end_heads(T.tree.leaf.def.head(False{}, name, vs, rows, stack,
+      bad, path, heads)), path),
+    True{},
+    Equal.cong(Bool, Bool,
+      ss => T.heads.head(Laws.end_heads(T.tree.leaf.def.head(ss, name, vs, rows, stack,
+        bad, path, heads)), path),
+      T.heads.has(heads, path), False{}, e),
+    rebuild.head(stack, T.rows.repl(vs, name, T.VHead{path, rows}), bad, path, heads))

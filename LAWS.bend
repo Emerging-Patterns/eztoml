@@ -1228,3 +1228,121 @@ law array_string:
   {T.render.go(v <> rest, gap, trail)
     == T.key.basic(T.string(v)) ++ T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)) ++
       T.render.go(rest, gap, trail) : String}
+
+# The table-definition rules (TOML-TEXT-2), stated over the walk that follows
+# a key path through the tables. A walk step either enters the table a key
+# names or records why it cannot.
+
+# the error a walk step holds, "" while it has none
+def tw_bad(tw: T.Tw) -> String:
+  match tw:
+    case T.Tw{_vs, _job, _stack, bad, _pre, _heads, _inl}:
+      bad
+
+# the tables a finished walk has recorded as defined
+def end_heads(end: T.End) -> List<&2, String>:
+  match end:
+    case T.End{_vs, _bad, heads}:
+      heads
+
+# the job of a table header: an array of tables, or a table
+def header_job(arr: Bool) -> T.Job:
+  match arr:
+    case True{}:
+      T.JAot{}
+    case False{}:
+      T.JDef{}
+
+# LAW: a dotted key cannot add to a table a header defined: the segment of
+# the key that reaches it is refused
+# TOML-TEXT-2
+law dotted_key_refused_in_header_table:
+  for path: String
+  for rows: List<&2, T.Val>
+  for +name: String
+  for vs: List<&2, T.Val>
+  for val: T.Val
+  for stack: List<&2, T.Fr>
+  for +pre: String
+  for heads: List<&2, String>
+  for inl: Bool
+  for e: {T.heads.head(heads, T.tree.pre(pre, name)) == True{} : Bool}
+  {String.is_empty(tw_bad(T.tree.sub.look(T.KHead{path, rows}, name, vs,
+    T.JPut{val}, stack, pre, heads, inl, True{}))) == False{} : Bool}
+
+# LAW: a dotted key goes on into a table no header defined, such as one other
+# dotted keys defined
+# TOML-TEXT-2
+law dotted_key_enters_other_table:
+  for path: String
+  for rows: List<&2, T.Val>
+  for +name: String
+  for vs: List<&2, T.Val>
+  for val: T.Val
+  for stack: List<&2, T.Fr>
+  for +pre: String
+  for heads: List<&2, String>
+  for inl: Bool
+  for e: {T.heads.head(heads, T.tree.pre(pre, name)) == False{} : Bool}
+  {tw_bad(T.tree.sub.look(T.KHead{path, rows}, name, vs, T.JPut{val}, stack,
+    pre, heads, inl, True{})) == "" : String}
+
+# LAW: a dotted key cannot add to an array of tables
+# TOML-TEXT-2
+law dotted_key_refused_in_array_of_tables:
+  for path: String
+  for elems: List<&2, T.Val>
+  for name: String
+  for vs: List<&2, T.Val>
+  for val: T.Val
+  for stack: List<&2, T.Fr>
+  for pre: String
+  for heads: List<&2, String>
+  for inl: Bool
+  {String.is_empty(tw_bad(T.tree.sub.look(T.KAots{path, elems}, name, vs,
+    T.JPut{val}, stack, pre, heads, inl, True{}))) == False{} : Bool}
+
+# LAW: a header goes on through every table on its path, whoever defined it
+# TOML-TEXT-2
+law header_enters_any_table:
+  for path: String
+  for rows: List<&2, T.Val>
+  for name: String
+  for vs: List<&2, T.Val>
+  for arr: Bool
+  for stack: List<&2, T.Fr>
+  for pre: String
+  for heads: List<&2, String>
+  for inl: Bool
+  for mark: Bool
+  {tw_bad(T.tree.sub.look(T.KHead{path, rows}, name, vs, header_job(arr),
+    stack, pre, heads, inl, mark)) == "" : String}
+
+# LAW: a [table] header that makes a new table records it as defined by a
+# header
+# TOML-TEXT-2
+law header_records_new_table:
+  for name: String
+  for vs: List<&2, T.Val>
+  for stack: List<&2, T.Fr>
+  for bad: String
+  for +path: String
+  for heads: List<&2, String>
+  {T.heads.head(end_heads(T.tree.leaf.def.hit(T.KMiss{}, name, vs, stack, bad,
+    path, heads)), path) == True{} : Bool}
+
+# LAW: a [table] header that defines a table only made on the way to another
+# records it as defined by a header
+# TOML-TEXT-2
+law header_records_implicit_table:
+  for p: String
+  for rows: List<&2, T.Val>
+  for name: String
+  for vs: List<&2, T.Val>
+  for stack: List<&2, T.Fr>
+  for bad: String
+  for +path: String
+  for +heads: List<&2, String>
+  for e: {T.heads.has(heads, path) == False{} : Bool}
+  {T.heads.head(end_heads(T.tree.leaf.def.hit(T.KHead{p, rows}, name, vs,
+    stack, bad, path, heads)), path) == True{} : Bool}

@@ -1949,13 +1949,34 @@ def heads.or(aa: Bool, bb: Bool) -> Bool:
     case False{}:
       bb
 
-# whether a header path was opened by a header
+# heads records each table the document has defined as its path behind one
+# mark: `[` when a header defined it, `.` when dotted keys did
+def heads.by.head(path: String) -> String:
+  SCon{'[', path}
+
+# a table dotted keys defined, as heads records it
+def heads.by.dot(path: String) -> String:
+  SCon{'.', path}
+
+# whether a table path was defined, by a header or by dotted keys
 def heads.has(hs: List<&2, String>, +pp: String) -> Bool:
   match hs:
     case []:
       False{}
-    case h <> t:
+    case SCon{_mark, h} <> t:
       heads.or(str.eq(h, pp), heads.has(t, pp))
+    case SNil{} <> t:
+      heads.has(t, pp)
+
+# whether a table path was defined by a header
+def heads.head(hs: List<&2, String>, +pp: String) -> Bool:
+  match hs:
+    case []:
+      False{}
+    case SCon{mark, h} <> t:
+      heads.or(Bool.and(Char.is_eq(mark, '['), str.eq(h, pp)), heads.head(t, pp))
+    case SNil{} <> t:
+      heads.head(t, pp)
 
 # a table defined by a dotted key is recorded once
 def heads.define.new(seen: Bool, path: String, heads: List<&2, String>) -> List<&2, String>:
@@ -1963,7 +1984,7 @@ def heads.define.new(seen: Bool, path: String, heads: List<&2, String>) -> List<
     case True{}:
       heads
     case False{}:
-      path <> heads
+      heads.by.dot(path) <> heads
 
 # a dotted key defines each table before its last segment
 def heads.define(job: Job, +path: String, +heads: List<&2, String>) -> List<&2, String>:
@@ -2088,7 +2109,8 @@ def tree.leaf.def.head(
     case True{}:
       tree.rebuild(stack, vs, err.first(bad, "duplicate table"), heads)
     case False{}:
-      tree.rebuild(stack, rows.repl(vs, name, VHead{path, rows}), bad, path <> heads)
+      tree.rebuild(stack, rows.repl(vs, name, VHead{path, rows}), bad,
+        heads.by.head(path) <> heads)
 
 # open a standard table
 def tree.leaf.def.hit(
@@ -2102,7 +2124,8 @@ def tree.leaf.def.hit(
 ) -> End:
   match hit:
     case KMiss{}:
-      tree.rebuild(stack, VPair{name, VHead{path, []}} <> vs, bad, path <> heads)
+      tree.rebuild(stack, VPair{name, VHead{path, []}} <> vs, bad,
+        heads.by.head(path) <> heads)
     case KHead{_p, rows}:
       tree.leaf.def.head(heads.has(heads, path), name, vs, rows, stack, bad, path,
         heads)
@@ -2227,6 +2250,76 @@ def tree.sub.job(mark: Bool, job: Job) -> Job:
     case False{}:
       JDef{}
 
+# a segment of a dotted key, which defines tables as it goes
+def tree.sub.dot(job: Job) -> Bool:
+  match job:
+    case JPut{_val}:
+      True{}
+    case _:
+      False{}
+
+# enter a table, unless a dotted key would add to a table a header defined
+def tree.sub.head.go(
+  shut: Bool,
+  path: String,
+  rows: List<&2, Val>,
+  +name: String,
+  vs: List<&2, Val>,
+  +job: Job,
+  stack: List<&2, Fr>,
+  +pre: String,
+  heads: List<&2, String>,
+  inl: Bool,
+  mark: Bool
+) -> Tw:
+  match shut:
+    case True{}:
+      Tw{vs, job, stack, "duplicate table", pre, heads, inl}
+    case False{}:
+      Tw{rows, job, FrRep{name, vs, path} <> stack, "", tree.pre(pre, name),
+        heads.define(tree.sub.job(mark, job), tree.pre(pre, name), heads), inl}
+
+# a dotted key asks whether a header defined the table; a header walk does not
+def tree.sub.head(
+  dot: Bool,
+  path: String,
+  rows: List<&2, Val>,
+  +name: String,
+  vs: List<&2, Val>,
+  job: Job,
+  stack: List<&2, Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  inl: Bool,
+  mark: Bool
+) -> Tw:
+  match dot:
+    case True{}:
+      tree.sub.head.go(heads.head(heads, tree.pre(pre, name)), path, rows, name, vs, job,
+        stack, pre, heads, inl, mark)
+    case False{}:
+      tree.sub.head.go(False{}, path, rows, name, vs, job, stack, pre, heads, inl, mark)
+
+# a header enters the last element of an array of tables; a dotted key cannot
+# add to an array of tables
+def tree.sub.arr(
+  dot: Bool,
+  +path: String,
+  elems: List<&2, Val>,
+  +name: String,
+  +vs: List<&2, Val>,
+  job: Job,
+  stack: List<&2, Fr>,
+  +pre: String,
+  heads: List<&2, String>,
+  inl: Bool
+) -> Tw:
+  match dot:
+    case True{}:
+      Tw{vs, job, stack, "duplicate table", pre, heads, inl}
+    case False{}:
+      tree.sub.aots(look.last(elems, path), name, vs, job, stack, pre, heads, inl, path)
+
 # descend into one key, or record why it cannot be entered
 def tree.sub.look(
   hit: Look,
@@ -2237,7 +2330,7 @@ def tree.sub.look(
   +pre: String,
   heads: List<&2, String>,
   +inl: Bool,
-  mark: Bool
+  +mark: Bool
 ) -> Tw:
   match hit:
     case KMiss{}:
@@ -2245,13 +2338,13 @@ def tree.sub.look(
         tree.pre(pre, name), heads.define(tree.sub.job(mark, job), tree.pre(pre, name),
           heads), inl}
     case KHead{path, rows}:
-      Tw{rows, job, FrRep{name, vs, path} <> stack, "", tree.pre(pre, name),
-        heads.define(tree.sub.job(mark, job), tree.pre(pre, name), heads), inl}
+      tree.sub.head(tree.sub.dot(tree.sub.job(mark, job)), path, rows, name, vs, job,
+        stack, pre, heads, inl, mark)
     case KInl{}:
       Tw{vs, job, stack, "inline table is closed", pre, heads, inl}
-    case KAots{+path, elems}:
-      tree.sub.aots(look.last(elems, path), name, vs, job, stack, pre, heads, inl,
-        path)
+    case KAots{path, elems}:
+      tree.sub.arr(tree.sub.dot(tree.sub.job(mark, job)), path, elems, name, vs, job,
+        stack, pre, heads, inl)
     case KNo{why}:
       Tw{vs, job, stack, why, pre, heads, inl}
 
