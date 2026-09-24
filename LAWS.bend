@@ -379,3 +379,138 @@ law word_signed_zero_underscore:
   for sg: T.Sign
   for +rest: List<&2, Char>
   {refused(T.word.val(mark(sg) <> '0' <> '_' <> rest)) == True{} : Bool}
+
+# The date check (I4). The day of a date is within its month in its year.
+
+# the twelve months, so a law can range over every one
+type Month is Data:
+  Jan{}
+  Feb{}
+  Mar{}
+  Apr{}
+  May{}
+  Jun{}
+  Jul{}
+  Aug{}
+  Sep{}
+  Oct{}
+  Nov{}
+  Dec{}
+
+# a month's number, as a date writes it
+def month.num(mm: Month) -> U32:
+  match mm:
+    case Jan{}:
+      1
+    case Feb{}:
+      2
+    case Mar{}:
+      3
+    case Apr{}:
+      4
+    case May{}:
+      5
+    case Jun{}:
+      6
+    case Jul{}:
+      7
+    case Aug{}:
+      8
+    case Sep{}:
+      9
+    case Oct{}:
+      10
+    case Nov{}:
+      11
+    case Dec{}:
+      12
+
+# RFC 3339, Appendix C: a leap year is
+#   (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))
+def leap(+yy: U32) -> Bool:
+  Bool.and(U32.is_eq(U32.mod(yy, 4), 0),
+    Bool.or(Bool.not(U32.is_eq(U32.mod(yy, 100), 0)), U32.is_eq(U32.mod(yy, 400), 0)))
+
+# February's row of the table below
+def feb_days(is_leap: Bool) -> U32:
+  match is_leap:
+    case True{}:
+      29
+    case False{}:
+      28
+
+# RFC 3339, section 5.7:
+#   Month Number  Month/Year           Maximum value of date-mday
+#   ------------  ----------           --------------------------
+#   01            January              31
+#   02            February, normal     28
+#   02            February, leap year  29
+#   03            March                31
+#   04            April                30
+#   05            May                  31
+#   06            June                 30
+#   07            July                 31
+#   08            August               31
+#   09            September            30
+#   10            October              31
+#   11            November             30
+#   12            December             31
+def days_in(+yy: U32, mm: Month) -> U32:
+  match mm:
+    case Jan{}:
+      31
+    case Feb{}:
+      feb_days(leap(yy))
+    case Mar{}:
+      31
+    case Apr{}:
+      30
+    case May{}:
+      31
+    case Jun{}:
+      30
+    case Jul{}:
+      31
+    case Aug{}:
+      31
+    case Sep{}:
+      30
+    case Oct{}:
+      31
+    case Nov{}:
+      30
+    case Dec{}:
+      31
+
+# a datetime scan that holds no value
+def when_refused(ww: T.WhenOut) -> Bool:
+  match ww:
+    case T.WSome{_when}:
+      False{}
+    case T.WFail{_why}:
+      True{}
+    case T.WSkip{}:
+      True{}
+
+# LAW: a date whose day is from 1 to the days of its month in its year is
+# accepted: the rest of the token is read after it
+# TOML-TIME-1
+law date_day_in_month:
+  for +yy: U32
+  for +mm: Month
+  for +dd: U32
+  for rest: List<&2, Char>
+  for e: {True{} == Bool.and(U32.is_ge(dd, 1), U32.is_le(dd, days_in(yy, mm))) : Bool}
+  {T.when.date.ok(yy, month.num(mm), dd, rest)
+    == T.when.after.date(T.Date{yy, month.num(mm), dd}, rest) : T.WhenOut}
+
+# LAW: a date whose day is 0 or past the days of its month in its year is
+# refused, whatever follows it
+# TOML-TIME-1
+law date_day_past_month:
+  for +yy: U32
+  for +mm: Month
+  for +dd: U32
+  for rest: List<&2, Char>
+  for e: {False{} == Bool.and(U32.is_ge(dd, 1), U32.is_le(dd, days_in(yy, mm))) : Bool}
+  {when_refused(T.when.date.ok(yy, month.num(mm), dd, rest)) == True{} : Bool}

@@ -713,3 +713,149 @@ def Laws.word_signed_zero_underscore(sg, rest):
       plus.no('0', '_' <> rest, {==}, {==}, Laws.num_signed_zero_underscore(T.Plus{}, rest))
     case T.Minus{}:
       minus.no('0', '_' <> rest, {==}, {==}, Laws.num_signed_zero_underscore(T.Minus{}, rest))
+
+# February's days by the three divisibility tests, the code's way and the
+# table's way, for every answer the tests can give
+def feb.same(
+  four: Bool,
+  hundred: Bool,
+  four_hundred: Bool
+) -> {T.when.feb.go(four, hundred, four_hundred)
+  == Laws.feb_days(Bool.and(four, Bool.or(Bool.not(hundred), four_hundred))) : U32}:
+  match four hundred four_hundred:
+    case False{} _h _q:
+      {==}
+    case True{} False{} _q:
+      {==}
+    case True{} True{} True{}:
+      {==}
+    case True{} True{} False{}:
+      {==}
+
+# the code's days of a month are the table's, month by month
+def days.same(+yy: U32, mm: Laws.Month) -> {T.when.days(yy, Laws.month.num(mm)) == Laws.days_in(yy, mm) : U32}:
+  match mm:
+    case Laws.Jan{}:
+      {==}
+    case Laws.Feb{}:
+      feb.same(U32.is_eq(U32.mod(yy, 4), 0), U32.is_eq(U32.mod(yy, 100), 0),
+        U32.is_eq(U32.mod(yy, 400), 0))
+    case Laws.Mar{}:
+      {==}
+    case Laws.Apr{}:
+      {==}
+    case Laws.May{}:
+      {==}
+    case Laws.Jun{}:
+      {==}
+    case Laws.Jul{}:
+      {==}
+    case Laws.Aug{}:
+      {==}
+    case Laws.Sep{}:
+      {==}
+    case Laws.Oct{}:
+      {==}
+    case Laws.Nov{}:
+      {==}
+    case Laws.Dec{}:
+      {==}
+
+# every month's number is from 1 to 12
+def month.ok(mm: Laws.Month) -> {True{} == T.bound.rng(Laws.month.num(mm), 1, 12) : Bool}:
+  match mm:
+    case Laws.Jan{}:
+      {==}
+    case Laws.Feb{}:
+      {==}
+    case Laws.Mar{}:
+      {==}
+    case Laws.Apr{}:
+      {==}
+    case Laws.May{}:
+      {==}
+    case Laws.Jun{}:
+      {==}
+    case Laws.Jul{}:
+      {==}
+    case Laws.Aug{}:
+      {==}
+    case Laws.Sep{}:
+      {==}
+    case Laws.Oct{}:
+      {==}
+    case Laws.Nov{}:
+      {==}
+    case Laws.Dec{}:
+      {==}
+
+# the day test, with the code's days of the month turned into the table's
+def day.test(
+  +yy: U32,
+  +mm: Laws.Month,
+  +dd: U32
+) -> {Bool.and(U32.is_ge(dd, 1), U32.is_le(dd, Laws.days_in(yy, mm)))
+  == T.bound.rng(dd, 1, T.when.days(yy, Laws.month.num(mm))) : Bool}:
+  Equal.cong(U32, Bool, xx => Bool.and(U32.is_ge(dd, 1), U32.is_le(dd, xx)),
+    Laws.days_in(yy, mm), T.when.days(yy, Laws.month.num(mm)),
+    Equal.sym(U32, T.when.days(yy, Laws.month.num(mm)), Laws.days_in(yy, mm), days.same(yy, mm)))
+
+# the claim that a date is accepted and the rest read after it
+def date.In(mo_ok: Bool, d_ok: Bool, +yy: U32, +mo: U32, +dd: U32, rest: List<&2, Char>) -> Type:
+  {T.when.date.ok.go(mo_ok, d_ok, yy, mo, dd, rest) == T.when.after.date(T.Date{yy, mo, dd}, rest) : T.WhenOut}
+
+# both tests passed, so the date is accepted
+def date.in(
+  mo_ok: Bool,
+  d_ok: Bool,
+  em: {True{} == mo_ok : Bool},
+  ed: {True{} == d_ok : Bool},
+  +yy: U32,
+  +mo: U32,
+  +dd: U32,
+  rest: List<&2, Char>
+) -> date.In(mo_ok, d_ok, yy, mo, dd, rest):
+  match mo_ok d_ok:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      Eq.bit.absurd2(&1, date.In(True{}, False{}, yy, mo, dd, rest), ed)
+    case False{} dk:
+      Eq.bit.absurd2(&1, date.In(False{}, dk, yy, mo, dd, rest), em)
+
+# the claim that a date is refused
+def date.Out(mo_ok: Bool, d_ok: Bool, +yy: U32, +mo: U32, +dd: U32, rest: List<&2, Char>) -> Type:
+  {Laws.when_refused(T.when.date.ok.go(mo_ok, d_ok, yy, mo, dd, rest)) == True{} : Bool}
+
+# the day test failed, so the date is refused whatever the month test said
+def date.out(
+  mo_ok: Bool,
+  d_ok: Bool,
+  ed: {False{} == d_ok : Bool},
+  +yy: U32,
+  +mo: U32,
+  +dd: U32,
+  rest: List<&2, Char>
+) -> date.Out(mo_ok, d_ok, yy, mo, dd, rest):
+  match mo_ok d_ok:
+    case True{} False{}:
+      {==}
+    case True{} True{}:
+      Eq.bit.absurd(&1, date.Out(True{}, True{}, yy, mo, dd, rest), ed)
+    case False{} dk:
+      {==}
+
+# the month is in range, and the day test is the table's
+def Laws.date_day_in_month(yy, mm, dd, rest, e):
+  date.in(T.bound.rng(Laws.month.num(mm), 1, 12), T.bound.rng(dd, 1, T.when.days(yy, Laws.month.num(mm))),
+    month.ok(mm),
+    Equal.trans(Bool, True{}, Bool.and(U32.is_ge(dd, 1), U32.is_le(dd, Laws.days_in(yy, mm))),
+      T.bound.rng(dd, 1, T.when.days(yy, Laws.month.num(mm))), e, day.test(yy, mm, dd)),
+    yy, Laws.month.num(mm), dd, rest)
+
+# the day test is the table's, and it failed
+def Laws.date_day_past_month(yy, mm, dd, rest, e):
+  date.out(T.bound.rng(Laws.month.num(mm), 1, 12), T.bound.rng(dd, 1, T.when.days(yy, Laws.month.num(mm))),
+    Equal.trans(Bool, False{}, Bool.and(U32.is_ge(dd, 1), U32.is_le(dd, Laws.days_in(yy, mm))),
+      T.bound.rng(dd, 1, T.when.days(yy, Laws.month.num(mm))), e, day.test(yy, mm, dd)),
+    yy, Laws.month.num(mm), dd, rest)

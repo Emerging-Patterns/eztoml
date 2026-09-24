@@ -933,9 +933,65 @@ def when.date.ok.go(mo_ok: Bool, d_ok: Bool, yy: U32, mo: U32, dd: U32, cs: List
     case True{}:
       when.date.ok.d(d_ok, yy, mo, dd, cs)
 
-# a date whose fields are in range
-def when.date.ok(yy: U32, +mo: U32, +dd: U32, cs: List<&2, Char>) -> WhenOut:
-  when.date.ok.go(bound.rng(mo, 1, 12), bound.rng(dd, 1, 31), yy, mo, dd, cs)
+# February in a year divisible by 4 and by 100: 29 days only when the year
+# is also divisible by 400
+def when.feb.quad(four_hundred: Bool) -> U32:
+  match four_hundred:
+    case True{}:
+      29
+    case False{}:
+      28
+
+# February in a year divisible by 4: 29 days unless the year is a century
+def when.feb.cent(hundred: Bool, four_hundred: Bool) -> U32:
+  match hundred:
+    case False{}:
+      29
+    case True{}:
+      when.feb.quad(four_hundred)
+
+# February: 29 days in a leap year and 28 otherwise. A leap year is divisible
+# by 4, except by 100 unless also by 400 (RFC 3339, Appendix C)
+def when.feb.go(four: Bool, hundred: Bool, four_hundred: Bool) -> U32:
+  match four:
+    case False{}:
+      28
+    case True{}:
+      when.feb.cent(hundred, four_hundred)
+
+# the days of February in a year
+def when.feb(+yy: U32) -> U32:
+  when.feb.go(U32.is_eq(U32.mod(yy, 4), 0), U32.is_eq(U32.mod(yy, 100), 0),
+    U32.is_eq(U32.mod(yy, 400), 0))
+
+# April, June, September and November have 30 days
+def when.short(+mo: U32) -> Bool:
+  Bool.or(Bool.or(U32.is_eq(mo, 4), U32.is_eq(mo, 6)),
+    Bool.or(U32.is_eq(mo, 9), U32.is_eq(mo, 11)))
+
+# 30 days in a short month and 31 in the others
+def when.days.short(short: Bool) -> U32:
+  match short:
+    case True{}:
+      30
+    case False{}:
+      31
+
+# the days of a month, by whether it is February or a short month
+def when.days.go(feb: Bool, short: Bool, +yy: U32) -> U32:
+  match feb:
+    case True{}:
+      when.feb(yy)
+    case False{}:
+      when.days.short(short)
+
+# the days of month mo in year yy
+def when.days(+yy: U32, +mo: U32) -> U32:
+  when.days.go(U32.is_eq(mo, 2), when.short(mo), yy)
+
+# a date whose fields are in range: the day within its month in that year
+def when.date.ok(+yy: U32, +mo: U32, +dd: U32, cs: List<&2, Char>) -> WhenOut:
+  when.date.ok.go(bound.rng(mo, 1, 12), bound.rng(dd, 1, when.days(yy, mo)), yy, mo, dd, cs)
 
 # a local time: HH:MM:SS, with the hour already taken
 def when.time.rest(tt: List<&2, Char>, hh: U32) -> WhenOut:
