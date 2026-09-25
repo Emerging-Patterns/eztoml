@@ -2305,3 +2305,25 @@ law int_reads_back:
   for +rest: String
   {from_val(fx, String.append(T.render.atom(T.VInt{sg, ds}), SCon{'\n', rest}))
     == after_val(fx, T.VInt{sg, ds}, rest) : T.Doc}
+
+# LAW: a well-formed float's text is classified as its sign and its spelling:
+# render writes the sign (a minus only) and the spelling, inf, nan, or
+# toml.abnf's float with no sign and no underscore, and the scan reads them
+# back with the spelling kept
+# TOML-NUM-2
+law flo_word:
+  for +sg: T.Sign
+  for +text: String
+  for +w: {T.wf.flo(text) == True{} : Bool}
+  {T.word.val(String.to_list(T.render.atom(T.VFlo{sg, text}))) == T.GotVal{T.VFlo{sg, text}} : T.Got}
+
+# LAW: a well-formed float's text then a newline is read from every value
+# state as the float
+law flo_reads_back:
+  for +sg: T.Sign
+  for +text: String
+  for +w: {T.wf.flo(text) == True{} : Bool}
+  for +fx: Vf
+  for +rest: String
+  {from_val(fx, String.append(T.render.atom(T.VFlo{sg, text}), SCon{'\n', rest}))
+    == after_val(fx, T.VFlo{sg, text}, rest) : T.Doc}

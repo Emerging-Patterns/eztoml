@@ -13399,3 +13399,1147 @@ def int.chars(
 def Laws.int_reads_back(sg, ds, w, fx, rest):
   Laws.word_reads_back(T.VInt{sg, ds}, T.render.atom(T.VInt{sg, ds}),
     int.chars(sg, ds, Eq.and.left(T.wf.dec(ds), T.i64.fits(sg, ds), w)), Laws.int_word(sg, ds, w), fx, rest)
+
+# Floats. wf.flo reads a float's spelling with an automaton of states Fl; the
+# numeral scan reads the same spelling with its own states. nm names the scan
+# state that matches each Fl state, and one lemma per state and character (a
+# bundle) says the two step together, with the facts about the character the
+# classifier needs. inf and nan are fixed texts.
+
+# the numeral scan state that matches a float automaton state; ds is the
+# numeral the scan has built, which only integer and float digits keep
+def nm(fl: T.Fl, +sg: T.Sign, ds: List<&2, U32>) -> T.Num:
+  match fl:
+    case T.FlStart{}:
+      T.Num{T.NLead{}, sg, 10, [], False{}, False{}, ""}
+    case T.FlZero{}:
+      T.Num{T.NZero{}, sg, 10, [], False{}, True{}, ""}
+    case T.FlInt{}:
+      T.Num{T.NDig{}, sg, 10, ds, False{}, True{}, ""}
+    case T.FlDot{}:
+      T.Num{T.NFrac{}, sg, 10, [], False{}, False{}, ""}
+    case T.FlFrac{}:
+      T.Num{T.NFrac{}, sg, 10, ds, False{}, True{}, ""}
+    case T.FlE{}:
+      T.Num{T.NExp{}, sg, 10, [], False{}, False{}, ""}
+    case T.FlESign{}:
+      T.Num{T.NEDig{}, sg, 10, [], False{}, False{}, ""}
+    case T.FlExp{}:
+      T.Num{T.NEDig{}, sg, 10, ds, False{}, True{}, ""}
+    case T.FlNo{}:
+      T.Num{T.NBad{}, sg, 10, [], False{}, False{}, ""}
+
+# the numeral a scan state keeps
+def nm.ds(fl: T.Fl, ds: List<&2, U32>) -> List<&2, U32>:
+  match fl:
+    case T.FlInt{}:
+      ds
+    case T.FlFrac{}:
+      ds
+    case T.FlExp{}:
+      ds
+    case _:
+      []
+
+# the numeral after a spelling, as the scan builds it
+def nds(cs: List<&2, Char>, +fl: T.Fl, ds: List<&2, U32>) -> List<&2, U32>:
+  match cs:
+    case []:
+      ds
+    case +cc <> tt:
+      nds(tt, T.wf.flo.step(fl, cc), T.dec.go(nm.ds(fl, ds), 10, T.dig.val(cc)))
+
+# a state the automaton can still accept from
+def fl.live(fl: T.Fl) -> Bool:
+  match fl:
+    case T.FlNo{}:
+      False{}
+    case _:
+      True{}
+
+# a state before the exponent
+def fl.pre(fl: T.Fl) -> Bool:
+  match fl:
+    case T.FlStart{}:
+      True{}
+    case T.FlZero{}:
+      True{}
+    case T.FlInt{}:
+      True{}
+    case T.FlDot{}:
+      True{}
+    case T.FlFrac{}:
+      True{}
+    case _:
+      False{}
+
+# the first state
+def fl.start(fl: T.Fl) -> Bool:
+  match fl:
+    case T.FlStart{}:
+      True{}
+    case _:
+      False{}
+
+# two bits are one bit
+def beq(aa: Bool, bb: Bool) -> Bool:
+  match aa bb:
+    case True{} True{}:
+      True{}
+    case False{} False{}:
+      True{}
+    case _ _:
+      False{}
+
+# two bits beq calls equal are one bit
+def beq.eq(aa: Bool, bb: Bool, ee: {beq(aa, bb) == True{} : Bool}) -> {aa == bb : Bool}:
+  match aa bb:
+    case True{} True{}:
+      {==}
+    case False{} False{}:
+      {==}
+    case True{} False{}:
+      Eq.bit.absurd(&2, {True{} == False{} : Bool}, ee)
+    case False{} True{}:
+      Eq.bit.absurd(&2, {False{} == True{} : Bool}, ee)
+
+# a sign
+def fq.pm(+cc: Char) -> Bool:
+  Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'))
+
+# a capital exponent mark or a sign
+def fq.big(+cc: Char) -> Bool:
+  Bool.or(Char.is_eq(cc, 'E'), fq.pm(cc))
+
+# an exponent mark or a sign
+def fq.e(+cc: Char) -> Bool:
+  Bool.or(Char.is_eq(cc, 'e'), fq.big(cc))
+
+# a dot, an exponent mark or a sign
+def fq.dot(+cc: Char) -> Bool:
+  Bool.or(Char.is_eq(cc, '.'), fq.e(cc))
+
+# a character of the float alphabet: a digit, a dot, an exponent mark or a
+# sign
+def fch(+cc: Char) -> Bool:
+  Bool.or(Char.is_digit(cc), Bool.or(Char.is_eq(cc, '.'), Bool.or(Char.is_eq(cc, 'e'), Bool.or(Char.is_eq(cc, 'E'),
+    Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'))))))
+
+# what a live step says of its character: a character a bare value keeps, no
+# underscore and no colon, no minus before the exponent, a digit first, and
+# the step leaves the exponent's part only at an exponent mark
+def fa6(+fl: T.Fl, +cc: Char) -> Bool:
+  beq(fl.pre(T.wf.flo.step(fl, cc)), Bool.and(fl.pre(fl), Bool.not(T.word.ee.hit(cc))))
+
+def fa5(+fl: T.Fl, +cc: Char) -> Bool:
+  Bool.and(Bool.or(Bool.not(fl.start(fl)), Char.is_digit(cc)), fa6(fl, cc))
+
+def fa4(+fl: T.Fl, +cc: Char) -> Bool:
+  Bool.and(Bool.not(Bool.and(fl.pre(fl), Char.is_eq(cc, '-'))), fa5(fl, cc))
+
+def fa3(+fl: T.Fl, +cc: Char) -> Bool:
+  Bool.and(Bool.not(Char.is_eq(cc, ':')), fa4(fl, cc))
+
+def fa2(+fl: T.Fl, +cc: Char) -> Bool:
+  Bool.and(Bool.not(Char.is_eq(cc, '_')), fa3(fl, cc))
+
+def fl.facts(+fl: T.Fl, +cc: Char) -> Bool:
+  Bool.and(Laws.word.char(cc), fa2(fl, cc))
+
+# a scan state and a bit
+type Fs is Data:
+  Fs{n: T.Num, b: Bool}
+
+# the scan state
+def fs.n(fs: Fs) -> T.Num:
+  match fs:
+    case Fs{nn, _b}:
+      nn
+
+# the bit
+def fs.b(fs: Fs) -> Bool:
+  match fs:
+    case Fs{_n, bb}:
+      bb
+
+# the bundle: on a live step the scan steps as the automaton does, and the
+# facts hold
+def fb(+fl: T.Fl, +sg: T.Sign, +ds: List<&2, U32>, +cc: Char) -> Type:
+  {Fs{T.num.step(nm(fl, sg, ds), cc), fl.facts(fl, cc)}
+    == Fs{nm(T.wf.flo.step(fl, cc), sg, T.dec.go(nm.ds(fl, ds), 10, T.dig.val(cc))), True{}} : Fs}
+
+# a sign of the float alphabet
+def fe.pm(
+  -P: Char -> Type,
+  +cc: Char,
+  pl: Bool,
+  epl: {Char.is_eq(cc, '+') == pl : Bool},
+  h: {Bool.or(pl, Char.is_eq(cc, '-')) == True{} : Bool},
+  pp: P('+'),
+  pm: P('-')
+) -> P(cc):
+  match pl:
+    case True{}:
+      %Equal.sym(Char, cc, '+', Eq.char_eq_true(cc, '+', epl)) : P(_)
+      pp
+    case False{}:
+      %Equal.sym(Char, cc, '-', Eq.char_eq_true(cc, '-', h)) : P(_)
+      pm
+
+# a capital exponent mark or a sign
+def fe.big(
+  -P: Char -> Type,
+  +cc: Char,
+  be: Bool,
+  ebe: {Char.is_eq(cc, 'E') == be : Bool},
+  h: {Bool.or(be, Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'))) == True{} : Bool},
+  pE: P('E'),
+  pp: P('+'),
+  pm: P('-')
+) -> P(cc):
+  match be:
+    case True{}:
+      %Equal.sym(Char, cc, 'E', Eq.char_eq_true(cc, 'E', ebe)) : P(_)
+      pE
+    case False{}:
+      fe.pm(P, cc, Char.is_eq(cc, '+'), {==}, h, pp, pm)
+
+# an exponent mark or a sign
+def fe.e(
+  -P: Char -> Type,
+  +cc: Char,
+  e1: Bool,
+  ee1: {Char.is_eq(cc, 'e') == e1 : Bool},
+  h: {Bool.or(e1, fq.big(cc)) == True{} : Bool},
+  pe: P('e'),
+  pE: P('E'),
+  pp: P('+'),
+  pm: P('-')
+) -> P(cc):
+  match e1:
+    case True{}:
+      %Equal.sym(Char, cc, 'e', Eq.char_eq_true(cc, 'e', ee1)) : P(_)
+      pe
+    case False{}:
+      fe.big(P, cc, Char.is_eq(cc, 'E'), {==}, h, pE, pp, pm)
+
+# the fifteen characters of the float alphabet, from the dot on
+def fe.rest(
+  -P: Char -> Type,
+  +cc: Char,
+  dt: Bool,
+  edt: {Char.is_eq(cc, '.') == dt : Bool},
+  h: {Bool.or(dt, fq.e(cc)) == True{} : Bool},
+  pdt: P('.'),
+  pe: P('e'),
+  pE: P('E'),
+  pp: P('+'),
+  pm: P('-')
+) -> P(cc):
+  match dt:
+    case True{}:
+      %Equal.sym(Char, cc, '.', Eq.char_eq_true(cc, '.', edt)) : P(_)
+      pdt
+    case False{}:
+      fe.e(P, cc, Char.is_eq(cc, 'e'), {==}, h, pe, pE, pp, pm)
+
+# a digit, or one of the others
+def fe.go(
+  -P: Char -> Type,
+  +cc: Char,
+  dg: Bool,
+  edg: {Char.is_digit(cc) == dg : Bool},
+  h: {Bool.or(dg, fq.dot(cc)) == True{} : Bool},
+  p0: P('0'),
+  p1: P('1'),
+  p2: P('2'),
+  p3: P('3'),
+  p4: P('4'),
+  p5: P('5'),
+  p6: P('6'),
+  p7: P('7'),
+  p8: P('8'),
+  p9: P('9'),
+  pdt: P('.'),
+  pe: P('e'),
+  pE: P('E'),
+  pp: P('+'),
+  pm: P('-')
+) -> P(cc):
+  match dg:
+    case True{}:
+      dg.elim(P, cc, edg, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9)
+    case False{}:
+      fe.rest(P, cc, Char.is_eq(cc, '.'), {==}, h, pdt, pe, pE, pp, pm)
+
+# a claim made of each character of the float alphabet is made of every
+# character of it
+def fe.elim(
+  -P: Char -> Type,
+  +cc: Char,
+  h: {fch(cc) == True{} : Bool},
+  p0: P('0'),
+  p1: P('1'),
+  p2: P('2'),
+  p3: P('3'),
+  p4: P('4'),
+  p5: P('5'),
+  p6: P('6'),
+  p7: P('7'),
+  p8: P('8'),
+  p9: P('9'),
+  pdt: P('.'),
+  pe: P('e'),
+  pE: P('E'),
+  pp: P('+'),
+  pm: P('-')
+) -> P(cc):
+  fe.go(P, cc, Char.is_digit(cc), {==}, h, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pdt, pe, pE, pp, pm)
+
+# a character that is no digit is no 0
+def z0.go(
+  cc: Char,
+  zz: Bool,
+  ez: {Char.is_eq(cc, '0') == zz : Bool},
+  nd: {Char.is_digit(cc) == False{} : Bool}
+) -> {zz == False{} : Bool}:
+  match zz:
+    case False{}:
+      {==}
+    case True{}:
+      Eq.bit.absurd2(&2, {True{} == False{} : Bool}, Equal.trans(Bool, True{}, Char.is_digit(cc), False{},
+        Equal.cong(Char, Bool, ch => Char.is_digit(ch), '0', cc,
+          Equal.sym(Char, cc, '0', Eq.char_eq_true(cc, '0', ez))), nd))
+
+# no exponent mark
+def nie(
+  +cc: Char,
+  ne: {Char.is_eq(cc, 'e') == False{} : Bool},
+  nE: {Char.is_eq(cc, 'E') == False{} : Bool}
+) -> {T.wf.flo.is_e(cc) == False{} : Bool}:
+  Equal.trans(Bool, T.wf.flo.is_e(cc), Bool.or(False{}, Char.is_eq(cc, 'E')), False{},
+    Equal.cong(Bool, Bool, bb => Bool.or(bb, Char.is_eq(cc, 'E')), Char.is_eq(cc, 'e'), False{}, ne), nE)
+
+# no dot and no exponent mark: nothing may follow the integer part
+def tail.no(
+  +cc: Char,
+  ndt: {Char.is_eq(cc, '.') == False{} : Bool},
+  ne: {T.wf.flo.is_e(cc) == False{} : Bool}
+) -> {T.wf.flo.tail(cc) == T.FlNo{} : T.Fl}:
+  Equal.trans(T.Fl, T.wf.flo.tail(cc), Bool.pick(T.Fl, T.wf.flo.is_e(cc), T.FlE{}, T.FlNo{}), T.FlNo{},
+    Equal.cong(Bool, T.Fl, bb => Bool.pick(T.Fl, bb, T.FlDot{}, Bool.pick(T.Fl, T.wf.flo.is_e(cc), T.FlE{},
+      T.FlNo{})), Char.is_eq(cc, '.'), False{}, ndt),
+    Equal.cong(Bool, T.Fl, bb => Bool.pick(T.Fl, bb, T.FlE{}, T.FlNo{}), T.wf.flo.is_e(cc), False{}, ne))
+
+# a character outside the float alphabet ends every state's walk
+def step.no(
+  fl: T.Fl,
+  +cc: Char,
+  n0: {Char.is_eq(cc, '0') == False{} : Bool},
+  +nd: {Char.is_digit(cc) == False{} : Bool},
+  +ndt: {Char.is_eq(cc, '.') == False{} : Bool},
+  +ne: {T.wf.flo.is_e(cc) == False{} : Bool},
+  ns: {Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')) == False{} : Bool}
+) -> {T.wf.flo.step(fl, cc) == T.FlNo{} : T.Fl}:
+  match fl:
+    case T.FlStart{}:
+      Equal.trans(T.Fl, T.wf.flo.step(T.FlStart{}, cc), Bool.pick(T.Fl, Char.is_digit(cc), T.FlInt{}, T.FlNo{}),
+        T.FlNo{},
+        Equal.cong(Bool, T.Fl, bb => Bool.pick(T.Fl, bb, T.FlZero{}, Bool.pick(T.Fl, Char.is_digit(cc), T.FlInt{},
+          T.FlNo{})), Char.is_eq(cc, '0'), False{}, n0),
+        Equal.cong(Bool, T.Fl, bb => Bool.pick(T.Fl, bb, T.FlInt{}, T.FlNo{}), Char.is_digit(cc), False{}, nd))
+    case T.FlZero{}:
+      tail.no(cc, ndt, ne)
+    case T.FlInt{}:
+      Equal.trans(T.Fl, T.wf.flo.step(T.FlInt{}, cc), T.wf.flo.tail(cc), T.FlNo{},
+        Equal.cong(Bool, T.Fl, bb => Bool.pick(T.Fl, bb, T.FlInt{}, T.wf.flo.tail(cc)), Char.is_digit(cc), False{},
+          nd), tail.no(cc, ndt, ne))
+    case T.FlDot{}:
+      Equal.cong(Bool, T.Fl, bb => Bool.pick(T.Fl, bb, T.FlFrac{}, T.FlNo{}), Char.is_digit(cc), False{}, nd)
+    case T.FlFrac{}:
+      Equal.trans(T.Fl, T.wf.flo.step(T.FlFrac{}, cc), Bool.pick(T.Fl, T.wf.flo.is_e(cc), T.FlE{}, T.FlNo{}),
+        T.FlNo{},
+        Equal.cong(Bool, T.Fl, bb => Bool.pick(T.Fl, bb, T.FlFrac{}, Bool.pick(T.Fl, T.wf.flo.is_e(cc), T.FlE{},
+          T.FlNo{})), Char.is_digit(cc), False{}, nd),
+        Equal.cong(Bool, T.Fl, bb => Bool.pick(T.Fl, bb, T.FlE{}, T.FlNo{}), T.wf.flo.is_e(cc), False{}, ne))
+    case T.FlE{}:
+      Equal.trans(T.Fl, T.wf.flo.step(T.FlE{}, cc), Bool.pick(T.Fl, Char.is_digit(cc), T.FlExp{}, T.FlNo{}),
+        T.FlNo{},
+        Equal.cong(Bool, T.Fl, bb => Bool.pick(T.Fl, bb, T.FlESign{}, Bool.pick(T.Fl, Char.is_digit(cc), T.FlExp{},
+          T.FlNo{})), Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')), False{}, ns),
+        Equal.cong(Bool, T.Fl, bb => Bool.pick(T.Fl, bb, T.FlExp{}, T.FlNo{}), Char.is_digit(cc), False{}, nd))
+    case T.FlESign{}:
+      Equal.cong(Bool, T.Fl, bb => Bool.pick(T.Fl, bb, T.FlExp{}, T.FlNo{}), Char.is_digit(cc), False{}, nd)
+    case T.FlExp{}:
+      Equal.cong(Bool, T.Fl, bb => Bool.pick(T.Fl, bb, T.FlExp{}, T.FlNo{}), Char.is_digit(cc), False{}, nd)
+    case T.FlNo{}:
+      {==}
+
+# a live step reads a character of the float alphabet
+def fch.go(
+  fl: T.Fl,
+  +cc: Char,
+  bb: Bool,
+  +eb: {fch(cc) == bb : Bool},
+  hl: {fl.live(T.wf.flo.step(fl, cc)) == True{} : Bool}
+) -> {fch(cc) == True{} : Bool}:
+  match bb:
+    case True{}:
+      eb
+    case False{}:
+      +r1 = {Eq.or.right_false(Char.is_digit(cc), Bool.or(Char.is_eq(cc, '.'), Bool.or(Char.is_eq(cc, 'e'),
+        Bool.or(Char.is_eq(cc, 'E'), Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'))))), eb)
+        : {Bool.or(Char.is_eq(cc, '.'), Bool.or(Char.is_eq(cc, 'e'), Bool.or(Char.is_eq(cc, 'E'),
+        Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'))))) == False{} : Bool}}
+      +r2 = {Eq.or.right_false(Char.is_eq(cc, '.'), Bool.or(Char.is_eq(cc, 'e'), Bool.or(Char.is_eq(cc, 'E'),
+        Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')))), r1)
+        : {Bool.or(Char.is_eq(cc, 'e'), Bool.or(Char.is_eq(cc, 'E'), Bool.or(Char.is_eq(cc, '+'),
+        Char.is_eq(cc, '-')))) == False{} : Bool}}
+      +r3 = {Eq.or.right_false(Char.is_eq(cc, 'e'), Bool.or(Char.is_eq(cc, 'E'), Bool.or(Char.is_eq(cc, '+'),
+        Char.is_eq(cc, '-'))), r2)
+        : {Bool.or(Char.is_eq(cc, 'E'), Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'))) == False{} : Bool}}
+      +nd = {Eq.or.left_false(Char.is_digit(cc), Bool.or(Char.is_eq(cc, '.'), Bool.or(Char.is_eq(cc, 'e'),
+        Bool.or(Char.is_eq(cc, 'E'), Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'))))), eb)
+        : {Char.is_digit(cc) == False{} : Bool}}
+      +sn = {step.no(fl, cc, z0.go(cc, Char.is_eq(cc, '0'), {==}, nd), nd,
+        Eq.or.left_false(Char.is_eq(cc, '.'), Bool.or(Char.is_eq(cc, 'e'), Bool.or(Char.is_eq(cc, 'E'),
+          Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')))), r1),
+        nie(cc, Eq.or.left_false(Char.is_eq(cc, 'e'), Bool.or(Char.is_eq(cc, 'E'), Bool.or(Char.is_eq(cc, '+'),
+          Char.is_eq(cc, '-'))), r2), Eq.or.left_false(Char.is_eq(cc, 'E'), Bool.or(Char.is_eq(cc, '+'),
+          Char.is_eq(cc, '-')), r3)),
+        Eq.or.right_false(Char.is_eq(cc, 'E'), Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')), r3))
+        : {T.wf.flo.step(fl, cc) == T.FlNo{} : T.Fl}}
+      Eq.bit.absurd(&2, {fch(cc) == True{} : Bool}, Equal.trans(Bool, False{}, fl.live(T.wf.flo.step(fl, cc)),
+        True{}, Equal.cong(T.Fl, Bool, ff => fl.live(ff), T.FlNo{}, T.wf.flo.step(fl, cc),
+          Equal.sym(T.Fl, T.wf.flo.step(fl, cc), T.FlNo{}, sn)), hl))
+# the bundle from FlStart, one character of the float alphabet at a time
+def fb.start(
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  cc: Char,
+  hf: {fch(cc) == True{} : Bool},
+  hl: {fl.live(T.wf.flo.step(T.FlStart{}, cc)) == True{} : Bool}
+) -> fb(T.FlStart{}, sg, ds, cc):
+  fe.elim(zz => {fl.live(T.wf.flo.step(T.FlStart{}, zz)) == True{} : Bool} -> fb(T.FlStart{}, sg, ds, zz), cc, hf,
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    ll => Eq.bit.absurd(&1, fb(T.FlStart{}, sg, ds, '.'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlStart{}, sg, ds, 'e'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlStart{}, sg, ds, 'E'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlStart{}, sg, ds, '+'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlStart{}, sg, ds, '-'), ll))(hl)
+
+# the bundle from FlZero, one character of the float alphabet at a time
+def fb.zero(
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  cc: Char,
+  hf: {fch(cc) == True{} : Bool},
+  hl: {fl.live(T.wf.flo.step(T.FlZero{}, cc)) == True{} : Bool}
+) -> fb(T.FlZero{}, sg, ds, cc):
+  fe.elim(zz => {fl.live(T.wf.flo.step(T.FlZero{}, zz)) == True{} : Bool} -> fb(T.FlZero{}, sg, ds, zz), cc, hf,
+    ll => Eq.bit.absurd(&1, fb(T.FlZero{}, sg, ds, '0'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlZero{}, sg, ds, '1'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlZero{}, sg, ds, '2'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlZero{}, sg, ds, '3'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlZero{}, sg, ds, '4'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlZero{}, sg, ds, '5'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlZero{}, sg, ds, '6'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlZero{}, sg, ds, '7'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlZero{}, sg, ds, '8'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlZero{}, sg, ds, '9'), ll),
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    ll => Eq.bit.absurd(&1, fb(T.FlZero{}, sg, ds, '+'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlZero{}, sg, ds, '-'), ll))(hl)
+
+# the bundle from FlInt, one character of the float alphabet at a time
+def fb.int(
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  cc: Char,
+  hf: {fch(cc) == True{} : Bool},
+  hl: {fl.live(T.wf.flo.step(T.FlInt{}, cc)) == True{} : Bool}
+) -> fb(T.FlInt{}, sg, ds, cc):
+  fe.elim(zz => {fl.live(T.wf.flo.step(T.FlInt{}, zz)) == True{} : Bool} -> fb(T.FlInt{}, sg, ds, zz), cc, hf,
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    ll => Eq.bit.absurd(&1, fb(T.FlInt{}, sg, ds, '+'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlInt{}, sg, ds, '-'), ll))(hl)
+
+# the bundle from FlDot, one character of the float alphabet at a time
+def fb.dot(
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  cc: Char,
+  hf: {fch(cc) == True{} : Bool},
+  hl: {fl.live(T.wf.flo.step(T.FlDot{}, cc)) == True{} : Bool}
+) -> fb(T.FlDot{}, sg, ds, cc):
+  fe.elim(zz => {fl.live(T.wf.flo.step(T.FlDot{}, zz)) == True{} : Bool} -> fb(T.FlDot{}, sg, ds, zz), cc, hf,
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    ll => Eq.bit.absurd(&1, fb(T.FlDot{}, sg, ds, '.'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlDot{}, sg, ds, 'e'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlDot{}, sg, ds, 'E'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlDot{}, sg, ds, '+'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlDot{}, sg, ds, '-'), ll))(hl)
+
+# the bundle from FlFrac, one character of the float alphabet at a time
+def fb.frac(
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  cc: Char,
+  hf: {fch(cc) == True{} : Bool},
+  hl: {fl.live(T.wf.flo.step(T.FlFrac{}, cc)) == True{} : Bool}
+) -> fb(T.FlFrac{}, sg, ds, cc):
+  fe.elim(zz => {fl.live(T.wf.flo.step(T.FlFrac{}, zz)) == True{} : Bool} -> fb(T.FlFrac{}, sg, ds, zz), cc, hf,
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    ll => Eq.bit.absurd(&1, fb(T.FlFrac{}, sg, ds, '.'), ll),
+    _l => {==},
+    _l => {==},
+    ll => Eq.bit.absurd(&1, fb(T.FlFrac{}, sg, ds, '+'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlFrac{}, sg, ds, '-'), ll))(hl)
+
+# the bundle from FlE, one character of the float alphabet at a time
+def fb.e(
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  cc: Char,
+  hf: {fch(cc) == True{} : Bool},
+  hl: {fl.live(T.wf.flo.step(T.FlE{}, cc)) == True{} : Bool}
+) -> fb(T.FlE{}, sg, ds, cc):
+  fe.elim(zz => {fl.live(T.wf.flo.step(T.FlE{}, zz)) == True{} : Bool} -> fb(T.FlE{}, sg, ds, zz), cc, hf,
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    ll => Eq.bit.absurd(&1, fb(T.FlE{}, sg, ds, '.'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlE{}, sg, ds, 'e'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlE{}, sg, ds, 'E'), ll),
+    _l => {==},
+    _l => {==})(hl)
+
+# the bundle from FlESign, one character of the float alphabet at a time
+def fb.esign(
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  cc: Char,
+  hf: {fch(cc) == True{} : Bool},
+  hl: {fl.live(T.wf.flo.step(T.FlESign{}, cc)) == True{} : Bool}
+) -> fb(T.FlESign{}, sg, ds, cc):
+  fe.elim(zz => {fl.live(T.wf.flo.step(T.FlESign{}, zz)) == True{} : Bool} -> fb(T.FlESign{}, sg, ds, zz), cc, hf,
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    ll => Eq.bit.absurd(&1, fb(T.FlESign{}, sg, ds, '.'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlESign{}, sg, ds, 'e'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlESign{}, sg, ds, 'E'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlESign{}, sg, ds, '+'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlESign{}, sg, ds, '-'), ll))(hl)
+
+# the bundle from FlExp, one character of the float alphabet at a time
+def fb.exp(
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  cc: Char,
+  hf: {fch(cc) == True{} : Bool},
+  hl: {fl.live(T.wf.flo.step(T.FlExp{}, cc)) == True{} : Bool}
+) -> fb(T.FlExp{}, sg, ds, cc):
+  fe.elim(zz => {fl.live(T.wf.flo.step(T.FlExp{}, zz)) == True{} : Bool} -> fb(T.FlExp{}, sg, ds, zz), cc, hf,
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    _l => {==},
+    ll => Eq.bit.absurd(&1, fb(T.FlExp{}, sg, ds, '.'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlExp{}, sg, ds, 'e'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlExp{}, sg, ds, 'E'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlExp{}, sg, ds, '+'), ll),
+    ll => Eq.bit.absurd(&1, fb(T.FlExp{}, sg, ds, '-'), ll))(hl)
+
+# the bundle for every state and every character of a live step
+def fb.at(
+  fl: T.Fl,
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  +cc: Char,
+  +hl: {fl.live(T.wf.flo.step(fl, cc)) == True{} : Bool}
+) -> fb(fl, sg, ds, cc):
+  match fl:
+    case T.FlStart{}:
+      fb.start(sg, ds, cc, fch.go(T.FlStart{}, cc, fch(cc), {==}, hl), hl)
+    case T.FlZero{}:
+      fb.zero(sg, ds, cc, fch.go(T.FlZero{}, cc, fch(cc), {==}, hl), hl)
+    case T.FlInt{}:
+      fb.int(sg, ds, cc, fch.go(T.FlInt{}, cc, fch(cc), {==}, hl), hl)
+    case T.FlDot{}:
+      fb.dot(sg, ds, cc, fch.go(T.FlDot{}, cc, fch(cc), {==}, hl), hl)
+    case T.FlFrac{}:
+      fb.frac(sg, ds, cc, fch.go(T.FlFrac{}, cc, fch(cc), {==}, hl), hl)
+    case T.FlE{}:
+      fb.e(sg, ds, cc, fch.go(T.FlE{}, cc, fch(cc), {==}, hl), hl)
+    case T.FlESign{}:
+      fb.esign(sg, ds, cc, fch.go(T.FlESign{}, cc, fch(cc), {==}, hl), hl)
+    case T.FlExp{}:
+      fb.exp(sg, ds, cc, fch.go(T.FlExp{}, cc, fch(cc), {==}, hl), hl)
+    case T.FlNo{}:
+      Eq.bit.absurd(&1, fb(T.FlNo{}, sg, ds, cc), hl)
+
+# a walk from the dead state stays there
+def go.no(cs: List<&2, Char>) -> {T.wf.flo.go(cs, T.FlNo{}) == T.FlNo{} : T.Fl}:
+  match cs:
+    case []:
+      {==}
+    case _c <> tt:
+      go.no(tt)
+
+# a walk that ends accepting starts from a live state
+def live.of(
+  fl: T.Fl,
+  cs: List<&2, Char>,
+  hh: {T.wf.flo.end(T.wf.flo.go(cs, fl)) == True{} : Bool}
+) -> {fl.live(fl) == True{} : Bool}:
+  match fl:
+    case T.FlNo{}:
+      Eq.bit.absurd(&2, {False{} == True{} : Bool}, Equal.trans(Bool, False{},
+        T.wf.flo.end(T.wf.flo.go(cs, T.FlNo{})), True{},
+        Equal.cong(T.Fl, Bool, ff => T.wf.flo.end(ff), T.FlNo{}, T.wf.flo.go(cs, T.FlNo{}),
+          Equal.sym(T.Fl, T.wf.flo.go(cs, T.FlNo{}), T.FlNo{}, go.no(cs))), hh))
+    case T.FlStart{}:
+      {==}
+    case T.FlZero{}:
+      {==}
+    case T.FlInt{}:
+      {==}
+    case T.FlDot{}:
+      {==}
+    case T.FlFrac{}:
+      {==}
+    case T.FlE{}:
+      {==}
+    case T.FlESign{}:
+      {==}
+    case T.FlExp{}:
+      {==}
+
+# the facts of a step on a walk that ends accepting
+def ffacts(
+  +fl: T.Fl,
+  +cc: Char,
+  tt: List<&2, Char>,
+  hh: {T.wf.flo.end(T.wf.flo.go(tt, T.wf.flo.step(fl, cc))) == True{} : Bool}
+) -> {fl.facts(fl, cc) == True{} : Bool}:
+  Equal.cong(Fs, Bool, fs => fs.b(fs),
+    Fs{T.num.step(nm(fl, T.Plus{}, []), cc), fl.facts(fl, cc)},
+    Fs{nm(T.wf.flo.step(fl, cc), T.Plus{}, T.dec.go(nm.ds(fl, []), 10, T.dig.val(cc))), True{}},
+    fb.at(fl, T.Plus{}, [], cc, live.of(T.wf.flo.step(fl, cc), tt, hh)))
+
+# the numeral scan walks a float's spelling as the automaton does
+def fw.num(
+  cs: List<&2, Char>,
+  +fl: T.Fl,
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  +hh: {T.wf.flo.end(T.wf.flo.go(cs, fl)) == True{} : Bool}
+) -> {T.num.go(cs, nm(fl, sg, ds)) == nm(T.wf.flo.go(cs, fl), sg, nds(cs, fl, ds)) : T.Num}:
+  match cs:
+    case []:
+      {==}
+    case +cc <> +tt:
+      Equal.trans(T.Num, T.num.go(tt, T.num.step(nm(fl, sg, ds), cc)),
+        T.num.go(tt, nm(T.wf.flo.step(fl, cc), sg, T.dec.go(nm.ds(fl, ds), 10, T.dig.val(cc)))),
+        nm(T.wf.flo.go(tt, T.wf.flo.step(fl, cc)), sg, nds(tt, T.wf.flo.step(fl, cc),
+          T.dec.go(nm.ds(fl, ds), 10, T.dig.val(cc)))),
+        Equal.cong(T.Num, T.Num, nn => T.num.go(tt, nn), T.num.step(nm(fl, sg, ds), cc),
+          nm(T.wf.flo.step(fl, cc), sg, T.dec.go(nm.ds(fl, ds), 10, T.dig.val(cc))),
+          Equal.cong(Fs, T.Num, fs => fs.n(fs), Fs{T.num.step(nm(fl, sg, ds), cc), fl.facts(fl, cc)},
+            Fs{nm(T.wf.flo.step(fl, cc), sg, T.dec.go(nm.ds(fl, ds), 10, T.dig.val(cc))), True{}},
+            fb.at(fl, sg, ds, cc, live.of(T.wf.flo.step(fl, cc), tt, hh)))),
+        fw.num(tt, T.wf.flo.step(fl, cc), sg, T.dec.go(nm.ds(fl, ds), 10, T.dig.val(cc)), hh))
+
+# a float's spelling is characters a bare value keeps
+def fw.rest(
+  tt: String,
+  +fl: T.Fl,
+  +hh: {T.wf.flo.end(T.wf.flo.go(String.to_list(tt), fl)) == True{} : Bool}
+) -> {Laws.word.rest(tt) == True{} : Bool}:
+  match tt:
+    case SNil{}:
+      {==}
+    case SCon{+cc, +ts}:
+      and.tt(Laws.word.char(cc), Laws.word.rest(ts), Eq.and.left(Laws.word.char(cc), fa2(fl, cc),
+        ffacts(fl, cc, String.to_list(ts), hh)), fw.rest(ts, T.wf.flo.step(fl, cc), hh))
+
+# a float's spelling holds no underscore, so its body is itself
+def fw.body(
+  cs: List<&2, Char>,
+  +fl: T.Fl,
+  +out: List<&2, Char>,
+  +hh: {T.wf.flo.end(T.wf.flo.go(cs, fl)) == True{} : Bool}
+) -> {T.word.body.go(cs, False{}, out) == List.reverse.go(&2, Char, out, cs) : List<&2, Char>}:
+  match cs:
+    case []:
+      {==}
+    case +cc <> +tt:
+      +f2 = {Eq.and.right(Laws.word.char(cc), fa2(fl, cc), ffacts(fl, cc, tt, hh)) : {fa2(fl, cc) == True{} : Bool}}
+      Equal.trans(List<&2, Char>, T.word.body.go(tt, False{}, T.word.body.put.us(Char.is_eq(cc, '_'), cc, out)),
+        T.word.body.go(tt, False{}, cc <> out), List.reverse.go(&2, Char, cc <> out, tt),
+        Equal.cong(Bool, List<&2, Char>, bb => T.word.body.go(tt, False{}, T.word.body.put.us(bb, cc, out)),
+          Char.is_eq(cc, '_'), False{}, Eq.not.true(Char.is_eq(cc, '_'), Eq.and.left(Bool.not(Char.is_eq(cc, '_')),
+          fa3(fl, cc), f2))),
+        fw.body(tt, T.wf.flo.step(fl, cc), cc <> out, hh))
+
+# a float's spelling holds no colon
+def fw.colon(
+  cs: List<&2, Char>,
+  +fl: T.Fl,
+  +hh: {T.wf.flo.end(T.wf.flo.go(cs, fl)) == True{} : Bool}
+) -> {T.word.colon(cs) == False{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +cc <> +tt:
+      +f3 = {Eq.and.right(Bool.not(Char.is_eq(cc, '_')), fa3(fl, cc), Eq.and.right(Laws.word.char(cc), fa2(fl, cc),
+        ffacts(fl, cc, tt, hh))) : {fa3(fl, cc) == True{} : Bool}}
+      Equal.trans(Bool, T.word.or(Char.is_eq(cc, ':'), T.word.colon(tt)), T.word.or(False{}, T.word.colon(tt)),
+        False{},
+        Equal.cong(Bool, Bool, bb => T.word.or(bb, T.word.colon(tt)), Char.is_eq(cc, ':'), False{},
+          Eq.not.true(Char.is_eq(cc, ':'), Eq.and.left(Bool.not(Char.is_eq(cc, ':')), fa4(fl, cc), f3))),
+        fw.colon(tt, T.wf.flo.step(fl, cc), hh))
+
+# the left flag of a word.or that answered False
+def wor.l(aa: Bool, bb: Bool, ee: {T.word.or(aa, bb) == False{} : Bool}) -> {aa == False{} : Bool}:
+  match aa:
+    case True{}:
+      ee
+    case False{}:
+      {==}
+
+# and the right one
+def wor.r(aa: Bool, bb: Bool, ee: {T.word.or(aa, bb) == False{} : Bool}) -> {bb == False{} : Bool}:
+  match aa:
+    case True{}:
+      Eq.bit.absurd2(&2, {bb == False{} : Bool}, ee)
+    case False{}:
+      ee
+
+# a character that is no minus is no dash, first or not
+def dhit(
+  ff: Bool,
+  cc: Char,
+  hm: {Char.is_eq(cc, '-') == False{} : Bool}
+) -> {T.word.dash.hit(ff, cc) == False{} : Bool}:
+  match ff:
+    case True{}:
+      {==}
+    case False{}:
+      hm
+
+# before the exponent, a spelling with no exponent mark holds no minus, and
+# its walk stays before the exponent
+def fw.dash(
+  cs: List<&2, Char>,
+  +fl: T.Fl,
+  ff: Bool,
+  +hh: {T.wf.flo.end(T.wf.flo.go(cs, fl)) == True{} : Bool},
+  +hp: {fl.pre(fl) == True{} : Bool},
+  +he: {T.word.ee(cs) == False{} : Bool}
+) -> {T.word.dash(cs, ff) == False{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +cc <> +tt:
+      +f4 = {Eq.and.right(Bool.not(Char.is_eq(cc, ':')), fa4(fl, cc), Eq.and.right(Bool.not(Char.is_eq(cc, '_')),
+        fa3(fl, cc), Eq.and.right(Laws.word.char(cc), fa2(fl, cc), ffacts(fl, cc, tt, hh))))
+        : {fa4(fl, cc) == True{} : Bool}}
+      +f5 = {Eq.and.right(Bool.not(Bool.and(fl.pre(fl), Char.is_eq(cc, '-'))), fa5(fl, cc), f4)
+        : {fa5(fl, cc) == True{} : Bool}}
+      +hx = {wor.l(T.word.ee.hit(cc), T.word.ee(tt), he) : {T.word.ee.hit(cc) == False{} : Bool}}
+      +hm = {Equal.trans(Bool, Char.is_eq(cc, '-'), Bool.and(fl.pre(fl), Char.is_eq(cc, '-')), False{},
+        Equal.cong(Bool, Bool, bb => Bool.and(bb, Char.is_eq(cc, '-')), True{}, fl.pre(fl),
+          Equal.sym(Bool, fl.pre(fl), True{}, hp)),
+        Eq.not.true(Bool.and(fl.pre(fl), Char.is_eq(cc, '-')), Eq.and.left(Bool.not(Bool.and(fl.pre(fl),
+          Char.is_eq(cc, '-'))), fa5(fl, cc), f4))) : {Char.is_eq(cc, '-') == False{} : Bool}}
+      +hq = {Equal.trans(Bool, fl.pre(T.wf.flo.step(fl, cc)), Bool.and(fl.pre(fl), Bool.not(T.word.ee.hit(cc))),
+        True{},
+        beq.eq(fl.pre(T.wf.flo.step(fl, cc)), Bool.and(fl.pre(fl), Bool.not(T.word.ee.hit(cc))),
+          Eq.and.right(Bool.or(Bool.not(fl.start(fl)), Char.is_digit(cc)), fa6(fl, cc), f5)),
+        Equal.trans(Bool, Bool.and(fl.pre(fl), Bool.not(T.word.ee.hit(cc))),
+          Bool.and(True{}, Bool.not(T.word.ee.hit(cc))), True{},
+          Equal.cong(Bool, Bool, bb => Bool.and(bb, Bool.not(T.word.ee.hit(cc))), fl.pre(fl), True{}, hp),
+          Equal.cong(Bool, Bool, bb => Bool.and(True{}, Bool.not(bb)), T.word.ee.hit(cc), False{}, hx)))
+        : {fl.pre(T.wf.flo.step(fl, cc)) == True{} : Bool}}
+      Equal.trans(Bool, T.word.or(T.word.dash.hit(ff, cc), T.word.dash(tt, False{})),
+        T.word.or(False{}, T.word.dash(tt, False{})), False{},
+        Equal.cong(Bool, Bool, bb => T.word.or(bb, T.word.dash(tt, False{})), T.word.dash.hit(ff, cc), False{},
+          dhit(ff, cc, hm)),
+        fw.dash(tt, T.wf.flo.step(fl, cc), False{}, hh, hq, wor.r(T.word.ee.hit(cc), T.word.ee(tt), he)))
+
+# a finished walk that accepts is a float, spelled by the body of the word
+def fin.end(
+  fl: T.Fl,
+  +sg: T.Sign,
+  ds: List<&2, U32>,
+  cs: List<&2, Char>,
+  hh: {T.wf.flo.end(fl) == True{} : Bool}
+) -> {T.num.fin(nm(fl, sg, ds), cs) == T.GotVal{T.VFlo{sg, T.word.body(cs)}} : T.Got}:
+  match fl:
+    case T.FlFrac{}:
+      {==}
+    case T.FlExp{}:
+      {==}
+    case T.FlStart{}:
+      Eq.bit.absurd(&2, {T.num.fin(nm(T.FlStart{}, sg, ds), cs) == T.GotVal{T.VFlo{sg, T.word.body(cs)}} : T.Got}, hh)
+    case T.FlZero{}:
+      Eq.bit.absurd(&2, {T.num.fin(nm(T.FlZero{}, sg, ds), cs) == T.GotVal{T.VFlo{sg, T.word.body(cs)}} : T.Got}, hh)
+    case T.FlInt{}:
+      Eq.bit.absurd(&2, {T.num.fin(nm(T.FlInt{}, sg, ds), cs) == T.GotVal{T.VFlo{sg, T.word.body(cs)}} : T.Got}, hh)
+    case T.FlDot{}:
+      Eq.bit.absurd(&2, {T.num.fin(nm(T.FlDot{}, sg, ds), cs) == T.GotVal{T.VFlo{sg, T.word.body(cs)}} : T.Got}, hh)
+    case T.FlE{}:
+      Eq.bit.absurd(&2, {T.num.fin(nm(T.FlE{}, sg, ds), cs) == T.GotVal{T.VFlo{sg, T.word.body(cs)}} : T.Got}, hh)
+    case T.FlESign{}:
+      Eq.bit.absurd(&2, {T.num.fin(nm(T.FlESign{}, sg, ds), cs) == T.GotVal{T.VFlo{sg, T.word.body(cs)}} : T.Got},
+        hh)
+    case T.FlNo{}:
+      Eq.bit.absurd(&2, {T.num.fin(nm(T.FlNo{}, sg, ds), cs) == T.GotVal{T.VFlo{sg, T.word.body(cs)}} : T.Got}, hh)
+
+# a word the datetime route could take only by a dash in its exponent: an
+# exponent mark keeps it a numeral, and with none it has no dash
+def flo.route(
+  +cs: List<&2, Char>,
+  ex: Bool,
+  eex: {T.word.ee(cs) == ex : Bool},
+  hc: {T.word.colon(cs) == False{} : Bool},
+  hd: {T.word.ee(cs) == False{} : Bool} -> {T.word.dash(cs, True{}) == False{} : Bool}
+) -> {T.word.route(T.GotBad{""}, T.word.or(T.word.colon(cs), T.word.dash(cs, True{})), cs) == T.word.num(cs)
+  : T.Got}:
+  match ex:
+    case True{}:
+      %Equal.sym(Bool, T.word.ee(cs), True{}, eex) :
+        {T.word.route.date(T.word.as_date(T.word.or(T.word.colon(cs), T.word.dash(cs, True{})), _), cs)
+          == T.word.num(cs) : T.Got}
+      {==}
+    case False{}:
+      route.num(cs, hc, hd(eex))
+
+# a digit is no sign
+def dg.nosign(
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')) == False{} : Bool}:
+  dg.elim(zz => {Bool.or(Char.is_eq(zz, '+'), Char.is_eq(zz, '-')) == False{} : Bool}, cc, hc,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# after a minus, a digit is read as the first character of an unsigned
+# numeral with the minus kept
+def sign.skip(
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {T.num.step(T.Num{T.NSign{}, T.Minus{}, 10, [], False{}, False{}, ""}, cc)
+  == T.num.step(nm(T.FlStart{}, T.Minus{}, []), cc) : T.Num}:
+  dg.elim(zz => {T.num.step(T.Num{T.NSign{}, T.Minus{}, 10, [], False{}, False{}, ""}, zz)
+    == T.num.step(nm(T.FlStart{}, T.Minus{}, []), zz) : T.Num}, cc, hc,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# what flo_word claims
+def flo.Goal(+sg: T.Sign, +text: String) -> Type:
+  {T.word.val(String.to_list(T.render.atom(T.VFlo{sg, text}))) == T.GotVal{T.VFlo{sg, text}} : T.Got}
+
+# a float's spelling starts with a digit
+def fl.dig(
+  +hh: Char,
+  tt: String,
+  hw: {T.wf.flo.end(T.wf.flo.go(hh <> String.to_list(tt), T.FlStart{})) == True{} : Bool}
+) -> {Char.is_digit(hh) == True{} : Bool}:
+  Eq.and.left(Char.is_digit(hh), fa6(T.FlStart{}, hh), Eq.and.right(Bool.not(Bool.and(True{},
+    Char.is_eq(hh, '-'))), fa5(T.FlStart{}, hh), Eq.and.right(Bool.not(Char.is_eq(hh, ':')), fa4(T.FlStart{}, hh),
+    Eq.and.right(Bool.not(Char.is_eq(hh, '_')), fa3(T.FlStart{}, hh), Eq.and.right(Laws.word.char(hh),
+    fa2(T.FlStart{}, hh), ffacts(T.FlStart{}, hh, String.to_list(tt), hw))))))
+
+# a positive float spelled by the automaton
+def flo.plus(
+  +hh: Char,
+  +tt: String,
+  +hw: {T.wf.flo.end(T.wf.flo.go(hh <> String.to_list(tt), T.FlStart{})) == True{} : Bool}
+) -> flo.Goal(T.Plus{}, SCon{hh, tt}):
+  +hd = {fl.dig(hh, tt, hw) : {Char.is_digit(hh) == True{} : Bool}}
+  +cs = {hh <> String.to_list(tt) : List<&2, Char>}
+  Equal.trans(T.Got, T.word.val.pick(T.word.special(hh), cs), T.word.val.pick(False{}, cs),
+    T.GotVal{T.VFlo{T.Plus{}, SCon{hh, tt}}},
+    Equal.cong(Bool, T.Got, bb => T.word.val.pick(bb, cs), T.word.special(hh), False{}, dg.nospec(hh, hd)),
+    Equal.trans(T.Got, T.word.route(T.GotBad{""}, T.word.or(T.word.colon(cs), T.word.dash(cs, True{})), cs),
+      T.word.num(cs), T.GotVal{T.VFlo{T.Plus{}, SCon{hh, tt}}},
+      flo.route(cs, T.word.ee(cs), {==}, fw.colon(cs, T.FlStart{}, hw),
+        ee => fw.dash(cs, T.FlStart{}, True{}, hw, {==}, ee)),
+      Equal.trans(T.Got, T.num.fin(T.num.go(cs, nm(T.FlStart{}, T.Plus{}, [])), cs),
+        T.num.fin(nm(T.wf.flo.go(cs, T.FlStart{}), T.Plus{}, nds(cs, T.FlStart{}, [])), cs),
+        T.GotVal{T.VFlo{T.Plus{}, SCon{hh, tt}}},
+        Equal.cong(T.Num, T.Got, nn => T.num.fin(nn, cs), T.num.go(cs, nm(T.FlStart{}, T.Plus{}, [])),
+          nm(T.wf.flo.go(cs, T.FlStart{}), T.Plus{}, nds(cs, T.FlStart{}, [])),
+          fw.num(cs, T.FlStart{}, T.Plus{}, [], hw)),
+        Equal.trans(T.Got, T.num.fin(nm(T.wf.flo.go(cs, T.FlStart{}), T.Plus{}, nds(cs, T.FlStart{}, [])), cs),
+          T.GotVal{T.VFlo{T.Plus{}, T.word.body(cs)}}, T.GotVal{T.VFlo{T.Plus{}, SCon{hh, tt}}},
+          fin.end(T.wf.flo.go(cs, T.FlStart{}), T.Plus{}, nds(cs, T.FlStart{}, []), cs, hw),
+          Equal.cong(String, T.Got, ss => T.GotVal{T.VFlo{T.Plus{}, ss}}, T.word.body(cs), SCon{hh, tt},
+            Equal.trans(String, String.from_list(T.word.body.go(String.to_list(tt), False{},
+              T.word.body.put.sign(Bool.or(Char.is_eq(hh, '+'), Char.is_eq(hh, '-')), hh, []))),
+              String.from_list(T.word.body.go(String.to_list(tt), False{}, [hh])), SCon{hh, tt},
+              Equal.cong(Bool, String, bb => String.from_list(T.word.body.go(String.to_list(tt), False{},
+                T.word.body.put.sign(bb, hh, []))), Bool.or(Char.is_eq(hh, '+'), Char.is_eq(hh, '-')), False{},
+                dg.nosign(hh, hd)),
+              Equal.trans(String, String.from_list(T.word.body.go(String.to_list(tt), False{}, [hh])),
+                String.from_list(hh <> String.to_list(tt)), SCon{hh, tt},
+                Equal.cong(List<&2, Char>, String, ls => String.from_list(ls),
+                  T.word.body.go(String.to_list(tt), False{}, [hh]), hh <> String.to_list(tt),
+                  fw.body(String.to_list(tt), T.wf.flo.step(T.FlStart{}, hh), [hh], hw)),
+                ftl(SCon{hh, tt}))))))))
+
+# a negative float spelled by the automaton: the minus makes the word a
+# special candidate, which it is not, and the scan keeps the minus as the sign
+def flo.minus(
+  +hh: Char,
+  +tt: String,
+  +hw: {T.wf.flo.end(T.wf.flo.go(hh <> String.to_list(tt), T.FlStart{})) == True{} : Bool}
+) -> flo.Goal(T.Minus{}, SCon{hh, tt}):
+  +hd = {fl.dig(hh, tt, hw) : {Char.is_digit(hh) == True{} : Bool}}
+  +cs = {hh <> String.to_list(tt) : List<&2, Char>}
+  Equal.trans(T.Got, T.word.route(T.word.spec(String.from_list('-' <> cs)),
+    T.word.or(T.word.colon('-' <> cs), T.word.dash('-' <> cs, True{})), '-' <> cs),
+    T.word.route(T.GotBad{""}, T.word.or(T.word.colon('-' <> cs), T.word.dash('-' <> cs, True{})), '-' <> cs),
+    T.GotVal{T.VFlo{T.Minus{}, SCon{hh, tt}}},
+    Equal.cong(T.Got, T.Got, gg => T.word.route(gg, T.word.or(T.word.colon('-' <> cs),
+      T.word.dash('-' <> cs, True{})), '-' <> cs), T.word.spec(String.from_list('-' <> cs)), T.GotBad{""},
+      spec.m(hh, String.to_list(tt), dg.noi(hh, hd), dg.non(hh, hd))),
+    Equal.trans(T.Got, T.word.route(T.GotBad{""}, T.word.or(T.word.colon('-' <> cs), T.word.dash('-' <> cs,
+      True{})), '-' <> cs), T.word.num('-' <> cs), T.GotVal{T.VFlo{T.Minus{}, SCon{hh, tt}}},
+      flo.route('-' <> cs, T.word.ee(cs), {==}, fw.colon(cs, T.FlStart{}, hw),
+        ee => fw.dash(cs, T.FlStart{}, False{}, hw, {==}, ee)),
+      Equal.trans(T.Got, T.num.fin(T.num.go(String.to_list(tt), T.num.step(T.Num{T.NSign{}, T.Minus{}, 10, [],
+        False{}, False{}, ""}, hh)), '-' <> cs),
+        T.num.fin(nm(T.wf.flo.go(cs, T.FlStart{}), T.Minus{}, nds(cs, T.FlStart{}, [])), '-' <> cs),
+        T.GotVal{T.VFlo{T.Minus{}, SCon{hh, tt}}},
+        Equal.cong(T.Num, T.Got, nn => T.num.fin(nn, '-' <> cs),
+          T.num.go(String.to_list(tt), T.num.step(T.Num{T.NSign{}, T.Minus{}, 10, [], False{}, False{}, ""}, hh)),
+          nm(T.wf.flo.go(cs, T.FlStart{}), T.Minus{}, nds(cs, T.FlStart{}, [])),
+          Equal.trans(T.Num,
+            T.num.go(String.to_list(tt), T.num.step(T.Num{T.NSign{}, T.Minus{}, 10, [], False{}, False{}, ""}, hh)),
+            T.num.go(cs, nm(T.FlStart{}, T.Minus{}, [])),
+            nm(T.wf.flo.go(cs, T.FlStart{}), T.Minus{}, nds(cs, T.FlStart{}, [])),
+            Equal.cong(T.Num, T.Num, nn => T.num.go(String.to_list(tt), nn),
+              T.num.step(T.Num{T.NSign{}, T.Minus{}, 10, [], False{}, False{}, ""}, hh),
+              T.num.step(nm(T.FlStart{}, T.Minus{}, []), hh), sign.skip(hh, hd)),
+            fw.num(cs, T.FlStart{}, T.Minus{}, [], hw))),
+        Equal.trans(T.Got, T.num.fin(nm(T.wf.flo.go(cs, T.FlStart{}), T.Minus{}, nds(cs, T.FlStart{}, [])),
+          '-' <> cs),
+          T.GotVal{T.VFlo{T.Minus{}, T.word.body('-' <> cs)}}, T.GotVal{T.VFlo{T.Minus{}, SCon{hh, tt}}},
+          fin.end(T.wf.flo.go(cs, T.FlStart{}), T.Minus{}, nds(cs, T.FlStart{}, []), '-' <> cs, hw),
+          Equal.cong(String, T.Got, ss => T.GotVal{T.VFlo{T.Minus{}, ss}}, T.word.body('-' <> cs), SCon{hh, tt},
+            Equal.trans(String, String.from_list(T.word.body.go(cs, False{}, [])), String.from_list(cs),
+              SCon{hh, tt},
+              Equal.cong(List<&2, Char>, String, ls => String.from_list(ls), T.word.body.go(cs, False{}, []), cs,
+                fw.body(cs, T.FlStart{}, [], hw)),
+              ftl(SCon{hh, tt})))))))
+
+
+# a spelling the automaton accepts, with its first character, by the sign
+def flo.auto.sg(
+  +sg: T.Sign,
+  +hh: Char,
+  +tt: String,
+  +hw: {T.wf.flo.end(T.wf.flo.go(hh <> String.to_list(tt), T.FlStart{})) == True{} : Bool}
+) -> flo.Goal(sg, SCon{hh, tt}):
+  match sg:
+    case T.Plus{}:
+      flo.plus(hh, tt, hw)
+    case T.Minus{}:
+      flo.minus(hh, tt, hw)
+
+# a spelling the automaton accepts
+def flo.auto(
+  text: String,
+  +sg: T.Sign,
+  +hw: {T.wf.flo.end(T.wf.flo.go(String.to_list(text), T.FlStart{})) == True{} : Bool}
+) -> flo.Goal(sg, text):
+  match text:
+    case SNil{}:
+      Eq.bit.absurd(&1, flo.Goal(sg, SNil{}), hw)
+    case SCon{+hh, +tt}:
+      flo.auto.sg(sg, hh, tt, hw)
+
+# inf or nan
+def flo.name(aa: Bool) -> String:
+  match aa:
+    case True{}:
+      "inf"
+    case False{}:
+      "nan"
+
+# inf and nan, by the sign
+def flo.fixed(+sg: T.Sign, aa: Bool) -> flo.Goal(sg, flo.name(aa)):
+  match sg:
+    case T.Plus{}:
+      match aa:
+        case True{}:
+          {==}
+        case False{}:
+          {==}
+    case T.Minus{}:
+      match aa:
+        case True{}:
+          {==}
+        case False{}:
+          {==}
+
+# a well-formed float: inf, nan, or a spelling the automaton accepts
+def flo.spec(
+  +sg: T.Sign,
+  +text: String,
+  aa: Bool,
+  ea: {T.str.eq(text, "inf") == aa : Bool},
+  bb: Bool,
+  eb: {T.str.eq(text, "nan") == bb : Bool},
+  +hw: {Bool.or(aa, Bool.or(bb, T.wf.flo.end(T.wf.flo.go(String.to_list(text), T.FlStart{})))) == True{} : Bool}
+) -> flo.Goal(sg, text):
+  match aa:
+    case True{}:
+      %Equal.sym(String, text, "inf", str.eq.true(text, "inf", ea)) : flo.Goal(sg, _)
+      flo.fixed(sg, True{})
+    case False{}:
+      match bb:
+        case True{}:
+          %Equal.sym(String, text, "nan", str.eq.true(text, "nan", eb)) : flo.Goal(sg, _)
+          flo.fixed(sg, False{})
+        case False{}:
+          flo.auto(text, sg, hw)
+
+def Laws.flo_word(sg, text, w):
+  flo.spec(sg, text, T.str.eq(text, "inf"), {==}, T.str.eq(text, "nan"), {==}, w)
+
+# what flo.chars claims
+def flo.Chars(+sg: T.Sign, +text: String) -> Type:
+  {Laws.word.chars(T.render.atom(T.VFlo{sg, text})) == True{} : Bool}
+
+# a spelling the automaton accepts is a bare value, by the sign
+def flo.chars.sg(
+  +sg: T.Sign,
+  +hh: Char,
+  +tt: String,
+  +hw: {T.wf.flo.end(T.wf.flo.go(hh <> String.to_list(tt), T.FlStart{})) == True{} : Bool}
+) -> flo.Chars(sg, SCon{hh, tt}):
+  match sg:
+    case T.Plus{}:
+      and.tt(Laws.word.first(hh), Laws.word.rest(tt), dg.first(hh, fl.dig(hh, tt, hw)),
+        fw.rest(tt, T.wf.flo.step(T.FlStart{}, hh), hw))
+    case T.Minus{}:
+      and.tt(Laws.word.first('-'), Laws.word.rest(SCon{hh, tt}), {==}, fw.rest(SCon{hh, tt}, T.FlStart{}, hw))
+
+# a spelling the automaton accepts is a bare value
+def flo.chars.auto(
+  text: String,
+  +sg: T.Sign,
+  +hw: {T.wf.flo.end(T.wf.flo.go(String.to_list(text), T.FlStart{})) == True{} : Bool}
+) -> flo.Chars(sg, text):
+  match text:
+    case SNil{}:
+      Eq.bit.absurd(&1, flo.Chars(sg, SNil{}), hw)
+    case SCon{+hh, +tt}:
+      flo.chars.sg(sg, hh, tt, hw)
+
+# inf and nan are bare values, with either sign
+def flo.chars.fixed(+sg: T.Sign, aa: Bool) -> flo.Chars(sg, flo.name(aa)):
+  match sg:
+    case T.Plus{}:
+      match aa:
+        case True{}:
+          {==}
+        case False{}:
+          {==}
+    case T.Minus{}:
+      match aa:
+        case True{}:
+          {==}
+        case False{}:
+          {==}
+
+# a well-formed float is a bare value
+def flo.chars(
+  +sg: T.Sign,
+  +text: String,
+  aa: Bool,
+  ea: {T.str.eq(text, "inf") == aa : Bool},
+  bb: Bool,
+  eb: {T.str.eq(text, "nan") == bb : Bool},
+  +hw: {Bool.or(aa, Bool.or(bb, T.wf.flo.end(T.wf.flo.go(String.to_list(text), T.FlStart{})))) == True{} : Bool}
+) -> flo.Chars(sg, text):
+  match aa:
+    case True{}:
+      %Equal.sym(String, text, "inf", str.eq.true(text, "inf", ea)) : flo.Chars(sg, _)
+      flo.chars.fixed(sg, True{})
+    case False{}:
+      match bb:
+        case True{}:
+          %Equal.sym(String, text, "nan", str.eq.true(text, "nan", eb)) : flo.Chars(sg, _)
+          flo.chars.fixed(sg, False{})
+        case False{}:
+          flo.chars.auto(text, sg, hw)
+
+def Laws.flo_reads_back(sg, text, w, fx, rest):
+  Laws.word_reads_back(T.VFlo{sg, text}, T.render.atom(T.VFlo{sg, text}),
+    flo.chars(sg, text, T.str.eq(text, "inf"), {==}, T.str.eq(text, "nan"), {==}, w), Laws.flo_word(sg, text, w),
+    fx, rest)
