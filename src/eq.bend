@@ -754,3 +754,77 @@ def or.right_false(u, v, e):
       bit.absurd2(&2, {v == False{} : Bool}, e)
     case False{}:
       e
+
+# WP0: Base-only lemmas the round-trip proofs share: the U32 arithmetic
+# came here from PROOF.bend under its old names.
+
+# LAW: adding a carry to a word and then taking one with the other carry as
+# the borrow leaves the word
+law inc.dec:
+  for nn: Nat
+  for ww: Word(nn)
+  for cc: Bool
+  {Word.adc(nn, Word.adc(nn, ww, Word.zero(nn), False{}, cc), Word.zero(nn), True{},
+    Bool.not(cc)) == ww : Word(nn)}
+
+# bit by bit: the carry and the borrow cancel at each bit
+def inc.dec(nn, ww, cc):
+  match nn:
+    case 0n:
+      match ww:
+        case WNil{}:
+          {==}
+    case 1n+pp:
+      match ww:
+        case WCon{bb, +tt}:
+          match bb cc:
+            case False{} False{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{False{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, False{}), Word.zero(pp),
+                  True{}, True{}), tt, inc.dec(pp, tt, False{}))
+            case False{} True{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{False{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, False{}), Word.zero(pp),
+                  True{}, True{}), tt, inc.dec(pp, tt, False{}))
+            case True{} False{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{True{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, False{}), Word.zero(pp),
+                  True{}, True{}), tt, inc.dec(pp, tt, False{}))
+            case True{} True{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{True{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, True{}), Word.zero(pp),
+                  True{}, False{}), tt, inc.dec(pp, tt, True{}))
+
+# LAW: one taken from one more than a U32 is the U32
+law sub.inc:
+  for xx: U32
+  {U32.sub(U32.add(xx, 1), 1) == xx : U32}
+
+# the low bit decides the carry, and the word's law does the rest
+def sub.inc(xx):
+  match xx:
+    case U32{ww}:
+      match ww:
+        case WCon{bb, +tt}:
+          match bb:
+            case False{}:
+              Equal.cong(Word(31n), U32, yy => U32{WCon{False{}, yy}},
+                Word.adc(31n, Word.adc(31n, tt, Word.zero(31n), False{}, False{}),
+                  Word.zero(31n), True{}, True{}), tt, inc.dec(31n, tt, False{}))
+            case True{}:
+              Equal.cong(Word(31n), U32, yy => U32{WCon{True{}, yy}},
+                Word.adc(31n, Word.adc(31n, tt, Word.zero(31n), False{}, True{}),
+                  Word.zero(31n), True{}, False{}), tt, inc.dec(31n, tt, True{}))
+
+# LAW: one more than a U32, when that is not zero, counts one more
+law inc.nat:
+  for +xx: U32
+  for ez: {U32.is_zero(U32.add(xx, 1)) == False{} : Bool}
+  {U32.to_nat(U32.add(xx, 1)) == 1n+U32.to_nat(xx) : Nat}
+
+# the count of a U32 that is not zero, then sub.inc
+def inc.nat(xx, ez):
+  Equal.trans(Nat, U32.to_nat(U32.add(xx, 1)), 1n+U32.to_nat(U32.sub(U32.add(xx, 1), 1)),
+    1n+U32.to_nat(xx),
+    u32_dec_nat(U32.add(xx, 1), ez),
+    Equal.cong(U32, Nat, uu => 1n+U32.to_nat(uu), U32.sub(U32.add(xx, 1), 1), xx, sub.inc(xx)))

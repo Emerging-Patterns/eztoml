@@ -6131,66 +6131,6 @@ def Laws.key_reads_back(s):
 # string because its count is the string's length, which needs the count not
 # to wrap.
 
-# U32 arithmetic. Adding a carry to a word and then taking one with the other
-# carry as the borrow leaves the word, bit by bit.
-def inc.dec(
-  nn: Nat,
-  ww: Word(nn),
-  cc: Bool
-) -> {Word.adc(nn, Word.adc(nn, ww, Word.zero(nn), False{}, cc), Word.zero(nn), True{},
-  Bool.not(cc)) == ww : Word(nn)}:
-  match nn:
-    case 0n:
-      match ww:
-        case WNil{}:
-          {==}
-    case 1n+pp:
-      match ww:
-        case WCon{bb, +tt}:
-          match bb cc:
-            case False{} False{}:
-              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{False{}, yy},
-                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, False{}), Word.zero(pp),
-                  True{}, True{}), tt, inc.dec(pp, tt, False{}))
-            case False{} True{}:
-              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{False{}, yy},
-                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, False{}), Word.zero(pp),
-                  True{}, True{}), tt, inc.dec(pp, tt, False{}))
-            case True{} False{}:
-              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{True{}, yy},
-                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, False{}), Word.zero(pp),
-                  True{}, True{}), tt, inc.dec(pp, tt, False{}))
-            case True{} True{}:
-              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{True{}, yy},
-                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, True{}), Word.zero(pp),
-                  True{}, False{}), tt, inc.dec(pp, tt, True{}))
-
-# one taken from one more than a U32 is the U32
-def sub.inc(xx: U32) -> {U32.sub(U32.add(xx, 1), 1) == xx : U32}:
-  match xx:
-    case U32{ww}:
-      match ww:
-        case WCon{bb, +tt}:
-          match bb:
-            case False{}:
-              Equal.cong(Word(31n), U32, yy => U32{WCon{False{}, yy}},
-                Word.adc(31n, Word.adc(31n, tt, Word.zero(31n), False{}, False{}),
-                  Word.zero(31n), True{}, True{}), tt, inc.dec(31n, tt, False{}))
-            case True{}:
-              Equal.cong(Word(31n), U32, yy => U32{WCon{True{}, yy}},
-                Word.adc(31n, Word.adc(31n, tt, Word.zero(31n), False{}, True{}),
-                  Word.zero(31n), True{}, False{}), tt, inc.dec(31n, tt, True{}))
-
-# one more than a U32, when that is not zero, counts one more
-def inc.nat(
-  +xx: U32,
-  ez: {U32.is_zero(U32.add(xx, 1)) == False{} : Bool}
-) -> {U32.to_nat(U32.add(xx, 1)) == 1n+U32.to_nat(xx) : Nat}:
-  Equal.trans(Nat, U32.to_nat(U32.add(xx, 1)), 1n+U32.to_nat(U32.sub(U32.add(xx, 1), 1)),
-    1n+U32.to_nat(xx),
-    Eq.u32_dec_nat(U32.add(xx, 1), ez),
-    Equal.cong(U32, Nat, uu => 1n+U32.to_nat(uu), U32.sub(U32.add(xx, 1), 1), xx, sub.inc(xx)))
-
 # the count a span holds after these characters, from n
 def addn(ss: String, nn: U32) -> U32:
   match ss:
@@ -6222,7 +6162,7 @@ def cnt(
         cnt(tt, U32.add(nn, 1), Eq.and.right(Bool.not(U32.is_zero(U32.add(nn, 1))),
           Laws.counts(tt, U32.add(nn, 1)), ee)),
         Equal.cong(Nat, Nat, mm => plus(tt, mm), U32.to_nat(U32.add(nn, 1)), 1n+U32.to_nat(nn),
-          inc.nat(nn, Eq.not.true(U32.is_zero(U32.add(nn, 1)),
+          Eq.inc.nat(nn, Eq.not.true(U32.is_zero(U32.add(nn, 1)),
             Eq.and.left(Bool.not(U32.is_zero(U32.add(nn, 1))), Laws.counts(tt, U32.add(nn, 1)),
               ee)))))
 
