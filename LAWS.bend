@@ -3370,3 +3370,75 @@ law gd_value_steps:
   for +cc: Char
   for ec: {T.wf.char(cc) == True{} : Bool}
   {good(T.read.on(lex, st, cc)) == True{} : Bool}
+
+# WP-D: the document render writes, read back. render writes a table's pairs
+# that are no table first, in order, then its tables and arrays of tables, in
+# order, each one's rows the same way; parse puts every pair in the order it
+# reads it and reads a span out only when own asks. canon is the document so
+# reordered, with every span read out and no error: an element of an array of
+# tables under the array's path, as the walk stores it.
+
+# a table's pairs that are no table and no array of tables, in order
+def canon.keys(xs: List<&2, T.Val>) -> List<&2, T.Val>:
+  match xs:
+    case []:
+      []
+    case T.VPair{_n, T.VHead{_p, _r}} <> tt:
+      canon.keys(tt)
+    case T.VPair{_n, T.VAots{_p, _es}} <> tt:
+      canon.keys(tt)
+    case hh <> tt:
+      hh <> canon.keys(tt)
+
+# which list canon.go reorders: a table's rows, or the elements of an array
+# of tables stored under path
+type CMode is Data:
+  CTabs{}
+  CElems{path: String}
+
+# a table's tables and arrays of tables, in order, each one's rows reordered;
+# or an array's elements, each under the array's path with its rows reordered
+def canon.go(xs: List<&2, T.Val>, md: CMode) -> List<&2, T.Val>:
+  match xs md:
+    case [] _m:
+      []
+    case T.VPair{nn, T.VHead{pp, +rr}} <> tt CTabs{}:
+      T.VPair{nn, T.VHead{pp, List.append(&2, T.Val, canon.keys(rr), canon.go(rr, CTabs{}))}} <>
+        canon.go(tt, CTabs{})
+    case T.VPair{nn, T.VAots{+pp, es}} <> tt CTabs{}:
+      T.VPair{nn, T.VAots{pp, canon.go(es, CElems{pp})}} <> canon.go(tt, CTabs{})
+    case T.VAot{_q, +rr} <> tt CElems{+pp}:
+      T.VAot{pp, List.append(&2, T.Val, canon.keys(rr), canon.go(rr, CTabs{}))} <> canon.go(tt, CElems{pp})
+    case _hh <> tt m2:
+      canon.go(tt, m2)
+
+# a table's tables and arrays of tables, reordered
+def canon.tabs(xs: List<&2, T.Val>) -> List<&2, T.Val>:
+  canon.go(xs, CTabs{})
+
+# a table's rows as render writes them: the pairs that are no table, then
+# the tables
+def canon.rows(+xs: List<&2, T.Val>) -> List<&2, T.Val>:
+  List.append(&2, T.Val, canon.keys(xs), canon.tabs(xs))
+
+# the document as parse reads back what render wrote for it
+def canon(dd: T.Doc) -> T.Doc:
+  match dd:
+    case T.Doc{_bad, rows}:
+      T.Doc{"", own.rows(canon.rows(rows))}
+
+# every string in the rows, at any depth and in every table, is short
+def short.rows(xs: List<&2, T.Val>) -> Bool:
+  match xs:
+    case []:
+      True{}
+    case T.VPair{_n, T.VHead{_p, rr}} <> tt:
+      Bool.and(short.rows(rr), short.rows(tt))
+    case T.VPair{_n, T.VAots{_p, es}} <> tt:
+      Bool.and(short.rows(es), short.rows(tt))
+    case T.VAot{_p, rr} <> tt:
+      Bool.and(short.rows(rr), short.rows(tt))
+    case T.VPair{_n, vv} <> tt:
+      Bool.and(cv.short1(vv), short.rows(tt))
+    case vv <> tt:
+      Bool.and(cv.short1(vv), short.rows(tt))
