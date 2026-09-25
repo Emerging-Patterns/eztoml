@@ -3208,3 +3208,16 @@ law gd_walk:
   for ep: {gd.segs(path) == True{} : Bool}
   for ej: {gd.job(job) == True{} : Bool}
   {gd.end(T.tree.walk(path, T.Tw{rows, job, [], bad, "", heads, inl}, skip)) == True{} : Bool}
+
+# LAW: every step inside a header keeps a state good: from every good state,
+# whatever its fields, one character that is a Unicode scalar value read in
+# any of the seven header states leaves a good state
+# TOML-RT-3
+law gd_header_steps:
+  for +lex: T.Lex
+  for hl: {gd.hd(lex) == True{} : Bool}
+  for +st: T.St
+  for eg: {good(st) == True{} : Bool}
+  for +cc: Char
+  for ec: {T.wf.char(cc) == True{} : Bool}
+  {good(T.read.on(lex, st, cc)) == True{} : Bool}
