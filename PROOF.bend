@@ -27853,3 +27853,911 @@ def Laws.gd_fin(st, eg, eo):
       +arrtab, +lead}:
       gd.fin.stk(stack, bad, rows,
         gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg), eo)
+
+# WP-R3: an open inline table's rows. Its dotted keys walk from "" as a
+# root's do (gd_walk), and a put's walk makes no array of tables (gd.nw), so
+# its rows seal into an inline table's (gd.is).
+
+# the root after a walk has no array of tables, unless the walk failed
+def gd.endn(end: T.End) -> Bool:
+  match end:
+    case T.End{vs, +bad, _h}:
+      Laws.gd.ifok(String.is_empty(bad), Laws.gd.na(vs))
+
+# the frames' promise, for arrays of tables
+def gd.Kn(stack: List<&2, T.Fr>) -> Type:
+  @vs: List<&2, T.Val> -> @bad: String -> @hs: List<&2, String> ->
+    {Laws.gd.ifok(String.is_empty(bad), Laws.gd.na(vs)) == True{} : Bool} ->
+    {gd.endn(T.tree.rebuild(stack, vs, bad, hs)) == True{} : Bool}
+
+def gd.kn.root() -> gd.Kn([]):
+  vs => bad => hs => ee => ee
+
+def gd.kn.lift(
+  bad: String,
+  +vs: List<&2, T.Val>,
+  +fr: T.Fr,
+  ee: {Laws.gd.ifok(String.is_empty(bad), Laws.gd.na(vs)) == True{} : Bool},
+  ff: @ch: List<&2, T.Val> -> {Laws.gd.na(ch) == True{} : Bool} -> {Laws.gd.na(T.tree.wrap(fr, ch)) == True{} : Bool}
+) -> {Laws.gd.ifok(String.is_empty(bad), Laws.gd.na(T.tree.wrap(fr, vs))) == True{} : Bool}:
+  match bad:
+    case SNil{}:
+      ff(vs, ee)
+    case SCon{_h, _t}:
+      {==}
+
+def gd.kn.pushgo(
+  +fr: T.Fr,
+  stack: List<&2, T.Fr>,
+  kk: gd.Kn(stack),
+  ff: @ch: List<&2, T.Val> -> {Laws.gd.na(ch) == True{} : Bool} -> {Laws.gd.na(T.tree.wrap(fr, ch)) == True{} : Bool},
+  +vs: List<&2, T.Val>,
+  +bad: String,
+  hs: List<&2, String>,
+  ee: {Laws.gd.ifok(String.is_empty(bad), Laws.gd.na(vs)) == True{} : Bool}
+) -> {gd.endn(T.tree.rebuild(fr <> stack, vs, bad, hs)) == True{} : Bool}:
+  kk(T.tree.wrap(fr, vs), bad, hs, gd.kn.lift(bad, vs, fr, ee, ff))
+
+def gd.kn.push(
+  +fr: T.Fr,
+  stack: List<&2, T.Fr>,
+  kk: gd.Kn(stack),
+  ff: @ch: List<&2, T.Val> -> {Laws.gd.na(ch) == True{} : Bool} -> {Laws.gd.na(T.tree.wrap(fr, ch)) == True{} : Bool}
+) -> gd.Kn(fr <> stack):
+  vs => bad => hs => ee => gd.kn.pushgo(fr, stack, kk, ff, vs, bad, hs, ee)
+
+# either answer, when the rest holds
+def gd.ifok.any(ok: Bool, xx: Bool, +ex: {xx == True{} : Bool}) -> {Laws.gd.ifok(ok, xx) == True{} : Bool}:
+  match ok:
+    case True{}:
+      ex
+    case False{}:
+      {==}
+
+# a pair of the name replaced or kept
+def gd.na.rstep(bb: Bool, +nn: String, +old: T.Val, +vv: T.Val, +t: List<&2, T.Val>, +name: String,
+  +enew: {Laws.gd.na(T.VPair{nn, vv} <> T.rows.repl(t, name, vv)) == True{} : Bool},
+  +eold: {Laws.gd.na(T.VPair{nn, old} <> T.rows.repl(t, name, vv)) == True{} : Bool})
+  -> {Laws.gd.na(T.rows.repl.step(bb, nn, old, vv, _u => T.rows.repl(t, name, vv))) == True{} : Bool}:
+  match bb:
+    case True{}:
+      enew
+    case False{}:
+      eold
+
+# a table put in place of a name keeps rows free of arrays of tables
+def gd.na.repl(vs: List<&2, T.Val>, +name: String, +pp: String, +ch: List<&2, T.Val>,
+  +ev: {Laws.gd.na(vs) == True{} : Bool}, +ec: {Laws.gd.na(ch) == True{} : Bool})
+  -> {Laws.gd.na(T.rows.repl(vs, name, T.VHead{pp, ch})) == True{} : Bool}:
+  match vs:
+    case []:
+      {==}
+    case T.VPair{+n, T.VStr{+s}} <> +t:
+      gd.na.rstep(T.str.eq(n, name), n, T.VStr{s}, T.VHead{pp, ch}, t, name,
+        gd.tt(Laws.gd.na(ch), Laws.gd.na(T.rows.repl(t, name, T.VHead{pp, ch})), ec, gd.na.repl(t, name, pp, ch, ev, ec)),
+        gd.na.repl(t, name, pp, ch, ev, ec))
+    case T.VPair{+n, T.VSpan{+q, +s}} <> +t:
+      gd.na.rstep(T.str.eq(n, name), n, T.VSpan{q, s}, T.VHead{pp, ch}, t, name,
+        gd.tt(Laws.gd.na(ch), Laws.gd.na(T.rows.repl(t, name, T.VHead{pp, ch})), ec, gd.na.repl(t, name, pp, ch, ev, ec)),
+        gd.na.repl(t, name, pp, ch, ev, ec))
+    case T.VPair{+n, T.VInt{+q, +s}} <> +t:
+      gd.na.rstep(T.str.eq(n, name), n, T.VInt{q, s}, T.VHead{pp, ch}, t, name,
+        gd.tt(Laws.gd.na(ch), Laws.gd.na(T.rows.repl(t, name, T.VHead{pp, ch})), ec, gd.na.repl(t, name, pp, ch, ev, ec)),
+        gd.na.repl(t, name, pp, ch, ev, ec))
+    case T.VPair{+n, T.VFlo{+q, +s}} <> +t:
+      gd.na.rstep(T.str.eq(n, name), n, T.VFlo{q, s}, T.VHead{pp, ch}, t, name,
+        gd.tt(Laws.gd.na(ch), Laws.gd.na(T.rows.repl(t, name, T.VHead{pp, ch})), ec, gd.na.repl(t, name, pp, ch, ev, ec)),
+        gd.na.repl(t, name, pp, ch, ev, ec))
+    case T.VPair{+n, T.VBool{+s}} <> +t:
+      gd.na.rstep(T.str.eq(n, name), n, T.VBool{s}, T.VHead{pp, ch}, t, name,
+        gd.tt(Laws.gd.na(ch), Laws.gd.na(T.rows.repl(t, name, T.VHead{pp, ch})), ec, gd.na.repl(t, name, pp, ch, ev, ec)),
+        gd.na.repl(t, name, pp, ch, ev, ec))
+    case T.VPair{+n, T.VWhen{+s}} <> +t:
+      gd.na.rstep(T.str.eq(n, name), n, T.VWhen{s}, T.VHead{pp, ch}, t, name,
+        gd.tt(Laws.gd.na(ch), Laws.gd.na(T.rows.repl(t, name, T.VHead{pp, ch})), ec, gd.na.repl(t, name, pp, ch, ev, ec)),
+        gd.na.repl(t, name, pp, ch, ev, ec))
+    case T.VPair{+n, T.VArr{+s}} <> +t:
+      gd.na.rstep(T.str.eq(n, name), n, T.VArr{s}, T.VHead{pp, ch}, t, name,
+        gd.tt(Laws.gd.na(ch), Laws.gd.na(T.rows.repl(t, name, T.VHead{pp, ch})), ec, gd.na.repl(t, name, pp, ch, ev, ec)),
+        gd.na.repl(t, name, pp, ch, ev, ec))
+    case T.VPair{+n, T.VInl{+s}} <> +t:
+      gd.na.rstep(T.str.eq(n, name), n, T.VInl{s}, T.VHead{pp, ch}, t, name,
+        gd.tt(Laws.gd.na(ch), Laws.gd.na(T.rows.repl(t, name, T.VHead{pp, ch})), ec, gd.na.repl(t, name, pp, ch, ev, ec)),
+        gd.na.repl(t, name, pp, ch, ev, ec))
+    case T.VPair{+n, T.VHead{+q, +s}} <> +t:
+      gd.na.rstep(T.str.eq(n, name), n, T.VHead{q, s}, T.VHead{pp, ch}, t, name,
+        gd.tt(Laws.gd.na(ch), Laws.gd.na(T.rows.repl(t, name, T.VHead{pp, ch})), ec, gd.na.repl(t, name, pp, ch, gd.r(Laws.gd.na(s), Laws.gd.na(t), ev), ec)),
+        gd.tt(Laws.gd.na(s), Laws.gd.na(T.rows.repl(t, name, T.VHead{pp, ch})), gd.l(Laws.gd.na(s), Laws.gd.na(t), ev), gd.na.repl(t, name, pp, ch, gd.r(Laws.gd.na(s), Laws.gd.na(t), ev), ec)))
+    case T.VPair{+n, T.VAot{+q, +s}} <> +t:
+      gd.na.rstep(T.str.eq(n, name), n, T.VAot{q, s}, T.VHead{pp, ch}, t, name,
+        gd.tt(Laws.gd.na(ch), Laws.gd.na(T.rows.repl(t, name, T.VHead{pp, ch})), ec, gd.na.repl(t, name, pp, ch, ev, ec)),
+        gd.na.repl(t, name, pp, ch, ev, ec))
+    case T.VPair{+n, T.VAots{+q, +s}} <> +t:
+      Eq.bit.absurd(&2, {Laws.gd.na(T.rows.repl(T.VPair{n, T.VAots{q, s}} <> t, name, T.VHead{pp, ch})) == True{} : Bool}, ev)
+    case T.VPair{+n, T.VPair{+q, +s}} <> +t:
+      gd.na.rstep(T.str.eq(n, name), n, T.VPair{q, s}, T.VHead{pp, ch}, t, name,
+        gd.tt(Laws.gd.na(ch), Laws.gd.na(T.rows.repl(t, name, T.VHead{pp, ch})), ec, gd.na.repl(t, name, pp, ch, ev, ec)),
+        gd.na.repl(t, name, pp, ch, ev, ec))
+    case T.VStr{_r} <> +t:
+      gd.na.repl(t, name, pp, ch, ev, ec)
+    case T.VSpan{_p, _r} <> +t:
+      gd.na.repl(t, name, pp, ch, ev, ec)
+    case T.VInt{_p, _r} <> +t:
+      gd.na.repl(t, name, pp, ch, ev, ec)
+    case T.VFlo{_p, _r} <> +t:
+      gd.na.repl(t, name, pp, ch, ev, ec)
+    case T.VBool{_r} <> +t:
+      gd.na.repl(t, name, pp, ch, ev, ec)
+    case T.VWhen{_r} <> +t:
+      gd.na.repl(t, name, pp, ch, ev, ec)
+    case T.VArr{_r} <> +t:
+      gd.na.repl(t, name, pp, ch, ev, ec)
+    case T.VInl{_r} <> +t:
+      gd.na.repl(t, name, pp, ch, ev, ec)
+    case T.VHead{_p, _r} <> +t:
+      gd.na.repl(t, name, pp, ch, ev, ec)
+    case T.VAot{_p, _r} <> +t:
+      gd.na.repl(t, name, pp, ch, ev, ec)
+    case T.VAots{_p, _r} <> +t:
+      gd.na.repl(t, name, pp, ch, ev, ec)
+
+# what a lookup finds in rows with no array of tables
+def gd.nlk(look: T.Look) -> Bool:
+  match look:
+    case T.KHead{_p, sub}:
+      Laws.gd.na(sub)
+    case T.KAots{_p, _e}:
+      False{}
+    case _:
+      True{}
+
+def gd.nlk.step(bb: Bool, vv: T.Val, t: List<&2, T.Val>, +name: String,
+  +ehit: {gd.nlk(T.look.of(vv)) == True{} : Bool},
+  +ih: {gd.nlk(T.rows.look(t, name)) == True{} : Bool})
+  -> {gd.nlk(T.look.step(bb, vv, _u => T.rows.look(t, name))) == True{} : Bool}:
+  match bb:
+    case True{}:
+      ehit
+    case False{}:
+      ih
+
+def gd.na.lk(vs: List<&2, T.Val>, +name: String, +ev: {Laws.gd.na(vs) == True{} : Bool})
+  -> {gd.nlk(T.rows.look(vs, name)) == True{} : Bool}:
+  match vs:
+    case []:
+      {==}
+    case T.VPair{+n, T.VStr{+s}} <> +t:
+      gd.nlk.step(T.str.eq(n, name), T.VStr{s}, t, name, {==}, gd.na.lk(t, name, ev))
+    case T.VPair{+n, T.VSpan{+q, +s}} <> +t:
+      gd.nlk.step(T.str.eq(n, name), T.VSpan{q, s}, t, name, {==}, gd.na.lk(t, name, ev))
+    case T.VPair{+n, T.VInt{+q, +s}} <> +t:
+      gd.nlk.step(T.str.eq(n, name), T.VInt{q, s}, t, name, {==}, gd.na.lk(t, name, ev))
+    case T.VPair{+n, T.VFlo{+q, +s}} <> +t:
+      gd.nlk.step(T.str.eq(n, name), T.VFlo{q, s}, t, name, {==}, gd.na.lk(t, name, ev))
+    case T.VPair{+n, T.VBool{+s}} <> +t:
+      gd.nlk.step(T.str.eq(n, name), T.VBool{s}, t, name, {==}, gd.na.lk(t, name, ev))
+    case T.VPair{+n, T.VWhen{+s}} <> +t:
+      gd.nlk.step(T.str.eq(n, name), T.VWhen{s}, t, name, {==}, gd.na.lk(t, name, ev))
+    case T.VPair{+n, T.VArr{+s}} <> +t:
+      gd.nlk.step(T.str.eq(n, name), T.VArr{s}, t, name, {==}, gd.na.lk(t, name, ev))
+    case T.VPair{+n, T.VInl{+s}} <> +t:
+      gd.nlk.step(T.str.eq(n, name), T.VInl{s}, t, name, {==}, gd.na.lk(t, name, ev))
+    case T.VPair{+n, T.VHead{+q, +s}} <> +t:
+      gd.nlk.step(T.str.eq(n, name), T.VHead{q, s}, t, name, gd.l(Laws.gd.na(s), Laws.gd.na(t), ev),
+        gd.na.lk(t, name, gd.r(Laws.gd.na(s), Laws.gd.na(t), ev)))
+    case T.VPair{+n, T.VAot{+q, +s}} <> +t:
+      gd.nlk.step(T.str.eq(n, name), T.VAot{q, s}, t, name, {==}, gd.na.lk(t, name, ev))
+    case T.VPair{+n, T.VAots{+q, +s}} <> +t:
+      Eq.bit.absurd(&2, {gd.nlk(T.rows.look(T.VPair{n, T.VAots{q, s}} <> t, name)) == True{} : Bool}, ev)
+    case T.VPair{+n, T.VPair{+q, +s}} <> +t:
+      gd.nlk.step(T.str.eq(n, name), T.VPair{q, s}, t, name, {==}, gd.na.lk(t, name, ev))
+    case T.VStr{_r} <> +t:
+      gd.na.lk(t, name, ev)
+    case T.VSpan{_p, _r} <> +t:
+      gd.na.lk(t, name, ev)
+    case T.VInt{_p, _r} <> +t:
+      gd.na.lk(t, name, ev)
+    case T.VFlo{_p, _r} <> +t:
+      gd.na.lk(t, name, ev)
+    case T.VBool{_r} <> +t:
+      gd.na.lk(t, name, ev)
+    case T.VWhen{_r} <> +t:
+      gd.na.lk(t, name, ev)
+    case T.VArr{_r} <> +t:
+      gd.na.lk(t, name, ev)
+    case T.VInl{_r} <> +t:
+      gd.na.lk(t, name, ev)
+    case T.VHead{_p, _r} <> +t:
+      gd.na.lk(t, name, ev)
+    case T.VAot{_p, _r} <> +t:
+      gd.na.lk(t, name, ev)
+    case T.VAots{_p, _r} <> +t:
+      gd.na.lk(t, name, ev)
+
+# a value put in front: no table of either kind
+def gd.na.put(vv: T.Val, +name: String, +vs: List<&2, T.Val>, +evk: {Laws.gd.vok(vv) == True{} : Bool},
+  +ev: {Laws.gd.na(vs) == True{} : Bool}) -> {Laws.gd.na(T.VPair{name, vv} <> vs) == True{} : Bool}:
+  match vv:
+    case T.VStr{+r}:
+      ev
+    case T.VSpan{+p, +r}:
+      ev
+    case T.VInt{+p, +r}:
+      ev
+    case T.VFlo{+p, +r}:
+      ev
+    case T.VBool{+r}:
+      ev
+    case T.VWhen{+r}:
+      ev
+    case T.VArr{+r}:
+      ev
+    case T.VInl{+r}:
+      ev
+    case T.VHead{+p, +r}:
+      Eq.bit.absurd(&2, {Laws.gd.na(T.VPair{name, T.VHead{p, r}} <> vs) == True{} : Bool}, evk)
+    case T.VAot{+p, +r}:
+      ev
+    case T.VAots{+p, +r}:
+      Eq.bit.absurd(&2, {Laws.gd.na(T.VPair{name, T.VAots{p, r}} <> vs) == True{} : Bool}, evk)
+    case T.VPair{+p, +r}:
+      ev
+
+# the rest of a put's walk, owed for any table it goes on in
+def gd.nIH(rest: List<&2, String>, +val: T.Val, +inl: Bool, +skip: U32) -> Type:
+  @vs: List<&2, T.Val> -> @stack: List<&2, T.Fr> -> @bad: String -> @pre: String ->
+    @hs: List<&2, String> ->
+    {Laws.gd.ifok(String.is_empty(bad), Laws.gd.na(vs)) == True{} : Bool} ->
+    gd.Kn(stack) ->
+    {gd.endn(T.tree.walk(rest, T.Tw{vs, T.JPut{val}, stack, bad, pre, hs, inl}, skip)) == True{} : Bool}
+
+def gd.nw.hgo(
+  shut: Bool,
+  +pp: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  rest: List<&2, String>,
+  +skip: U32,
+  +ens: {Laws.gd.na(rows) == True{} : Bool},
+  +ev: {Laws.gd.na(vs) == True{} : Bool},
+  kk: gd.Kn(stack),
+  ih: gd.nIH(rest, val, inl, skip)
+) -> {gd.endn(T.tree.walk(rest, T.tree.sub.head.go(shut, pp, rows, name, vs, T.JPut{val}, stack, pre, heads,
+  inl, mark), skip)) == True{} : Bool}:
+  match shut:
+    case True{}:
+      ih(vs, stack, "duplicate table", pre, heads, {==}, kk)
+    case False{}:
+      ih(rows, T.FrRep{name, vs, pp} <> stack, "", T.tree.pre(pre, name),
+        T.heads.define(T.tree.sub.job(mark, T.JPut{val}), T.tree.pre(pre, name), heads), ens,
+        gd.kn.push(T.FrRep{name, vs, pp}, stack, kk, ch => ec => gd.na.repl(vs, name, pp, ch, ev, ec)))
+
+def gd.nw.head(
+  dot: Bool,
+  +pp: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  rest: List<&2, String>,
+  +skip: U32,
+  +ens: {Laws.gd.na(rows) == True{} : Bool},
+  +ev: {Laws.gd.na(vs) == True{} : Bool},
+  kk: gd.Kn(stack),
+  ih: gd.nIH(rest, val, inl, skip)
+) -> {gd.endn(T.tree.walk(rest, T.tree.sub.head(dot, pp, rows, name, vs, T.JPut{val}, stack, pre, heads,
+  inl, mark), skip)) == True{} : Bool}:
+  match dot:
+    case True{}:
+      gd.nw.hgo(T.heads.head(heads, T.tree.pre(pre, name)), pp, rows, name, vs, val, stack, pre, heads,
+        inl, mark, rest, skip, ens, ev, kk, ih)
+    case False{}:
+      gd.nw.hgo(False{}, pp, rows, name, vs, val, stack, pre, heads, inl, mark, rest, skip, ens, ev, kk, ih)
+
+def gd.nw.sub(
+  hit: T.Look,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  rest: List<&2, String>,
+  +skip: U32,
+  +eh: {gd.nlk(hit) == True{} : Bool},
+  +ev: {Laws.gd.na(vs) == True{} : Bool},
+  kk: gd.Kn(stack),
+  ih: gd.nIH(rest, val, inl, skip)
+) -> {gd.endn(T.tree.walk(rest, T.tree.sub.look(hit, name, vs, T.JPut{val}, stack, pre, heads, inl, mark),
+  skip)) == True{} : Bool}:
+  match hit:
+    case T.KMiss{}:
+      ih([], T.FrNew{name, vs, T.tree.pre(pre, name)} <> stack, "", T.tree.pre(pre, name),
+        T.heads.define(T.tree.sub.job(mark, T.JPut{val}), T.tree.pre(pre, name), heads), {==},
+        gd.kn.push(T.FrNew{name, vs, T.tree.pre(pre, name)}, stack, kk,
+          ch => ec => gd.tt(Laws.gd.na(ch), Laws.gd.na(vs), ec, ev)))
+    case T.KHead{+pp, +rows}:
+      gd.nw.head(T.tree.sub.dot(T.tree.sub.job(mark, T.JPut{val})), pp, rows, name, vs, val, stack, pre, heads,
+        inl, mark, rest, skip, eh, ev, kk, ih)
+    case T.KInl{}:
+      ih(vs, stack, "inline table is closed", pre, heads, {==}, kk)
+    case T.KAots{+pp, +es}:
+      Eq.bit.absurd(&2, {gd.endn(T.tree.walk(rest, T.tree.sub.look(T.KAots{pp, es}, name, vs, T.JPut{val},
+        stack, pre, heads, inl, mark), skip)) == True{} : Bool}, eh)
+    case T.KNo{+why}:
+      ih(vs, stack, why, pre, heads, gd.ifok.any(String.is_empty(why), Laws.gd.na(vs), ev), kk)
+
+def gd.nw.step(
+  +bad: String,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  rest: List<&2, String>,
+  +skip: U32,
+  +ev: {Laws.gd.ifok(String.is_empty(bad), Laws.gd.na(vs)) == True{} : Bool},
+  kk: gd.Kn(stack),
+  ih: gd.nIH(rest, val, inl, skip)
+) -> {gd.endn(T.tree.walk(rest, T.tree.sub(name, T.Tw{vs, T.JPut{val}, stack, bad, pre, heads, inl}, mark),
+  skip)) == True{} : Bool}:
+  match bad:
+    case SNil{}:
+      gd.nw.sub(T.rows.look(vs, name), name, vs, val, stack, pre, heads, inl, mark, rest, skip,
+        gd.na.lk(vs, name, ev), ev, kk, ih)
+    case SCon{+hh, +tt}:
+      ih(vs, stack, SCon{hh, tt}, pre, heads, {==}, kk)
+
+def gd.nw.put(
+  hit: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +heads: List<&2, String>,
+  +ev: {Laws.gd.na(vs) == True{} : Bool},
+  +evk: {Laws.gd.vok(val) == True{} : Bool},
+  kk: gd.Kn(stack)
+) -> {gd.endn(T.tree.leaf.put(hit, name, vs, val, stack, "", heads)) == True{} : Bool}:
+  match hit:
+    case T.Found{_v}:
+      kk(vs, "duplicate key", heads, {==})
+    case T.Miss{}:
+      kk(T.VPair{name, val} <> vs, "", heads, gd.na.put(val, name, vs, evk, ev))
+
+def gd.nw.leaf(
+  +bad: String,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +ev: {Laws.gd.ifok(String.is_empty(bad), Laws.gd.na(vs)) == True{} : Bool},
+  +evk: {Laws.gd.vok(val) == True{} : Bool},
+  kk: gd.Kn(stack)
+) -> {gd.endn(T.tree.leaf(name, T.Tw{vs, T.JPut{val}, stack, bad, pre, heads, inl})) == True{} : Bool}:
+  match bad:
+    case SNil{}:
+      gd.nw.put(T.get(vs, name), name, vs, val, stack, heads, ev, evk, kk)
+    case SCon{+hh, +tt}:
+      kk(vs, SCon{hh, tt}, heads, {==})
+
+# a put's walk makes no array of tables
+def gd.nw(
+  path: List<&2, String>,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +skip: U32,
+  +evk: {Laws.gd.vok(val) == True{} : Bool},
+  +ev: {Laws.gd.ifok(String.is_empty(bad), Laws.gd.na(vs)) == True{} : Bool},
+  kk: gd.Kn(stack)
+) -> {gd.endn(T.tree.walk(path, T.Tw{vs, T.JPut{val}, stack, bad, pre, heads, inl}, skip)) == True{} : Bool}:
+  match path:
+    case []:
+      kk(vs, T.err.first(bad, "empty key"), heads,
+        gd.off(String.is_empty(T.err.first(bad, "empty key")), Laws.gd.na(vs), gd.err.ne(bad)))
+    case +name <> +rest:
+      match rest:
+        case []:
+          gd.nw.leaf(bad, name, vs, val, stack, pre, heads, inl, ev, evk, kk)
+        case +r1 <> +r2:
+          gd.nw.step(bad, name, vs, val, stack, pre, heads, inl, U32.is_zero(skip), r1 <> r2, T.path.dec(skip),
+            ev, kk,
+            v2 => s2 => b2 => p2 => h2 => e2 => k2 => gd.nw(r1 <> r2, v2, val, s2, b2, p2, h2, inl,
+              T.path.dec(skip), evk, e2, k2))
+
+
+# inl.seal keeps every name
+def gd.is.names(tt: List<&2, T.Val>, +kk: String)
+  -> {T.wf.fresh(T.get(T.inl.seal(tt), kk)) == T.wf.fresh(T.get(tt, kk)) : Bool}:
+  match tt:
+    case []:
+      {==}
+    case T.VPair{+n, T.VStr{+s}} <> +t:
+      gd.fr.b2(T.str.eq(n, kk), T.VStr{s}, T.VStr{s}, T.inl.seal(t), t, kk, gd.is.names(t, kk))
+    case T.VPair{+n, T.VSpan{+q, +s}} <> +t:
+      gd.fr.b2(T.str.eq(n, kk), T.VSpan{q, s}, T.VSpan{q, s}, T.inl.seal(t), t, kk, gd.is.names(t, kk))
+    case T.VPair{+n, T.VInt{+q, +s}} <> +t:
+      gd.fr.b2(T.str.eq(n, kk), T.VInt{q, s}, T.VInt{q, s}, T.inl.seal(t), t, kk, gd.is.names(t, kk))
+    case T.VPair{+n, T.VFlo{+q, +s}} <> +t:
+      gd.fr.b2(T.str.eq(n, kk), T.VFlo{q, s}, T.VFlo{q, s}, T.inl.seal(t), t, kk, gd.is.names(t, kk))
+    case T.VPair{+n, T.VBool{+s}} <> +t:
+      gd.fr.b2(T.str.eq(n, kk), T.VBool{s}, T.VBool{s}, T.inl.seal(t), t, kk, gd.is.names(t, kk))
+    case T.VPair{+n, T.VWhen{+s}} <> +t:
+      gd.fr.b2(T.str.eq(n, kk), T.VWhen{s}, T.VWhen{s}, T.inl.seal(t), t, kk, gd.is.names(t, kk))
+    case T.VPair{+n, T.VArr{+s}} <> +t:
+      gd.fr.b2(T.str.eq(n, kk), T.VArr{s}, T.VArr{s}, T.inl.seal(t), t, kk, gd.is.names(t, kk))
+    case T.VPair{+n, T.VInl{+s}} <> +t:
+      gd.fr.b2(T.str.eq(n, kk), T.VInl{s}, T.VInl{s}, T.inl.seal(t), t, kk, gd.is.names(t, kk))
+    case T.VPair{+n, T.VHead{+q, +s}} <> +t:
+      gd.fr.b2(T.str.eq(n, kk), T.VInl{T.inl.seal(s)}, T.VHead{q, s}, T.inl.seal(t), t, kk, gd.is.names(t, kk))
+    case T.VPair{+n, T.VAot{+q, +s}} <> +t:
+      gd.fr.b2(T.str.eq(n, kk), T.VAot{q, s}, T.VAot{q, s}, T.inl.seal(t), t, kk, gd.is.names(t, kk))
+    case T.VPair{+n, T.VAots{+q, +s}} <> +t:
+      gd.fr.b2(T.str.eq(n, kk), T.VAots{q, s}, T.VAots{q, s}, T.inl.seal(t), t, kk, gd.is.names(t, kk))
+    case T.VPair{+n, T.VPair{+q, +s}} <> +t:
+      gd.fr.b2(T.str.eq(n, kk), T.VPair{q, s}, T.VPair{q, s}, T.inl.seal(t), t, kk, gd.is.names(t, kk))
+    case T.VStr{_r} <> +t:
+      gd.is.names(t, kk)
+    case T.VSpan{_p, _r} <> +t:
+      gd.is.names(t, kk)
+    case T.VInt{_p, _r} <> +t:
+      gd.is.names(t, kk)
+    case T.VFlo{_p, _r} <> +t:
+      gd.is.names(t, kk)
+    case T.VBool{_r} <> +t:
+      gd.is.names(t, kk)
+    case T.VWhen{_r} <> +t:
+      gd.is.names(t, kk)
+    case T.VArr{_r} <> +t:
+      gd.is.names(t, kk)
+    case T.VInl{_r} <> +t:
+      gd.is.names(t, kk)
+    case T.VHead{_p, _r} <> +t:
+      gd.is.names(t, kk)
+    case T.VAot{_p, _r} <> +t:
+      gd.is.names(t, kk)
+    case T.VAots{_p, _r} <> +t:
+      gd.is.names(t, kk)
+
+# a table's rows with no array of tables seal into an inline table's
+def gd.is(rows: List<&2, T.Val>, +pp: String, +ew: {T.wf.go(rows, T.WfRows{pp}) == True{} : Bool},
+  +en: {Laws.gd.na(rows) == True{} : Bool}) -> {T.wf.go(T.inl.seal(rows), T.WfInl{}) == True{} : Bool}:
+  match rows:
+    case []:
+      {==}
+    case T.VPair{+n, T.VStr{+s}} <> +t:
+      gd.gen.mk(T.VPair{n, T.VStr{s}}, T.inl.seal(t), T.WfInl{},
+        gd.tt(T.wf.key(n, T.inl.seal(t)), Laws.gd.vok(T.VStr{s}),
+          Equal.trans(Bool, T.wf.key(n, T.inl.seal(t)), T.wf.key(n, t), True{},
+          Equal.cong(Bool, Bool, xx => Bool.and(T.wf.text(n), xx), T.wf.fresh(T.get(T.inl.seal(t), n)),
+            T.wf.fresh(T.get(t, n)), gd.is.names(t, n)),
+          gd.pr.k(pp, n, T.VStr{s}, t, ew)),
+          gd.pr.v(pp, n, T.VStr{s}, t, ew)),
+        gd.is(t, pp, gd.pr.d(pp, n, T.VStr{s}, t, ew), en))
+    case T.VPair{+n, T.VSpan{+q, +s}} <> +t:
+      gd.gen.mk(T.VPair{n, T.VSpan{q, s}}, T.inl.seal(t), T.WfInl{},
+        gd.tt(T.wf.key(n, T.inl.seal(t)), Laws.gd.vok(T.VSpan{q, s}),
+          Equal.trans(Bool, T.wf.key(n, T.inl.seal(t)), T.wf.key(n, t), True{},
+          Equal.cong(Bool, Bool, xx => Bool.and(T.wf.text(n), xx), T.wf.fresh(T.get(T.inl.seal(t), n)),
+            T.wf.fresh(T.get(t, n)), gd.is.names(t, n)),
+          gd.pr.k(pp, n, T.VSpan{q, s}, t, ew)),
+          gd.pr.v(pp, n, T.VSpan{q, s}, t, ew)),
+        gd.is(t, pp, gd.pr.d(pp, n, T.VSpan{q, s}, t, ew), en))
+    case T.VPair{+n, T.VInt{+q, +s}} <> +t:
+      gd.gen.mk(T.VPair{n, T.VInt{q, s}}, T.inl.seal(t), T.WfInl{},
+        gd.tt(T.wf.key(n, T.inl.seal(t)), Laws.gd.vok(T.VInt{q, s}),
+          Equal.trans(Bool, T.wf.key(n, T.inl.seal(t)), T.wf.key(n, t), True{},
+          Equal.cong(Bool, Bool, xx => Bool.and(T.wf.text(n), xx), T.wf.fresh(T.get(T.inl.seal(t), n)),
+            T.wf.fresh(T.get(t, n)), gd.is.names(t, n)),
+          gd.pr.k(pp, n, T.VInt{q, s}, t, ew)),
+          gd.pr.v(pp, n, T.VInt{q, s}, t, ew)),
+        gd.is(t, pp, gd.pr.d(pp, n, T.VInt{q, s}, t, ew), en))
+    case T.VPair{+n, T.VFlo{+q, +s}} <> +t:
+      gd.gen.mk(T.VPair{n, T.VFlo{q, s}}, T.inl.seal(t), T.WfInl{},
+        gd.tt(T.wf.key(n, T.inl.seal(t)), Laws.gd.vok(T.VFlo{q, s}),
+          Equal.trans(Bool, T.wf.key(n, T.inl.seal(t)), T.wf.key(n, t), True{},
+          Equal.cong(Bool, Bool, xx => Bool.and(T.wf.text(n), xx), T.wf.fresh(T.get(T.inl.seal(t), n)),
+            T.wf.fresh(T.get(t, n)), gd.is.names(t, n)),
+          gd.pr.k(pp, n, T.VFlo{q, s}, t, ew)),
+          gd.pr.v(pp, n, T.VFlo{q, s}, t, ew)),
+        gd.is(t, pp, gd.pr.d(pp, n, T.VFlo{q, s}, t, ew), en))
+    case T.VPair{+n, T.VBool{+s}} <> +t:
+      gd.gen.mk(T.VPair{n, T.VBool{s}}, T.inl.seal(t), T.WfInl{},
+        gd.tt(T.wf.key(n, T.inl.seal(t)), Laws.gd.vok(T.VBool{s}),
+          Equal.trans(Bool, T.wf.key(n, T.inl.seal(t)), T.wf.key(n, t), True{},
+          Equal.cong(Bool, Bool, xx => Bool.and(T.wf.text(n), xx), T.wf.fresh(T.get(T.inl.seal(t), n)),
+            T.wf.fresh(T.get(t, n)), gd.is.names(t, n)),
+          gd.pr.k(pp, n, T.VBool{s}, t, ew)),
+          gd.pr.v(pp, n, T.VBool{s}, t, ew)),
+        gd.is(t, pp, gd.pr.d(pp, n, T.VBool{s}, t, ew), en))
+    case T.VPair{+n, T.VWhen{+s}} <> +t:
+      gd.gen.mk(T.VPair{n, T.VWhen{s}}, T.inl.seal(t), T.WfInl{},
+        gd.tt(T.wf.key(n, T.inl.seal(t)), Laws.gd.vok(T.VWhen{s}),
+          Equal.trans(Bool, T.wf.key(n, T.inl.seal(t)), T.wf.key(n, t), True{},
+          Equal.cong(Bool, Bool, xx => Bool.and(T.wf.text(n), xx), T.wf.fresh(T.get(T.inl.seal(t), n)),
+            T.wf.fresh(T.get(t, n)), gd.is.names(t, n)),
+          gd.pr.k(pp, n, T.VWhen{s}, t, ew)),
+          gd.pr.v(pp, n, T.VWhen{s}, t, ew)),
+        gd.is(t, pp, gd.pr.d(pp, n, T.VWhen{s}, t, ew), en))
+    case T.VPair{+n, T.VArr{+s}} <> +t:
+      gd.gen.mk(T.VPair{n, T.VArr{s}}, T.inl.seal(t), T.WfInl{},
+        gd.tt(T.wf.key(n, T.inl.seal(t)), Laws.gd.vok(T.VArr{s}),
+          Equal.trans(Bool, T.wf.key(n, T.inl.seal(t)), T.wf.key(n, t), True{},
+          Equal.cong(Bool, Bool, xx => Bool.and(T.wf.text(n), xx), T.wf.fresh(T.get(T.inl.seal(t), n)),
+            T.wf.fresh(T.get(t, n)), gd.is.names(t, n)),
+          gd.pr.k(pp, n, T.VArr{s}, t, ew)),
+          gd.pr.v(pp, n, T.VArr{s}, t, ew)),
+        gd.is(t, pp, gd.pr.d(pp, n, T.VArr{s}, t, ew), en))
+    case T.VPair{+n, T.VInl{+s}} <> +t:
+      gd.gen.mk(T.VPair{n, T.VInl{s}}, T.inl.seal(t), T.WfInl{},
+        gd.tt(T.wf.key(n, T.inl.seal(t)), Laws.gd.vok(T.VInl{s}),
+          Equal.trans(Bool, T.wf.key(n, T.inl.seal(t)), T.wf.key(n, t), True{},
+          Equal.cong(Bool, Bool, xx => Bool.and(T.wf.text(n), xx), T.wf.fresh(T.get(T.inl.seal(t), n)),
+            T.wf.fresh(T.get(t, n)), gd.is.names(t, n)),
+          gd.pr.k(pp, n, T.VInl{s}, t, ew)),
+          gd.pr.v(pp, n, T.VInl{s}, t, ew)),
+        gd.is(t, pp, gd.pr.d(pp, n, T.VInl{s}, t, ew), en))
+    case T.VPair{+n, T.VHead{+q, +s}} <> +t:
+      gd.gen.mk(T.VPair{n, T.VInl{T.inl.seal(s)}}, T.inl.seal(t), T.WfInl{},
+        gd.tt(T.wf.key(n, T.inl.seal(t)), T.wf.go(T.inl.seal(s), T.WfInl{}),
+          Equal.trans(Bool, T.wf.key(n, T.inl.seal(t)), T.wf.key(n, t), True{},
+          Equal.cong(Bool, Bool, xx => Bool.and(T.wf.text(n), xx), T.wf.fresh(T.get(T.inl.seal(t), n)),
+            T.wf.fresh(T.get(t, n)), gd.is.names(t, n)),
+          gd.pr.k(pp, n, T.VHead{q, s}, t, ew)),
+          gd.is(s, q, gd.r(T.str.eq(q, T.tree.pre(pp, n)), T.wf.go(s, T.WfRows{q}), gd.pr.v(pp, n, T.VHead{q, s}, t, ew)), gd.l(Laws.gd.na(s), Laws.gd.na(t), en))),
+        gd.is(t, pp, gd.pr.d(pp, n, T.VHead{q, s}, t, ew), gd.r(Laws.gd.na(s), Laws.gd.na(t), en)))
+    case T.VPair{+n, T.VAot{+q, +s}} <> +t:
+      gd.gen.mk(T.VPair{n, T.VAot{q, s}}, T.inl.seal(t), T.WfInl{},
+        gd.tt(T.wf.key(n, T.inl.seal(t)), Laws.gd.vok(T.VAot{q, s}),
+          Equal.trans(Bool, T.wf.key(n, T.inl.seal(t)), T.wf.key(n, t), True{},
+          Equal.cong(Bool, Bool, xx => Bool.and(T.wf.text(n), xx), T.wf.fresh(T.get(T.inl.seal(t), n)),
+            T.wf.fresh(T.get(t, n)), gd.is.names(t, n)),
+          gd.pr.k(pp, n, T.VAot{q, s}, t, ew)),
+          gd.pr.v(pp, n, T.VAot{q, s}, t, ew)),
+        gd.is(t, pp, gd.pr.d(pp, n, T.VAot{q, s}, t, ew), en))
+    case T.VPair{+n, T.VAots{+q, +s}} <> +t:
+      Eq.bit.absurd(&2, {T.wf.go(T.inl.seal(T.VPair{n, T.VAots{q, s}} <> t), T.WfInl{}) == True{} : Bool}, en)
+    case T.VPair{+n, T.VPair{+q, +s}} <> +t:
+      gd.gen.mk(T.VPair{n, T.VPair{q, s}}, T.inl.seal(t), T.WfInl{},
+        gd.tt(T.wf.key(n, T.inl.seal(t)), Laws.gd.vok(T.VPair{q, s}),
+          Equal.trans(Bool, T.wf.key(n, T.inl.seal(t)), T.wf.key(n, t), True{},
+          Equal.cong(Bool, Bool, xx => Bool.and(T.wf.text(n), xx), T.wf.fresh(T.get(T.inl.seal(t), n)),
+            T.wf.fresh(T.get(t, n)), gd.is.names(t, n)),
+          gd.pr.k(pp, n, T.VPair{q, s}, t, ew)),
+          gd.pr.v(pp, n, T.VPair{q, s}, t, ew)),
+        gd.is(t, pp, gd.pr.d(pp, n, T.VPair{q, s}, t, ew), en))
+    case T.VStr{+r} <> +t:
+      Eq.bit.absurd(&2, {T.wf.go(T.inl.seal(T.VStr{r} <> t), T.WfInl{}) == True{} : Bool}, ew)
+    case T.VSpan{+p, +r} <> +t:
+      Eq.bit.absurd(&2, {T.wf.go(T.inl.seal(T.VSpan{p, r} <> t), T.WfInl{}) == True{} : Bool}, ew)
+    case T.VInt{+p, +r} <> +t:
+      Eq.bit.absurd(&2, {T.wf.go(T.inl.seal(T.VInt{p, r} <> t), T.WfInl{}) == True{} : Bool}, ew)
+    case T.VFlo{+p, +r} <> +t:
+      Eq.bit.absurd(&2, {T.wf.go(T.inl.seal(T.VFlo{p, r} <> t), T.WfInl{}) == True{} : Bool}, ew)
+    case T.VBool{+r} <> +t:
+      Eq.bit.absurd(&2, {T.wf.go(T.inl.seal(T.VBool{r} <> t), T.WfInl{}) == True{} : Bool}, ew)
+    case T.VWhen{+r} <> +t:
+      Eq.bit.absurd(&2, {T.wf.go(T.inl.seal(T.VWhen{r} <> t), T.WfInl{}) == True{} : Bool}, ew)
+    case T.VArr{+r} <> +t:
+      Eq.bit.absurd(&2, {T.wf.go(T.inl.seal(T.VArr{r} <> t), T.WfInl{}) == True{} : Bool}, ew)
+    case T.VInl{+r} <> +t:
+      Eq.bit.absurd(&2, {T.wf.go(T.inl.seal(T.VInl{r} <> t), T.WfInl{}) == True{} : Bool}, ew)
+    case T.VHead{+p, +r} <> +t:
+      Eq.bit.absurd(&2, {T.wf.go(T.inl.seal(T.VHead{p, r} <> t), T.WfInl{}) == True{} : Bool}, ew)
+    case T.VAot{+p, +r} <> +t:
+      Eq.bit.absurd(&2, {T.wf.go(T.inl.seal(T.VAot{p, r} <> t), T.WfInl{}) == True{} : Bool}, ew)
+    case T.VAots{+p, +r} <> +t:
+      Eq.bit.absurd(&2, {T.wf.go(T.inl.seal(T.VAots{p, r} <> t), T.WfInl{}) == True{} : Bool}, ew)
+
+# WP-R3: a finished value placed. At the root its key's walk puts it
+# (gd_walk); in an array it goes in front of the items; in an inline table
+# its key walks from "" in the inline table's rows (gd_walk and gd.nw).
+
+# segments of scalar values joined
+def gd.segs.app(aa: List<&2, String>, +bb: List<&2, String>, +ea: {Laws.gd.segs(aa) == True{} : Bool},
+  +eb: {Laws.gd.segs(bb) == True{} : Bool}) -> {Laws.gd.segs(List.append(&2, String, aa, bb)) == True{} : Bool}:
+  match aa:
+    case []:
+      eb
+    case +h <> +t:
+      gd.tt(T.wf.text(h), Laws.gd.segs(List.append(&2, String, t, bb)), gd.l(T.wf.text(h), Laws.gd.segs(t), ea),
+        gd.segs.app(t, bb, gd.r(T.wf.text(h), Laws.gd.segs(t), ea), eb))
+
+# a value a key may hold may be an array's item
+def gd.vok.h1(vv: T.Val, +t: List<&2, T.Val>, +ev: {Laws.gd.vok(vv) == True{} : Bool})
+  -> {gd.h1(vv, t, T.WfItems{}) == True{} : Bool}:
+  match vv:
+    case T.VStr{+r}:
+      ev
+    case T.VSpan{+p, +r}:
+      ev
+    case T.VInt{+p, +r}:
+      ev
+    case T.VFlo{+p, +r}:
+      ev
+    case T.VBool{+r}:
+      ev
+    case T.VWhen{+r}:
+      ev
+    case T.VArr{+r}:
+      ev
+    case T.VInl{+r}:
+      ev
+    case T.VHead{+p, +r}:
+      Eq.bit.absurd(&2, {gd.h1(T.VHead{p, r}, t, T.WfItems{}) == True{} : Bool}, ev)
+    case T.VAot{+p, +r}:
+      Eq.bit.absurd(&2, {gd.h1(T.VAot{p, r}, t, T.WfItems{}) == True{} : Bool}, ev)
+    case T.VAots{+p, +r}:
+      Eq.bit.absurd(&2, {gd.h1(T.VAots{p, r}, t, T.WfItems{}) == True{} : Bool}, ev)
+    case T.VPair{+p, +r}:
+      Eq.bit.absurd(&2, {gd.h1(T.VPair{p, r}, t, T.WfItems{}) == True{} : Bool}, ev)
+
+# a value put at the root: the root the walk returned, the key's table as the
+# current one, and nothing pending
+def gd.g.troot(end: T.End, +here: List<&2, String>, +back: T.Lex, +qkind: T.QKind, +uni: U32, +left: U32,
+  +arrtab: Bool, +lead: Bool, +ee: {Laws.gd.end(end) == True{} : Bool}, +eh: {Laws.gd.segs(here) == True{} : Bool})
+  -> {Laws.good(T.take.root(end, here, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+  match end:
+    case T.End{+vs, +bad, +hs}:
+      gd.tt(Laws.gd.tr(bad, vs, []), Laws.gd.lx(here, [], [], [], T.HNone{}),
+        gd.ifok.t(String.is_empty(bad), T.wf.go(vs, T.WfRows{""}), ee),
+        gd.tt(Laws.gd.segs(here), True{}, eh, {==}))
+
+# the frames' keys, and the current table's and the key's taken from the top
+def gd.keys3(+saved: List<&2, String>, +at: List<&2, String>, +rest: List<&2, T.Ctx>,
+  +ek: {Bool.and(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at), Laws.gd.keys(rest))) == True{} : Bool})
+  -> {Bool.and(Laws.gd.segs(at), Bool.and(Laws.gd.segs(saved),
+    Bool.and(Bool.and(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at), Laws.gd.keys(rest))), True{}))) == True{} : Bool}:
+  gd.tt(Laws.gd.segs(at), Bool.and(Laws.gd.segs(saved),
+    Bool.and(Bool.and(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at), Laws.gd.keys(rest))), True{})),
+    gd.l(Laws.gd.segs(at), Laws.gd.keys(rest),
+      gd.r(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at), Laws.gd.keys(rest)), ek)),
+    gd.tt(Laws.gd.segs(saved), Bool.and(Bool.and(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at),
+      Laws.gd.keys(rest))), True{}),
+      gd.l(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at), Laws.gd.keys(rest)), ek),
+      gd.tt(Bool.and(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at), Laws.gd.keys(rest))), True{}, ek, {==})))
+
+# an item in front of an array's items
+def gd.tarr.tr(ok: Bool, +rows: List<&2, T.Val>, +items: List<&2, T.Val>, +vv: T.Val, +rest: List<&2, T.Ctx>,
+  +et: {Laws.gd.ifok(ok, Bool.and(T.wf.go(rows, T.WfRows{""}), Bool.and(T.wf.go(items, T.WfItems{}),
+    Laws.gd.vals(rest)))) == True{} : Bool},
+  +ev: {Laws.gd.ifok(ok, Laws.gd.vok(vv)) == True{} : Bool})
+  -> {Laws.gd.ifok(ok, Bool.and(T.wf.go(rows, T.WfRows{""}), Bool.and(T.wf.go(vv <> items, T.WfItems{}),
+    Laws.gd.vals(rest)))) == True{} : Bool}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      gd.tt(T.wf.go(rows, T.WfRows{""}), Bool.and(T.wf.go(vv <> items, T.WfItems{}), Laws.gd.vals(rest)),
+        gd.l(T.wf.go(rows, T.WfRows{""}), Bool.and(T.wf.go(items, T.WfItems{}), Laws.gd.vals(rest)), et),
+        gd.tt(T.wf.go(vv <> items, T.WfItems{}), Laws.gd.vals(rest),
+          gd.gen.mk(vv, items, T.WfItems{}, gd.vok.h1(vv, items, ev),
+            gd.l(T.wf.go(items, T.WfItems{}), Laws.gd.vals(rest),
+              gd.r(T.wf.go(rows, T.WfRows{""}), Bool.and(T.wf.go(items, T.WfItems{}), Laws.gd.vals(rest)), et))),
+          gd.r(T.wf.go(items, T.WfItems{}), Laws.gd.vals(rest),
+            gd.r(T.wf.go(rows, T.WfRows{""}), Bool.and(T.wf.go(items, T.WfItems{}), Laws.gd.vals(rest)), et))))
+
+# an inline table's rows after its key's walk, under the walk's error
+def gd.ifok.inl(ok: Bool, +rows: List<&2, T.Val>, +inl: List<&2, T.Val>, +rest: List<&2, T.Ctx>,
+  +ew: {Laws.gd.ifok(ok, T.wf.go(inl, T.WfRows{""})) == True{} : Bool},
+  +en: {Laws.gd.ifok(ok, Laws.gd.na(inl)) == True{} : Bool},
+  +eo: {Bool.and(T.wf.go(rows, T.WfRows{""}), Laws.gd.vals(rest)) == True{} : Bool})
+  -> {Laws.gd.ifok(ok, Bool.and(T.wf.go(rows, T.WfRows{""}), Bool.and(Bool.and(T.wf.go(inl, T.WfRows{""}),
+    Laws.gd.na(inl)), Laws.gd.vals(rest)))) == True{} : Bool}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      gd.tt(T.wf.go(rows, T.WfRows{""}), Bool.and(Bool.and(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl)),
+        Laws.gd.vals(rest)),
+        gd.l(T.wf.go(rows, T.WfRows{""}), Laws.gd.vals(rest), eo),
+        gd.tt(Bool.and(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl)), Laws.gd.vals(rest),
+          gd.tt(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl), ew, en),
+          gd.r(T.wf.go(rows, T.WfRows{""}), Laws.gd.vals(rest), eo)))
+
+# a value put in an inline table: its rows after the walk, the frame back
+def gd.g.tinl(end: T.End, +rows: List<&2, T.Val>, +heads: List<&2, String>, +at: List<&2, String>,
+  +saved: List<&2, String>, +rest: List<&2, T.Ctx>, +back: T.Lex, +qkind: T.QKind, +uni: U32, +left: U32,
+  +arrtab: Bool, +lead: Bool,
+  +ee: {Laws.gd.end(end) == True{} : Bool},
+  +en: {gd.endn(end) == True{} : Bool},
+  +eo: {Bool.and(T.wf.go(rows, T.WfRows{""}), Laws.gd.vals(rest)) == True{} : Bool},
+  +ek: {Bool.and(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at), Laws.gd.keys(rest))) == True{} : Bool})
+  -> {Laws.good(T.take.inl(end, rows, heads, at, saved, rest, back, qkind, uni, left, arrtab, lead))
+    == True{} : Bool}:
+  match end:
+    case T.End{+inl, +bad, +hs}:
+      gd.tt(Laws.gd.tr(bad, rows, T.CInl{inl, saved, at} <> rest),
+        Laws.gd.lx(at, [], [], T.CInl{inl, saved, at} <> rest, T.HNone{}),
+        gd.ifok.inl(String.is_empty(bad), rows, inl, rest, ee, en, eo),
+        gd.tt(Laws.gd.segs(at), Bool.and(Bool.and(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at),
+          Laws.gd.keys(rest))), True{}),
+          gd.l(Laws.gd.segs(at), Laws.gd.keys(rest),
+            gd.r(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at), Laws.gd.keys(rest)), ek)),
+          gd.tt(Bool.and(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at), Laws.gd.keys(rest))), True{}, ek, {==})))
+
+# the inline table's key walks, unless the scanner has failed
+def gd.g.tinl.bad(
+  +bad: String,
+  +val: T.Val,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +parts: List<&2, String>,
+  +inl: List<&2, T.Val>,
+  +saved: List<&2, String>,
+  +at: List<&2, String>,
+  +rest: List<&2, T.Ctx>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +lead: Bool,
+  +et: {Laws.gd.tr(bad, rows, T.CInl{inl, saved, at} <> rest) == True{} : Bool},
+  +ep: {Laws.gd.segs(parts) == True{} : Bool},
+  +ek: {Bool.and(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at), Laws.gd.keys(rest))) == True{} : Bool},
+  +ev: {Laws.gd.ifok(String.is_empty(bad), Laws.gd.vok(val)) == True{} : Bool}
+) -> {Laws.good(T.take.inl(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{val}, [], bad, "", [],
+  True{}}, 0), rows, heads, at, saved, rest, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+  match bad:
+    case SNil{}:
+      gd.g.tinl(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{val}, [], "", "", [], True{}}, 0),
+        rows, heads, at, saved, rest, back, qkind, uni, left, arrtab, lead,
+        Laws.gd_walk(List.reverse(&2, String, parts), inl, T.JPut{val}, "", [], True{}, 0,
+          gd.l(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl),
+            gd.l(Bool.and(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl)), Laws.gd.vals(rest),
+              gd.r(T.wf.go(rows, T.WfRows{""}), Bool.and(Bool.and(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl)),
+                Laws.gd.vals(rest)), et))),
+          gd.segs.rev(parts, [], ep, {==}), ev),
+        gd.nw(List.reverse(&2, String, parts), inl, val, [], "", "", [], True{}, 0, ev,
+          gd.r(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl),
+            gd.l(Bool.and(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl)), Laws.gd.vals(rest),
+              gd.r(T.wf.go(rows, T.WfRows{""}), Bool.and(Bool.and(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl)),
+                Laws.gd.vals(rest)), et))),
+          gd.kn.root()),
+        gd.tt(T.wf.go(rows, T.WfRows{""}), Laws.gd.vals(rest),
+          gd.l(T.wf.go(rows, T.WfRows{""}), Bool.and(Bool.and(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl)),
+            Laws.gd.vals(rest)), et),
+          gd.r(Bool.and(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl)), Laws.gd.vals(rest),
+            gd.r(T.wf.go(rows, T.WfRows{""}), Bool.and(Bool.and(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl)),
+              Laws.gd.vals(rest)), et))),
+        ek)
+    case SCon{+hh, +tt}:
+      Equal.trans(Bool,
+        Laws.good(T.take.inl(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{val}, [], SCon{hh, tt},
+          "", [], True{}}, 0), rows, heads, at, saved, rest, back, qkind, uni, left, arrtab, lead)),
+        Laws.good(T.take.inl(T.End{inl, SCon{hh, tt}, []}, rows, heads, at, saved, rest, back, qkind, uni, left,
+          arrtab, lead)),
+        True{},
+        Equal.cong(T.End, Bool, ee => Laws.good(T.take.inl(ee, rows, heads, at, saved, rest, back, qkind, uni, left,
+          arrtab, lead)),
+          T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{val}, [], SCon{hh, tt}, "", [], True{}}, 0),
+          T.End{inl, SCon{hh, tt}, []},
+          Laws.failed_walk_changes_nothing(List.reverse(&2, String, parts), inl, T.JPut{val}, SCon{hh, tt}, "", [],
+            True{}, 0, {==})),
+        gd.tt(True{}, Laws.gd.lx(at, [], [], T.CInl{inl, saved, at} <> rest, T.HNone{}), {==},
+          gd.tt(Laws.gd.segs(at), Bool.and(Bool.and(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at),
+            Laws.gd.keys(rest))), True{}),
+            gd.l(Laws.gd.segs(at), Laws.gd.keys(rest),
+              gd.r(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at), Laws.gd.keys(rest)), ek)),
+            gd.tt(Bool.and(Laws.gd.segs(saved), Bool.and(Laws.gd.segs(at), Laws.gd.keys(rest))), True{}, ek, {==}))))
+
+# a value put at the root, unless the scanner has failed
+def gd.g.troot.bad(
+  +bad: String,
+  +val: T.Val,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +hold: T.Hold,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +lead: Bool,
+  +et: {Laws.gd.tr(bad, rows, []) == True{} : Bool},
+  +el: {Laws.gd.lx(here, parts, buf, [], hold) == True{} : Bool},
+  +ev: {Laws.gd.ifok(String.is_empty(bad), Laws.gd.vok(val)) == True{} : Bool}
+) -> {Laws.good(T.take.root(T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{val}, [], bad, "", heads,
+  False{}}, T.path.len(here, 0)), here, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+  match bad:
+    case SNil{}:
+      gd.g.troot(T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{val}, [], "", "", heads, False{}},
+        T.path.len(here, 0)), here, back, qkind, uni, left, arrtab, lead,
+        Laws.gd_walk(T.path.cat(here, parts), rows, T.JPut{val}, "", heads, False{}, T.path.len(here, 0),
+          gd.ifok.l(True{}, T.wf.go(rows, T.WfRows{""}), True{}, et),
+          gd.segs.app(here, List.reverse(&2, String, parts), gd.lx.h(here, parts, buf, [], hold, el),
+            gd.segs.rev(parts, [], gd.lx.p(here, parts, buf, [], hold, el), {==})),
+          ev),
+        gd.lx.h(here, parts, buf, [], hold, el))
+    case SCon{+hh, +tt}:
+      Equal.trans(Bool,
+        Laws.good(T.take.root(T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{val}, [], SCon{hh, tt}, "",
+          heads, False{}}, T.path.len(here, 0)), here, back, qkind, uni, left, arrtab, lead)),
+        Laws.good(T.take.root(T.End{rows, SCon{hh, tt}, heads}, here, back, qkind, uni, left, arrtab, lead)),
+        True{},
+        Equal.cong(T.End, Bool, ee => Laws.good(T.take.root(ee, here, back, qkind, uni, left, arrtab, lead)),
+          T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{val}, [], SCon{hh, tt}, "", heads, False{}},
+            T.path.len(here, 0)),
+          T.End{rows, SCon{hh, tt}, heads},
+          Laws.failed_walk_changes_nothing(T.path.cat(here, parts), rows, T.JPut{val}, SCon{hh, tt}, "", heads,
+            False{}, T.path.len(here, 0), {==})),
+        gd.g.troot(T.End{rows, SCon{hh, tt}, heads}, here, back, qkind, uni, left, arrtab, lead, {==},
+          gd.lx.h(here, parts, buf, [], hold, el)))
+
+# where a finished value goes
+def gd.g.ttop(
+  stack: List<&2, T.Ctx>,
+  +val: T.Val,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +hold: T.Hold,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +lead: Bool,
+  +et: {Laws.gd.tr(bad, rows, stack) == True{} : Bool},
+  +el: {Laws.gd.lx(here, parts, buf, stack, hold) == True{} : Bool},
+  +ev: {Laws.gd.ifok(String.is_empty(bad), Laws.gd.vok(val)) == True{} : Bool}
+) -> {Laws.good(T.take.top(stack, val, bad, rows, heads, here, parts, back, qkind, uni, left, arrtab, lead))
+  == True{} : Bool}:
+  match stack:
+    case []:
+      gd.g.troot.bad(bad, val, rows, heads, here, parts, buf, hold, back, qkind, uni, left, arrtab, lead, et, el, ev)
+    case T.CArr{+items, +saved, +at} <> +rest:
+      gd.tt(Laws.gd.tr(bad, rows, T.CArr{val <> items, saved, at} <> rest),
+        Laws.gd.lx(at, saved, [], T.CArr{val <> items, saved, at} <> rest, T.HNone{}),
+        gd.tarr.tr(String.is_empty(bad), rows, items, val, rest, et, ev),
+        gd.keys3(saved, at, rest, gd.lx.s(here, parts, buf, T.CArr{items, saved, at} <> rest, hold, el)))
+    case T.CInl{+inl, +saved, +at} <> +rest:
+      gd.g.tinl.bad(bad, val, rows, heads, parts, inl, saved, at, rest, back, qkind, uni, left, arrtab, lead, et,
+        gd.lx.p(here, parts, buf, T.CInl{inl, saved, at} <> rest, hold, el),
+        gd.lx.s(here, parts, buf, T.CInl{inl, saved, at} <> rest, hold, el), ev)
+
+# a finished value placed, from any good state
+def gd.g.take(+st: T.St, +val: T.Val, +eg: {Laws.good(st) == True{} : Bool},
+  +ev: {Laws.gd.okv(st, val) == True{} : Bool}) -> {Laws.good(T.val.take(st, val)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.ttop(stack, val, bad, rows, heads, here, parts, buf, hold, back, qkind, uni, left, arrtab, lead,
+        gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+        gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg), ev)
+
+def Laws.gd_take(st, eg, val, ev):
+  gd.g.take(st, val, eg, ev)
+

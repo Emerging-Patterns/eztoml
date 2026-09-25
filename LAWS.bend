@@ -3075,10 +3075,23 @@ def gd.hold(hh: T.Hold) -> Bool:
     case T.HChar{+c}:
       T.wf.char(c)
 
-# the rows of an open inline table: the tables its dotted keys made become
-# inline tables when it closes
-def gd.inl(rows: List<&2, T.Val>) -> Bool:
-  T.wf.go(T.inl.seal(rows), T.WfInl{})
+# no array of tables, in these rows or the tables under them
+def gd.na(rows: List<&2, T.Val>) -> Bool:
+  match rows:
+    case []:
+      True{}
+    case T.VPair{_n, T.VHead{_p, sub}} <> t:
+      Bool.and(gd.na(sub), gd.na(t))
+    case T.VPair{_n, T.VAots{_p, _e}} <> _t:
+      False{}
+    case _ <> t:
+      gd.na(t)
+
+# the rows of an open inline table: its dotted keys walk from "" as a root's
+# do, so they are well-formed as a root's rows with no array of tables; the
+# tables they made become inline tables when it closes
+def gd.inl(+rows: List<&2, T.Val>) -> Bool:
+  Bool.and(T.wf.go(rows, T.WfRows{""}), gd.na(rows))
 
 # what the open arrays and inline tables have built
 def gd.vals(stack: List<&2, T.Ctx>) -> Bool:
@@ -3279,3 +3292,23 @@ law gd_fin:
   for eg: {good(st) == True{} : Bool}
   for eo: {String.is_empty(T.bad(T.read.fin.doc(st))) == True{} : Bool}
   {T.wf(T.read.fin.doc(st)) == True{} : Bool}
+
+# a value a key may hold, unless the scanner has failed
+def gd.okv(st: T.St, val: T.Val) -> Bool:
+  match st:
+    case T.St{+bad, _rows, _heads, _here, _parts, _buf, _lex, _back, _q, _stack, _hold, _uni, _left, _arr,
+      _lead}:
+      gd.ifok(String.is_empty(bad), gd.vok(val))
+
+# LAW: placing a finished value keeps a state good: from every good state,
+# whatever its fields, a value a key may hold (no table, well-formed where a
+# pair holds it) put where the state is (the root through its key's walk, an
+# array in front of its items, an inline table through its key's walk) leaves
+# a good state; once the scanner has failed, any value does
+# TOML-RT-3
+law gd_take:
+  for +st: T.St
+  for eg: {good(st) == True{} : Bool}
+  for +val: T.Val
+  for ev: {gd.okv(st, val) == True{} : Bool}
+  {good(T.val.take(st, val)) == True{} : Bool}
