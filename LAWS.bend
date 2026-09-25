@@ -2790,3 +2790,246 @@ law header_line_found_by_at:
   for +g9: List<&2, Bool>
   {T.at(T.root(T.parse(hd.line(False{}, g0, ds, last, g9, ""))), hd.path(ds, last))
     == T.Found{T.VHead{T.tree.pre(tb.join(dk.init(ds), ""), seg.name(last)), []}} : T.Hit}
+
+# WP-C: arrays and inline tables read back. render writes an array as `[`,
+# its items joined by ", " and `]`, and an inline table as `{`, its pairs
+# `key = value` joined by ", " and `}`, nested to any depth. The scanner reads
+# such a value from the state that waits for a value up to the character
+# after it, which ends it: a newline at the top level, a comma or a closer
+# inside a container. The value it puts is in the raw form below: a string a
+# span or an owned string, an array's items in order, an inline table's pairs
+# newest first until rows.seal; own reads it as cv.raw says.
+
+# a text that starts with a character that may end a value: a newline, a
+# comma, or a closer
+def cv.end(rest: String) -> Bool:
+  match rest:
+    case SNil{}:
+      False{}
+    case SCon{+cc, _tt}:
+      Bool.or(Char.is_eq(cc, '\n'), Bool.or(Char.is_eq(cc, ','), Bool.or(Char.is_eq(cc, ']'),
+        Char.is_eq(cc, '}'))))
+
+# one value with every span read out, as own.rows reads the head of a list
+def cv.own1(vv: T.Val) -> T.Val:
+  match vv:
+    case T.VPair{nn, T.VSpan{src, +kk}}:
+      T.VPair{nn, T.VStr{T.span.str(src, kk, U32.is_zero(kk))}}
+    case T.VPair{nn, T.VArr{items}}:
+      T.VPair{nn, T.VArr{own.rows(items)}}
+    case T.VPair{nn, T.VInl{rows}}:
+      T.VPair{nn, T.VInl{own.rows(rows)}}
+    case T.VPair{nn, T.VHead{path, rows}}:
+      T.VPair{nn, T.VHead{path, own.rows(rows)}}
+    case T.VPair{nn, T.VAot{path, rows}}:
+      T.VPair{nn, T.VAot{path, own.rows(rows)}}
+    case T.VPair{nn, T.VAots{path, elems}}:
+      T.VPair{nn, T.VAots{path, own.rows(elems)}}
+    case T.VSpan{src, +kk}:
+      T.VStr{T.span.str(src, kk, U32.is_zero(kk))}
+    case T.VArr{items}:
+      T.VArr{own.rows(items)}
+    case T.VInl{rows}:
+      T.VInl{own.rows(rows)}
+    case T.VHead{path, rows}:
+      T.VHead{path, own.rows(rows)}
+    case T.VAot{path, rows}:
+      T.VAot{path, own.rows(rows)}
+    case T.VAots{path, elems}:
+      T.VAots{path, own.rows(elems)}
+    case other:
+      other
+
+# values as the scanner puts them, every span read out: strings owned, an
+# array's items in order, an inline table's pairs newest first
+def cv.raw(vs: List<&2, T.Val>) -> List<&2, T.Val>:
+  match vs:
+    case []:
+      []
+    case T.VPair{nn, T.VSpan{src, +kk}} <> tt:
+      T.VPair{nn, T.VStr{T.span.str(src, kk, U32.is_zero(kk))}} <> cv.raw(tt)
+    case T.VPair{nn, T.VArr{items}} <> tt:
+      T.VPair{nn, T.VArr{cv.raw(items)}} <> cv.raw(tt)
+    case T.VPair{nn, T.VInl{rows}} <> tt:
+      T.VPair{nn, T.VInl{List.reverse(&2, T.Val, cv.raw(rows))}} <> cv.raw(tt)
+    case T.VSpan{src, +kk} <> tt:
+      T.VStr{T.span.str(src, kk, U32.is_zero(kk))} <> cv.raw(tt)
+    case T.VArr{items} <> tt:
+      T.VArr{cv.raw(items)} <> cv.raw(tt)
+    case T.VInl{rows} <> tt:
+      T.VInl{List.reverse(&2, T.Val, cv.raw(rows))} <> cv.raw(tt)
+    case vv <> tt:
+      vv <> cv.raw(tt)
+
+# one value as the scanner puts it, as cv.raw reads the head of a list
+def cv.raw1(vv: T.Val) -> T.Val:
+  match vv:
+    case T.VPair{nn, T.VSpan{src, +kk}}:
+      T.VPair{nn, T.VStr{T.span.str(src, kk, U32.is_zero(kk))}}
+    case T.VPair{nn, T.VArr{items}}:
+      T.VPair{nn, T.VArr{cv.raw(items)}}
+    case T.VPair{nn, T.VInl{rows}}:
+      T.VPair{nn, T.VInl{List.reverse(&2, T.Val, cv.raw(rows))}}
+    case T.VSpan{src, +kk}:
+      T.VStr{T.span.str(src, kk, U32.is_zero(kk))}
+    case T.VArr{items}:
+      T.VArr{cv.raw(items)}
+    case T.VInl{rows}:
+      T.VInl{List.reverse(&2, T.Val, cv.raw(rows))}
+    case other:
+      other
+
+# the text render writes for a value in a value position, then xx: an array's
+# items joined by ", " in brackets, an inline table's pairs joined by ", " in
+# braces, or a scalar's text
+def cv.tx(vv: T.Val, xx: String) -> String:
+  match vv:
+    case T.VArr{items}:
+      SCon{'[', String.append(T.render.go(items, ", ", False{}), SCon{']', xx})}
+    case T.VInl{rows}:
+      SCon{'{', String.append(T.render.go(rows, ", ", False{}), SCon{'}', xx})}
+    case other:
+      String.append(T.render.atom(other), xx)
+
+# a value that may sit in a value position, well-formed as wf.go reads an
+# array's item or a pair's value: an array of well-formed items, an inline
+# table of well-formed pairs, or a well-formed scalar
+def cv.wf(vv: T.Val) -> Bool:
+  match vv:
+    case T.VArr{items}:
+      T.wf.go(items, T.WfItems{})
+    case T.VInl{rows}:
+      T.wf.go(rows, T.WfInl{})
+    case other:
+      T.wf.atom(other)
+
+# every string in the values, at any depth, is short: a span counts its
+# characters in a U32
+def cv.shorts(vs: List<&2, T.Val>) -> Bool:
+  match vs:
+    case []:
+      True{}
+    case T.VPair{_nn, T.VStr{ss}} <> tt:
+      Bool.and(short(ss), cv.shorts(tt))
+    case T.VPair{_nn, T.VSpan{src, +kk}} <> tt:
+      Bool.and(short(T.span.str(src, kk, U32.is_zero(kk))), cv.shorts(tt))
+    case T.VPair{_nn, T.VArr{items}} <> tt:
+      Bool.and(cv.shorts(items), cv.shorts(tt))
+    case T.VPair{_nn, T.VInl{rows}} <> tt:
+      Bool.and(cv.shorts(rows), cv.shorts(tt))
+    case T.VStr{ss} <> tt:
+      Bool.and(short(ss), cv.shorts(tt))
+    case T.VSpan{src, +kk} <> tt:
+      Bool.and(short(T.span.str(src, kk, U32.is_zero(kk))), cv.shorts(tt))
+    case T.VArr{items} <> tt:
+      Bool.and(cv.shorts(items), cv.shorts(tt))
+    case T.VInl{rows} <> tt:
+      Bool.and(cv.shorts(rows), cv.shorts(tt))
+    case _vv <> tt:
+      cv.shorts(tt)
+
+# every string in one value, at any depth, is short
+def cv.short1(vv: T.Val) -> Bool:
+  match vv:
+    case T.VStr{ss}:
+      short(ss)
+    case T.VSpan{src, +kk}:
+      short(T.span.str(src, kk, U32.is_zero(kk)))
+    case T.VArr{items}:
+      cv.shorts(items)
+    case T.VInl{rows}:
+      cv.shorts(rows)
+    case _vv:
+      True{}
+
+# the scanner waiting for a value, with no error and nothing buffered, the
+# fields a value does not decide left as parameters
+def vpos(
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  ps: List<&2, String>,
+  bk: T.Lex,
+  qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  ab: Bool
+) -> T.St:
+  T.St{"", rw, hs, he, ps, [], T.LVal{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}
+
+# the rest of the walk once a value ww is read: from the state with a value
+# put where the stack puts values, one that own reads as the scanner's form
+# of ww, and whatever back, qkind, uni and left the value leaves, the rest of
+# the text gives a document PP holds of
+def vrest(
+  +ww: T.Val,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  @vv: T.Val -> @bk: T.Lex -> @qk: T.QKind -> @un: U32 -> @lf: U32 ->
+    {cv.own1(vv) == cv.raw1(ww) : T.Val} ->
+    PP(T.doc.read(rest, T.MScan{T.take.top(sk, vv, "", rw, hs, he, ps, bk, qk, un, lf, ab, False{})}))
+
+# LAW: a value render writes in a value position reads back: from every
+# state that waits for a value, the text of a well-formed value whose strings
+# are short (a scalar, a string, or an array or an inline table nested to any
+# depth), then a character that ends a value and any rest, reads on as the
+# rest from the state with the value put, in the scanner's form, whatever the
+# value leaves in back, qkind, uni and left. PP is what the caller proves of
+# the document
+law value_reads_back:
+  for +v: T.Val
+  for hw: {cv.wf(v) == True{} : Bool}
+  for hl: {cv.short1(v) == True{} : Bool}
+  for +rw: List<&2, T.Val>
+  for +hs: List<&2, String>
+  for +he: List<&2, String>
+  for +ps: List<&2, String>
+  for +bk: T.Lex
+  for +qk: T.QKind
+  for +sk: List<&2, T.Ctx>
+  for +un: U32
+  for +lf: U32
+  for +ab: Bool
+  for +rest: String
+  for hn: {cv.end(rest) == True{} : Bool}
+  for -PP: T.Doc -> Type
+  for ih: vrest(v, rw, hs, he, ps, sk, ab, rest, PP)
+  PP(T.doc.read(cv.tx(v, rest), T.MScan{vpos(rw, hs, he, ps, bk, qk, sk, un, lf, ab)}))
+
+# LAW: in any table, the pass that writes keys writes a pair of a value that
+# may sit in a value position as its key, " = " and the value's text, then
+# the separator and the rest
+law pass_value:
+  for +k: String
+  for +v: T.Val
+  for hw: {cv.wf(v) == True{} : Bool}
+  for +rest: List<&2, T.Val>
+  for +gap: String
+  for +trail: Bool
+  {T.render.pass(T.VPair{k, v} <> rest, gap, trail, False{}) == String.append(T.key(k), SCon{' ', SCon{'=',
+    SCon{' ', cv.tx(v, String.append(T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)),
+    T.render.pass(rest, gap, trail, False{})))}}}) : String}
+
+# LAW: a document of one pair, a bare key and a value that is no table (a
+# scalar, a string, or an array or an inline table nested to any depth),
+# well-formed and with every string in it shorter than 2^32 characters, reads
+# back with no error as the same document
+# TOML-RT-1
+law render_parse_value_pair:
+  for +e: String
+  for +k: String
+  for +ek: {T.bare(k) == True{} : Bool}
+  for +v: T.Val
+  for w: {T.wf(T.Doc{e, [T.VPair{k, v}]}) == True{} : Bool}
+  for +hv: {cv.wf(v) == True{} : Bool}
+  for hl: {cv.short1(v) == True{} : Bool}
+  {Bool.and(String.is_empty(T.bad(T.parse(T.render(T.Doc{e, [T.VPair{k, v}]})))),
+    same(T.parse(T.render(T.Doc{e, [T.VPair{k, v}]})), T.Doc{e, [T.VPair{k, v}]})) == True{} : Bool}
