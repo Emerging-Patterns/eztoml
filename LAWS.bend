@@ -1923,3 +1923,36 @@ law failed_walk_changes_nothing:
   for +eb: {String.is_empty(bad) == False{} : Bool}
   {T.tree.walk(path, T.Tw{rows, job, [], bad, pre, heads, inl}, skip) == T.End{rows, bad, heads}
     : T.End}
+
+# a value as rows.seal leaves it: the rows of a table, of an element of an
+# array of tables and of an inline table, and the elements of an array of
+# tables, each sealed in turn; an array's items sealed and kept in order
+def sealed(+vv: T.Val) -> T.Val:
+  match vv:
+    case T.VPair{nn, T.VHead{pp, rows}}:
+      T.VPair{nn, T.VHead{pp, T.rows.seal(rows)}}
+    case T.VPair{nn, T.VAots{pp, elems}}:
+      T.VPair{nn, T.VAots{pp, T.rows.seal(elems)}}
+    case T.VPair{nn, T.VInl{rows}}:
+      T.VPair{nn, T.VInl{T.rows.seal(rows)}}
+    case T.VPair{nn, T.VArr{items}}:
+      T.VPair{nn, T.VArr{List.reverse(&2, T.Val, T.rows.seal(items))}}
+    case T.VAot{pp, rows}:
+      T.VAot{pp, T.rows.seal(rows)}
+    case T.VAots{pp, elems}:
+      T.VAots{pp, T.rows.seal(elems)}
+    case T.VInl{rows}:
+      T.VInl{T.rows.seal(rows)}
+    case T.VArr{items}:
+      T.VArr{List.reverse(&2, T.Val, T.rows.seal(items))}
+    case _:
+      vv
+
+# LAW: rows.seal puts the newest row last: sealing rows with x at their head
+# is sealing the rest, then x sealed. Rows built newest first come out in the
+# order they were written, and every table inside is sealed the same way
+law seal_puts_newest_last:
+  for +x: T.Val
+  for +rows: List<&2, T.Val>
+  {T.rows.seal(x <> rows) == List.append(&2, T.Val, T.rows.seal(rows), [sealed(x)])
+    : List<&2, T.Val>}
