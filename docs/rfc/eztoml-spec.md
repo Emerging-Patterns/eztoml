@@ -244,7 +244,7 @@ Decided with the REVIEW items. Each lands as its own change, with master's resul
 | Layout | `main.bend` at the root, whole; LAWS.bend and PROOF.bend beside it; the lemmas in `src/eq.bend` | the interface is one file, where ez expects it |
 | One | SPEC.md from these tables; the closed and definitional laws deleted; `closed` and `trace` at error; README Compliance points at SPEC.md; the five kept laws tagged; TOML-KEY-1, TOML-GET-1, TOML-GET-2 and TOML-READ-1 proved | the gate is honest: SPEC.md says what is proved, and nothing claims more |
 | Fixes | the conformance fixes of REVIEW-6, I6 first, each with its partial law | every known bug fixed, each with a law that would have caught it |
-| Two | `wf` and `same`; TOML-KEY-2 and TOML-STR-2 (the renderer's side, structural inductions); a design doc for the scanner proofs with a spike that proves one production of TOML-RT-1 against the real checker | the renderer is proved, and the scanner proof has a plan |
+| Two | `wf` and `same`; TOML-KEY-2 and TOML-STR-2 (the renderer's side, structural inductions); a design doc for the scanner proofs with a spike that proves one production of TOML-RT-1 against the real checker (the plan: [eztoml-roundtrip-proofs.md](eztoml-roundtrip-proofs.md)) | the renderer is proved, and the scanner proof has a plan |
 | Three | TOML-RT-3, TOML-RT-1, TOML-RT-2, TOML-KEY-3 | the headline is proved; ez can rely on it |
 | Four | the grammar relation; TOML-TEXT-2, then TOML-STR-1, TOML-NUM-1, TOML-NUM-2, TOML-TIME-1 and TOML-TEXT-1 | conformance is proved |
 
