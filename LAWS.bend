@@ -1998,22 +1998,16 @@ def hb.line(
   T.St{"", rows, heads, here, [], [], T.LTop{}, back, qkind, [], T.HNone{}, 0, 0, arrtab,
     False{}}
 
-# whether every segment of a path is a bare key
-def hb.bare_all(path: List<&2, String>) -> Bool:
-  match path:
-    case []:
-      True{}
-    case +seg <> rest:
-      Bool.and(T.bare(seg), hb.bare_all(rest))
-
-# LAW: a header whose segments are all bare, then a newline, read from the
-# start of a line, is the rest read from the start of the next line in the
-# header's table, with the rows and definitions its walk returns. The path is
-# the one render writes: the parent's path joined with the last segment
-law bare_path_header_reads_back:
+# LAW: a header as render writes it, `[`, the stored path (the parent's path
+# joined with the last segment k, each segment bare or basic-quoted as key
+# writes it), `]` and a newline, read from the start of a line, is the rest
+# read from the start of the next line in the table named by the segments'
+# characters, with the rows and definitions the walk along those names
+# returns. Every name reads back as itself, escapes decoded
+# TOML-KEY-3
+law header_reads_back:
   for +segs: List<&2, String>
   for +k: String
-  for +eb: {hb.bare_all(List.append(&2, String, segs, [k])) == True{} : Bool}
   for +rows: List<&2, T.Val>
   for +heads: List<&2, String>
   for +here: List<&2, String>
@@ -2028,5 +2022,57 @@ law bare_path_header_reads_back:
   for +goal: T.Doc
   for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{hb.line(rows2, heads2,
     List.append(&2, String, segs, [k]), bk, qk, False{})}) == goal : T.Doc}
+  {T.doc.read("[" ++ T.tree.pre(tb.join(segs, ""), k) ++ "]\n" ++ rest, T.MScan{hb.line(rows, heads,
+    here, back, qkind, arrtab)}) == goal : T.Doc}
+
+# LAW: a header whose last segment names nothing yet in the table its parent
+# path leads to reads back with a new, empty table under k's characters at
+# the head of that table's rows, recorded as defined by a header, and the
+# header's segments as the current table (header_defines_new_table)
+# TOML-KEY-3
+law header_new_table_reads_back:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +eo: {tb.open(segs, rows) == True{} : Bool}
+  for em: {T.get(tb.rows(segs, rows), k) == T.Miss{} : T.Hit}
+  for +here: List<&2, String>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +arrtab: Bool
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{hb.line(tb.set(segs, "", rows,
+    T.VPair{k, T.VHead{T.tree.pre(tb.join(segs, ""), k), []}} <> tb.rows(segs, rows)),
+    T.heads.by.head(T.tree.pre(tb.join(segs, ""), k)) <> heads, List.append(&2, String, segs, [k]),
+    bk, qk, False{})}) == goal : T.Doc}
+  {T.doc.read("[" ++ T.tree.pre(tb.join(segs, ""), k) ++ "]\n" ++ rest, T.MScan{hb.line(rows, heads,
+    here, back, qkind, arrtab)}) == goal : T.Doc}
+
+# LAW: a header whose last segment names a table only made on the way to
+# another reads back with that table defined where it is, under the header's
+# path, and recorded as defined by a header (header_defines_implicit_table)
+# TOML-KEY-3
+law header_implicit_table_reads_back:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for p: String
+  for +sub: List<&2, T.Val>
+  for +eo: {tb.open(segs, rows) == True{} : Bool}
+  for ef: {T.get(tb.rows(segs, rows), k) == T.Found{T.VHead{p, sub}} : T.Hit}
+  for eh: {T.heads.has(heads, T.tree.pre(tb.join(segs, ""), k)) == False{} : Bool}
+  for +here: List<&2, String>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +arrtab: Bool
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{hb.line(tb.set(segs, "", rows,
+    T.rows.repl(tb.rows(segs, rows), k, T.VHead{T.tree.pre(tb.join(segs, ""), k), sub})),
+    T.heads.by.head(T.tree.pre(tb.join(segs, ""), k)) <> heads, List.append(&2, String, segs, [k]),
+    bk, qk, False{})}) == goal : T.Doc}
   {T.doc.read("[" ++ T.tree.pre(tb.join(segs, ""), k) ++ "]\n" ++ rest, T.MScan{hb.line(rows, heads,
     here, back, qkind, arrtab)}) == goal : T.Doc}
