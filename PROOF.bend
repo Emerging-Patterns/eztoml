@@ -7380,3 +7380,194 @@ def Laws.header_refused_exactly(segs, k, rows, heads, eo):
         look.get(Laws.tb.rows(segs, rows), k)),
       hdr.exact(T.get(Laws.tb.rows(segs, rows), k), k, Laws.tb.rows(segs, rows),
         nav.frs(segs, "", rows, []), T.tree.pre(Laws.tb.join(segs, ""), k), heads)))
+
+# every segment of an array-of-tables header is navigation
+def quiet.aot(path: List<&2, String>) -> {nav.quiet(path, T.JAot{}, 0) == True{} : Bool}:
+  match path:
+    case []:
+      {==}
+    case _seg <> rest:
+      quiet.aot(rest)
+
+def Laws.aot_header_starts_array(segs, k, rows, heads, eo, em):
+  Equal.trans(T.End,
+    T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JAot{}, [], "", "", heads, False{}},
+      0),
+    T.tree.leaf(k, T.Tw{Laws.tb.rows(segs, rows), T.JAot{}, nav.frs(segs, "", rows, []), "",
+      Laws.tb.join(segs, ""), heads, False{}}),
+    T.End{Laws.tb.set(segs, "", rows, T.VPair{k, T.VAots{T.tree.pre(Laws.tb.join(segs, ""), k),
+      [T.VAot{T.tree.pre(Laws.tb.join(segs, ""), k), []}]}} <> Laws.tb.rows(segs, rows)), "", heads},
+    nav.walk(segs, k, rows, T.JAot{}, [], "", heads, False{}, 0, eo, quiet.aot(segs)),
+    Equal.trans(T.End,
+      T.tree.leaf(k, T.Tw{Laws.tb.rows(segs, rows), T.JAot{}, nav.frs(segs, "", rows, []), "",
+        Laws.tb.join(segs, ""), heads, False{}}),
+      T.tree.rebuild(nav.frs(segs, "", rows, []), T.VPair{k, T.VAots{T.tree.pre(Laws.tb.join(segs,
+        ""), k), [T.VAot{T.tree.pre(Laws.tb.join(segs, ""), k), []}]}} <> Laws.tb.rows(segs, rows),
+        "", heads),
+      T.End{Laws.tb.set(segs, "", rows, T.VPair{k, T.VAots{T.tree.pre(Laws.tb.join(segs, ""), k),
+        [T.VAot{T.tree.pre(Laws.tb.join(segs, ""), k), []}]}} <> Laws.tb.rows(segs, rows)), "",
+        heads},
+      Equal.cong(T.Look, T.End,
+        ll => T.tree.leaf.aot.hit(ll, k, Laws.tb.rows(segs, rows), nav.frs(segs, "", rows, []), "",
+          T.tree.pre(Laws.tb.join(segs, ""), k), heads),
+        T.rows.look(Laws.tb.rows(segs, rows), k), T.KMiss{},
+        look.via(Laws.tb.rows(segs, rows), k, T.Miss{}, em)),
+      nav.rebuild(segs, "", rows, [], T.VPair{k, T.VAots{T.tree.pre(Laws.tb.join(segs, ""), k),
+        [T.VAot{T.tree.pre(Laws.tb.join(segs, ""), k), []}]}} <> Laws.tb.rows(segs, rows), "", heads,
+        eo)))
+
+def Laws.aot_header_extends_array(segs, k, rows, heads, p, elems, eo, ef):
+  Equal.trans(T.End,
+    T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JAot{}, [], "", "", heads, False{}},
+      0),
+    T.tree.leaf(k, T.Tw{Laws.tb.rows(segs, rows), T.JAot{}, nav.frs(segs, "", rows, []), "",
+      Laws.tb.join(segs, ""), heads, False{}}),
+    T.End{Laws.tb.set(segs, "", rows, T.rows.repl(Laws.tb.rows(segs, rows), k,
+      T.VAots{T.tree.pre(Laws.tb.join(segs, ""), k), T.VAot{T.tree.pre(Laws.tb.join(segs, ""), k), []}
+        <> elems})), "",
+      T.heads.drop(heads, String.append(T.tree.pre(Laws.tb.join(segs, ""), k), "."))},
+    nav.walk(segs, k, rows, T.JAot{}, [], "", heads, False{}, 0, eo, quiet.aot(segs)),
+    Equal.trans(T.End,
+      T.tree.leaf(k, T.Tw{Laws.tb.rows(segs, rows), T.JAot{}, nav.frs(segs, "", rows, []), "",
+        Laws.tb.join(segs, ""), heads, False{}}),
+      T.tree.rebuild(nav.frs(segs, "", rows, []), T.rows.repl(Laws.tb.rows(segs, rows), k,
+        T.VAots{T.tree.pre(Laws.tb.join(segs, ""), k), T.VAot{T.tree.pre(Laws.tb.join(segs, ""), k),
+          []} <> elems}), "",
+        T.heads.drop(heads, String.append(T.tree.pre(Laws.tb.join(segs, ""), k), "."))),
+      T.End{Laws.tb.set(segs, "", rows, T.rows.repl(Laws.tb.rows(segs, rows), k,
+        T.VAots{T.tree.pre(Laws.tb.join(segs, ""), k), T.VAot{T.tree.pre(Laws.tb.join(segs, ""), k),
+          []} <> elems})), "",
+        T.heads.drop(heads, String.append(T.tree.pre(Laws.tb.join(segs, ""), k), "."))},
+      Equal.cong(T.Look, T.End,
+        ll => T.tree.leaf.aot.hit(ll, k, Laws.tb.rows(segs, rows), nav.frs(segs, "", rows, []), "",
+          T.tree.pre(Laws.tb.join(segs, ""), k), heads),
+        T.rows.look(Laws.tb.rows(segs, rows), k), T.KAots{p, elems},
+        look.via(Laws.tb.rows(segs, rows), k, T.Found{T.VAots{p, elems}}, ef)),
+      nav.rebuild(segs, "", rows, [], T.rows.repl(Laws.tb.rows(segs, rows), k,
+        T.VAots{T.tree.pre(Laws.tb.join(segs, ""), k), T.VAot{T.tree.pre(Laws.tb.join(segs, ""), k),
+          []} <> elems}), "",
+        T.heads.drop(heads, String.append(T.tree.pre(Laws.tb.join(segs, ""), k), ".")), eo)))
+
+# an [[array]] header's job at the last name, for each thing get can find there
+def aot.exact(
+  hh: T.Hit,
+  +kk: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +pp: String,
+  +heads: List<&2, String>
+) -> {String.is_empty(Laws.end_bad(T.tree.leaf.aot.hit(tb.look(hh), kk, vs, stack, "", pp, heads)))
+  == Laws.aot.ok(hh) : Bool}:
+  match hh:
+    case T.Miss{}:
+      rebuild.empty(stack, T.VPair{kk, T.VAots{pp, [T.VAot{pp, []}]}} <> vs, "", heads)
+    case T.Found{T.VAots{_p, es}}:
+      rebuild.empty(stack, T.rows.repl(vs, kk, T.VAots{pp, T.VAot{pp, []} <> es}), "",
+        T.heads.drop(heads, String.append(pp, ".")))
+    case T.Found{T.VHead{_a, _b}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VInl{_a}}:
+      rebuild.empty(stack, vs, T.err.first("", "inline table is closed"), heads)
+    case T.Found{T.VStr{_a}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VSpan{_a, _b}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VInt{_a, _b}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VFlo{_a, _b}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VBool{_a}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VWhen{_a}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VArr{_a}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VAot{_a, _b}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VPair{_a, _b}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+
+def Laws.aot_header_refused_exactly(segs, k, rows, heads, eo):
+  Equal.trans(Bool,
+    String.is_empty(Laws.end_bad(T.tree.walk(List.append(&2, String, segs, [k]),
+      T.Tw{rows, T.JAot{}, [], "", "", heads, False{}}, 0))),
+    String.is_empty(Laws.end_bad(T.tree.leaf(k, T.Tw{Laws.tb.rows(segs, rows), T.JAot{},
+      nav.frs(segs, "", rows, []), "", Laws.tb.join(segs, ""), heads, False{}}))),
+    Laws.aot.ok(T.get(Laws.tb.rows(segs, rows), k)),
+    Equal.cong(T.End, Bool, ee => String.is_empty(Laws.end_bad(ee)),
+      T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JAot{}, [], "", "", heads,
+        False{}}, 0),
+      T.tree.leaf(k, T.Tw{Laws.tb.rows(segs, rows), T.JAot{}, nav.frs(segs, "", rows, []), "",
+        Laws.tb.join(segs, ""), heads, False{}}),
+      nav.walk(segs, k, rows, T.JAot{}, [], "", heads, False{}, 0, eo, quiet.aot(segs))),
+    Equal.trans(Bool,
+      String.is_empty(Laws.end_bad(T.tree.leaf.aot.hit(T.rows.look(Laws.tb.rows(segs, rows), k), k,
+        Laws.tb.rows(segs, rows), nav.frs(segs, "", rows, []), "",
+        T.tree.pre(Laws.tb.join(segs, ""), k), heads))),
+      String.is_empty(Laws.end_bad(T.tree.leaf.aot.hit(tb.look(T.get(Laws.tb.rows(segs, rows), k)),
+        k, Laws.tb.rows(segs, rows), nav.frs(segs, "", rows, []), "",
+        T.tree.pre(Laws.tb.join(segs, ""), k), heads))),
+      Laws.aot.ok(T.get(Laws.tb.rows(segs, rows), k)),
+      Equal.cong(T.Look, Bool,
+        ll => String.is_empty(Laws.end_bad(T.tree.leaf.aot.hit(ll, k, Laws.tb.rows(segs, rows),
+          nav.frs(segs, "", rows, []), "", T.tree.pre(Laws.tb.join(segs, ""), k), heads))),
+        T.rows.look(Laws.tb.rows(segs, rows), k), tb.look(T.get(Laws.tb.rows(segs, rows), k)),
+        look.get(Laws.tb.rows(segs, rows), k)),
+      aot.exact(T.get(Laws.tb.rows(segs, rows), k), k, Laws.tb.rows(segs, rows),
+        nav.frs(segs, "", rows, []), T.tree.pre(Laws.tb.join(segs, ""), k), heads)))
+
+# a walk that starts with an error ends with the rows, the error and the
+# recorded definitions it started with
+def failed.Goal(
+  path: List<&2, String>,
+  +rows: List<&2, T.Val>,
+  +job: T.Job,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +skip: U32
+) -> Type:
+  {T.tree.walk(path, T.Tw{rows, job, [], bad, pre, heads, inl}, skip) == T.End{rows, bad, heads}
+    : T.End}
+
+# a failed walk past one more segment: the step changes nothing, and neither
+# does the rest of the walk
+def failed.more(
+  rest: List<&2, String>,
+  +name: String,
+  +rows: List<&2, T.Val>,
+  +job: T.Job,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +skip: U32,
+  eb: {String.is_empty(bad) == False{} : Bool},
+  ih: failed.Goal(rest, rows, job, bad, pre, heads, inl, T.path.dec(skip))
+) -> failed.Goal(name <> rest, rows, job, bad, pre, heads, inl, skip):
+  match rest:
+    case []:
+      Equal.cong(Bool, T.End, bb => T.tree.leaf.bad(bb, name, rows, job, [], bad, pre, heads),
+        String.is_empty(bad), False{}, eb)
+    case +r <> +rr:
+      Equal.trans(T.End,
+        T.tree.walk(r <> rr, T.tree.sub.bad(String.is_empty(bad), name, rows, job, [], bad, pre, heads,
+          inl, U32.is_zero(skip)), T.path.dec(skip)),
+        T.tree.walk(r <> rr, T.Tw{rows, job, [], bad, pre, heads, inl}, T.path.dec(skip)),
+        T.End{rows, bad, heads},
+        Equal.cong(Bool, T.End,
+          bb => T.tree.walk(r <> rr, T.tree.sub.bad(bb, name, rows, job, [], bad, pre, heads, inl,
+            U32.is_zero(skip)), T.path.dec(skip)),
+          String.is_empty(bad), False{}, eb),
+        ih)
+
+# by induction on the path
+def Laws.failed_walk_changes_nothing(path, rows, job, bad, pre, heads, inl, skip, eb):
+  match path:
+    case []:
+      Equal.cong(Bool, T.End, bb => T.End{rows, T.err.first.go(bb, bad, "empty key"), heads},
+        String.is_empty(bad), False{}, eb)
+    case name <> +rest:
+      failed.more(rest, name, rows, job, bad, pre, heads, inl, skip, eb,
+        Laws.failed_walk_changes_nothing(rest, rows, job, bad, pre, heads, inl, T.path.dec(skip), eb))

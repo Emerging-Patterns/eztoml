@@ -1859,3 +1859,67 @@ law header_refused_exactly:
   {String.is_empty(end_bad(T.tree.walk(List.append(&2, String, segs, [k]),
     T.Tw{rows, T.JDef{}, [], "", "", heads, False{}}, 0)))
     == hdr.ok(T.get(tb.rows(segs, rows), k), heads, T.tree.pre(tb.join(segs, ""), k)) : Bool}
+
+# LAW: an [[array]] header whose last segment names nothing yet starts an
+# array of tables of one empty element at the head of the rows it walks to;
+# nothing else changes, and no definition is recorded
+law aot_header_starts_array:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +eo: {tb.open(segs, rows) == True{} : Bool}
+  for em: {T.get(tb.rows(segs, rows), k) == T.Miss{} : T.Hit}
+  {T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JAot{}, [], "", "", heads, False{}}, 0)
+    == T.End{tb.set(segs, "", rows, T.VPair{k, T.VAots{T.tree.pre(tb.join(segs, ""), k),
+      [T.VAot{T.tree.pre(tb.join(segs, ""), k), []}]}} <> tb.rows(segs, rows)), "", heads} : T.End}
+
+# LAW: an [[array]] header whose last segment names an array of tables adds
+# a new empty element in front of its elements (newest first), and forgets
+# every table under the array defined, so the element is its own scope;
+# nothing else changes
+law aot_header_extends_array:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for p: String
+  for +elems: List<&2, T.Val>
+  for +eo: {tb.open(segs, rows) == True{} : Bool}
+  for ef: {T.get(tb.rows(segs, rows), k) == T.Found{T.VAots{p, elems}} : T.Hit}
+  {T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JAot{}, [], "", "", heads, False{}}, 0)
+    == T.End{tb.set(segs, "", rows, T.rows.repl(tb.rows(segs, rows), k,
+      T.VAots{T.tree.pre(tb.join(segs, ""), k), T.VAot{T.tree.pre(tb.join(segs, ""), k), []}
+        <> elems})), "",
+      T.heads.drop(heads, String.append(T.tree.pre(tb.join(segs, ""), k), "."))} : T.End}
+
+# LAW: an [[array]] header is refused exactly when its last segment names
+# something other than an array of tables: a table, an inline table, a
+# static array or any other value
+# TOML-TEXT-2
+law aot_header_refused_exactly:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for eo: {tb.open(segs, rows) == True{} : Bool}
+  {String.is_empty(end_bad(T.tree.walk(List.append(&2, String, segs, [k]),
+    T.Tw{rows, T.JAot{}, [], "", "", heads, False{}}, 0)))
+    == aot.ok(T.get(tb.rows(segs, rows), k)) : Bool}
+
+# LAW: a walk that starts with an error keeps it and changes nothing: once a
+# key or header is refused, no later one in the same text clears the error
+# or touches the tables
+# TOML-TEXT-2
+law failed_walk_changes_nothing:
+  for path: List<&2, String>
+  for +rows: List<&2, T.Val>
+  for +job: T.Job
+  for +bad: String
+  for +pre: String
+  for +heads: List<&2, String>
+  for +inl: Bool
+  for +skip: U32
+  for +eb: {String.is_empty(bad) == False{} : Bool}
+  {T.tree.walk(path, T.Tw{rows, job, [], bad, pre, heads, inl}, skip) == T.End{rows, bad, heads}
+    : T.End}
