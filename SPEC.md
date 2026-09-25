@@ -6,6 +6,8 @@ Every requirement has one of two levels. A **Proved** requirement holds for ever
 
 A document is **well-formed** when `wf` holds of it: the shapes `parse` returns. `same` is the specification relation "the same TOML document", which ignores whether a string is owned or a span of the source and the order of a table's pairs. `wf` is public, in `main.bend`; `same` and `own` (which reads every span into an owned string) are specification helpers in `LAWS.bend`. `same` compares tables as maps and arrays in order, and compares neither the stored paths nor the error field.
 
+A text is **short** when it is shorter than 2^32 characters (`short` in `LAWS.bend`): the scanner counts a plain string's characters in a U32, so a longer string would not read back (the round-trip design, REVIEW-R1). The rows that go through `parse` are stated for short texts, as ezjson's are.
+
 The reasoning behind each requirement, the verdict of each against the code at `d3c1356`, and the decisions that shaped them are in [docs/rfc/eztoml-spec.md](docs/rfc/eztoml-spec.md). Every law as it stood then, what the audit found, and the progress of the rollout are in [docs/rfc/eztoml-law-inventory.md](docs/rfc/eztoml-law-inventory.md).
 
 ## Format
@@ -28,9 +30,9 @@ A tag may name a proved or a pending requirement, never a Trusted one or an ID n
 
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
-| TOML-RT-1 | For every document `d` with `wf(d)`: `bad(parse(render(d)))` is `""`, and `parse(render(d))` is `same` as `d` | Proved | pending | LAWS.bend render_parse_plain_pair |
-| TOML-RT-2 | For every text `t` of Unicode scalar values with `bad(parse(t)) == ""`: `parse(render(parse(t)))` is `same` as `parse(t)`, and `render` of it is `render(parse(t))` | Proved | pending |  |
-| TOML-RT-3 | For every text `t` of Unicode scalar values with `bad(parse(t)) == ""`, `wf(parse(t))` holds | Proved | pending |  |
+| TOML-RT-1 | For every document `d` with `wf(d)` whose rendered text `render(d)` is shorter than 2^32 characters: `bad(parse(render(d)))` is `""`, and `parse(render(d))` is `same` as `d` | Proved | pending | LAWS.bend render_parse_plain_pair |
+| TOML-RT-2 | For every text `t` of Unicode scalar values, shorter than 2^32 characters and with `render(parse(t))` shorter than 2^32 characters, with `bad(parse(t)) == ""`: `parse(render(parse(t)))` is `same` as `parse(t)`, and `render` of it is `render(parse(t))` | Proved | pending |  |
+| TOML-RT-3 | For every text `t` of Unicode scalar values shorter than 2^32 characters with `bad(parse(t)) == ""`, `wf(parse(t))` holds | Proved | pending |  |
 
 ### TOML v1.0.0 texts (TOML-TEXT)
 
@@ -51,7 +53,7 @@ A tag may name a proved or a pending requirement, never a Trusted one or an ID n
 
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
-| TOML-STR-1 | For every string form of toml.abnf (basic, literal, multi-line basic, multi-line literal) and every text that form can hold, `string` of the value `parse` reads is the text it denotes: escapes decoded, a line-ending backslash and the whitespace after it dropped in a multi-line basic string, and a newline right after the opening delimiter dropped | Proved | pending | LAWS.bend ml_basic_one_quote; LAWS.bend ml_basic_two_quotes; LAWS.bend ml_literal_one_quote; LAWS.bend ml_literal_two_quotes; LAWS.bend empty_basic_at_end; LAWS.bend empty_literal_at_end |
+| TOML-STR-1 | For every string form of toml.abnf (basic, literal, multi-line basic, multi-line literal) and every text that form can hold, in a document shorter than 2^32 characters, `string` of the value `parse` reads is the text it denotes: escapes decoded, a line-ending backslash and the whitespace after it dropped in a multi-line basic string, and a newline right after the opening delimiter dropped | Proved | pending | LAWS.bend ml_basic_one_quote; LAWS.bend ml_basic_two_quotes; LAWS.bend ml_literal_one_quote; LAWS.bend ml_literal_two_quotes; LAWS.bend empty_basic_at_end; LAWS.bend empty_literal_at_end |
 | TOML-STR-2 | `render` writes a string value as a basic string that escapes exactly `"`, `\` and the controls U+0000 to U+001F and U+007F (with `\b`, `\t`, `\n`, `\f`, `\r` where TOML has them, and otherwise `\u00` and two lowercase hexadecimal digits), and writes every other character as itself | Proved | proved | LAWS.bend esc_quote; LAWS.bend esc_backslash; LAWS.bend esc_b; LAWS.bend esc_t; LAWS.bend esc_n; LAWS.bend esc_f; LAWS.bend esc_r; LAWS.bend esc_ctl; LAWS.bend esc_plain; LAWS.bend basic_escs; LAWS.bend span_quote_basic; LAWS.bend render_string; LAWS.bend pass_string; LAWS.bend pass_string_tables; LAWS.bend inline_string; LAWS.bend array_string |
 | TOML-NUM-1 | An integer is read exactly when it matches toml.abnf's `integer` rule and lies within signed 64 bits, and reads to its sign and its value's decimal digits, with no leading zero unless the value is 0 | Proved | pending | LAWS.bend num_two_signs; LAWS.bend num_zero_underscore; LAWS.bend num_signed_zero_underscore; LAWS.bend num_one_sign; LAWS.bend word_two_signs; LAWS.bend word_zero_underscore; LAWS.bend word_signed_zero_underscore |
 | TOML-NUM-2 | A float is read exactly when it matches toml.abnf's `float` rule, and reads to its sign and its spelling with the sign and every `_` removed; `render` writes the sign (`-` only) and that spelling | Proved | pending | LAWS.bend num_two_signs; LAWS.bend num_zero_underscore; LAWS.bend num_signed_zero_underscore; LAWS.bend num_one_sign; LAWS.bend word_two_signs; LAWS.bend word_zero_underscore; LAWS.bend word_signed_zero_underscore |
