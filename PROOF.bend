@@ -17936,3 +17936,575 @@ def kl.keys(
 
 def Laws.dotted_key_reads_back(ds, last, ok, g, rows, heads, here, back, qkind, arrtab, rest, goal, ih):
   kl.keys(ds, last, g, False{}, rows, heads, here, [], back, qkind, arrtab, rest, goal, ok, ih)
+
+# WP-K3: a dotted key's value put by the walk. Each step is WP-W's
+# navigation step (sub.step) while skip counts down, and once it reaches zero
+# a dotted key's step: it enters a table no header defined, or makes an
+# implicit one, and records the path behind `.`. The frames pushed are the
+# same as navigation's (tb.fr), so WP-W's nav.rebuild puts every table back.
+
+# where a put's step leaves the walk
+def dsub.Goal(
+  +look: T.Look,
+  +seg: String,
+  +vs: List<&2, T.Val>,
+  +v: T.Val,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool
+) -> Type:
+  {T.tree.sub.look(look, seg, vs, T.JPut{v}, stack, pre, heads, inl, mark)
+    == T.Tw{Laws.tb.into(look), T.JPut{v}, tb.fr(look, seg, vs, pre) <> stack, "", T.tree.pre(pre, seg),
+      Laws.dk.mark(mark, T.tree.pre(pre, seg), heads), inl} : T.Tw}
+
+# the code records a dotted key's table as the law says: behind `.`, once
+def dk.mark.eq(
+  seen: Bool,
+  +path: String,
+  +heads: List<&2, String>
+) -> {T.heads.define.new(seen, path, heads) == Laws.dk.mark.new(seen, path, heads) : List<&2, String>}:
+  match seen:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a dotted key's step enters a table no header defined, or makes a new one
+def dsub.dot(
+  +look: T.Look,
+  +seg: String,
+  +vs: List<&2, T.Val>,
+  +v: T.Val,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  ec: {Laws.dk.can.dot(look, heads, T.tree.pre(pre, seg)) == True{} : Bool}
+) -> dsub.Goal(look, seg, vs, v, stack, pre, heads, inl, True{}):
+  match look:
+    case T.KMiss{}:
+      Equal.cong(List<&2, String>, T.Tw, hh => T.Tw{[], T.JPut{v}, T.FrNew{seg, vs, T.tree.pre(pre, seg)} <> stack,
+        "", T.tree.pre(pre, seg), hh, inl},
+        T.heads.define.new(T.heads.has(heads, T.tree.pre(pre, seg)), T.tree.pre(pre, seg), heads),
+        Laws.dk.mark.new(T.heads.has(heads, T.tree.pre(pre, seg)), T.tree.pre(pre, seg), heads),
+        dk.mark.eq(T.heads.has(heads, T.tree.pre(pre, seg)), T.tree.pre(pre, seg), heads))
+    case T.KHead{+p, +rr}:
+      Equal.trans(T.Tw,
+        T.tree.sub.head.go(T.heads.head(heads, T.tree.pre(pre, seg)), p, rr, seg, vs, T.JPut{v}, stack, pre, heads,
+          inl, True{}),
+        T.tree.sub.head.go(False{}, p, rr, seg, vs, T.JPut{v}, stack, pre, heads, inl, True{}),
+        T.Tw{rr, T.JPut{v}, T.FrRep{seg, vs, p} <> stack, "", T.tree.pre(pre, seg),
+          Laws.dk.mark(True{}, T.tree.pre(pre, seg), heads), inl},
+        Equal.cong(Bool, T.Tw, bb => T.tree.sub.head.go(bb, p, rr, seg, vs, T.JPut{v}, stack, pre, heads, inl,
+          True{}), T.heads.head(heads, T.tree.pre(pre, seg)), False{},
+          Eq.not.true(T.heads.head(heads, T.tree.pre(pre, seg)), ec)),
+        Equal.cong(List<&2, String>, T.Tw, hh => T.Tw{rr, T.JPut{v}, T.FrRep{seg, vs, p} <> stack, "",
+          T.tree.pre(pre, seg), hh, inl},
+          T.heads.define.new(T.heads.has(heads, T.tree.pre(pre, seg)), T.tree.pre(pre, seg), heads),
+          Laws.dk.mark.new(T.heads.has(heads, T.tree.pre(pre, seg)), T.tree.pre(pre, seg), heads),
+          dk.mark.eq(T.heads.has(heads, T.tree.pre(pre, seg)), T.tree.pre(pre, seg), heads)))
+    case T.KInl{}:
+      Eq.bit.absurd(&1, dsub.Goal(T.KInl{}, seg, vs, v, stack, pre, heads, inl, True{}), ec)
+    case T.KAots{p, es}:
+      Eq.bit.absurd(&1, dsub.Goal(T.KAots{p, es}, seg, vs, v, stack, pre, heads, inl, True{}), ec)
+    case T.KNo{why}:
+      Eq.bit.absurd(&1, dsub.Goal(T.KNo{why}, seg, vs, v, stack, pre, heads, inl, True{}), ec)
+
+# a put's step: navigation, or a dotted key's segment
+def dsub.step(
+  mark: Bool,
+  +look: T.Look,
+  +seg: String,
+  +vs: List<&2, T.Val>,
+  +v: T.Val,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  ec: {Laws.dk.can(mark, look, heads, T.tree.pre(pre, seg)) == True{} : Bool}
+) -> dsub.Goal(look, seg, vs, v, stack, pre, heads, inl, mark):
+  match mark:
+    case False{}:
+      sub.step(look, seg, vs, T.JPut{v}, stack, pre, heads, inl, False{}, ec, {==})
+    case True{}:
+      dsub.dot(look, seg, vs, v, stack, pre, heads, inl, ec)
+
+# by induction on the path: each segment is one step of the put's walk
+def dk.walk(
+  path: List<&2, String>,
+  +kk: String,
+  +vs: List<&2, T.Val>,
+  +v: T.Val,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +skip: U32,
+  +eo: {Laws.dk.open(path, pre, vs, heads, skip) == True{} : Bool}
+) -> {T.tree.walk(List.append(&2, String, path, [kk]), T.Tw{vs, T.JPut{v}, stack, "", pre, heads, inl}, skip)
+  == T.tree.leaf(kk, T.Tw{Laws.tb.rows(path, vs), T.JPut{v}, nav.frs(path, pre, vs, stack), "",
+    Laws.tb.join(path, pre), Laws.dk.heads(path, pre, heads, skip), inl}) : T.End}:
+  match path:
+    case []:
+      {==}
+    case +seg <> +rest:
+      Equal.trans(T.End,
+        T.tree.walk(seg <> List.append(&2, String, rest, [kk]), T.Tw{vs, T.JPut{v}, stack, "", pre, heads, inl},
+          skip),
+        T.tree.walk(List.append(&2, String, rest, [kk]), T.Tw{Laws.tb.into(T.rows.look(vs, seg)), T.JPut{v},
+          tb.fr(T.rows.look(vs, seg), seg, vs, pre) <> stack, "", T.tree.pre(pre, seg),
+          Laws.dk.mark(U32.is_zero(skip), T.tree.pre(pre, seg), heads), inl}, T.path.dec(skip)),
+        T.tree.leaf(kk, T.Tw{Laws.tb.rows(rest, Laws.tb.into(T.rows.look(vs, seg))), T.JPut{v},
+          nav.frs(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(vs, seg)),
+            tb.fr(T.rows.look(vs, seg), seg, vs, pre) <> stack), "",
+          Laws.tb.join(rest, T.tree.pre(pre, seg)), Laws.dk.heads(rest, T.tree.pre(pre, seg),
+            Laws.dk.mark(U32.is_zero(skip), T.tree.pre(pre, seg), heads), T.path.dec(skip)), inl}),
+        Equal.trans(T.End,
+          T.tree.walk(seg <> List.append(&2, String, rest, [kk]), T.Tw{vs, T.JPut{v}, stack, "", pre, heads,
+            inl}, skip),
+          T.tree.walk(List.append(&2, String, rest, [kk]), T.tree.sub(seg, T.Tw{vs, T.JPut{v}, stack, "",
+            pre, heads, inl}, U32.is_zero(skip)), T.path.dec(skip)),
+          T.tree.walk(List.append(&2, String, rest, [kk]), T.Tw{Laws.tb.into(T.rows.look(vs, seg)), T.JPut{v},
+            tb.fr(T.rows.look(vs, seg), seg, vs, pre) <> stack, "", T.tree.pre(pre, seg),
+            Laws.dk.mark(U32.is_zero(skip), T.tree.pre(pre, seg), heads), inl}, T.path.dec(skip)),
+          walk.cons(seg, rest, kk, T.Tw{vs, T.JPut{v}, stack, "", pre, heads, inl}, skip),
+          Equal.cong(T.Tw, T.End,
+            tw => T.tree.walk(List.append(&2, String, rest, [kk]), tw, T.path.dec(skip)),
+            T.tree.sub(seg, T.Tw{vs, T.JPut{v}, stack, "", pre, heads, inl}, U32.is_zero(skip)),
+            T.Tw{Laws.tb.into(T.rows.look(vs, seg)), T.JPut{v}, tb.fr(T.rows.look(vs, seg), seg, vs, pre)
+              <> stack, "", T.tree.pre(pre, seg), Laws.dk.mark(U32.is_zero(skip), T.tree.pre(pre, seg),
+              heads), inl},
+            dsub.step(U32.is_zero(skip), T.rows.look(vs, seg), seg, vs, v, stack, pre, heads, inl,
+              Eq.and.left(Laws.dk.can(U32.is_zero(skip), T.rows.look(vs, seg), heads, T.tree.pre(pre, seg)),
+                Laws.dk.open(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(vs, seg)),
+                  Laws.dk.mark(U32.is_zero(skip), T.tree.pre(pre, seg), heads), T.path.dec(skip)), eo)))),
+        dk.walk(rest, kk, Laws.tb.into(T.rows.look(vs, seg)), v, tb.fr(T.rows.look(vs, seg), seg, vs, pre)
+          <> stack, T.tree.pre(pre, seg), Laws.dk.mark(U32.is_zero(skip), T.tree.pre(pre, seg), heads), inl,
+          T.path.dec(skip),
+          Eq.and.right(Laws.dk.can(U32.is_zero(skip), T.rows.look(vs, seg), heads, T.tree.pre(pre, seg)),
+            Laws.dk.open(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(vs, seg)),
+              Laws.dk.mark(U32.is_zero(skip), T.tree.pre(pre, seg), heads), T.path.dec(skip)), eo)))
+
+# a step a put goes on through is one a walk can go on through
+def dk.can.tb(
+  zz: Bool,
+  look: T.Look,
+  heads: List<&2, String>,
+  path: String,
+  ee: {Laws.dk.can(zz, look, heads, path) == True{} : Bool}
+) -> {Laws.tb.can(look) == True{} : Bool}:
+  match zz:
+    case False{}:
+      ee
+    case True{}:
+      match look:
+        case T.KMiss{}:
+          {==}
+        case T.KHead{_p, _r}:
+          {==}
+        case T.KInl{}:
+          Eq.bit.absurd(&2, {Laws.tb.can(T.KInl{}) == True{} : Bool}, ee)
+        case T.KAots{p, es}:
+          Eq.bit.absurd(&2, {Laws.tb.can(T.KAots{p, es}) == True{} : Bool}, ee)
+        case T.KNo{why}:
+          Eq.bit.absurd(&2, {Laws.tb.can(T.KNo{why}) == True{} : Bool}, ee)
+
+# both halves of an `and` answered True
+def dk.and(
+  aa: Bool,
+  bb: Bool,
+  ea: {aa == True{} : Bool},
+  eb: {bb == True{} : Bool}
+) -> {Bool.and(aa, bb) == True{} : Bool}:
+  match aa:
+    case True{}:
+      eb
+    case False{}:
+      Eq.bit.absurd(&2, {Bool.and(False{}, bb) == True{} : Bool}, ea)
+
+# a path a put goes on through is one a walk goes on through
+def dk.tb(
+  path: List<&2, String>,
+  +pre: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +skip: U32,
+  +eo: {Laws.dk.open(path, pre, rows, heads, skip) == True{} : Bool}
+) -> {Laws.tb.open(path, rows) == True{} : Bool}:
+  match path:
+    case []:
+      {==}
+    case +seg <> +rest:
+      dk.and(Laws.tb.can(T.rows.look(rows, seg)), Laws.tb.open(rest, Laws.tb.into(T.rows.look(rows, seg))),
+        dk.can.tb(U32.is_zero(skip), T.rows.look(rows, seg), heads, T.tree.pre(pre, seg),
+          Eq.and.left(Laws.dk.can(U32.is_zero(skip), T.rows.look(rows, seg), heads, T.tree.pre(pre, seg)),
+            Laws.dk.open(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(rows, seg)),
+              Laws.dk.mark(U32.is_zero(skip), T.tree.pre(pre, seg), heads), T.path.dec(skip)), eo)),
+        dk.tb(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(rows, seg)),
+          Laws.dk.mark(U32.is_zero(skip), T.tree.pre(pre, seg), heads), T.path.dec(skip),
+          Eq.and.right(Laws.dk.can(U32.is_zero(skip), T.rows.look(rows, seg), heads, T.tree.pre(pre, seg)),
+            Laws.dk.open(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(rows, seg)),
+              Laws.dk.mark(U32.is_zero(skip), T.tree.pre(pre, seg), heads), T.path.dec(skip)), eo)))
+
+def Laws.dotted_put_at_head(path, k, v, rows, heads, skip, inl, eo, em):
+  Equal.trans(T.End,
+    T.tree.walk(List.append(&2, String, path, [k]), T.Tw{rows, T.JPut{v}, [], "", "", heads, inl}, skip),
+    T.tree.leaf(k, T.Tw{Laws.tb.rows(path, rows), T.JPut{v}, nav.frs(path, "", rows, []), "",
+      Laws.tb.join(path, ""), Laws.dk.heads(path, "", heads, skip), inl}),
+    T.End{Laws.tb.set(path, "", rows, T.VPair{k, v} <> Laws.tb.rows(path, rows)), "",
+      Laws.dk.heads(path, "", heads, skip)},
+    dk.walk(path, k, rows, v, [], "", heads, inl, skip, eo),
+    Equal.trans(T.End,
+      T.tree.leaf(k, T.Tw{Laws.tb.rows(path, rows), T.JPut{v}, nav.frs(path, "", rows, []), "",
+        Laws.tb.join(path, ""), Laws.dk.heads(path, "", heads, skip), inl}),
+      T.tree.rebuild(nav.frs(path, "", rows, []), T.VPair{k, v} <> Laws.tb.rows(path, rows), "",
+        Laws.dk.heads(path, "", heads, skip)),
+      T.End{Laws.tb.set(path, "", rows, T.VPair{k, v} <> Laws.tb.rows(path, rows)), "",
+        Laws.dk.heads(path, "", heads, skip)},
+      Equal.cong(T.Hit, T.End,
+        hh => T.tree.leaf.put(hh, k, Laws.tb.rows(path, rows), v, nav.frs(path, "", rows, []), "",
+          Laws.dk.heads(path, "", heads, skip)),
+        T.get(Laws.tb.rows(path, rows), k), T.Miss{}, em),
+      nav.rebuild(path, "", rows, [], T.VPair{k, v} <> Laws.tb.rows(path, rows), "",
+        Laws.dk.heads(path, "", heads, skip), dk.tb(path, "", rows, heads, skip, eo))))
+
+# WP-K3: the whole key/value line. After `=`, " 1" and a newline read the
+# value, and the newline that ends it runs the put's walk along the current
+# table and the key's parts; the laws take that walk as a premise or, with
+# dotted_put_at_head, discharge it.
+
+# a list reversed twice is itself
+def kv.rr(
+  +xs: List<&2, String>
+) -> {List.reverse(&2, String, List.reverse(&2, String, xs)) == xs : List<&2, String>}:
+  Equal.trans(List<&2, String>,
+    List.reverse.go(&2, String, List.reverse.go(&2, String, xs, []), []),
+    List.append(&2, String, xs, []),
+    xs,
+    wh.rr(xs, [], []),
+    wh.lnil(xs))
+
+# the put's walk of the value 1 along the path, from the table here, returns
+# these rows and definitions
+def kv.Walk(
+  path: List<&2, String>,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  rows2: List<&2, T.Val>,
+  heads2: List<&2, String>
+) -> Type:
+  {T.tree.walk(path, T.Tw{rows, T.JPut{Laws.one()}, [], "", "", heads, False{}}, T.path.len(here, 0))
+    == T.End{rows2, "", heads2} : T.End}
+
+# " 1" and a newline after `=`: the value is put by the walk, and the next line
+# starts in the same table
+def kv.line(
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +arrtab: Bool,
+  +rows2: List<&2, T.Val>,
+  +heads2: List<&2, String>,
+  +rest: String,
+  ew: kv.Walk(T.path.cat(here, parts), rows, heads, here, rows2, heads2)
+) -> {T.doc.read(SCon{' ', SCon{'1', SCon{'\n', rest}}}, T.MScan{Laws.kb.val(rows, heads, here, parts, bk, qk,
+  arrtab)}) == T.doc.read(rest, T.MScan{Laws.hb.line(rows2, heads2, here, bk, qk, arrtab)}) : T.Doc}:
+  Equal.cong(T.End, T.Doc,
+    en => T.doc.read(rest, T.MScan{T.read.once2(T.bare.line.go(T.take.root(en, here, bk, qk, 0, 0, arrtab,
+      False{})))}),
+    T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{Laws.one()}, [], "", "", heads, False{}},
+      T.path.len(here, 0)),
+    T.End{rows2, "", heads2}, ew)
+
+# the walk the line runs is along here and the key's names
+def kv.walk(
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +names: List<&2, String>,
+  +rows2: List<&2, T.Val>,
+  +heads2: List<&2, String>,
+  ew: kv.Walk(List.append(&2, String, here, names), rows, heads, here, rows2, heads2)
+) -> kv.Walk(T.path.cat(here, List.reverse(&2, String, names)), rows, heads, here, rows2, heads2):
+  Equal.trans(T.End,
+    T.tree.walk(List.append(&2, String, here, List.reverse(&2, String, List.reverse(&2, String, names))),
+      T.Tw{rows, T.JPut{Laws.one()}, [], "", "", heads, False{}}, T.path.len(here, 0)),
+    T.tree.walk(List.append(&2, String, here, names), T.Tw{rows, T.JPut{Laws.one()}, [], "", "", heads,
+      False{}}, T.path.len(here, 0)),
+    T.End{rows2, "", heads2},
+    Equal.cong(List<&2, String>, T.End, xs => T.tree.walk(List.append(&2, String, here, xs), T.Tw{rows,
+      T.JPut{Laws.one()}, [], "", "", heads, False{}}, T.path.len(here, 0)),
+      List.reverse(&2, String, List.reverse(&2, String, names)), names, kv.rr(names)),
+    ew)
+
+def Laws.dotted_key_pair_reads_back(
+  ds,
+  last,
+  ok,
+  g,
+  rows,
+  heads,
+  here,
+  back,
+  qkind,
+  arrtab,
+  rows2,
+  heads2,
+  ew,
+  rest,
+  goal,
+  ih
+):
+  Laws.dotted_key_reads_back(ds, last, ok, g, rows, heads, here, back, qkind, arrtab, String.append(" 1\n", rest),
+    goal,
+    +bk => +qk => Equal.trans(T.Doc,
+      T.doc.read(String.append(" 1\n", rest), T.MScan{Laws.kb.val(rows, heads, here, List.reverse(&2, String,
+        Laws.dk.names(ds, last)), bk, qk, arrtab)}),
+      T.doc.read(rest, T.MScan{Laws.hb.line(rows2, heads2, here, bk, qk, arrtab)}),
+      goal,
+      kv.line(rows, heads, here, List.reverse(&2, String, Laws.dk.names(ds, last)), bk, qk, arrtab, rows2,
+        heads2, rest, kv.walk(rows, heads, here, Laws.dk.names(ds, last), rows2, heads2, ew)),
+      ih(bk, qk)))
+
+# appending lists is associative
+def la.assoc(
+  xs: List<&2, String>,
+  +ys: List<&2, String>,
+  +zs: List<&2, String>
+) -> {List.append(&2, String, List.append(&2, String, xs, ys), zs)
+  == List.append(&2, String, xs, List.append(&2, String, ys, zs)) : List<&2, String>}:
+  match xs:
+    case []:
+      {==}
+    case +xx <> rest:
+      Equal.cong(List<&2, String>, List<&2, String>, tt => xx <> tt,
+        List.append(&2, String, List.append(&2, String, rest, ys), zs),
+        List.append(&2, String, rest, List.append(&2, String, ys, zs)), la.assoc(rest, ys, zs))
+
+# a dotted key's names are the names a dot follows, then the last
+def dk.split(
+  ds: List<&2, Laws.Dot>,
+  +last: Laws.Seg
+) -> {Laws.dk.names(ds, last) == List.append(&2, String, Laws.dk.init(ds), [Laws.seg.name(last)])
+  : List<&2, String>}:
+  match ds:
+    case []:
+      {==}
+    case Laws.Dot{+sg, _g1, _g2} <> rest:
+      Equal.cong(List<&2, String>, List<&2, String>, tt => Laws.seg.name(sg) <> tt, Laws.dk.names(rest, last),
+        List.append(&2, String, Laws.dk.init(rest), [Laws.seg.name(last)]), dk.split(rest, last))
+
+# so the walk's path is here and the names a dot follows, then the last
+def dk.path(
+  +here: List<&2, String>,
+  +ds: List<&2, Laws.Dot>,
+  +last: Laws.Seg
+) -> {List.append(&2, String, here, Laws.dk.names(ds, last)) == List.append(&2, String, List.append(&2,
+  String, here, Laws.dk.init(ds)), [Laws.seg.name(last)]) : List<&2, String>}:
+  Equal.trans(List<&2, String>,
+    List.append(&2, String, here, Laws.dk.names(ds, last)),
+    List.append(&2, String, here, List.append(&2, String, Laws.dk.init(ds), [Laws.seg.name(last)])),
+    List.append(&2, String, List.append(&2, String, here, Laws.dk.init(ds)), [Laws.seg.name(last)]),
+    Equal.cong(List<&2, String>, List<&2, String>, xs => List.append(&2, String, here, xs),
+      Laws.dk.names(ds, last), List.append(&2, String, Laws.dk.init(ds), [Laws.seg.name(last)]),
+      dk.split(ds, last)),
+    Equal.sym(List<&2, String>,
+      List.append(&2, String, List.append(&2, String, here, Laws.dk.init(ds)), [Laws.seg.name(last)]),
+      List.append(&2, String, here, List.append(&2, String, Laws.dk.init(ds), [Laws.seg.name(last)])),
+      la.assoc(here, Laws.dk.init(ds), [Laws.seg.name(last)])))
+
+def Laws.dotted_key_pair_puts_value(ds, last, ok, g, rows, heads, here, eo, em, back, qkind, arrtab, rest, goal, ih):
+  Laws.dotted_key_pair_reads_back(ds, last, ok, g, rows, heads, here, back, qkind, arrtab,
+    Laws.tb.set(List.append(&2, String, here, Laws.dk.init(ds)), "", rows, T.VPair{Laws.seg.name(last), Laws.one()}
+      <> Laws.tb.rows(List.append(&2, String, here, Laws.dk.init(ds)), rows)),
+    Laws.dk.heads(List.append(&2, String, here, Laws.dk.init(ds)), "", heads, T.path.len(here, 0)),
+    Equal.trans(T.End,
+      T.tree.walk(List.append(&2, String, here, Laws.dk.names(ds, last)), T.Tw{rows, T.JPut{Laws.one()}, [], "",
+        "", heads, False{}}, T.path.len(here, 0)),
+      T.tree.walk(List.append(&2, String, List.append(&2, String, here, Laws.dk.init(ds)), [Laws.seg.name(last)]),
+        T.Tw{rows, T.JPut{Laws.one()}, [], "", "", heads, False{}}, T.path.len(here, 0)),
+      T.End{Laws.tb.set(List.append(&2, String, here, Laws.dk.init(ds)), "", rows, T.VPair{Laws.seg.name(last),
+        Laws.one()} <> Laws.tb.rows(List.append(&2, String, here, Laws.dk.init(ds)), rows)), "",
+        Laws.dk.heads(List.append(&2, String, here, Laws.dk.init(ds)), "", heads, T.path.len(here, 0))},
+      Equal.cong(List<&2, String>, T.End, xs => T.tree.walk(xs, T.Tw{rows, T.JPut{Laws.one()}, [], "", "", heads,
+        False{}}, T.path.len(here, 0)),
+        List.append(&2, String, here, Laws.dk.names(ds, last)),
+        List.append(&2, String, List.append(&2, String, here, Laws.dk.init(ds)), [Laws.seg.name(last)]),
+        dk.path(here, ds, last)),
+      Laws.dotted_put_at_head(List.append(&2, String, here, Laws.dk.init(ds)), Laws.seg.name(last), Laws.one(),
+        rows, heads, T.path.len(here, 0), False{}, eo, em)),
+    rest, goal, ih)
+
+# WP-K3: a document of one key/value line. Its first character goes through
+# the byte-order-mark check; for a segment's first character that is the
+# line-start step. The walk from the empty root misses every name, so each
+# segment makes a new table, and at finds the value through them.
+
+# a document's first segment starts as one at the start of a line does
+def kl.start1(
+  sg: Laws.Seg,
+  +xs: String,
+  +eo: {Laws.seg.ok(sg) == True{} : Bool}
+) -> {T.doc.read(String.append(Laws.seg.text(sg), xs), T.MScan{T.st.start()})
+  == T.doc.read(String.append(Laws.seg.text(sg), xs), T.MScan{Laws.hb.line([], [], [], T.LTop{}, T.QBasic{},
+    False{})}) : T.Doc}:
+  match sg:
+    case Laws.Seg{sp, +name}:
+      match sp:
+        case Laws.SpBare{}:
+          match name:
+            case SNil{}:
+              Eq.bit.absurd(&2, {T.doc.read(String.append(SNil{}, xs), T.MScan{T.st.start()})
+                == T.doc.read(String.append(SNil{}, xs), T.MScan{Laws.hb.line([], [], [], T.LTop{}, T.QBasic{},
+                False{})}) : T.Doc}, eo)
+            case SCon{hh, +tt}:
+              match hh:
+                case Chr{+xx}:
+                  Equal.trans(T.Doc,
+                    T.doc.read(String.append(tt, xs), T.doc.scan(T.st.start(), Chr{xx})),
+                    T.doc.read(String.append(tt, xs), T.MScan{ky([Chr{xx}])}),
+                    T.doc.read(String.append(tt, xs), T.doc.scan(Laws.hb.line([], [], [], T.LTop{}, T.QBasic{},
+                      False{}), Chr{xx})),
+                    Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, xs), md),
+                      T.doc.scan(T.st.start(), Chr{xx}), T.MScan{ky([Chr{xx}])},
+                      key.first(xx, ball.head(T.bare.at(Chr{xx}), String.to_list(tt), eo))),
+                    Equal.sym(T.Doc,
+                      T.doc.read(String.append(tt, xs), T.doc.scan(Laws.hb.line([], [], [], T.LTop{}, T.QBasic{},
+                        False{}), Chr{xx})),
+                      T.doc.read(String.append(tt, xs), T.MScan{ky([Chr{xx}])}),
+                      Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, xs), md),
+                        T.doc.scan(Laws.hb.line([], [], [], T.LTop{}, T.QBasic{}, False{}), Chr{xx}),
+                        T.MScan{ky([Chr{xx}])},
+                        kl.b1(False{}, [], [], [], [], T.LTop{}, T.QBasic{}, False{}, xx,
+                          ball.head(T.bare.at(Chr{xx}), String.to_list(tt), eo)))))
+        case Laws.SpBasic{}:
+          {==}
+        case Laws.SpLit{}:
+          {==}
+
+# and so does a dotted key's
+def kl.start(
+  ds: List<&2, Laws.Dot>,
+  +last: Laws.Seg,
+  +tail: String,
+  eo: {Laws.dk.ok(ds, last) == True{} : Bool}
+) -> {T.doc.read(Laws.dk.text(ds, last, tail), T.MScan{T.st.start()})
+  == T.doc.read(Laws.dk.text(ds, last, tail), T.MScan{Laws.hb.line([], [], [], T.LTop{}, T.QBasic{}, False{})})
+  : T.Doc}:
+  match ds:
+    case []:
+      kl.start1(last, tail, eo)
+    case Laws.Dot{+sg, +g1, +g2} <> +rest:
+      kl.start1(sg, String.append(Laws.gap(g1), SCon{'.', String.append(Laws.gap(g2), Laws.dk.text(rest, last,
+        tail))}), Eq.and.left(Laws.seg.ok(sg), Laws.dk.ok(rest, last), eo))
+
+# from the empty root every step makes a new table
+def dk.open.nil(
+  path: List<&2, String>,
+  +pre: String,
+  +heads: List<&2, String>
+) -> {Laws.dk.open(path, pre, [], heads, 0) == True{} : Bool}:
+  match path:
+    case []:
+      {==}
+    case +seg <> rest:
+      dk.open.nil(rest, T.tree.pre(pre, seg), Laws.dk.mark(True{}, T.tree.pre(pre, seg), heads))
+
+# and the table at the end is empty
+def tb.rows.nil(path: List<&2, String>) -> {Laws.tb.rows(path, []) == [] : List<&2, T.Val>}:
+  match path:
+    case []:
+      {==}
+    case _seg <> rest:
+      tb.rows.nil(rest)
+
+# a longer path goes on in the rows of the table get found
+def ka.hd(
+  rest: List<&2, String>,
+  +kk: String,
+  +sub: List<&2, T.Val>,
+  +pp: String
+) -> {T.at.step(List.append(&2, String, rest, [kk]), T.Found{T.VHead{pp, sub}})
+  == T.at(sub, List.append(&2, String, rest, [kk])) : T.Hit}:
+  match rest:
+    case []:
+      {==}
+    case _r <> _rr:
+      {==}
+
+# at finds the value through the tables made from the empty root
+def ka.nest(
+  path: List<&2, String>,
+  +kk: String,
+  +pre: String
+) -> {T.at(T.rows.seal(Laws.tb.set(path, pre, [], [T.VPair{kk, Laws.one()}])), List.append(&2, String, path, [kk]))
+  == T.Found{Laws.one()} : T.Hit}:
+  match path:
+    case []:
+      Laws.get_first(kk, Laws.one(), [])
+    case +seg <> +rest:
+      Equal.trans(T.Hit,
+        T.at.step(List.append(&2, String, rest, [kk]), T.get([T.VPair{seg, T.VHead{T.tree.pre(pre, seg),
+          T.rows.seal(Laws.tb.set(rest, T.tree.pre(pre, seg), [], [T.VPair{kk, Laws.one()}]))}}], seg)),
+        T.at.step(List.append(&2, String, rest, [kk]), T.Found{T.VHead{T.tree.pre(pre, seg),
+          T.rows.seal(Laws.tb.set(rest, T.tree.pre(pre, seg), [], [T.VPair{kk, Laws.one()}]))}}),
+        T.Found{Laws.one()},
+        Equal.cong(T.Hit, T.Hit, hh => T.at.step(List.append(&2, String, rest, [kk]), hh),
+          T.get([T.VPair{seg, T.VHead{T.tree.pre(pre, seg), T.rows.seal(Laws.tb.set(rest, T.tree.pre(pre, seg),
+            [], [T.VPair{kk, Laws.one()}]))}}], seg),
+          T.Found{T.VHead{T.tree.pre(pre, seg), T.rows.seal(Laws.tb.set(rest, T.tree.pre(pre, seg), [],
+            [T.VPair{kk, Laws.one()}]))}},
+          Laws.get_first(seg, T.VHead{T.tree.pre(pre, seg), T.rows.seal(Laws.tb.set(rest, T.tree.pre(pre, seg),
+            [], [T.VPair{kk, Laws.one()}]))}, [])),
+        Equal.trans(T.Hit,
+          T.at.step(List.append(&2, String, rest, [kk]), T.Found{T.VHead{T.tree.pre(pre, seg),
+            T.rows.seal(Laws.tb.set(rest, T.tree.pre(pre, seg), [], [T.VPair{kk, Laws.one()}]))}}),
+          T.at(T.rows.seal(Laws.tb.set(rest, T.tree.pre(pre, seg), [], [T.VPair{kk, Laws.one()}])),
+            List.append(&2, String, rest, [kk])),
+          T.Found{Laws.one()},
+          ka.hd(rest, kk, T.rows.seal(Laws.tb.set(rest, T.tree.pre(pre, seg), [], [T.VPair{kk, Laws.one()}])),
+            T.tree.pre(pre, seg)),
+          ka.nest(rest, kk, T.tree.pre(pre, seg))))
+
+def Laws.dotted_key_line_reads_back(ds, last, ok, g):
+  Equal.trans(T.Doc,
+    T.doc.read(Laws.dk.text(ds, last, String.append(Laws.gap(g), "= 1\n")), T.MScan{T.st.start()}),
+    T.doc.read(Laws.dk.text(ds, last, String.append(Laws.gap(g), "= 1\n")), T.MScan{Laws.hb.line([], [], [],
+      T.LTop{}, T.QBasic{}, False{})}),
+    T.Doc{"", T.rows.seal(Laws.tb.set(Laws.dk.init(ds), "", [], [T.VPair{Laws.seg.name(last), Laws.one()}]))},
+    kl.start(ds, last, String.append(Laws.gap(g), "= 1\n"), ok),
+    Laws.dotted_key_pair_puts_value(ds, last, ok, g, [], [], [], dk.open.nil(Laws.dk.init(ds), "", []),
+      Equal.cong(List<&2, T.Val>, T.Hit, xs => T.get(xs, Laws.seg.name(last)), Laws.tb.rows(Laws.dk.init(ds), []),
+        [], tb.rows.nil(Laws.dk.init(ds))),
+      T.LTop{}, T.QBasic{}, False{}, "",
+      T.Doc{"", T.rows.seal(Laws.tb.set(Laws.dk.init(ds), "", [], [T.VPair{Laws.seg.name(last), Laws.one()}]))},
+      +_bk => +_qk => Equal.cong(List<&2, T.Val>, T.Doc,
+        xs => T.Doc{"", T.rows.seal(Laws.tb.set(Laws.dk.init(ds), "", [], T.VPair{Laws.seg.name(last), Laws.one()}
+          <> xs))}, Laws.tb.rows(Laws.dk.init(ds), []), [], tb.rows.nil(Laws.dk.init(ds)))))
+
+def Laws.dotted_key_line_found_by_at(ds, last, ok, g):
+  Equal.trans(T.Hit,
+    T.at(T.root(T.parse(Laws.dk.text(ds, last, String.append(Laws.gap(g), "= 1\n")))), Laws.dk.names(ds, last)),
+    T.at(T.rows.seal(Laws.tb.set(Laws.dk.init(ds), "", [], [T.VPair{Laws.seg.name(last), Laws.one()}])),
+      Laws.dk.names(ds, last)),
+    T.Found{Laws.one()},
+    Equal.cong(T.Doc, T.Hit, dd => T.at(T.root(dd), Laws.dk.names(ds, last)),
+      T.parse(Laws.dk.text(ds, last, String.append(Laws.gap(g), "= 1\n"))),
+      T.Doc{"", T.rows.seal(Laws.tb.set(Laws.dk.init(ds), "", [], [T.VPair{Laws.seg.name(last), Laws.one()}]))},
+      Laws.dotted_key_line_reads_back(ds, last, ok, g)),
+    Equal.trans(T.Hit,
+      T.at(T.rows.seal(Laws.tb.set(Laws.dk.init(ds), "", [], [T.VPair{Laws.seg.name(last), Laws.one()}])),
+        Laws.dk.names(ds, last)),
+      T.at(T.rows.seal(Laws.tb.set(Laws.dk.init(ds), "", [], [T.VPair{Laws.seg.name(last), Laws.one()}])),
+        List.append(&2, String, Laws.dk.init(ds), [Laws.seg.name(last)])),
+      T.Found{Laws.one()},
+      Equal.cong(List<&2, String>, T.Hit, ns => T.at(T.rows.seal(Laws.tb.set(Laws.dk.init(ds), "", [],
+        [T.VPair{Laws.seg.name(last), Laws.one()}])), ns), Laws.dk.names(ds, last),
+        List.append(&2, String, Laws.dk.init(ds), [Laws.seg.name(last)]), dk.split(ds, last)),
+      ka.nest(Laws.dk.init(ds), Laws.seg.name(last), "")))
