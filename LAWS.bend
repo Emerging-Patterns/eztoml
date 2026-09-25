@@ -3427,15 +3427,16 @@ def canon(dd: T.Doc) -> T.Doc:
     case T.Doc{_bad, rows}:
       T.Doc{"", own.rows(canon.rows(rows))}
 
-# every string in the rows, at any depth and in every table, is short
+# every string in the rows, at any depth and in every table, and every
+# table's path, is short
 def short.rows(xs: List<&2, T.Val>) -> Bool:
   match xs:
     case []:
       True{}
-    case T.VPair{_n, T.VHead{_p, rr}} <> tt:
-      Bool.and(short.rows(rr), short.rows(tt))
-    case T.VPair{_n, T.VAots{_p, es}} <> tt:
-      Bool.and(short.rows(es), short.rows(tt))
+    case T.VPair{_n, T.VHead{pp, rr}} <> tt:
+      Bool.and(short(pp), Bool.and(short.rows(rr), short.rows(tt)))
+    case T.VPair{_n, T.VAots{pp, es}} <> tt:
+      Bool.and(short(pp), Bool.and(short.rows(es), short.rows(tt)))
     case T.VAot{_p, rr} <> tt:
       Bool.and(short.rows(rr), short.rows(tt))
     case T.VPair{_n, vv} <> tt:
