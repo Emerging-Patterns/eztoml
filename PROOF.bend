@@ -9391,7 +9391,10 @@ def sv.took(
   T.take.top(sk, vv, bd, rw, hs, he, ps, bk, T.QBasic{}, un, lf, ab, False{})
 
 # the rest of the walk, for the string ss: reading rest from the scanner with
-# any value that own reads as ss placed, and any back, uni and left, is goal
+# any value that own reads as ss placed, and any back, uni and left, gives a
+# document PP holds of. PP is what the caller proves of the document: its
+# owned form, say, as WP-D's exact lemma needs, since the value itself is a
+# span or an owned string depending on the escapes
 def sv.Then(
   +ss: String,
   +bd: String,
@@ -9402,11 +9405,22 @@ def sv.Then(
   +sk: List<&2, T.Ctx>,
   +ab: Bool,
   +rest: String,
-  +goal: T.Doc
+  -PP: T.Doc -> Type
 ) -> Type:
   @vv: T.Val -> @bk: T.Lex -> @un: U32 -> @lf: U32 ->
     {Laws.own.rows([vv]) == [T.VStr{ss}] : List<&2, T.Val>} ->
-    {T.doc.read(rest, T.MScan{sv.took(sk, vv, bd, rw, hs, he, ps, bk, un, lf, ab)}) == goal : T.Doc}
+    PP(T.doc.read(rest, T.MScan{sv.took(sk, vv, bd, rw, hs, he, ps, bk, un, lf, ab)}))
+
+# what holds of a document holds of one equal to it
+def pp.step(
+  -PP: T.Doc -> Type,
+  aa: T.Doc,
+  bb: T.Doc,
+  ee: {aa == bb : T.Doc},
+  kk: PP(bb)
+) -> PP(aa):
+  %Equal.sym(T.Doc, aa, bb, ee) : PP(_)
+  kk
 
 # the rest of the walk for one string serves for another equal to it
 def sv.then.cast(
@@ -9421,10 +9435,10 @@ def sv.then.cast(
   +sk: List<&2, T.Ctx>,
   +ab: Bool,
   +rest: String,
-  +goal: T.Doc,
-  ih: sv.Then(s1, bd, rw, hs, he, ps, sk, ab, rest, goal)
-) -> sv.Then(s2, bd, rw, hs, he, ps, sk, ab, rest, goal):
-  %e12 : sv.Then(_, bd, rw, hs, he, ps, sk, ab, rest, goal)
+  -PP: T.Doc -> Type,
+  ih: sv.Then(s1, bd, rw, hs, he, ps, sk, ab, rest, PP)
+) -> sv.Then(s2, bd, rw, hs, he, ps, sk, ab, rest, PP):
+  %e12 : sv.Then(_, bd, rw, hs, he, ps, sk, ab, rest, PP)
   ih
 
 # A placed value holds no character for the next step to read again, and it
@@ -9794,3 +9808,1093 @@ def se.own(
   Equal.cong(String, List<&2, T.Val>, xs => [T.VStr{xs}], T.span.str(cut, nn, U32.is_zero(nn)), pre,
     Equal.trans(String, T.span.str(cut, nn, U32.is_zero(nn)), take(cut, U32.to_nat(nn)), pre,
       sp.take(cut, nn), sp.pre(pre, cut, more, nn, hc, hn)))
+
+# The escapes. Once a character needs an escape the span is copied into the
+# buffer (eat.copy, span.rev) and the rest of the string is read in LStr,
+# one character of escs at a time: a plain character on the fast path, an
+# escape through LEsc, and a \u escape through LUni. back stays at LStr all
+# the way; a \u escape leaves uni and left at 0, so a per-character step
+# takes the rest of the walk as a function of those two, as qs does of back.
+
+# a scanner inside a basic string being copied, its characters so far
+# reversed in buf
+def ls(
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  ps: List<&2, String>,
+  sk: List<&2, T.Ctx>,
+  ab: Bool,
+  un: U32,
+  lf: U32,
+  buf: List<&2, Char>
+) -> T.St:
+  T.St{bd, rw, hs, he, ps, buf, T.LStr{}, T.LStr{}, T.QBasic{}, sk, T.HNone{}, un, lf, ab, False{}}
+
+# the rest of the walk from a string with buf in its buffer, whatever uni
+# and left are
+def ls.Then(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  @u2: U32 -> @l2: U32 ->
+    PP(T.doc.read(rest, T.MScan{ls(bd, rw, hs, he, ps, sk, ab, u2, l2, buf)}))
+
+# one character's escape read in a string, then the rest of the text: the
+# rest is read with the character pushed, from whatever uni and left the
+# escape left
+def ls.Goal(
+  +uu: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  (@u2: U32 -> @l2: U32 ->
+    PP(T.doc.read(rest, T.MScan{ls(bd, rw, hs, he, ps, sk, ab, u2, l2, Chr{uu} <> buf)}))) ->
+    PP(T.doc.read(String.append(Laws.esc(Chr{uu}), rest), T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf)}))
+
+# a character that is no control is pushed: str.bad passes it
+def ls.push(
+  ctl: Bool,
+  +uu: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  hc: {ctl == False{} : Bool}
+) -> {T.read.fast.push(T.str.bad.go(ctl, U32.is_eq(uu, 9), Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)),
+  False{}), bd, rw, hs, he, ps, buf, T.LStr{}, T.LStr{}, T.QBasic{}, sk, un, lf, ab, Chr{uu})
+  == ls(bd, rw, hs, he, ps, sk, ab, un, lf, Chr{uu} <> buf) : T.St}:
+  match ctl:
+    case False{}:
+      {==}
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.fast.push(T.str.bad.go(True{}, U32.is_eq(uu, 9),
+        Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), False{}), bd, rw, hs, he, ps, buf, T.LStr{},
+        T.LStr{}, T.QBasic{}, sk, un, lf, ab, Chr{uu}) == ls(bd, rw, hs, he, ps, sk, ab, un, lf,
+        Chr{uu} <> buf) : T.St}, hc)
+
+# a character that is no quote and no backslash is no closer and no escape
+def ls.go(
+  quote: Bool,
+  bs: Bool,
+  +uu: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  hq: {quote == False{} : Bool},
+  hb: {bs == False{} : Bool},
+  hc: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
+) -> {T.read.fast.basic(quote, bs, bd, rw, hs, he, ps, buf, T.LStr{}, sk, un, lf, ab, Chr{uu})
+  == ls(bd, rw, hs, he, ps, sk, ab, un, lf, Chr{uu} <> buf) : T.St}:
+  match quote:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.fast.basic(True{}, bs, bd, rw, hs, he, ps, buf, T.LStr{}, sk, un,
+        lf, ab, Chr{uu}) == ls(bd, rw, hs, he, ps, sk, ab, un, lf, Chr{uu} <> buf) : T.St}, hq)
+    case False{}:
+      match bs:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.read.fast.basic(False{}, True{}, bd, rw, hs, he, ps, buf, T.LStr{},
+            sk, un, lf, ab, Chr{uu}) == ls(bd, rw, hs, he, ps, sk, ab, un, lf, Chr{uu} <> buf)
+            : T.St}, hb)
+        case False{}:
+          ls.push(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), uu, bd, rw, hs, he, ps, sk, ab, un,
+            lf, buf, hc)
+
+# the fast step pushes a character
+def ls.Fast(
+  +uu: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>
+) -> Type:
+  {T.read.fast(ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf), Chr{uu})
+    == ls(bd, rw, hs, he, ps, sk, ab, un, lf, Chr{uu} <> buf) : T.St}
+
+# the doc.scan dispatch sends such a character to the fast step, and an
+# apostrophe comes back from doc.wrap in the string's state
+def ls.q(
+  dq: Bool,
+  sq: Bool,
+  cr: Bool,
+  +uu: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  hq: {dq == False{} : Bool},
+  hr: {cr == False{} : Bool},
+  fast: ls.Fast(uu, bd, rw, hs, he, ps, sk, ab, un, lf, buf)
+) -> {T.doc.scan.q(dq, sq, cr, ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf), Chr{uu})
+  == T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, Chr{uu} <> buf)} : T.Mode}:
+  match dq:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.doc.scan.q(True{}, sq, cr, ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf),
+        Chr{uu}) == T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, Chr{uu} <> buf)} : T.Mode}, hq)
+    case False{}:
+      match sq:
+        case True{}:
+          Equal.cong(T.St, T.Mode, st => T.doc.wrap(st),
+            T.read.fast(ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf), Chr{uu}),
+            ls(bd, rw, hs, he, ps, sk, ab, un, lf, Chr{uu} <> buf), fast)
+        case False{}:
+          match cr:
+            case True{}:
+              Eq.bit.absurd2(&2, {T.doc.scan.q(False{}, False{}, True{}, ls(bd, rw, hs, he, ps, sk,
+                ab, un, lf, buf), Chr{uu}) == T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf,
+                Chr{uu} <> buf)} : T.Mode}, hr)
+            case False{}:
+              Equal.cong(T.St, T.Mode, st => T.MScan{st},
+                T.read.fast(ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf), Chr{uu}),
+                ls(bd, rw, hs, he, ps, sk, ab, un, lf, Chr{uu} <> buf), fast)
+
+# a character that is no control, quotation mark or backslash is written as
+# itself
+def esc.pl2(
+  +uu: U32,
+  e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
+) -> {Laws.esc(Chr{uu}) == SCon{Chr{uu}, SNil{}} : String}:
+  ek = cls.plain(uu, ctl.off(uu, 8, ec, {==}), ctl.off(uu, 9, ec, {==}), ctl.off(uu, 10, ec, {==}),
+    ctl.off(uu, 12, ec, {==}), ctl.off(uu, 13, ec, {==}), e34, e92, ec)
+  %Equal.sym(T.BK, T.basic.cls(uu), T.BKCh{}, ek) :
+    {String.from_list(List.reverse(&2, Char, T.basic.disp(_, Chr{uu}, uu, []))) == SCon{Chr{uu}, SNil{}}
+      : String}
+  {==}
+
+# a character written as itself is pushed, and uni and left stay as they
+# were
+def ls.plain(
+  +uu: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool},
+  ih: ls.Then(bd, rw, hs, he, ps, sk, ab, Chr{uu} <> buf, rest, PP)
+) -> PP(T.doc.read(String.append(Laws.esc(Chr{uu}), rest), T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf)})):
+  +e13 = {ctl.off(uu, 13, ec, {==}) : {U32.is_eq(uu, 13) == False{} : Bool}}
+  %Equal.sym(String, Laws.esc(Chr{uu}), SCon{Chr{uu}, SNil{}}, esc.pl2(uu, e34, e92, ec)) :
+    PP(T.doc.read(String.append(_, rest), T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf)}))
+  pp.step(PP,
+    T.doc.read(rest, T.doc.scan(ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf), Chr{uu})),
+    T.doc.read(rest, T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, Chr{uu} <> buf)}),
+    Equal.cong(T.Mode, T.Doc, md => T.doc.read(rest, md),
+      T.doc.scan(ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf), Chr{uu}),
+      T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, Chr{uu} <> buf)},
+      ls.q(U32.is_eq(uu, 34), U32.is_eq(uu, 39), U32.is_eq(uu, 13), uu, bd, rw, hs, he, ps, sk, ab, un,
+        lf, buf, e34, e13,
+        ls.go(U32.is_eq(uu, 34), U32.is_eq(uu, 92), uu, bd, rw, hs, he, ps, sk, ab, un, lf, buf, e34,
+          e92, ec))),
+    ih(un, lf))
+
+# a quotation mark: its escape reads back by computation, and leaves uni and
+# left as they were
+def ls.q34(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> ls.Goal(34, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP):
+  ih => ih(un, lf)
+
+# and a backslash
+def ls.q92(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> ls.Goal(92, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP):
+  ih => ih(un, lf)
+
+# a control: each of the thirty-three escapes reads back by computation. The
+# five with a letter (\b, \t, \n, \f, \r) leave uni and left as they were; a
+# \u escape leaves both at 0
+def ls.ctl(
+  +uu: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  h_c: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == True{} : Bool}
+) -> ls.Goal(uu, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP):
+  Eq.ctl.all(kk => ls.Goal(kk, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP), uu, h_c,
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(un, lf),
+    ih => ih(un, lf),
+    ih => ih(un, lf),
+    ih => ih(0, 0),
+    ih => ih(un, lf),
+    ih => ih(un, lf),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0),
+    ih => ih(0, 0))
+
+# one code point k that the test found: its answer answers for the character
+def ls.is(
+  +uu: U32,
+  +kk: U32,
+  ee: {U32.is_eq(uu, kk) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  at: ls.Goal(kk, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP)
+) -> ls.Goal(uu, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP):
+  eu = Equal.cong(Char, U32, cc => Char.to_u32(cc), Chr{uu}, Chr{kk}, Eq.u32_eq(uu, kk, ee))
+  %Equal.sym(U32, uu, kk, eu) : ls.Goal(_, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP)
+  at
+
+# every character: a quote, a backslash, a control, or one written as itself
+def ls.split(
+  +uu: U32,
+  q34: Bool,
+  b92: Bool,
+  ctl: Bool,
+  +e34: {U32.is_eq(uu, 34) == q34 : Bool},
+  +e92: {U32.is_eq(uu, 92) == b92 : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == ctl : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> ls.Goal(uu, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP):
+  match q34:
+    case True{}:
+      ls.is(uu, 34, e34, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP,
+        ls.q34(bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP))
+    case False{}:
+      match b92:
+        case True{}:
+          ls.is(uu, 92, e92, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP,
+            ls.q92(bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP))
+        case False{}:
+          match ctl:
+            case True{}:
+              ls.ctl(uu, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP, ec)
+            case False{}:
+              ih => ls.plain(uu, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP, e34, e92, ec, ih)
+
+# one character of a string
+def ls.one(
+  +uu: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> ls.Goal(uu, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP):
+  ls.split(uu, U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_lt(uu, 32),
+    U32.is_eq(uu, 127)), {==}, {==}, {==}, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP)
+
+# every character of a string, as escs writes it, read in LStr: the rest is
+# read with the characters pushed, from whatever uni and left the last escape
+# left
+def ls.escs(
+  ss: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  ih: ls.Then(bd, rw, hs, he, ps, sk, ab, rev.onto(ss, buf), rest, PP)
+) -> PP(T.doc.read(String.append(Laws.escs(ss), rest), T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf)})):
+  match ss:
+    case SNil{}:
+      ih(un, lf)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+uu}:
+          pp.step(PP,
+            T.doc.read(String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), rest),
+              T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf)}),
+            T.doc.read(String.append(Laws.esc(Chr{uu}), String.append(Laws.escs(tt), rest)),
+              T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf)}),
+            Equal.cong(String, T.Doc, xs => T.doc.read(xs, T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf,
+              buf)}),
+              String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), rest),
+              String.append(Laws.esc(Chr{uu}), String.append(Laws.escs(tt), rest)),
+              Eq.append_assoc(Laws.esc(Chr{uu}), Laws.escs(tt), rest)),
+            ls.one(uu, bd, rw, hs, he, ps, sk, ab, un, lf, buf, String.append(Laws.escs(tt), rest), PP)(
+              u2 => l2 => ls.escs(tt, bd, rw, hs, he, ps, sk, ab, u2, l2, Chr{uu} <> buf, rest, PP, ih)))
+
+# the closing quote places the owned string, with back at LStr
+def ls.close(
+  +rest: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>
+) -> {T.doc.read(SCon{'"', rest}, T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf)})
+  == T.doc.read(rest, T.MScan{sv.took(sk, T.VStr{T.buf.str(buf)}, bd, rw, hs, he, ps, T.LStr{}, un, lf,
+    ab)}) : T.Doc}:
+  Equal.cong(T.Mode, T.Doc, md => T.doc.read(rest, md),
+    T.doc.wrap(T.read.once2(sv.took(sk, T.VStr{T.buf.str(buf)}, bd, rw, hs, he, ps, T.LStr{}, un, lf,
+      ab))),
+    T.MScan{sv.took(sk, T.VStr{T.buf.str(buf)}, bd, rw, hs, he, ps, T.LStr{}, un, lf, ab)},
+    tk.fix(sk, T.VStr{T.buf.str(buf)}, bd, rw, hs, he, ps, T.LStr{}, T.QBasic{}, un, lf, ab, False{}))
+
+# a buffer the text pre and then ss were pushed onto owns pre and ss
+def ls.own(
+  +pre: String,
+  +ss: String
+) -> {Laws.own.rows([T.VStr{T.buf.str(rev.onto(ss, rev.onto(pre, [])))}])
+  == [T.VStr{String.append(pre, ss)}] : List<&2, T.Val>}:
+  Equal.cong(String, List<&2, T.Val>, xs => [T.VStr{xs}],
+    T.buf.str(rev.onto(ss, rev.onto(pre, []))), String.append(pre, ss),
+    Equal.trans(String, T.buf.str.go(rev.onto(ss, rev.onto(pre, [])), ""),
+      T.buf.str.go(rev.onto(pre, []), String.append(ss, "")), String.append(pre, ss),
+      ml.rev(ss, rev.onto(pre, []), ""),
+      Equal.trans(String, T.buf.str.go(rev.onto(pre, []), String.append(ss, "")),
+        String.append(pre, String.append(ss, "")), String.append(pre, ss),
+        ml.rev(pre, [], String.append(ss, "")),
+        Equal.cong(String, String, xs => String.append(pre, xs), String.append(ss, ""), ss,
+          Eq.append_nil(ss)))))
+
+# the rest of a string, from a buffer holding pre: the escapes of ss and the
+# closing quote read to the value pre and ss placed
+def ls.fin(
+  +ss: String,
+  +pre: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  ih: sv.Then(String.append(pre, ss), bd, rw, hs, he, ps, sk, ab, rest, PP)
+) -> PP(T.doc.read(String.append(Laws.escs(ss), SCon{'"', rest}),
+  T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, rev.onto(pre, []))})):
+  ls.escs(ss, bd, rw, hs, he, ps, sk, ab, un, lf, rev.onto(pre, []), SCon{'"', rest}, PP,
+    +u2 => +l2 => pp.step(PP,
+      T.doc.read(SCon{'"', rest}, T.MScan{ls(bd, rw, hs, he, ps, sk, ab, u2, l2,
+        rev.onto(ss, rev.onto(pre, [])))}),
+      T.doc.read(rest, T.MScan{sv.took(sk, T.VStr{T.buf.str(rev.onto(ss, rev.onto(pre, [])))}, bd, rw,
+        hs, he, ps, T.LStr{}, u2, l2, ab)}),
+      ls.close(rest, bd, rw, hs, he, ps, sk, ab, u2, l2, rev.onto(ss, rev.onto(pre, []))),
+      ih(T.VStr{T.buf.str(rev.onto(ss, rev.onto(pre, [])))}, T.LStr{}, u2, l2, ls.own(pre, ss))))
+
+# A character that needs an escape starts it with a backslash, whichever it
+# is, so the span meets a backslash there and copies itself.
+
+# a text with its first character dropped
+def str.tl(ss: String) -> String:
+  match ss:
+    case SNil{}:
+      SNil{}
+    case SCon{_hh, tt}:
+      tt
+
+# render writes the character with a backslash first
+def esc.Lead(+uu: U32) -> Type:
+  {Laws.esc(Chr{uu}) == SCon{'\\', str.tl(Laws.esc(Chr{uu}))} : String}
+
+# one code point k that the test found
+def esc.lead.is(
+  +uu: U32,
+  +kk: U32,
+  ee: {U32.is_eq(uu, kk) == True{} : Bool},
+  at: esc.Lead(kk)
+) -> esc.Lead(uu):
+  eu = Equal.cong(Char, U32, cc => Char.to_u32(cc), Chr{uu}, Chr{kk}, Eq.u32_eq(uu, kk, ee))
+  %Equal.sym(U32, uu, kk, eu) : esc.Lead(_)
+  at
+
+# every control, by computation
+def esc.lead.ctl(
+  +uu: U32,
+  h_c: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == True{} : Bool}
+) -> esc.Lead(uu):
+  Eq.ctl.all(kk => esc.Lead(kk), uu, h_c,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+    {==})
+
+# span.rev copies the span's first n characters, reversed onto acc
+def sp.Rv(+src: String, +nn: U32, +acc: List<&2, Char>) -> Type:
+  {T.span.rev(src, nn, U32.is_zero(nn), acc) == rev.onto(take(src, U32.to_nat(nn)), acc) : List<&2, Char>}
+
+# the span's first n characters, reversed onto acc, are what span.rev copies
+def sp.rv.nil(
+  nn: U32,
+  bz: Bool,
+  +acc: List<&2, Char>
+) -> {T.span.rev(SNil{}, nn, bz, acc) == rev.onto(take(SNil{}, U32.to_nat(nn)), acc) : List<&2, Char>}:
+  match bz:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a character and the rest, once the zero test's answer is named
+def sp.rv.cons(
+  +hd: Char,
+  +tl: String,
+  +nn: U32,
+  bz: Bool,
+  ez: {U32.is_zero(nn) == bz : Bool},
+  +acc: List<&2, Char>,
+  ih: sp.Rv(tl, U32.sub(nn, 1), hd <> acc)
+) -> {T.span.rev(SCon{hd, tl}, nn, bz, acc) == rev.onto(take(SCon{hd, tl}, U32.to_nat(nn)), acc)
+  : List<&2, Char>}:
+  match bz:
+    case True{}:
+      e0 = Equal.cong(Char, U32, cc => Char.to_u32(cc), Chr{nn}, Chr{0}, Eq.u32_eq(nn, 0, ez))
+      %Equal.sym(U32, nn, 0, e0) : {T.span.rev(SCon{hd, tl}, nn, True{}, acc) == rev.onto(take(SCon{hd, tl},
+        U32.to_nat(_)), acc) : List<&2, Char>}
+      {==}
+    case False{}:
+      en = Equal.sym(Nat, U32.to_nat(nn), 1n+U32.to_nat(U32.sub(nn, 1)), Eq.u32_dec_nat(nn, ez))
+      %en : {T.span.rev(tl, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1)), hd <> acc)
+        == rev.onto(take(SCon{hd, tl}, _), acc) : List<&2, Char>}
+      ih
+
+# span.rev copies the span's characters, reversed
+def sp.rv(
+  src: String,
+  +nn: U32,
+  +acc: List<&2, Char>
+) -> {T.span.rev(src, nn, U32.is_zero(nn), acc) == rev.onto(take(src, U32.to_nat(nn)), acc)
+  : List<&2, Char>}:
+  match src:
+    case SNil{}:
+      sp.rv.nil(nn, U32.is_zero(nn), acc)
+    case SCon{+hd, +tl}:
+      sp.rv.cons(hd, tl, nn, U32.is_zero(nn), {==}, acc, sp.rv(tl, U32.sub(nn, 1), hd <> acc))
+
+# the copied span of a text that starts with pre, counting pre's characters,
+# is pre reversed
+def se.rev(
+  +pre: String,
+  +cut: String,
+  +more: String,
+  +nn: U32,
+  hc: {cut == String.append(pre, more) : String},
+  hn: {U32.to_nat(nn) == plus(pre, 0n) : Nat}
+) -> {T.span.rev(cut, nn, U32.is_zero(nn), []) == rev.onto(pre, []) : List<&2, Char>}:
+  Equal.trans(List<&2, Char>, T.span.rev(cut, nn, U32.is_zero(nn), []), rev.onto(take(cut, U32.to_nat(nn)), []),
+    rev.onto(pre, []),
+    sp.rv(cut, nn, []),
+    Equal.cong(String, List<&2, Char>, xs => rev.onto(xs, []), take(cut, U32.to_nat(nn)), pre,
+      sp.pre(pre, cut, more, nn, hc, hn)))
+
+# a backslash in the span copies it and starts an escape, as a backslash in
+# the copied string does
+def se.copy(
+  +xx: String,
+  +cut: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> {T.doc.read(SCon{'\\', xx}, sv.eat(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab))
+  == T.doc.read(SCon{'\\', xx}, T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf,
+    T.span.rev(cut, nn, U32.is_zero(nn), []))}) : T.Doc}:
+  {==}
+
+# so does a character that needs an escape, then the rest of the string
+def se.copy.esc(
+  +uu: U32,
+  ee: esc.Lead(uu),
+  +tt: String,
+  +rest: String,
+  +cut: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> {T.doc.read(String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), SCon{'"', rest}),
+  sv.eat(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab))
+  == T.doc.read(String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), SCon{'"', rest}),
+    T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, T.span.rev(cut, nn, U32.is_zero(nn), []))}) : T.Doc}:
+  %Equal.sym(String, Laws.esc(Chr{uu}), SCon{'\\', str.tl(Laws.esc(Chr{uu}))}, ee) :
+    {T.doc.read(String.append(String.append(_, Laws.escs(tt)), SCon{'"', rest}),
+      sv.eat(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab))
+      == T.doc.read(String.append(String.append(_, Laws.escs(tt)), SCon{'"', rest}),
+        T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, T.span.rev(cut, nn, U32.is_zero(nn), []))}) : T.Doc}
+  se.copy(String.append(String.append(str.tl(Laws.esc(Chr{uu})), Laws.escs(tt)), SCon{'"', rest}), cut, nn,
+    bd, rw, hs, he, ps, sk, un, lf, ab)
+
+# a character that needs an escape ends the span: the copy holds pre, and the
+# rest of the string is read in LStr
+def se.esc(
+  +uu: U32,
+  ee: esc.Lead(uu),
+  +tt: String,
+  +pre: String,
+  +cut: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  hc: {cut == String.append(pre, String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest})) : String},
+  hn: {U32.to_nat(nn) == plus(pre, 0n) : Nat},
+  ih: sv.Then(String.append(pre, SCon{Chr{uu}, tt}), bd, rw, hs, he, ps, sk, ab, rest, PP)
+) -> PP(T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+  sv.eat(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab))):
+  pp.step(PP,
+    T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+      sv.eat(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab)),
+    T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+      T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, T.span.rev(cut, nn, U32.is_zero(nn), []))}),
+    se.copy.esc(uu, ee, tt, rest, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab),
+    pp.step(PP,
+      T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+        T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, T.span.rev(cut, nn, U32.is_zero(nn), []))}),
+      T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+        T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, rev.onto(pre, []))}),
+      Equal.cong(List<&2, Char>, T.Doc, bb => T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}),
+        SCon{'"', rest}), T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, bb)}),
+        T.span.rev(cut, nn, U32.is_zero(nn), []), rev.onto(pre, []),
+        se.rev(pre, cut, String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}), nn, hc, hn)),
+      ls.fin(SCon{Chr{uu}, tt}, pre, bd, rw, hs, he, ps, sk, ab, un, lf, rest, PP, ih)))
+
+# the text of the span after pre and a plain character: the character joins
+# pre
+def se.cut(
+  +uu: U32,
+  +tt: String,
+  +pre: String,
+  +cut: String,
+  +rest: String,
+  ep: {Laws.esc(Chr{uu}) == SCon{Chr{uu}, SNil{}} : String},
+  hc: {cut == String.append(pre, String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest})) : String}
+) -> {cut == String.append(String.append(pre, SCon{Chr{uu}, SNil{}}),
+  String.append(Laws.escs(tt), SCon{'"', rest})) : String}:
+  Equal.trans(String, cut,
+    String.append(pre, SCon{Chr{uu}, String.append(Laws.escs(tt), SCon{'"', rest})}),
+    String.append(String.append(pre, SCon{Chr{uu}, SNil{}}), String.append(Laws.escs(tt), SCon{'"', rest})),
+    Equal.trans(String, cut,
+      String.append(pre, String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), SCon{'"', rest})),
+      String.append(pre, SCon{Chr{uu}, String.append(Laws.escs(tt), SCon{'"', rest})}),
+      hc,
+      Equal.cong(String, String, xs => String.append(pre, String.append(String.append(xs, Laws.escs(tt)),
+        SCon{'"', rest})), Laws.esc(Chr{uu}), SCon{Chr{uu}, SNil{}}, ep)),
+    Equal.sym(String,
+      String.append(String.append(pre, SCon{Chr{uu}, SNil{}}), String.append(Laws.escs(tt), SCon{'"', rest})),
+      String.append(pre, SCon{Chr{uu}, String.append(Laws.escs(tt), SCon{'"', rest})}),
+      Eq.append_assoc(pre, SCon{Chr{uu}, SNil{}}, String.append(Laws.escs(tt), SCon{'"', rest}))))
+
+# the rest of the string after a plain character, read from the span grown
+# by it: the induction hypothesis of se.go, given the text it was cut from
+# and the rest of the walk
+def se.Rec(
+  +uu: U32,
+  +tt: String,
+  +pre: String,
+  +cut: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  {cut == String.append(String.append(pre, SCon{Chr{uu}, SNil{}}),
+    String.append(Laws.escs(tt), SCon{'"', rest})) : String} ->
+    sv.Then(String.append(String.append(pre, SCon{Chr{uu}, SNil{}}), tt), bd, rw, hs, he, ps, sk, ab, rest,
+      PP) ->
+    PP(T.doc.read(String.append(Laws.escs(tt), SCon{'"', rest}),
+      sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab)))
+
+# a plain character grows the span, and the rest of the string is read from
+# there
+def se.plain(
+  +uu: U32,
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool},
+  +tt: String,
+  +pre: String,
+  +cut: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  hc: {cut == String.append(pre, String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest})) : String},
+  ih: sv.Then(String.append(pre, SCon{Chr{uu}, tt}), bd, rw, hs, he, ps, sk, ab, rest, PP),
+  rec: se.Rec(uu, tt, pre, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab, rest, PP)
+) -> PP(T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+  sv.eat(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab))):
+  +ep = {esc.pl2(uu, e34, e92, ec) : {Laws.esc(Chr{uu}) == SCon{Chr{uu}, SNil{}} : String}}
+  %Equal.sym(String, Laws.esc(Chr{uu}), SCon{Chr{uu}, SNil{}}, ep) :
+    PP(T.doc.read(String.append(String.append(_, Laws.escs(tt)), SCon{'"', rest}),
+      sv.eat(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab)))
+  pp.step(PP,
+    T.doc.read(SCon{Chr{uu}, String.append(Laws.escs(tt), SCon{'"', rest})},
+      sv.eat(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab)),
+    T.doc.read(String.append(Laws.escs(tt), SCon{'"', rest}),
+      sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab)),
+    se.one(uu, String.append(Laws.escs(tt), SCon{'"', rest}), cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab,
+      e34, e92, ec),
+    rec(se.cut(uu, tt, pre, cut, rest, ep, hc),
+      sv.then.cast(String.append(pre, SCon{Chr{uu}, tt}), String.append(String.append(pre, SCon{Chr{uu},
+        SNil{}}), tt), Equal.sym(String, String.append(String.append(pre, SCon{Chr{uu}, SNil{}}), tt),
+        String.append(pre, SCon{Chr{uu}, tt}), Eq.append_assoc(pre, SCon{Chr{uu}, SNil{}}, tt)),
+        bd, rw, hs, he, ps, sk, ab, rest, PP, ih)))
+
+# one character of the string inside the span: a quote, a backslash or a
+# control ends the span, and any other grows it
+def se.step(
+  +uu: U32,
+  q34: Bool,
+  b92: Bool,
+  ctl: Bool,
+  +e34: {U32.is_eq(uu, 34) == q34 : Bool},
+  +e92: {U32.is_eq(uu, 92) == b92 : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == ctl : Bool},
+  +tt: String,
+  +pre: String,
+  +cut: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  +hc: {cut == String.append(pre, String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest})) : String},
+  +hn: {U32.to_nat(nn) == plus(pre, 0n) : Nat},
+  ih: sv.Then(String.append(pre, SCon{Chr{uu}, tt}), bd, rw, hs, he, ps, sk, ab, rest, PP),
+  rec: se.Rec(uu, tt, pre, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab, rest, PP)
+) -> PP(T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+  sv.eat(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab))):
+  match q34:
+    case True{}:
+      se.esc(uu, esc.lead.is(uu, 34, e34, {==}), tt, pre, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab, rest,
+        PP, hc, hn, ih)
+    case False{}:
+      match b92:
+        case True{}:
+          se.esc(uu, esc.lead.is(uu, 92, e92, {==}), tt, pre, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab,
+            rest, PP, hc, hn, ih)
+        case False{}:
+          match ctl:
+            case True{}:
+              se.esc(uu, esc.lead.ctl(uu, ec), tt, pre, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab, rest,
+                PP, hc, hn, ih)
+            case False{}:
+              se.plain(uu, e34, e92, ec, tt, pre, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab, rest, PP,
+                hc, ih, rec)
+
+# the rest ss of a string inside its span, pre read so far: cut is the text
+# from the string's first character, and nn counts pre's characters without
+# wrapping. The string reads to a value own reads as pre and ss: the span
+# itself when ss needs no escape, and the copied string otherwise
+def se.go(
+  ss: String,
+  +pre: String,
+  +cut: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  +hc: {cut == String.append(pre, String.append(Laws.escs(ss), SCon{'"', rest})) : String},
+  +hn: {U32.to_nat(nn) == plus(pre, 0n) : Nat},
+  +hk: {Laws.counts(ss, nn) == True{} : Bool},
+  ih: sv.Then(String.append(pre, ss), bd, rw, hs, he, ps, sk, ab, rest, PP)
+) -> PP(T.doc.read(String.append(Laws.escs(ss), SCon{'"', rest}),
+  sv.eat(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab))):
+  match ss:
+    case SNil{}:
+      pp.step(PP,
+        T.doc.read(SCon{'"', rest}, sv.eat(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab)),
+        T.doc.read(rest, T.MScan{sv.took(sk, T.VSpan{cut, nn}, bd, rw, hs, he, ps, T.LStr{}, un, lf, ab)}),
+        se.close(rest, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab),
+        sv.then.cast(String.append(pre, SNil{}), pre, Eq.append_nil(pre), bd, rw, hs, he, ps, sk, ab, rest,
+          PP, ih)(T.VSpan{cut, nn}, T.LStr{}, un, lf, se.own(pre, cut, SCon{'"', rest}, nn, hc, hn)))
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+uu}:
+          se.step(uu, U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)),
+            {==}, {==}, {==}, tt, pre, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab, rest, PP, hc, hn, ih,
+            hc2 => ih2 => se.go(tt, String.append(pre, SCon{Chr{uu}, SNil{}}), cut, U32.add(nn, 1), bd, rw,
+              hs, he, ps, sk, un, lf, ab, rest, PP, hc2,
+              Equal.trans(Nat, U32.to_nat(U32.add(nn, 1)), 1n+U32.to_nat(nn),
+                plus(String.append(pre, SCon{Chr{uu}, SNil{}}), 0n),
+                Eq.inc.nat(nn, Eq.not.true(U32.is_zero(U32.add(nn, 1)),
+                  Eq.and.left(Bool.not(U32.is_zero(U32.add(nn, 1))), Laws.counts(tt, U32.add(nn, 1)), hk))),
+                Equal.trans(Nat, 1n+U32.to_nat(nn), 1n+plus(pre, 0n),
+                  plus(String.append(pre, SCon{Chr{uu}, SNil{}}), 0n),
+                  Equal.cong(Nat, Nat, kk => 1n+kk, U32.to_nat(nn), plus(pre, 0n), hn),
+                  Equal.sym(Nat, plus(String.append(pre, SCon{Chr{uu}, SNil{}}), 0n), 1n+plus(pre, 0n),
+                    plus.app(pre, SCon{Chr{uu}, SNil{}}, 0n)))),
+              Eq.and.right(Bool.not(U32.is_zero(U32.add(nn, 1))), Laws.counts(tt, U32.add(nn, 1)), hk),
+              ih2))
+
+# The first character decides the path: one written as itself opens the
+# span, and one that needs an escape starts the copied string at once.
+
+# a backslash right after the opening quote starts an escape, as it does in
+# a string being copied with nothing in its buffer
+def so.copy(
+  +xx: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> {T.doc.read(SCon{'\\', xx}, sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab))
+  == T.doc.read(SCon{'\\', xx}, T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, [])}) : T.Doc}:
+  {==}
+
+# and so does a first character that needs an escape
+def so.copy.esc(
+  +uu: U32,
+  ee: esc.Lead(uu),
+  +tt: String,
+  +rest: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> {T.doc.read(String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), SCon{'"', rest}),
+  sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab))
+  == T.doc.read(String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), SCon{'"', rest}),
+    T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, [])}) : T.Doc}:
+  %Equal.sym(String, Laws.esc(Chr{uu}), SCon{'\\', str.tl(Laws.esc(Chr{uu}))}, ee) :
+    {T.doc.read(String.append(String.append(_, Laws.escs(tt)), SCon{'"', rest}),
+      sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab))
+      == T.doc.read(String.append(String.append(_, Laws.escs(tt)), SCon{'"', rest}),
+        T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, [])}) : T.Doc}
+  so.copy(String.append(String.append(str.tl(Laws.esc(Chr{uu})), Laws.escs(tt)), SCon{'"', rest}), bd, rw,
+    hs, he, ps, bk, sk, un, lf, ab)
+
+# a first character that needs an escape: the string is read in LStr from an
+# empty buffer
+def so.esc(
+  +uu: U32,
+  ee: esc.Lead(uu),
+  +tt: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  ih: sv.Then(SCon{Chr{uu}, tt}, bd, rw, hs, he, ps, sk, ab, rest, PP)
+) -> PP(T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+  sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab))):
+  pp.step(PP,
+    T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+      sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab)),
+    T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+      T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, [])}),
+    so.copy.esc(uu, ee, tt, rest, bd, rw, hs, he, ps, bk, sk, un, lf, ab),
+    ls.fin(SCon{Chr{uu}, tt}, SNil{}, bd, rw, hs, he, ps, sk, ab, un, lf, rest, PP, ih))
+
+# a first character written as itself opens the span, and the rest of the
+# string is read from there
+def so.plain(
+  +uu: U32,
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool},
+  +tt: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  +hk: {Laws.counts(tt, 1) == True{} : Bool},
+  ih: sv.Then(SCon{Chr{uu}, tt}, bd, rw, hs, he, ps, sk, ab, rest, PP)
+) -> PP(T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+  sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab))):
+  %Equal.sym(String, Laws.esc(Chr{uu}), SCon{Chr{uu}, SNil{}}, esc.pl2(uu, e34, e92, ec)) :
+    PP(T.doc.read(String.append(String.append(_, Laws.escs(tt)), SCon{'"', rest}),
+      sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab)))
+  pp.step(PP,
+    T.doc.read(SCon{Chr{uu}, String.append(Laws.escs(tt), SCon{'"', rest})},
+      sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab)),
+    T.doc.read(String.append(Laws.escs(tt), SCon{'"', rest}),
+      sv.eat(SCon{Chr{uu}, String.append(Laws.escs(tt), SCon{'"', rest})}, 1, bd, rw, hs, he, ps, sk, un, lf,
+        ab)),
+    so.one(uu, String.append(Laws.escs(tt), SCon{'"', rest}), bd, rw, hs, he, ps, bk, sk, un, lf, ab, e34,
+      e92, ec),
+    se.go(tt, SCon{Chr{uu}, SNil{}}, SCon{Chr{uu}, String.append(Laws.escs(tt), SCon{'"', rest})}, 1, bd, rw,
+      hs, he, ps, sk, un, lf, ab, rest, PP, {==}, {==}, hk, ih))
+
+# the first character: a quote, a backslash or a control starts the copied
+# string, and any other opens the span
+def so.first(
+  +uu: U32,
+  q34: Bool,
+  b92: Bool,
+  ctl: Bool,
+  +e34: {U32.is_eq(uu, 34) == q34 : Bool},
+  +e92: {U32.is_eq(uu, 92) == b92 : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == ctl : Bool},
+  +tt: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  +hk: {Laws.counts(tt, 1) == True{} : Bool},
+  ih: sv.Then(SCon{Chr{uu}, tt}, bd, rw, hs, he, ps, sk, ab, rest, PP)
+) -> PP(T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+  sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab))):
+  match q34:
+    case True{}:
+      so.esc(uu, esc.lead.is(uu, 34, e34, {==}), tt, bd, rw, hs, he, ps, bk, sk, un, lf, ab, rest, PP, ih)
+    case False{}:
+      match b92:
+        case True{}:
+          so.esc(uu, esc.lead.is(uu, 92, e92, {==}), tt, bd, rw, hs, he, ps, bk, sk, un, lf, ab, rest, PP,
+            ih)
+        case False{}:
+          match ctl:
+            case True{}:
+              so.esc(uu, esc.lead.ctl(uu, ec), tt, bd, rw, hs, he, ps, bk, sk, un, lf, ab, rest, PP, ih)
+            case False{}:
+              so.plain(uu, e34, e92, ec, tt, bd, rw, hs, he, ps, bk, sk, un, lf, ab, rest, PP, hk, ih)
+
+# a nonempty string, as render writes it after the opening quote, then the
+# closing quote and any rest: from every value position the rest is read with
+# a value own reads as the string placed, back at LStr and uni and left as
+# the last escape left them
+def sv.more(
+  +uu: U32,
+  +tt: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  es: {Laws.short(SCon{Chr{uu}, tt}) == True{} : Bool},
+  ih: sv.Then(SCon{Chr{uu}, tt}, bd, rw, hs, he, ps, sk, ab, rest, PP)
+) -> PP(T.doc.read(String.append(Laws.escs(SCon{Chr{uu}, tt}), SCon{'"', rest}),
+  sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab))):
+  so.first(uu, U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), {==},
+    {==}, {==}, tt, bd, rw, hs, he, ps, bk, sk, un, lf, ab, rest, PP,
+    Eq.and.right(Bool.not(U32.is_zero(U32.add(0, 1))), Laws.counts(tt, U32.add(0, 1)), es), ih)
