@@ -2403,3 +2403,119 @@ law literal_key_reads_back:
   for e: {lit.text(s) == True{} : Bool}
   {T.parse(SCon{'\'', String.append(s, "' = 1")})
     == T.Doc{"", [T.VPair{s, T.VInt{T.Plus{}, "1"}}]} : T.Doc}
+
+# how a key segment is spelled: bare, as a basic string the way key writes
+# one, or as a literal string
+type Spell is Data:
+  SpBare{}
+  SpBasic{}
+  SpLit{}
+
+# a key segment: a name and how it is spelled
+type Seg is Data:
+  Seg{sp: Spell, name: String}
+
+# a segment of a dotted key that a dot follows, with the blank space before
+# the dot and after it (each blank a tab when true, a space when false)
+type Dot is Data:
+  Dot{seg: Seg, g1: List<&2, Bool>, g2: List<&2, Bool>}
+
+# blank space: a tab for each true, a space for each false
+def gap(gs: List<&2, Bool>) -> String:
+  match gs:
+    case []:
+      ""
+    case tab <> rest:
+      SCon{blank_char(tab), gap(rest)}
+
+# a segment's text
+def seg.text(sg: Seg) -> String:
+  match sg:
+    case Seg{SpBare{}, name}:
+      name
+    case Seg{SpBasic{}, name}:
+      T.key.basic(name)
+    case Seg{SpLit{}, name}:
+      SCon{'\'', String.append(name, "'")}
+
+# a segment's name
+def seg.name(sg: Seg) -> String:
+  match sg:
+    case Seg{_sp, name}:
+      name
+
+# whether a segment's name can be spelled so: a bare name is a bare key, a
+# literal one holds no apostrophe and no control but tab, and every name can
+# be written as a basic string
+def seg.ok(sg: Seg) -> Bool:
+  match sg:
+    case Seg{SpBare{}, name}:
+      T.bare(name)
+    case Seg{SpBasic{}, _name}:
+      True{}
+    case Seg{SpLit{}, name}:
+      lit.text(name)
+
+# the text of a dotted key, its segments joined by dots with their blank
+# space, then tail
+def dk.text(ds: List<&2, Dot>, last: Seg, tail: String) -> String:
+  match ds:
+    case []:
+      String.append(seg.text(last), tail)
+    case Dot{sg, g1, g2} <> rest:
+      String.append(seg.text(sg), String.append(gap(g1), SCon{'.', String.append(gap(g2),
+        dk.text(rest, last, tail))}))
+
+# the names of a dotted key's segments, in order
+def dk.names(ds: List<&2, Dot>, last: Seg) -> List<&2, String>:
+  match ds:
+    case []:
+      [seg.name(last)]
+    case Dot{sg, _g1, _g2} <> rest:
+      seg.name(sg) <> dk.names(rest, last)
+
+# whether every segment of a dotted key can be spelled as it is
+def dk.ok(ds: List<&2, Dot>, last: Seg) -> Bool:
+  match ds:
+    case []:
+      seg.ok(last)
+    case Dot{sg, _g1, _g2} <> rest:
+      Bool.and(seg.ok(sg), dk.ok(rest, last))
+
+# the scanner after a key's `=`, waiting for its value in the table here:
+# the key's segments in parts, newest first
+def kb.val(
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  back: T.Lex,
+  qkind: T.QKind,
+  arrtab: Bool
+) -> T.St:
+  T.St{"", rows, heads, here, parts, [], T.LVal{}, back, qkind, [], T.HNone{}, 0, 0, arrtab,
+    False{}}
+
+# LAW: a dotted key reads back as its segments' names: from the start of a
+# line in any table, a key of segments each bare, basic or literal, joined
+# by dots with blank space around them, then blank space and `=`, is the rest
+# read waiting for the value with every segment's characters, escapes
+# decoded, as the key's parts
+# TOML-KEY-3
+law dotted_key_reads_back:
+  for +ds: List<&2, Dot>
+  for +last: Seg
+  for ok: {dk.ok(ds, last) == True{} : Bool}
+  for +g: List<&2, Bool>
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +arrtab: Bool
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{kb.val(rows, heads, here,
+    List.reverse(&2, String, dk.names(ds, last)), bk, qk, arrtab)}) == goal : T.Doc}
+  {T.doc.read(dk.text(ds, last, String.append(gap(g), SCon{'=', rest})), T.MScan{hb.line(rows,
+    heads, here, back, qkind, arrtab)}) == goal : T.Doc}
