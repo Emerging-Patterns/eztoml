@@ -1998,25 +1998,35 @@ def hb.line(
   T.St{"", rows, heads, here, [], [], T.LTop{}, back, qkind, [], T.HNone{}, 0, 0, arrtab,
     False{}}
 
-# LAW: a header of one bare segment k, then a newline, read from the start of
-# a line, is the rest read from the start of the next line in the table [k],
-# with the rows and definitions its walk returns
-law bare_header_reads_back:
+# whether every segment of a path is a bare key
+def hb.bare_all(path: List<&2, String>) -> Bool:
+  match path:
+    case []:
+      True{}
+    case +seg <> rest:
+      Bool.and(T.bare(seg), hb.bare_all(rest))
+
+# LAW: a header whose segments are all bare, then a newline, read from the
+# start of a line, is the rest read from the start of the next line in the
+# header's table, with the rows and definitions its walk returns. The path is
+# the one render writes: the parent's path joined with the last segment
+law bare_path_header_reads_back:
+  for +segs: List<&2, String>
   for +k: String
-  for +ek: {T.bare(k) == True{} : Bool}
+  for +eb: {hb.bare_all(List.append(&2, String, segs, [k])) == True{} : Bool}
   for +rows: List<&2, T.Val>
   for +heads: List<&2, String>
   for +here: List<&2, String>
   for +back: T.Lex
   for +qkind: T.QKind
-  for arrtab: Bool
+  for +arrtab: Bool
   for +rows2: List<&2, T.Val>
   for +heads2: List<&2, String>
-  for ew: {T.tree.walk([k], T.Tw{rows, T.JDef{}, [], "", "", heads, False{}}, 0)
-    == T.End{rows2, "", heads2} : T.End}
+  for ew: {T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JDef{}, [], "", "", heads,
+    False{}}, 0) == T.End{rows2, "", heads2} : T.End}
   for +rest: String
   for +goal: T.Doc
-  for ih: @bk: T.Lex -> @qk: T.QKind ->
-    {T.doc.read(rest, T.MScan{hb.line(rows2, heads2, [k], bk, qk, False{})}) == goal : T.Doc}
-  {T.doc.read("[" ++ T.key(k) ++ "]\n" ++ rest, T.MScan{hb.line(rows, heads, here, back, qkind,
-    arrtab)}) == goal : T.Doc}
+  for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{hb.line(rows2, heads2,
+    List.append(&2, String, segs, [k]), bk, qk, False{})}) == goal : T.Doc}
+  {T.doc.read("[" ++ T.tree.pre(tb.join(segs, ""), k) ++ "]\n" ++ rest, T.MScan{hb.line(rows, heads,
+    here, back, qkind, arrtab)}) == goal : T.Doc}
