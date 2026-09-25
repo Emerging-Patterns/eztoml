@@ -23581,3 +23581,650 @@ def Laws.pass_value(k, v, hw, rest, gap, trail):
         == String.append(T.key(k), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VPair{aa, bb}, String.append(
         T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)), T.render.pass(rest, gap, trail, False{})))}}})
         : String}, hw)
+
+# The seal. rows.seal puts each table's rows back in the order they were
+# written and leaves an array's items as they are. own reads a sealed list
+# as the seal of what it reads (cv.osl); sealing the scanner's form of a
+# well-formed value's list gives what own reads of the list (cv.sm); so a
+# document of one pair of any value reads back as that pair, as own reads it.
+
+# a list appended to another, read out
+def cv.own.app(
+  xs: List<&2, T.Val>,
+  +ys: List<&2, T.Val>
+) -> {Laws.own.rows(List.append(&2, T.Val, xs, ys)) == List.append(&2, T.Val, Laws.own.rows(xs), Laws.own.rows(ys))
+  : List<&2, T.Val>}:
+  match xs:
+    case []:
+      {==}
+    case +hh <> +tt:
+      Equal.trans(List<&2, T.Val>, Laws.own.rows(hh <> List.append(&2, T.Val, tt, ys)),
+        Laws.cv.own1(hh) <> Laws.own.rows(List.append(&2, T.Val, tt, ys)),
+        List.append(&2, T.Val, Laws.own.rows(hh <> tt), Laws.own.rows(ys)),
+        cv.own.cons(hh, List.append(&2, T.Val, tt, ys)),
+        Equal.trans(List<&2, T.Val>, Laws.cv.own1(hh) <> Laws.own.rows(List.append(&2, T.Val, tt, ys)),
+          Laws.cv.own1(hh) <> List.append(&2, T.Val, Laws.own.rows(tt), Laws.own.rows(ys)),
+          List.append(&2, T.Val, Laws.own.rows(hh <> tt), Laws.own.rows(ys)),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.cv.own1(hh) <> zs,
+            Laws.own.rows(List.append(&2, T.Val, tt, ys)), List.append(&2, T.Val, Laws.own.rows(tt), Laws.own.rows(ys)),
+            cv.own.app(tt, ys)),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => List.append(&2, T.Val, zs, Laws.own.rows(ys)),
+            Laws.cv.own1(hh) <> Laws.own.rows(tt), Laws.own.rows(hh <> tt),
+            Equal.sym(List<&2, T.Val>, Laws.own.rows(hh <> tt), Laws.cv.own1(hh) <> Laws.own.rows(tt),
+              cv.own.cons(hh, tt)))))
+
+# one value in front of a list: own reads the seal of the list as the seal of
+# what it reads, once it does so for the list and for the value
+def cv.osl.step(
+  +xx: T.Val,
+  +tt: List<&2, T.Val>,
+  ex: {Laws.cv.own1(Laws.sealed(xx)) == Laws.sealed(Laws.cv.own1(xx)) : T.Val},
+  ih: {Laws.own.rows(T.rows.seal(tt)) == T.rows.seal(Laws.own.rows(tt)) : List<&2, T.Val>}
+) -> {Laws.own.rows(T.rows.seal(xx <> tt)) == T.rows.seal(Laws.own.rows(xx <> tt)) : List<&2, T.Val>}:
+  Equal.trans(List<&2, T.Val>, Laws.own.rows(T.rows.seal(xx <> tt)),
+    Laws.own.rows(List.append(&2, T.Val, T.rows.seal(tt), [Laws.sealed(xx)])),
+    T.rows.seal(Laws.own.rows(xx <> tt)),
+    Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.own.rows(zs), T.rows.seal(xx <> tt),
+      List.append(&2, T.Val, T.rows.seal(tt), [Laws.sealed(xx)]), Laws.seal_puts_newest_last(xx, tt)),
+    Equal.trans(List<&2, T.Val>, Laws.own.rows(List.append(&2, T.Val, T.rows.seal(tt), [Laws.sealed(xx)])),
+      List.append(&2, T.Val, Laws.own.rows(T.rows.seal(tt)), Laws.own.rows([Laws.sealed(xx)])),
+      T.rows.seal(Laws.own.rows(xx <> tt)),
+      cv.own.app(T.rows.seal(tt), [Laws.sealed(xx)]),
+      Equal.trans(List<&2, T.Val>,
+        List.append(&2, T.Val, Laws.own.rows(T.rows.seal(tt)), Laws.own.rows([Laws.sealed(xx)])),
+        List.append(&2, T.Val, T.rows.seal(Laws.own.rows(tt)), [Laws.sealed(Laws.cv.own1(xx))]),
+        T.rows.seal(Laws.own.rows(xx <> tt)),
+        Equal.trans(List<&2, T.Val>,
+          List.append(&2, T.Val, Laws.own.rows(T.rows.seal(tt)), Laws.own.rows([Laws.sealed(xx)])),
+          List.append(&2, T.Val, T.rows.seal(Laws.own.rows(tt)), Laws.own.rows([Laws.sealed(xx)])),
+          List.append(&2, T.Val, T.rows.seal(Laws.own.rows(tt)), [Laws.sealed(Laws.cv.own1(xx))]),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => List.append(&2, T.Val, zs, Laws.own.rows([Laws.sealed(
+            xx)])), Laws.own.rows(T.rows.seal(tt)), T.rows.seal(Laws.own.rows(tt)), ih),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => List.append(&2, T.Val, T.rows.seal(Laws.own.rows(tt)), zs),
+            Laws.own.rows([Laws.sealed(xx)]), [Laws.sealed(Laws.cv.own1(xx))],
+            Equal.trans(List<&2, T.Val>, Laws.own.rows([Laws.sealed(xx)]), [Laws.cv.own1(Laws.sealed(xx))],
+              [Laws.sealed(Laws.cv.own1(xx))], cv.own.cons(Laws.sealed(xx), []),
+              Equal.cong(T.Val, List<&2, T.Val>, yy => [yy], Laws.cv.own1(Laws.sealed(xx)),
+                Laws.sealed(Laws.cv.own1(xx)), ex)))),
+        Equal.trans(List<&2, T.Val>,
+          List.append(&2, T.Val, T.rows.seal(Laws.own.rows(tt)), [Laws.sealed(Laws.cv.own1(xx))]),
+          T.rows.seal(Laws.cv.own1(xx) <> Laws.own.rows(tt)), T.rows.seal(Laws.own.rows(xx <> tt)),
+          Equal.sym(List<&2, T.Val>, T.rows.seal(Laws.cv.own1(xx) <> Laws.own.rows(tt)),
+            List.append(&2, T.Val, T.rows.seal(Laws.own.rows(tt)), [Laws.sealed(Laws.cv.own1(xx))]),
+            Laws.seal_puts_newest_last(Laws.cv.own1(xx), Laws.own.rows(tt))),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.rows.seal(zs),
+            Laws.cv.own1(xx) <> Laws.own.rows(tt), Laws.own.rows(xx <> tt),
+            Equal.sym(List<&2, T.Val>, Laws.own.rows(xx <> tt), Laws.cv.own1(xx) <> Laws.own.rows(tt),
+              cv.own.cons(xx, tt)))))))
+
+# own reads a reversal of what it reads the seal of as the reversal of that
+# seal
+def cv.own.rs(
+  +ss: List<&2, T.Val>,
+  +s2: List<&2, T.Val>,
+  hh: {Laws.own.rows(ss) == s2 : List<&2, T.Val>}
+) -> {Laws.own.rows(List.reverse(&2, T.Val, ss)) == List.reverse(&2, T.Val, s2) : List<&2, T.Val>}:
+  Equal.trans(List<&2, T.Val>, Laws.own.rows(List.reverse.go(&2, T.Val, ss, [])),
+    List.reverse.go(&2, T.Val, Laws.own.rows(ss), []), List.reverse(&2, T.Val, s2), cv.own.rev(ss, []),
+    Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => List.reverse.go(&2, T.Val, zs, []), Laws.own.rows(ss), s2, hh))
+
+# own reads the seal of every list as the seal of what it reads
+def cv.osl(
+  xs: List<&2, T.Val>
+) -> {Laws.own.rows(T.rows.seal(xs)) == T.rows.seal(Laws.own.rows(xs)) : List<&2, T.Val>}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+nn, T.VHead{+pp, +rr}} <> +tt:
+      cv.osl.step(T.VPair{nn, T.VHead{pp, rr}}, tt, Equal.cong(List<&2, T.Val>, T.Val, zs => T.VPair{nn, T.VHead{pp,
+        zs}}, Laws.own.rows(T.rows.seal(rr)), T.rows.seal(Laws.own.rows(rr)), cv.osl(rr)), cv.osl(tt))
+    case T.VPair{+nn, T.VAots{+pp, +rr}} <> +tt:
+      cv.osl.step(T.VPair{nn, T.VAots{pp, rr}}, tt, Equal.cong(List<&2, T.Val>, T.Val, zs => T.VPair{nn, T.VAots{pp,
+        zs}}, Laws.own.rows(T.rows.seal(rr)), T.rows.seal(Laws.own.rows(rr)), cv.osl(rr)), cv.osl(tt))
+    case T.VPair{+nn, T.VInl{+rr}} <> +tt:
+      cv.osl.step(T.VPair{nn, T.VInl{rr}}, tt, Equal.cong(List<&2, T.Val>, T.Val, zs => T.VPair{nn, T.VInl{zs}},
+        Laws.own.rows(T.rows.seal(rr)), T.rows.seal(Laws.own.rows(rr)), cv.osl(rr)), cv.osl(tt))
+    case T.VPair{+nn, T.VArr{+rr}} <> +tt:
+      cv.osl.step(T.VPair{nn, T.VArr{rr}}, tt, Equal.cong(List<&2, T.Val>, T.Val, zs => T.VPair{nn, T.VArr{zs}},
+        Laws.own.rows(List.reverse(&2, T.Val, T.rows.seal(rr))), List.reverse(&2, T.Val,
+        T.rows.seal(Laws.own.rows(rr))), cv.own.rs(T.rows.seal(rr), T.rows.seal(Laws.own.rows(rr)), cv.osl(rr))),
+        cv.osl(tt))
+    case T.VPair{+nn, T.VStr{+a}} <> +tt:
+      cv.osl.step(T.VPair{nn, T.VStr{a}}, tt, {==}, cv.osl(tt))
+    case T.VPair{+nn, T.VSpan{+a, +b}} <> +tt:
+      cv.osl.step(T.VPair{nn, T.VSpan{a, b}}, tt, {==}, cv.osl(tt))
+    case T.VPair{+nn, T.VInt{+a, +b}} <> +tt:
+      cv.osl.step(T.VPair{nn, T.VInt{a, b}}, tt, {==}, cv.osl(tt))
+    case T.VPair{+nn, T.VFlo{+a, +b}} <> +tt:
+      cv.osl.step(T.VPair{nn, T.VFlo{a, b}}, tt, {==}, cv.osl(tt))
+    case T.VPair{+nn, T.VBool{+a}} <> +tt:
+      cv.osl.step(T.VPair{nn, T.VBool{a}}, tt, {==}, cv.osl(tt))
+    case T.VPair{+nn, T.VWhen{+a}} <> +tt:
+      cv.osl.step(T.VPair{nn, T.VWhen{a}}, tt, {==}, cv.osl(tt))
+    case T.VPair{+nn, T.VAot{+a, +b}} <> +tt:
+      cv.osl.step(T.VPair{nn, T.VAot{a, b}}, tt, {==}, cv.osl(tt))
+    case T.VPair{+nn, T.VPair{+a, +b}} <> +tt:
+      cv.osl.step(T.VPair{nn, T.VPair{a, b}}, tt, {==}, cv.osl(tt))
+    case T.VAot{+pp, +rr} <> +tt:
+      cv.osl.step(T.VAot{pp, rr}, tt, Equal.cong(List<&2, T.Val>, T.Val, zs => T.VAot{pp, zs},
+        Laws.own.rows(T.rows.seal(rr)), T.rows.seal(Laws.own.rows(rr)), cv.osl(rr)), cv.osl(tt))
+    case T.VAots{+pp, +rr} <> +tt:
+      cv.osl.step(T.VAots{pp, rr}, tt, Equal.cong(List<&2, T.Val>, T.Val, zs => T.VAots{pp, zs},
+        Laws.own.rows(T.rows.seal(rr)), T.rows.seal(Laws.own.rows(rr)), cv.osl(rr)), cv.osl(tt))
+    case T.VInl{+rr} <> +tt:
+      cv.osl.step(T.VInl{rr}, tt, Equal.cong(List<&2, T.Val>, T.Val, zs => T.VInl{zs}, Laws.own.rows(T.rows.seal(rr)),
+        T.rows.seal(Laws.own.rows(rr)), cv.osl(rr)), cv.osl(tt))
+    case T.VArr{+rr} <> +tt:
+      cv.osl.step(T.VArr{rr}, tt, Equal.cong(List<&2, T.Val>, T.Val, zs => T.VArr{zs}, Laws.own.rows(List.reverse(&2,
+        T.Val, T.rows.seal(rr))), List.reverse(&2, T.Val, T.rows.seal(Laws.own.rows(rr))), cv.own.rs(T.rows.seal(rr),
+        T.rows.seal(Laws.own.rows(rr)), cv.osl(rr))), cv.osl(tt))
+    case T.VStr{+a} <> +tt:
+      cv.osl.step(T.VStr{a}, tt, {==}, cv.osl(tt))
+    case T.VSpan{+a, +b} <> +tt:
+      cv.osl.step(T.VSpan{a, b}, tt, {==}, cv.osl(tt))
+    case T.VInt{+a, +b} <> +tt:
+      cv.osl.step(T.VInt{a, b}, tt, {==}, cv.osl(tt))
+    case T.VFlo{+a, +b} <> +tt:
+      cv.osl.step(T.VFlo{a, b}, tt, {==}, cv.osl(tt))
+    case T.VBool{+a} <> +tt:
+      cv.osl.step(T.VBool{a}, tt, {==}, cv.osl(tt))
+    case T.VWhen{+a} <> +tt:
+      cv.osl.step(T.VWhen{a}, tt, {==}, cv.osl(tt))
+    case T.VHead{+a, +b} <> +tt:
+      cv.osl.step(T.VHead{a, b}, tt, {==}, cv.osl(tt))
+
+# every value of a list sealed, in order
+def cv.smap(xs: List<&2, T.Val>) -> List<&2, T.Val>:
+  match xs:
+    case []:
+      []
+    case hh <> tt:
+      Laws.sealed(hh) <> cv.smap(tt)
+
+# a reversal onto a list is the reversal, then the list
+def cv.rga(
+  zs: List<&2, T.Val>,
+  +bb: List<&2, T.Val>,
+  +acc: List<&2, T.Val>
+) -> {List.reverse.go(&2, T.Val, zs, List.append(&2, T.Val, bb, acc))
+  == List.append(&2, T.Val, List.reverse.go(&2, T.Val, zs, bb), acc) : List<&2, T.Val>}:
+  match zs:
+    case []:
+      {==}
+    case +hh <> tt:
+      cv.rga(tt, hh <> bb, acc)
+
+# rows.seal seals every value and reverses the list
+def cv.seal.rs(xs: List<&2, T.Val>) -> {T.rows.seal(xs) == List.reverse(&2, T.Val, cv.smap(xs)) : List<&2, T.Val>}:
+  match xs:
+    case []:
+      {==}
+    case +hh <> +tt:
+      Equal.trans(List<&2, T.Val>, T.rows.seal(hh <> tt), List.append(&2, T.Val, T.rows.seal(tt), [Laws.sealed(hh)]),
+        List.reverse(&2, T.Val, cv.smap(hh <> tt)), Laws.seal_puts_newest_last(hh, tt),
+        Equal.trans(List<&2, T.Val>, List.append(&2, T.Val, T.rows.seal(tt), [Laws.sealed(hh)]),
+          List.append(&2, T.Val, List.reverse(&2, T.Val, cv.smap(tt)), [Laws.sealed(hh)]),
+          List.reverse(&2, T.Val, cv.smap(hh <> tt)),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => List.append(&2, T.Val, zs, [Laws.sealed(hh)]),
+            T.rows.seal(tt), List.reverse(&2, T.Val, cv.smap(tt)), cv.seal.rs(tt)),
+          Equal.sym(List<&2, T.Val>, List.reverse.go(&2, T.Val, cv.smap(tt), [Laws.sealed(hh)]),
+            List.append(&2, T.Val, List.reverse(&2, T.Val, cv.smap(tt)), [Laws.sealed(hh)]),
+            cv.rga(cv.smap(tt), [], [Laws.sealed(hh)]))))
+
+# sealing every value commutes with a reversal
+def cv.smap.rev(
+  xs: List<&2, T.Val>,
+  +acc: List<&2, T.Val>
+) -> {cv.smap(List.reverse.go(&2, T.Val, xs, acc)) == List.reverse.go(&2, T.Val, cv.smap(xs), cv.smap(acc))
+  : List<&2, T.Val>}:
+  match xs:
+    case []:
+      {==}
+    case +hh <> tt:
+      cv.smap.rev(tt, hh <> acc)
+
+# the list a well-formed value holds, by where it sits
+def cv.wat(rows: Bool) -> T.WfAt:
+  match rows:
+    case False{}:
+      T.WfItems{}
+    case True{}:
+      T.WfInl{}
+
+# one value of a list sealed in the scanner's form, then the rest: the head
+# and the rest each read as own reads them
+def cv.sm.step(
+  +yy: T.Val,
+  +tt: List<&2, T.Val>,
+  ey: {Laws.sealed(Laws.cv.raw1(yy)) == Laws.cv.own1(yy) : T.Val},
+  ih: {cv.smap(Laws.cv.raw(tt)) == Laws.own.rows(tt) : List<&2, T.Val>}
+) -> {cv.smap(Laws.cv.raw(yy <> tt)) == Laws.own.rows(yy <> tt) : List<&2, T.Val>}:
+  Equal.trans(List<&2, T.Val>, cv.smap(Laws.cv.raw(yy <> tt)), cv.smap(Laws.cv.raw1(yy) <> Laws.cv.raw(tt)),
+    Laws.own.rows(yy <> tt),
+    Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => cv.smap(zs), Laws.cv.raw(yy <> tt),
+      Laws.cv.raw1(yy) <> Laws.cv.raw(tt), cv.raw.cons(yy, tt)),
+    Equal.trans(List<&2, T.Val>, Laws.sealed(Laws.cv.raw1(yy)) <> cv.smap(Laws.cv.raw(tt)),
+      Laws.cv.own1(yy) <> Laws.own.rows(tt), Laws.own.rows(yy <> tt),
+      Equal.trans(List<&2, T.Val>, Laws.sealed(Laws.cv.raw1(yy)) <> cv.smap(Laws.cv.raw(tt)),
+        Laws.cv.own1(yy) <> cv.smap(Laws.cv.raw(tt)), Laws.cv.own1(yy) <> Laws.own.rows(tt),
+        Equal.cong(T.Val, List<&2, T.Val>, zz => zz <> cv.smap(Laws.cv.raw(tt)), Laws.sealed(Laws.cv.raw1(yy)),
+          Laws.cv.own1(yy), ey),
+        Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.cv.own1(yy) <> zs, cv.smap(Laws.cv.raw(tt)),
+          Laws.own.rows(tt), ih)),
+      Equal.sym(List<&2, T.Val>, Laws.own.rows(yy <> tt), Laws.cv.own1(yy) <> Laws.own.rows(tt), cv.own.cons(yy, tt))))
+
+# an array's items: reversing their seal gives what own reads of them, once
+# sealing them one by one does
+def cv.sra(
+  +its: List<&2, T.Val>,
+  hh: {cv.smap(Laws.cv.raw(its)) == Laws.own.rows(its) : List<&2, T.Val>}
+) -> {List.reverse(&2, T.Val, T.rows.seal(Laws.cv.raw(its))) == Laws.own.rows(its) : List<&2, T.Val>}:
+  Equal.trans(List<&2, T.Val>, List.reverse(&2, T.Val, T.rows.seal(Laws.cv.raw(its))),
+    List.reverse(&2, T.Val, List.reverse(&2, T.Val, cv.smap(Laws.cv.raw(its)))), Laws.own.rows(its),
+    Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => List.reverse(&2, T.Val, zs), T.rows.seal(Laws.cv.raw(its)),
+      List.reverse(&2, T.Val, cv.smap(Laws.cv.raw(its))), cv.seal.rs(Laws.cv.raw(its))),
+    Equal.trans(List<&2, T.Val>, List.reverse(&2, T.Val, List.reverse(&2, T.Val, cv.smap(Laws.cv.raw(its)))),
+      cv.smap(Laws.cv.raw(its)), Laws.own.rows(its), cv.rev2(cv.smap(Laws.cv.raw(its))), hh))
+
+# an inline table's pairs: the seal of their reversal gives what own reads of
+# them, once sealing them one by one does
+def cv.sri(
+  +rs: List<&2, T.Val>,
+  hh: {cv.smap(Laws.cv.raw(rs)) == Laws.own.rows(rs) : List<&2, T.Val>}
+) -> {T.rows.seal(List.reverse(&2, T.Val, Laws.cv.raw(rs))) == Laws.own.rows(rs) : List<&2, T.Val>}:
+  Equal.trans(List<&2, T.Val>, T.rows.seal(List.reverse(&2, T.Val, Laws.cv.raw(rs))),
+    List.reverse(&2, T.Val, cv.smap(List.reverse(&2, T.Val, Laws.cv.raw(rs)))), Laws.own.rows(rs),
+    cv.seal.rs(List.reverse(&2, T.Val, Laws.cv.raw(rs))),
+    Equal.trans(List<&2, T.Val>, List.reverse(&2, T.Val, cv.smap(List.reverse(&2, T.Val, Laws.cv.raw(rs)))),
+      List.reverse(&2, T.Val, List.reverse(&2, T.Val, cv.smap(Laws.cv.raw(rs)))), Laws.own.rows(rs),
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => List.reverse(&2, T.Val, zs),
+        cv.smap(List.reverse(&2, T.Val, Laws.cv.raw(rs))), List.reverse(&2, T.Val, cv.smap(Laws.cv.raw(rs))),
+        cv.smap.rev(Laws.cv.raw(rs), [])),
+      Equal.trans(List<&2, T.Val>, List.reverse(&2, T.Val, List.reverse(&2, T.Val, cv.smap(Laws.cv.raw(rs)))),
+        cv.smap(Laws.cv.raw(rs)), Laws.own.rows(rs), cv.rev2(cv.smap(Laws.cv.raw(rs))), hh)))
+
+# sealing the scanner's form of a well-formed list, value by value, gives
+# what own reads of it
+def cv.sm(
+  ys: List<&2, T.Val>,
+  rows: Bool,
+  +hw: {T.wf.go(ys, cv.wat(rows)) == True{} : Bool}
+) -> {cv.smap(Laws.cv.raw(ys)) == Laws.own.rows(ys) : List<&2, T.Val>}:
+  match ys:
+    case []:
+      {==}
+    case T.VStr{+aa} <> +tt:
+      match rows:
+        case False{}:
+          cv.sm.step(T.VStr{aa}, tt, {==}, cv.sm(tt, False{}, cv.wfi.tl(T.VStr{aa}, tt, hw)))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VStr{aa} <> tt)) == Laws.own.rows(T.VStr{aa} <> tt) : List<&2,
+            T.Val>}, hw)
+    case T.VSpan{+aa, +bb} <> +tt:
+      match rows:
+        case False{}:
+          cv.sm.step(T.VSpan{aa, bb}, tt, {==}, cv.sm(tt, False{}, cv.wfi.tl(T.VSpan{aa, bb}, tt, hw)))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VSpan{aa, bb} <> tt)) == Laws.own.rows(T.VSpan{aa,
+            bb} <> tt) : List<&2, T.Val>}, hw)
+    case T.VInt{+aa, +bb} <> +tt:
+      match rows:
+        case False{}:
+          cv.sm.step(T.VInt{aa, bb}, tt, {==}, cv.sm(tt, False{}, cv.wfi.tl(T.VInt{aa, bb}, tt, hw)))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VInt{aa, bb} <> tt)) == Laws.own.rows(T.VInt{aa,
+            bb} <> tt) : List<&2, T.Val>}, hw)
+    case T.VFlo{+aa, +bb} <> +tt:
+      match rows:
+        case False{}:
+          cv.sm.step(T.VFlo{aa, bb}, tt, {==}, cv.sm(tt, False{}, cv.wfi.tl(T.VFlo{aa, bb}, tt, hw)))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VFlo{aa, bb} <> tt)) == Laws.own.rows(T.VFlo{aa,
+            bb} <> tt) : List<&2, T.Val>}, hw)
+    case T.VBool{+aa} <> +tt:
+      match rows:
+        case False{}:
+          cv.sm.step(T.VBool{aa}, tt, {==}, cv.sm(tt, False{}, cv.wfi.tl(T.VBool{aa}, tt, hw)))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VBool{aa} <> tt)) == Laws.own.rows(T.VBool{aa} <> tt) : List<&2,
+            T.Val>}, hw)
+    case T.VWhen{+aa} <> +tt:
+      match rows:
+        case False{}:
+          cv.sm.step(T.VWhen{aa}, tt, {==}, cv.sm(tt, False{}, cv.wfi.tl(T.VWhen{aa}, tt, hw)))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VWhen{aa} <> tt)) == Laws.own.rows(T.VWhen{aa} <> tt) : List<&2,
+            T.Val>}, hw)
+    case T.VArr{+its} <> +tt:
+      match rows:
+        case False{}:
+          cv.sm.step(T.VArr{its}, tt, Equal.cong(List<&2, T.Val>, T.Val, zs => T.VArr{zs}, List.reverse(&2, T.Val,
+            T.rows.seal(Laws.cv.raw(its))), Laws.own.rows(its), cv.sra(its, cv.sm(its, False{}, cv.wfi.hd(T.VArr{its},
+            tt, hw)))), cv.sm(tt, False{}, cv.wfi.tl(T.VArr{its}, tt, hw)))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VArr{its} <> tt)) == Laws.own.rows(T.VArr{its} <> tt) : List<&2,
+            T.Val>}, hw)
+    case T.VInl{+rs} <> +tt:
+      match rows:
+        case False{}:
+          cv.sm.step(T.VInl{rs}, tt, Equal.cong(List<&2, T.Val>, T.Val, zs => T.VInl{zs}, T.rows.seal(List.reverse(&2,
+            T.Val, Laws.cv.raw(rs))), Laws.own.rows(rs), cv.sri(rs, cv.sm(rs, True{}, cv.wfi.hd(T.VInl{rs}, tt, hw)))),
+            cv.sm(tt, False{}, cv.wfi.tl(T.VInl{rs}, tt, hw)))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VInl{rs} <> tt)) == Laws.own.rows(T.VInl{rs} <> tt) : List<&2,
+            T.Val>}, hw)
+    case T.VHead{+aa, +bb} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VHead{aa, bb} <> tt)) == Laws.own.rows(T.VHead{aa,
+            bb} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VHead{aa, bb}, tt, hw))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VHead{aa, bb} <> tt)) == Laws.own.rows(T.VHead{aa,
+            bb} <> tt) : List<&2, T.Val>}, hw)
+    case T.VAot{+aa, +bb} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VAot{aa, bb} <> tt)) == Laws.own.rows(T.VAot{aa,
+            bb} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VAot{aa, bb}, tt, hw))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VAot{aa, bb} <> tt)) == Laws.own.rows(T.VAot{aa,
+            bb} <> tt) : List<&2, T.Val>}, hw)
+    case T.VAots{+aa, +bb} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VAots{aa, bb} <> tt)) == Laws.own.rows(T.VAots{aa,
+            bb} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VAots{aa, bb}, tt, hw))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VAots{aa, bb} <> tt)) == Laws.own.rows(T.VAots{aa,
+            bb} <> tt) : List<&2, T.Val>}, hw)
+    case T.VPair{+kk, T.VStr{+aa}} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VStr{aa}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VStr{aa}} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VPair{kk, T.VStr{aa}}, tt, hw))
+        case True{}:
+          cv.sm.step(T.VPair{kk, T.VStr{aa}}, tt, {==}, cv.sm(tt, True{}, cv.wfp.t(kk, T.VStr{aa}, tt, hw)))
+    case T.VPair{+kk, T.VSpan{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VSpan{aa, bb}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VSpan{aa, bb}} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VPair{kk, T.VSpan{aa, bb}}, tt, hw))
+        case True{}:
+          cv.sm.step(T.VPair{kk, T.VSpan{aa, bb}}, tt, {==}, cv.sm(tt, True{}, cv.wfp.t(kk, T.VSpan{aa, bb}, tt, hw)))
+    case T.VPair{+kk, T.VInt{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VInt{aa, bb}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VInt{aa, bb}} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VPair{kk, T.VInt{aa, bb}}, tt, hw))
+        case True{}:
+          cv.sm.step(T.VPair{kk, T.VInt{aa, bb}}, tt, {==}, cv.sm(tt, True{}, cv.wfp.t(kk, T.VInt{aa, bb}, tt, hw)))
+    case T.VPair{+kk, T.VFlo{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VFlo{aa, bb}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VFlo{aa, bb}} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VPair{kk, T.VFlo{aa, bb}}, tt, hw))
+        case True{}:
+          cv.sm.step(T.VPair{kk, T.VFlo{aa, bb}}, tt, {==}, cv.sm(tt, True{}, cv.wfp.t(kk, T.VFlo{aa, bb}, tt, hw)))
+    case T.VPair{+kk, T.VBool{+aa}} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VBool{aa}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VBool{aa}} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VPair{kk, T.VBool{aa}}, tt, hw))
+        case True{}:
+          cv.sm.step(T.VPair{kk, T.VBool{aa}}, tt, {==}, cv.sm(tt, True{}, cv.wfp.t(kk, T.VBool{aa}, tt, hw)))
+    case T.VPair{+kk, T.VWhen{+aa}} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VWhen{aa}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VWhen{aa}} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VPair{kk, T.VWhen{aa}}, tt, hw))
+        case True{}:
+          cv.sm.step(T.VPair{kk, T.VWhen{aa}}, tt, {==}, cv.sm(tt, True{}, cv.wfp.t(kk, T.VWhen{aa}, tt, hw)))
+    case T.VPair{+kk, T.VArr{+its}} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VArr{its}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VArr{its}} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VPair{kk, T.VArr{its}}, tt, hw))
+        case True{}:
+          cv.sm.step(T.VPair{kk, T.VArr{its}}, tt, Equal.cong(List<&2, T.Val>, T.Val, zs => T.VPair{kk, T.VArr{zs}},
+            List.reverse(&2, T.Val, T.rows.seal(Laws.cv.raw(its))), Laws.own.rows(its), cv.sra(its, cv.sm(its, False{},
+            cv.wfp.v(kk, T.VArr{its}, tt, hw)))), cv.sm(tt, True{}, cv.wfp.t(kk, T.VArr{its}, tt, hw)))
+    case T.VPair{+kk, T.VInl{+rs}} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VInl{rs}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VInl{rs}} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VPair{kk, T.VInl{rs}}, tt, hw))
+        case True{}:
+          cv.sm.step(T.VPair{kk, T.VInl{rs}}, tt, Equal.cong(List<&2, T.Val>, T.Val, zs => T.VPair{kk, T.VInl{zs}},
+            T.rows.seal(List.reverse(&2, T.Val, Laws.cv.raw(rs))), Laws.own.rows(rs), cv.sri(rs, cv.sm(rs, True{},
+            cv.wfp.v(kk, T.VInl{rs}, tt, hw)))), cv.sm(tt, True{}, cv.wfp.t(kk, T.VInl{rs}, tt, hw)))
+    case T.VPair{+kk, T.VHead{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VHead{aa, bb}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VHead{aa, bb}} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VPair{kk, T.VHead{aa, bb}}, tt, hw))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VHead{aa, bb}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VHead{aa, bb}} <> tt) : List<&2, T.Val>}, cv.wfp.v(kk, T.VHead{aa, bb}, tt, hw))
+    case T.VPair{+kk, T.VAot{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VAot{aa, bb}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VAot{aa, bb}} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VPair{kk, T.VAot{aa, bb}}, tt, hw))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VAot{aa, bb}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VAot{aa, bb}} <> tt) : List<&2, T.Val>}, cv.wfp.v(kk, T.VAot{aa, bb}, tt, hw))
+    case T.VPair{+kk, T.VAots{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VAots{aa, bb}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VAots{aa, bb}} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VPair{kk, T.VAots{aa, bb}}, tt, hw))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VAots{aa, bb}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VAots{aa, bb}} <> tt) : List<&2, T.Val>}, cv.wfp.v(kk, T.VAots{aa, bb}, tt, hw))
+    case T.VPair{+kk, T.VPair{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VPair{aa, bb}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VPair{aa, bb}} <> tt) : List<&2, T.Val>}, cv.wfi.hd(T.VPair{kk, T.VPair{aa, bb}}, tt, hw))
+        case True{}:
+          Eq.bit.absurd(&2, {cv.smap(Laws.cv.raw(T.VPair{kk, T.VPair{aa, bb}} <> tt)) == Laws.own.rows(T.VPair{kk,
+            T.VPair{aa, bb}} <> tt) : List<&2, T.Val>}, cv.wfp.v(kk, T.VPair{aa, bb}, tt, hw))
+
+# The document of one pair. render writes the key, " = ", the value's text
+# and a newline, and nothing in the pass that writes tables; parse reads the
+# key and then the value (value_reads_back's reader), and the document it
+# ends with, sealed and read out, is the document render was given, read out.
+
+# the pass that writes tables writes nothing for a pair of a value that is
+# no table
+def rv.tabs(
+  +kk: String,
+  vv: T.Val,
+  hv: {Laws.cv.wf(vv) == True{} : Bool}
+) -> {T.render.pass([T.VPair{kk, vv}], "\n", True{}, True{}) == "" : String}:
+  match vv:
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{aa, bb}:
+      Eq.bit.absurd(&2, {T.render.pass([T.VPair{kk, T.VHead{aa, bb}}], "\n", True{}, True{}) == "" : String}, hv)
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{aa, bb}:
+      Eq.bit.absurd(&2, {T.render.pass([T.VPair{kk, T.VAots{aa, bb}}], "\n", True{}, True{}) == "" : String}, hv)
+    case T.VPair{_a, _b}:
+      {==}
+
+# the text of a document of one pair of such a value: the key, " = ", the
+# value's text and a newline
+def rv.text(
+  +ee: String,
+  +kk: String,
+  +vv: T.Val,
+  +hv: {Laws.cv.wf(vv) == True{} : Bool},
+  ek: {T.bare(kk) == True{} : Bool}
+) -> {T.render(T.Doc{ee, [T.VPair{kk, vv}]}) == String.append(kk, SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(vv,
+  "\n")}}}) : String}:
+  +yy = {SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(vv, "\n")}}} : String}
+  Equal.trans(String, T.render(T.Doc{ee, [T.VPair{kk, vv}]}),
+    String.append(String.append(T.key(kk), yy), T.render.pass([T.VPair{kk, vv}], "\n", True{}, True{})),
+    String.append(kk, yy),
+    Equal.cong(String, String, xs => String.append(xs, T.render.pass([T.VPair{kk, vv}], "\n", True{}, True{})),
+      T.render.pass([T.VPair{kk, vv}], "\n", True{}, False{}), String.append(T.key(kk), yy),
+      Laws.pass_value(kk, vv, hv, [], "\n", True{})),
+    Equal.trans(String, String.append(String.append(T.key(kk), yy), T.render.pass([T.VPair{kk, vv}], "\n", True{},
+      True{})), String.append(String.append(T.key(kk), yy), ""), String.append(kk, yy),
+      Equal.cong(String, String, xs => String.append(String.append(T.key(kk), yy), xs),
+        T.render.pass([T.VPair{kk, vv}], "\n", True{}, True{}), "", rv.tabs(kk, vv, hv)),
+      Equal.trans(String, String.append(String.append(T.key(kk), yy), ""), String.append(T.key(kk), yy),
+        String.append(kk, yy), Eq.append_nil(String.append(T.key(kk), yy)),
+        Equal.cong(Bool, String, bb => String.append(T.key.go(bb, kk), yy), T.bare(kk), True{}, ek))))
+
+# for a pair of a value that is no table, the root's verdict is an inline
+# table's
+def rv.r2i(
+  +kk: String,
+  vv: T.Val,
+  hv: {Laws.cv.wf(vv) == True{} : Bool},
+  ww: {T.wf.go([T.VPair{kk, vv}], T.WfRows{""}) == True{} : Bool}
+) -> {T.wf.go([T.VPair{kk, vv}], T.WfInl{}) == True{} : Bool}:
+  match vv:
+    case T.VStr{_a}:
+      ww
+    case T.VSpan{_a, _b}:
+      ww
+    case T.VInt{_a, _b}:
+      ww
+    case T.VFlo{_a, _b}:
+      ww
+    case T.VBool{_a}:
+      ww
+    case T.VWhen{_a}:
+      ww
+    case T.VArr{_a}:
+      ww
+    case T.VInl{_a}:
+      ww
+    case T.VHead{aa, bb}:
+      Eq.bit.absurd(&2, {T.wf.go([T.VPair{kk, T.VHead{aa, bb}}], T.WfInl{}) == True{} : Bool}, hv)
+    case T.VAot{aa, bb}:
+      Eq.bit.absurd(&2, {T.wf.go([T.VPair{kk, T.VAot{aa, bb}}], T.WfInl{}) == True{} : Bool}, hv)
+    case T.VAots{aa, bb}:
+      Eq.bit.absurd(&2, {T.wf.go([T.VPair{kk, T.VAots{aa, bb}}], T.WfInl{}) == True{} : Bool}, hv)
+    case T.VPair{aa, bb}:
+      Eq.bit.absurd(&2, {T.wf.go([T.VPair{kk, T.VPair{aa, bb}}], T.WfInl{}) == True{} : Bool}, hv)
+
+# the root's rows once the pair is put, sealed, read out as the pair render
+# was given
+def rv.own(
+  +kk: String,
+  +vv: T.Val,
+  +ww: T.Val,
+  +hh: {Laws.cv.own1(vv) == Laws.cv.raw1(ww) : T.Val},
+  +hw: {Laws.cv.wf(ww) == True{} : Bool},
+  hi: {T.wf.go([T.VPair{kk, ww}], T.WfInl{}) == True{} : Bool}
+) -> {Laws.own.rows(T.rows.seal([T.VPair{kk, vv}])) == Laws.own.rows([T.VPair{kk, ww}]) : List<&2, T.Val>}:
+  +p1 = {T.VPair{kk, vv} : T.Val}
+  +p2 = {T.VPair{kk, ww} : T.Val}
+  Equal.trans(List<&2, T.Val>, Laws.own.rows(T.rows.seal([p1])), T.rows.seal(Laws.own.rows([p1])),
+    Laws.own.rows([p2]), cv.osl([p1]),
+    Equal.trans(List<&2, T.Val>, T.rows.seal(Laws.own.rows([p1])), T.rows.seal(Laws.cv.raw([p2])), Laws.own.rows([p2]),
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.rows.seal(zs), Laws.own.rows([p1]), Laws.cv.raw([p2]),
+        Equal.trans(List<&2, T.Val>, Laws.own.rows([p1]), [Laws.cv.own1(p1)], Laws.cv.raw([p2]),
+          cv.own.cons(p1, []),
+          Equal.trans(List<&2, T.Val>, [Laws.cv.own1(p1)], [Laws.cv.raw1(p2)], Laws.cv.raw([p2]),
+            Equal.cong(T.Val, List<&2, T.Val>, yy => [yy], Laws.cv.own1(p1), Laws.cv.raw1(p2),
+              cv.lift(kk, vv, ww, hh, hw)),
+            Equal.sym(List<&2, T.Val>, Laws.cv.raw([p2]), [Laws.cv.raw1(p2)], cv.raw.cons(p2, []))))),
+      Equal.trans(List<&2, T.Val>, T.rows.seal(Laws.cv.raw([p2])), List.reverse(&2, T.Val, cv.smap(Laws.cv.raw([p2]))),
+        Laws.own.rows([p2]), cv.seal.rs(Laws.cv.raw([p2])),
+        Equal.trans(List<&2, T.Val>, List.reverse(&2, T.Val, cv.smap(Laws.cv.raw([p2]))),
+          List.reverse(&2, T.Val, Laws.own.rows([p2])), Laws.own.rows([p2]),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => List.reverse(&2, T.Val, zs), cv.smap(Laws.cv.raw([p2])),
+            Laws.own.rows([p2]), cv.sm([p2], True{}, hi)),
+          Equal.trans(List<&2, T.Val>, List.reverse(&2, T.Val, Laws.own.rows([p2])), [Laws.cv.own1(p2)],
+            Laws.own.rows([p2]),
+            Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => List.reverse(&2, T.Val, zs), Laws.own.rows([p2]),
+              [Laws.cv.own1(p2)], cv.own.cons(p2, [])),
+            Equal.sym(List<&2, T.Val>, Laws.own.rows([p2]), [Laws.cv.own1(p2)], cv.own.cons(p2, [])))))))
+
+# the root's rows once the pair is put, sealed, are the same as the pair
+# render was given, both ways
+def rv.same(
+  +ee: String,
+  +kk: String,
+  +vv: T.Val,
+  +ww: T.Val,
+  +ho: {Laws.own.rows(T.rows.seal([T.VPair{kk, vv}])) == Laws.own.rows([T.VPair{kk, ww}]) : List<&2, T.Val>},
+  +w: {T.wf.go([T.VPair{kk, ww}], T.WfRows{""}) == True{} : Bool}
+) -> {Laws.same(T.Doc{"", T.rows.seal([T.VPair{kk, vv}])}, T.Doc{ee, [T.VPair{kk, ww}]}) == True{} : Bool}:
+  +rr = {T.rows.seal([T.VPair{kk, vv}]) : List<&2, T.Val>}
+  +pp = {[T.VPair{kk, ww}] : List<&2, T.Val>}
+  +self = {refl.rows(pp, wf.selfs(pp, T.WfRows{""}, w)) : {Laws.same.go(pp, pp) == True{} : Bool}}
+  and.tt(Laws.same.go(rr, pp), Laws.same.go(pp, rr),
+    Equal.trans(Bool, Laws.same.go(rr, pp), Laws.same.go(Laws.own.rows(rr), pp), True{},
+      Equal.sym(Bool, Laws.same.go(Laws.own.rows(rr), pp), Laws.same.go(rr, pp), own.l(rr, pp)),
+      Equal.trans(Bool, Laws.same.go(Laws.own.rows(rr), pp), Laws.same.go(Laws.own.rows(pp), pp), True{},
+        Equal.cong(List<&2, T.Val>, Bool, xs => Laws.same.go(xs, pp), Laws.own.rows(rr), Laws.own.rows(pp), ho),
+        Equal.trans(Bool, Laws.same.go(Laws.own.rows(pp), pp), Laws.same.go(pp, pp), True{}, own.l(pp, pp), self))),
+    Equal.trans(Bool, Laws.same.go(pp, rr), Laws.same.go(pp, Laws.own.rows(rr)), True{},
+      Equal.sym(Bool, Laws.same.go(pp, Laws.own.rows(rr)), Laws.same.go(pp, rr), own.r(pp, rr)),
+      Equal.trans(Bool, Laws.same.go(pp, Laws.own.rows(rr)), Laws.same.go(pp, Laws.own.rows(pp)), True{},
+        Equal.cong(List<&2, T.Val>, Bool, xs => Laws.same.go(pp, xs), Laws.own.rows(rr), Laws.own.rows(pp), ho),
+        Equal.trans(Bool, Laws.same.go(pp, Laws.own.rows(pp)), Laws.same.go(pp, pp), True{}, own.r(pp, pp), self))))
+
+# the claim the law makes of a document
+def rv.Ok(+dd: T.Doc, +d0: T.Doc) -> Type:
+  {Bool.and(String.is_empty(T.bad(dd)), Laws.same(dd, d0)) == True{} : Bool}
+
+# after the value, the newline ends the document, and the claim holds of it
+def rv.fin(
+  +ee: String,
+  +kk: String,
+  +vv: T.Val,
+  +ww: T.Val,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +hh: {Laws.cv.own1(vv) == Laws.cv.raw1(ww) : T.Val},
+  +hw: {Laws.cv.wf(ww) == True{} : Bool},
+  +w: {T.wf.go([T.VPair{kk, ww}], T.WfRows{""}) == True{} : Bool}
+) -> rv.Ok(T.doc.read("\n", T.MScan{T.take.top([], vv, "", [], [], [], [kk], bk, qk, un, lf, False{}, False{})}),
+  T.Doc{ee, [T.VPair{kk, ww}]}):
+  rv.same(ee, kk, vv, ww, rv.own(kk, vv, ww, hh, hw, rv.r2i(kk, ww, hw, w)), w)
+
+def Laws.render_parse_value_pair(e, k, ek, v, w, hv, hl):
+  match k:
+    case SNil{}:
+      Eq.bit.absurd(&1, rv.Ok(T.parse(T.render(T.Doc{e, [T.VPair{SNil{}, v}]})), T.Doc{e, [T.VPair{SNil{}, v}]}), ek)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          +kk = {SCon{Chr{xx}, tt} : String}
+          +d0 = {T.Doc{e, [T.VPair{kk, v}]} : T.Doc}
+          pp.step(dd => rv.Ok(dd, d0), T.parse(T.render(d0)),
+            T.doc.read(Laws.cv.tx(v, "\n"), T.MScan{cv.vp([], [], [], [kk], T.LTop{}, T.QBasic{}, [], 0, 0, False{})}),
+            Equal.trans(T.Doc, T.parse(T.render(d0)),
+              T.parse(String.append(kk, SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(v, "\n")}}})),
+              T.doc.read(Laws.cv.tx(v, "\n"), T.MScan{cv.vp([], [], [], [kk], T.LTop{}, T.QBasic{}, [], 0, 0,
+                False{})}),
+              Equal.cong(String, T.Doc, ss => T.parse(ss), T.render(d0),
+                String.append(kk, SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(v, "\n")}}}), rv.text(e, kk, v, hv, ek)),
+              kv.key2(xx, tt, Laws.cv.tx(v, "\n"), ek)),
+            cv.val(v, [], [], [], [kk], T.LTop{}, T.QBasic{}, [], 0, 0, False{}, "\n", dd => rv.Ok(dd, d0), hv,
+              hl)({==},
+              +vv => bk => qk => un => lf => ho => rv.fin(e, kk, vv, v, bk, qk, un, lf, ho, hv, w)))

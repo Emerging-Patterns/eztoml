@@ -3017,3 +3017,19 @@ law pass_value:
   {T.render.pass(T.VPair{k, v} <> rest, gap, trail, False{}) == String.append(T.key(k), SCon{' ', SCon{'=',
     SCon{' ', cv.tx(v, String.append(T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)),
     T.render.pass(rest, gap, trail, False{})))}}}) : String}
+
+# LAW: a document of one pair, a bare key and a value that is no table (a
+# scalar, a string, or an array or an inline table nested to any depth),
+# well-formed and with every string in it shorter than 2^32 characters, reads
+# back with no error as the same document
+# TOML-RT-1
+law render_parse_value_pair:
+  for +e: String
+  for +k: String
+  for +ek: {T.bare(k) == True{} : Bool}
+  for +v: T.Val
+  for w: {T.wf(T.Doc{e, [T.VPair{k, v}]}) == True{} : Bool}
+  for +hv: {cv.wf(v) == True{} : Bool}
+  for hl: {cv.short1(v) == True{} : Bool}
+  {Bool.and(String.is_empty(T.bad(T.parse(T.render(T.Doc{e, [T.VPair{k, v}]})))),
+    same(T.parse(T.render(T.Doc{e, [T.VPair{k, v}]})), T.Doc{e, [T.VPair{k, v}]})) == True{} : Bool}
