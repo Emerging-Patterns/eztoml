@@ -2152,3 +2152,47 @@ law aot_header_extends_array_reads_back:
     List.append(&2, String, segs, [k]), bk, qk, False{})}) == goal : T.Doc}
   {T.doc.read("[[" ++ T.tree.pre(tb.join(segs, ""), k) ++ "]]\n" ++ rest, T.MScan{hb.line(rows,
     heads, here, back, qkind, arrtab)}) == goal : T.Doc}
+
+# WP-S: a rendered string read back in any value position. render writes a
+# string as key.basic of its characters (TOML-STR-2); parse reads that text
+# back as those characters, as a span of the text or, once a character needs
+# an escape, as an owned string, which own reads alike. The laws below read
+# one string in each position a value takes: a root pair's value, an array
+# item and an inline table's pair. The string must be short: a span counts
+# its characters in a U32.
+
+# LAW: a basic string render writes reads back as its text in a root pair:
+# for every bare key k and every string s shorter than 2^32 characters,
+# k = key.basic(s) and a newline parse with no error to one pair named k
+# holding s
+# TOML-STR-1
+law basic_string_reads_back:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +s: String
+  for es: {short(s) == True{} : Bool}
+  {own(T.parse(String.append(k, String.append(" = ", String.append(T.key.basic(s), "\n")))))
+    == T.Doc{"", [T.VPair{k, T.VStr{s}}]} : T.Doc}
+
+# LAW: and as an array item: k = [key.basic(s)] and a newline parse with no
+# error to one pair named k holding an array of s
+# TOML-STR-1
+law basic_string_reads_back_in_array:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +s: String
+  for es: {short(s) == True{} : Bool}
+  {own(T.parse(String.append(k, String.append(" = [", String.append(T.key.basic(s), "]\n")))))
+    == T.Doc{"", [T.VPair{k, T.VArr{[T.VStr{s}]}}]} : T.Doc}
+
+# LAW: and as an inline table's value: k = {v = key.basic(s)} and a newline
+# parse with no error to one pair named k holding an inline table whose pair
+# v holds s
+# TOML-STR-1
+law basic_string_reads_back_in_inline_table:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +s: String
+  for es: {short(s) == True{} : Bool}
+  {own(T.parse(String.append(k, String.append(" = {v = ", String.append(T.key.basic(s), "}\n")))))
+    == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VStr{s}}]}}]} : T.Doc}
