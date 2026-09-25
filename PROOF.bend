@@ -46003,3 +46003,968 @@ def Laws.parse_render_parse(t, h_u, h_s, h_r, ok):
     Eq.and.right(String.is_empty(T.bad(T.parse(T.render(T.parse(t))))),
       Laws.same(T.parse(T.render(T.parse(t))), T.parse(t)), Laws.render_parse(T.parse(t), ww, h_r)),
     r2.half2(T.parse(t), ww, h_r))
+
+# KEY-3: a basic key segment read piece by piece. Every lemma takes the
+# segment's state by the bit hd (a key's LKeyQ, or a header's LHeadQ, as
+# WP0's qs does) with the stack, uni and left as parameters, since a key may
+# sit in an inline table and a string before it may leave uni and left
+# anywhere; each piece pushes the character it stands for, and the rest is
+# read from whatever back, uni and left the piece leaves.
+
+# a scanner inside a basic quoted segment, its characters so far reversed in
+# buf
+def k3.q(
+  hd: Bool,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  ps: List<&2, String>,
+  sk: List<&2, T.Ctx>,
+  ab: Bool,
+  bk: T.Lex,
+  un: U32,
+  lf: U32,
+  buf: List<&2, Char>
+) -> T.St:
+  T.St{"", rw, hs, he, ps, buf, qs.lex(hd), bk, T.QBasic{}, sk, T.HNone{}, un, lf, ab, False{}}
+
+# the rest of the text read from the segment with buf in its buffer, whatever
+# back, uni and left are
+def k3.Then(
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc
+) -> Type:
+  @b2: T.Lex -> @u2: U32 -> @l2: U32 ->
+    {T.doc.read(rest, T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, b2, u2, l2, buf)}) == goal : T.Doc}
+
+# a two-character escape pushes the character it stands for and leaves back
+# at the segment's state
+def k3.esc(
+  mm: Laws.KMark,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc,
+  ih: k3.Then(hd, rw, hs, he, ps, sk, ab, Laws.k3.mark.dec(mm) <> buf, rest, goal)
+) -> {T.doc.read(SCon{'\\', SCon{Laws.k3.mark.char(mm), rest}}, T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un,
+  lf, buf)}) == goal : T.Doc}:
+  match mm hd:
+    case Laws.KmQuote{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmQuote{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+    case Laws.KmBack{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmBack{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+    case Laws.KmB{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmB{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+    case Laws.KmF{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmF{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+    case Laws.KmN{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmN{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+    case Laws.KmR{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmR{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+    case Laws.KmT{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmT{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+
+# a raw tab is pushed as itself
+def k3.tab(
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc,
+  ih: k3.Then(hd, rw, hs, he, ps, sk, ab, Chr{9} <> buf, rest, goal)
+) -> {T.doc.read(SCon{Chr{9}, rest}, T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)}) == goal
+  : T.Doc}:
+  match hd:
+    case False{}:
+      ih(bk, un, lf)
+    case True{}:
+      ih(bk, un, lf)
+
+# the fast step of a character in the segment is the segment's full step
+def k3.fast(
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>
+) -> {T.read.fast(k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}) == T.read.once2(T.lex.kq.go(
+  U32.is_eq(uu, 34), U32.is_eq(uu, 92), True{}, Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), k3.q(hd, rw, hs, he, ps,
+  sk, ab, bk, un, lf, buf), Chr{uu}, qs.close(hd), qs.lex(hd))) : T.St}:
+  match hd:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+# the segment's state is no quote that opens a string
+def k3.wrap(
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>
+) -> {T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)} == T.doc.wrap(k3.q(hd, rw, hs, he, ps, sk, ab, bk,
+  un, lf, buf)) : T.Mode}:
+  match hd:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+# a character that is no control is pushed: str.bad passes it
+def k3.char(
+  ctl: Bool,
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  hc: {ctl == False{} : Bool}
+) -> {T.read.once2(T.lex.kq.char.go(T.str.bad.go(ctl, U32.is_eq(uu, 9), Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)),
+  False{}), k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}, qs.lex(hd)))
+  == k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf) : T.St}:
+  match ctl:
+    case False{}:
+      match hd:
+        case False{}:
+          {==}
+        case True{}:
+          {==}
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.char.go(T.str.bad.go(True{}, U32.is_eq(uu, 9),
+        Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), False{}), k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf),
+        Chr{uu}, qs.lex(hd))) == k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf) : T.St}, hc)
+
+# a character that is no quote, no backslash and no newline is no closer and
+# no escape
+def k3.go(
+  quote: Bool,
+  bs: Bool,
+  nl: Bool,
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  hq: {quote == False{} : Bool},
+  hb: {bs == False{} : Bool},
+  hn: {nl == False{} : Bool},
+  hc: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
+) -> {T.read.once2(T.lex.kq.go(quote, bs, True{}, nl, k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu},
+  qs.close(hd), qs.lex(hd))) == k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf) : T.St}:
+  match quote bs nl:
+    case False{} False{} False{}:
+      k3.char(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), uu, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, hc)
+    case True{} bb nn:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(True{}, bb, True{}, nn, k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf,
+        buf), Chr{uu}, qs.close(hd), qs.lex(hd))) == k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)
+        : T.St}, hq)
+    case False{} True{} nn:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(False{}, True{}, True{}, nn, k3.q(hd, rw, hs, he, ps, sk, ab, bk, un,
+        lf, buf), Chr{uu}, qs.close(hd), qs.lex(hd))) == k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)
+        : T.St}, hb)
+    case False{} False{} True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(False{}, False{}, True{}, True{}, k3.q(hd, rw, hs, he, ps, sk, ab,
+        bk, un, lf, buf), Chr{uu}, qs.close(hd), qs.lex(hd))) == k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf,
+        Chr{uu} <> buf) : T.St}, hn)
+
+# the fast step pushes a character
+def k3.Fast(
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>
+) -> Type:
+  {k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)
+    == T.read.fast(k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}) : T.St}
+
+# the scan mode sends such a character to the fast step, and an apostrophe
+# comes back from doc.wrap in the segment's state
+def k3.scq(
+  dq: Bool,
+  sq: Bool,
+  cr: Bool,
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  hq: {dq == False{} : Bool},
+  hr: {cr == False{} : Bool},
+  fast: k3.Fast(uu, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)
+) -> {T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)}
+  == T.doc.scan.q(dq, sq, cr, k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}) : T.Mode}:
+  match dq sq cr:
+    case True{} s2 c2:
+      Eq.bit.absurd2(&2, {T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)}
+        == T.doc.scan.q(True{}, s2, c2, k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}) : T.Mode}, hq)
+    case False{} True{} _c:
+      %fast : {T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)} == T.doc.wrap(_) : T.Mode}
+      k3.wrap(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)
+    case False{} False{} True{}:
+      Eq.bit.absurd2(&2, {T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)}
+        == T.doc.scan.q(False{}, False{}, True{}, k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu})
+        : T.Mode}, hr)
+    case False{} False{} False{}:
+      %fast : {T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)} == T.MScan{_} : T.Mode}
+      {==}
+
+# a character written as itself that is no quote, no backslash and no
+# control is pushed, and back, uni and left stay
+def k3.plain(
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc,
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool},
+  ih: k3.Then(hd, rw, hs, he, ps, sk, ab, Chr{uu} <> buf, rest, goal)
+) -> {T.doc.read(SCon{Chr{uu}, rest}, T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)}) == goal : T.Doc}:
+  +e10 = {ctl.off(uu, 10, ec, {==}) : {U32.is_eq(uu, 10) == False{} : Bool}}
+  +e13 = {ctl.off(uu, 13, ec, {==}) : {U32.is_eq(uu, 13) == False{} : Bool}}
+  fast = {Equal.sym(T.St, T.read.fast(k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}),
+    k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf),
+    Equal.trans(T.St, T.read.fast(k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}),
+    T.read.once2(T.lex.kq.go(U32.is_eq(uu, 34), U32.is_eq(uu, 92), True{}, Bool.or(U32.is_eq(uu, 10),
+    U32.is_eq(uu, 13)), k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}, qs.close(hd), qs.lex(hd))),
+    k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf),
+    k3.fast(uu, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf),
+    k3.go(U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), uu, hd, rw, hs, he,
+      ps, sk, ab, bk, un, lf, buf, e34, e92, or.ff(U32.is_eq(uu, 10), U32.is_eq(uu, 13), e10, e13), ec)))
+    : k3.Fast(uu, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)}
+  %k3.scq(U32.is_eq(uu, 34), U32.is_eq(uu, 39), U32.is_eq(uu, 13), uu, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf,
+    e34, e13, fast) : {T.doc.read(rest, _) == goal : T.Doc}
+  ih(bk, un, lf)
+
+# KEY-3: a \u or \U escape's digits, read for every digit at once. dig.val
+# is computed on a digit's character alone (k3.hx.dv, k3.hx.ok, one case per
+# digit), and the number read so far and the digits left stay symbolic, so
+# every code point goes through the same few lemmas.
+
+# the state that reads an escape's hexadecimal digits: a key's LKeyU, or a
+# header's LHeadU
+def k3.ulex(hd: Bool) -> T.Lex:
+  match hd:
+    case False{}:
+      T.LKeyU{}
+    case True{}:
+      T.LHeadU{}
+
+# a scanner reading an escape's digits: the number read so far in uni, the
+# digits still to read in left
+def k3.u(
+  hd: Bool,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  ps: List<&2, String>,
+  sk: List<&2, T.Ctx>,
+  ab: Bool,
+  bk: T.Lex,
+  un: U32,
+  lf: U32,
+  buf: List<&2, Char>
+) -> T.St:
+  T.St{"", rw, hs, he, ps, buf, k3.ulex(hd), bk, T.QBasic{}, sk, T.HNone{}, un, lf, ab, False{}}
+
+
+# a hexadecimal digit's character is one dig.val reads as the digit's value
+def k3.hx.dv(hx: Laws.KHex) -> {Laws.k3.hex.val(hx) == T.dig.val(Laws.k3.hex.char(hx)) : U32}:
+  match hx:
+    case Laws.Kx0{}:
+      {==}
+    case Laws.Kx1{}:
+      {==}
+    case Laws.Kx2{}:
+      {==}
+    case Laws.Kx3{}:
+      {==}
+    case Laws.Kx4{}:
+      {==}
+    case Laws.Kx5{}:
+      {==}
+    case Laws.Kx6{}:
+      {==}
+    case Laws.Kx7{}:
+      {==}
+    case Laws.Kx8{}:
+      {==}
+    case Laws.Kx9{}:
+      {==}
+    case Laws.KxA{True{}}:
+      {==}
+    case Laws.KxA{False{}}:
+      {==}
+    case Laws.KxB{True{}}:
+      {==}
+    case Laws.KxB{False{}}:
+      {==}
+    case Laws.KxC{True{}}:
+      {==}
+    case Laws.KxC{False{}}:
+      {==}
+    case Laws.KxD{True{}}:
+      {==}
+    case Laws.KxD{False{}}:
+      {==}
+    case Laws.KxE{True{}}:
+      {==}
+    case Laws.KxE{False{}}:
+      {==}
+    case Laws.KxF{True{}}:
+      {==}
+    case Laws.KxF{False{}}:
+      {==}
+
+# and one dig.ok takes for a digit of base 16
+def k3.hx.ok(hx: Laws.KHex) -> {True{} == T.dig.ok(T.dig.val(Laws.k3.hex.char(hx)), 16) : Bool}:
+  match hx:
+    case Laws.Kx0{}:
+      {==}
+    case Laws.Kx1{}:
+      {==}
+    case Laws.Kx2{}:
+      {==}
+    case Laws.Kx3{}:
+      {==}
+    case Laws.Kx4{}:
+      {==}
+    case Laws.Kx5{}:
+      {==}
+    case Laws.Kx6{}:
+      {==}
+    case Laws.Kx7{}:
+      {==}
+    case Laws.Kx8{}:
+      {==}
+    case Laws.Kx9{}:
+      {==}
+    case Laws.KxA{True{}}:
+      {==}
+    case Laws.KxA{False{}}:
+      {==}
+    case Laws.KxB{True{}}:
+      {==}
+    case Laws.KxB{False{}}:
+      {==}
+    case Laws.KxC{True{}}:
+      {==}
+    case Laws.KxC{False{}}:
+      {==}
+    case Laws.KxD{True{}}:
+      {==}
+    case Laws.KxD{False{}}:
+      {==}
+    case Laws.KxE{True{}}:
+      {==}
+    case Laws.KxE{False{}}:
+      {==}
+    case Laws.KxF{True{}}:
+      {==}
+    case Laws.KxF{False{}}:
+      {==}
+
+# the scan mode sends a hexadecimal digit to the fast step
+def k3.hx.scan(
+  hx: Laws.KHex,
+  st: T.St
+) -> {T.MScan{T.read.fast(st, Laws.k3.hex.char(hx))} == T.doc.scan(st, Laws.k3.hex.char(hx)) : T.Mode}:
+  match hx:
+    case Laws.Kx0{}:
+      {==}
+    case Laws.Kx1{}:
+      {==}
+    case Laws.Kx2{}:
+      {==}
+    case Laws.Kx3{}:
+      {==}
+    case Laws.Kx4{}:
+      {==}
+    case Laws.Kx5{}:
+      {==}
+    case Laws.Kx6{}:
+      {==}
+    case Laws.Kx7{}:
+      {==}
+    case Laws.Kx8{}:
+      {==}
+    case Laws.Kx9{}:
+      {==}
+    case Laws.KxA{True{}}:
+      {==}
+    case Laws.KxA{False{}}:
+      {==}
+    case Laws.KxB{True{}}:
+      {==}
+    case Laws.KxB{False{}}:
+      {==}
+    case Laws.KxC{True{}}:
+      {==}
+    case Laws.KxC{False{}}:
+      {==}
+    case Laws.KxD{True{}}:
+      {==}
+    case Laws.KxD{False{}}:
+      {==}
+    case Laws.KxE{True{}}:
+      {==}
+    case Laws.KxE{False{}}:
+      {==}
+    case Laws.KxF{True{}}:
+      {==}
+    case Laws.KxF{False{}}:
+      {==}
+
+# a digit that is not the last one: it joins the number, and one digit fewer
+# is left
+def k3.hx.mid(
+  +hx: Laws.KHex,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  el: {U32.is_eq(lf, 1) == False{} : Bool}
+) -> {k3.u(hd, rw, hs, he, ps, sk, ab, bk, Laws.k3.hex.acc(un, hx), U32.sub(lf, 1), buf)
+  == T.read.fast(k3.u(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Laws.k3.hex.char(hx)) : T.St}:
+  match hd:
+    case False{}:
+      %k3.hx.ok(hx) : {k3.u(False{}, rw, hs, he, ps, sk, ab, bk, Laws.k3.hex.acc(un, hx), U32.sub(lf, 1), buf)
+        == T.read.once2(T.uni.go(_, k3.u(False{}, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Laws.k3.hex.char(hx),
+        T.LKeyQ{}, un, lf)) : T.St}
+      %k3.hx.dv(hx) : {k3.u(False{}, rw, hs, he, ps, sk, ab, bk, Laws.k3.hex.acc(un, hx), U32.sub(lf, 1), buf)
+        == T.read.once2(T.uni.next(U32.is_eq(lf, 1), k3.u(False{}, rw, hs, he, ps, sk, ab, bk, un, lf, buf),
+        U32.add(U32.mul(un, 16), _), T.LKeyQ{}, lf)) : T.St}
+      %Equal.sym(Bool, U32.is_eq(lf, 1), False{}, el) : {k3.u(False{}, rw, hs, he, ps, sk, ab, bk,
+        Laws.k3.hex.acc(un, hx), U32.sub(lf, 1), buf) == T.read.once2(T.uni.next(_, k3.u(False{}, rw, hs, he, ps,
+        sk, ab, bk, un, lf, buf), Laws.k3.hex.acc(un, hx), T.LKeyQ{}, lf)) : T.St}
+      {==}
+    case True{}:
+      %k3.hx.ok(hx) : {k3.u(True{}, rw, hs, he, ps, sk, ab, bk, Laws.k3.hex.acc(un, hx), U32.sub(lf, 1), buf)
+        == T.read.once2(T.uni.go(_, k3.u(True{}, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Laws.k3.hex.char(hx),
+        T.LHeadQ{}, un, lf)) : T.St}
+      %k3.hx.dv(hx) : {k3.u(True{}, rw, hs, he, ps, sk, ab, bk, Laws.k3.hex.acc(un, hx), U32.sub(lf, 1), buf)
+        == T.read.once2(T.uni.next(U32.is_eq(lf, 1), k3.u(True{}, rw, hs, he, ps, sk, ab, bk, un, lf, buf),
+        U32.add(U32.mul(un, 16), _), T.LHeadQ{}, lf)) : T.St}
+      %Equal.sym(Bool, U32.is_eq(lf, 1), False{}, el) : {k3.u(True{}, rw, hs, he, ps, sk, ab, bk,
+        Laws.k3.hex.acc(un, hx), U32.sub(lf, 1), buf) == T.read.once2(T.uni.next(_, k3.u(True{}, rw, hs, he, ps,
+        sk, ab, bk, un, lf, buf), Laws.k3.hex.acc(un, hx), T.LHeadQ{}, lf)) : T.St}
+      {==}
+
+# the last digit: the number is a Unicode scalar value, pushed as the
+# character, and the segment's state is back with uni and left at 0
+def k3.hx.last(
+  +hx: Laws.KHex,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  el: {U32.is_eq(lf, 1) == True{} : Bool},
+  eo: {Laws.k3.scalar(Laws.k3.hex.acc(un, hx)) == True{} : Bool}
+) -> {k3.q(hd, rw, hs, he, ps, sk, ab, bk, 0, 0, Chr{Laws.k3.hex.acc(un, hx)} <> buf)
+  == T.read.fast(k3.u(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Laws.k3.hex.char(hx)) : T.St}:
+  match hd:
+    case False{}:
+      %k3.hx.ok(hx) : {k3.q(False{}, rw, hs, he, ps, sk, ab, bk, 0, 0, Chr{Laws.k3.hex.acc(un, hx)} <> buf)
+        == T.read.once2(T.uni.go(_, k3.u(False{}, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Laws.k3.hex.char(hx),
+        T.LKeyQ{}, un, lf)) : T.St}
+      %k3.hx.dv(hx) : {k3.q(False{}, rw, hs, he, ps, sk, ab, bk, 0, 0, Chr{Laws.k3.hex.acc(un, hx)} <> buf)
+        == T.read.once2(T.uni.next(U32.is_eq(lf, 1), k3.u(False{}, rw, hs, he, ps, sk, ab, bk, un, lf, buf),
+        U32.add(U32.mul(un, 16), _), T.LKeyQ{}, lf)) : T.St}
+      %Equal.sym(Bool, U32.is_eq(lf, 1), True{}, el) : {k3.q(False{}, rw, hs, he, ps, sk, ab, bk, 0, 0,
+        Chr{Laws.k3.hex.acc(un, hx)} <> buf) == T.read.once2(T.uni.next(_, k3.u(False{}, rw, hs, he, ps, sk, ab, bk,
+        un, lf, buf), Laws.k3.hex.acc(un, hx), T.LKeyQ{}, lf)) : T.St}
+      %Equal.sym(Bool, T.uni.ok(Laws.k3.hex.acc(un, hx)), True{}, eo) : {k3.q(False{}, rw, hs, he, ps, sk, ab, bk,
+        0, 0, Chr{Laws.k3.hex.acc(un, hx)} <> buf) == T.read.once2(T.uni.finish(_, k3.u(False{}, rw, hs, he, ps, sk,
+        ab, bk, un, lf, buf), Laws.k3.hex.acc(un, hx), T.LKeyQ{})) : T.St}
+      {==}
+    case True{}:
+      %k3.hx.ok(hx) : {k3.q(True{}, rw, hs, he, ps, sk, ab, bk, 0, 0, Chr{Laws.k3.hex.acc(un, hx)} <> buf)
+        == T.read.once2(T.uni.go(_, k3.u(True{}, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Laws.k3.hex.char(hx),
+        T.LHeadQ{}, un, lf)) : T.St}
+      %k3.hx.dv(hx) : {k3.q(True{}, rw, hs, he, ps, sk, ab, bk, 0, 0, Chr{Laws.k3.hex.acc(un, hx)} <> buf)
+        == T.read.once2(T.uni.next(U32.is_eq(lf, 1), k3.u(True{}, rw, hs, he, ps, sk, ab, bk, un, lf, buf),
+        U32.add(U32.mul(un, 16), _), T.LHeadQ{}, lf)) : T.St}
+      %Equal.sym(Bool, U32.is_eq(lf, 1), True{}, el) : {k3.q(True{}, rw, hs, he, ps, sk, ab, bk, 0, 0,
+        Chr{Laws.k3.hex.acc(un, hx)} <> buf) == T.read.once2(T.uni.next(_, k3.u(True{}, rw, hs, he, ps, sk, ab, bk,
+        un, lf, buf), Laws.k3.hex.acc(un, hx), T.LHeadQ{}, lf)) : T.St}
+      %Equal.sym(Bool, T.uni.ok(Laws.k3.hex.acc(un, hx)), True{}, eo) : {k3.q(True{}, rw, hs, he, ps, sk, ab, bk,
+        0, 0, Chr{Laws.k3.hex.acc(un, hx)} <> buf) == T.read.once2(T.uni.finish(_, k3.u(True{}, rw, hs, he, ps, sk,
+        ab, bk, un, lf, buf), Laws.k3.hex.acc(un, hx), T.LHeadQ{})) : T.St}
+      {==}
+
+# the digits an escape reads: eight when lg, four otherwise
+def k3.hx.n(lg: Bool) -> U32:
+  match lg:
+    case True{}:
+      8
+    case False{}:
+      4
+
+# the letter after its backslash
+def k3.hx.u(lg: Bool) -> Char:
+  match lg:
+    case True{}:
+      'U'
+    case False{}:
+      'u'
+
+# a digit that is not the last one, read from the text
+def k3.hx.rmid(
+  +hx: Laws.KHex,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  el: {U32.is_eq(lf, 1) == False{} : Bool}
+) -> {T.doc.read(rest, T.MScan{k3.u(hd, rw, hs, he, ps, sk, ab, bk, Laws.k3.hex.acc(un, hx), U32.sub(lf, 1), buf)})
+  == T.doc.read(SCon{Laws.k3.hex.char(hx), rest}, T.MScan{k3.u(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)})
+  : T.Doc}:
+  %k3.hx.scan(hx, k3.u(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)) : {T.doc.read(rest, T.MScan{k3.u(hd, rw, hs, he,
+    ps, sk, ab, bk, Laws.k3.hex.acc(un, hx), U32.sub(lf, 1), buf)}) == T.doc.read(rest, _) : T.Doc}
+  %k3.hx.mid(hx, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, el) : {T.doc.read(rest, T.MScan{k3.u(hd, rw, hs, he,
+    ps, sk, ab, bk, Laws.k3.hex.acc(un, hx), U32.sub(lf, 1), buf)}) == T.doc.read(rest, T.MScan{_}) : T.Doc}
+  {==}
+
+# the last digit, read from the text
+def k3.hx.rlast(
+  +hx: Laws.KHex,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  el: {U32.is_eq(lf, 1) == True{} : Bool},
+  eo: {Laws.k3.scalar(Laws.k3.hex.acc(un, hx)) == True{} : Bool}
+) -> {T.doc.read(rest, T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, 0, 0, Chr{Laws.k3.hex.acc(un, hx)} <> buf)})
+  == T.doc.read(SCon{Laws.k3.hex.char(hx), rest}, T.MScan{k3.u(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)})
+  : T.Doc}:
+  %k3.hx.scan(hx, k3.u(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)) : {T.doc.read(rest, T.MScan{k3.q(hd, rw, hs, he,
+    ps, sk, ab, bk, 0, 0, Chr{Laws.k3.hex.acc(un, hx)} <> buf)}) == T.doc.read(rest, _) : T.Doc}
+  %k3.hx.last(hx, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, el, eo) : {T.doc.read(rest, T.MScan{k3.q(hd, rw, hs,
+    he, ps, sk, ab, bk, 0, 0, Chr{Laws.k3.hex.acc(un, hx)} <> buf)}) == T.doc.read(rest, T.MScan{_}) : T.Doc}
+  {==}
+
+# a backslash and u (U when lg) start an escape of four digits (eight),
+# with back at the segment's state
+def k3.hx.open(
+  +lg: Bool,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String
+) -> {T.doc.read(rest, T.MScan{k3.u(hd, rw, hs, he, ps, sk, ab, qs.lex(hd), 0, k3.hx.n(lg), buf)})
+  == T.doc.read(SCon{'\\', SCon{k3.hx.u(lg), rest}}, T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)})
+  : T.Doc}:
+  match lg:
+    case False{}:
+      match hd:
+        case False{}:
+          {==}
+        case True{}:
+          {==}
+    case True{}:
+      match hd:
+        case False{}:
+          {==}
+        case True{}:
+          {==}
+
+# `\u` and four digits push the character they name, and leave back at the
+# segment's state and uni and left at 0
+def k3.u4(
+  +dd: Laws.KHex,
+  +cc: Laws.KHex,
+  +bb: Laws.KHex,
+  +aa: Laws.KHex,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc,
+  eo: {Laws.k3.scalar(Laws.k3.hex4(dd, cc, bb, aa)) == True{} : Bool},
+  ih: k3.Then(hd, rw, hs, he, ps, sk, ab, Chr{Laws.k3.hex4(dd, cc, bb, aa)} <> buf, rest, goal)
+) -> {T.doc.read(Laws.k3.pc.text(Laws.KpU4{dd, cc, bb, aa}, rest), T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un,
+  lf, buf)}) == goal : T.Doc}:
+  %k3.hx.open(False{}, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, Laws.k3.hex4.text(dd, cc, bb, aa, rest))
+    : {_ == goal : T.Doc}
+  %k3.hx.rmid(dd, hd, rw, hs, he, ps, sk, ab, qs.lex(hd), 0, 4, buf, SCon{Laws.k3.hex.char(cc),
+    SCon{Laws.k3.hex.char(bb), SCon{Laws.k3.hex.char(aa), rest}}}, {==}) : {_ == goal : T.Doc}
+  %k3.hx.rmid(cc, hd, rw, hs, he, ps, sk, ab, qs.lex(hd), Laws.k3.hex.acc(0, dd), 3, buf,
+    SCon{Laws.k3.hex.char(bb), SCon{Laws.k3.hex.char(aa), rest}}, {==}) : {_ == goal : T.Doc}
+  %k3.hx.rmid(bb, hd, rw, hs, he, ps, sk, ab, qs.lex(hd), Laws.k3.hex.acc(Laws.k3.hex.acc(0, dd), cc), 2, buf,
+    SCon{Laws.k3.hex.char(aa), rest}, {==}) : {_ == goal : T.Doc}
+  %k3.hx.rlast(aa, hd, rw, hs, he, ps, sk, ab, qs.lex(hd), Laws.k3.hex.acc(Laws.k3.hex.acc(Laws.k3.hex.acc(0, dd),
+    cc), bb), 1, buf, rest, {==}, eo) : {_ == goal : T.Doc}
+  ih(qs.lex(hd), 0, 0)
+
+# `\U` and eight digits push the character they name, and leave back at the
+# segment's state and uni and left at 0
+def k3.u8(
+  +hh: Laws.KHex,
+  +gg: Laws.KHex,
+  +ff: Laws.KHex,
+  +ee: Laws.KHex,
+  +dd: Laws.KHex,
+  +cc: Laws.KHex,
+  +bb: Laws.KHex,
+  +aa: Laws.KHex,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc,
+  eo: {Laws.k3.scalar(Laws.k3.hex8(hh, gg, ff, ee, dd, cc, bb, aa)) == True{} : Bool},
+  ih: k3.Then(hd, rw, hs, he, ps, sk, ab, Chr{Laws.k3.hex8(hh, gg, ff, ee, dd, cc, bb, aa)} <> buf, rest, goal)
+) -> {T.doc.read(Laws.k3.pc.text(Laws.KpU8{hh, gg, ff, ee, dd, cc, bb, aa}, rest), T.MScan{k3.q(hd, rw, hs, he, ps,
+  sk, ab, bk, un, lf, buf)}) == goal : T.Doc}:
+  +t4 = Laws.k3.hex4.text(dd, cc, bb, aa, rest)
+  +a1 = Laws.k3.hex.acc(0, hh)
+  +a2 = Laws.k3.hex.acc(a1, gg)
+  +a3 = Laws.k3.hex.acc(a2, ff)
+  +a4 = Laws.k3.hex.acc(a3, ee)
+  +a5 = Laws.k3.hex.acc(a4, dd)
+  +a6 = Laws.k3.hex.acc(a5, cc)
+  +a7 = Laws.k3.hex.acc(a6, bb)
+  +sl = qs.lex(hd)
+  %k3.hx.open(True{}, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, Laws.k3.hex4.text(hh, gg, ff, ee, t4))
+    : {_ == goal : T.Doc}
+  %k3.hx.rmid(hh, hd, rw, hs, he, ps, sk, ab, sl, 0, 8, buf, SCon{Laws.k3.hex.char(gg), SCon{Laws.k3.hex.char(ff),
+    SCon{Laws.k3.hex.char(ee), t4}}}, {==}) : {_ == goal : T.Doc}
+  %k3.hx.rmid(gg, hd, rw, hs, he, ps, sk, ab, sl, a1, 7, buf, SCon{Laws.k3.hex.char(ff), SCon{Laws.k3.hex.char(ee),
+    t4}}, {==}) : {_ == goal : T.Doc}
+  %k3.hx.rmid(ff, hd, rw, hs, he, ps, sk, ab, sl, a2, 6, buf, SCon{Laws.k3.hex.char(ee), t4}, {==})
+    : {_ == goal : T.Doc}
+  %k3.hx.rmid(ee, hd, rw, hs, he, ps, sk, ab, sl, a3, 5, buf, t4, {==}) : {_ == goal : T.Doc}
+  %k3.hx.rmid(dd, hd, rw, hs, he, ps, sk, ab, sl, a4, 4, buf, SCon{Laws.k3.hex.char(cc),
+    SCon{Laws.k3.hex.char(bb), SCon{Laws.k3.hex.char(aa), rest}}}, {==}) : {_ == goal : T.Doc}
+  %k3.hx.rmid(cc, hd, rw, hs, he, ps, sk, ab, sl, a5, 3, buf, SCon{Laws.k3.hex.char(bb), SCon{Laws.k3.hex.char(aa),
+    rest}}, {==}) : {_ == goal : T.Doc}
+  %k3.hx.rmid(bb, hd, rw, hs, he, ps, sk, ab, sl, a6, 2, buf, SCon{Laws.k3.hex.char(aa), rest}, {==})
+    : {_ == goal : T.Doc}
+  %k3.hx.rlast(aa, hd, rw, hs, he, ps, sk, ab, sl, a7, 1, buf, rest, {==}, eo) : {_ == goal : T.Doc}
+  ih(sl, 0, 0)
+
+# a character written as itself read from the segment, then the rest
+def k3.PcG(
+  +cc: Char,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc
+) -> Type:
+  k3.Then(hd, rw, hs, he, ps, sk, ab, cc <> buf, rest, goal) ->
+    {T.doc.read(SCon{cc, rest}, T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)}) == goal : T.Doc}
+
+# basic-unescaped is no quotation mark
+def k3.bc.q(
+  aa: Bool,
+  bb: Bool,
+  cc: Bool,
+  dd: Bool,
+  ee: {Bool.not(Bool.or(aa, Bool.or(bb, Bool.and(cc, Bool.not(dd))))) == True{} : Bool}
+) -> {aa == False{} : Bool}:
+  match aa:
+    case True{}:
+      Eq.bit.absurd(&2, {True{} == False{} : Bool}, ee)
+    case False{}:
+      {==}
+
+# no backslash
+def k3.bc.b(
+  aa: Bool,
+  bb: Bool,
+  cc: Bool,
+  dd: Bool,
+  ee: {Bool.not(Bool.or(aa, Bool.or(bb, Bool.and(cc, Bool.not(dd))))) == True{} : Bool}
+) -> {bb == False{} : Bool}:
+  match aa bb:
+    case True{} b2:
+      Eq.bit.absurd(&2, {b2 == False{} : Bool}, ee)
+    case False{} True{}:
+      Eq.bit.absurd(&2, {True{} == False{} : Bool}, ee)
+    case False{} False{}:
+      {==}
+
+# and, when it is no tab, no control
+def k3.bc.c(
+  aa: Bool,
+  bb: Bool,
+  cc: Bool,
+  dd: Bool,
+  e9: {dd == False{} : Bool},
+  ee: {Bool.not(Bool.or(aa, Bool.or(bb, Bool.and(cc, Bool.not(dd))))) == True{} : Bool}
+) -> {cc == False{} : Bool}:
+  match aa bb cc dd:
+    case True{} b2 c2 d2:
+      Eq.bit.absurd(&2, {c2 == False{} : Bool}, ee)
+    case False{} True{} c2 d2:
+      Eq.bit.absurd(&2, {c2 == False{} : Bool}, ee)
+    case False{} False{} False{} d2:
+      {==}
+    case False{} False{} True{} True{}:
+      Eq.bit.absurd2(&2, {True{} == False{} : Bool}, e9)
+    case False{} False{} True{} False{}:
+      Eq.bit.absurd(&2, {True{} == False{} : Bool}, ee)
+
+# a character written as itself: a tab, or one that is no quote, no
+# backslash and no control
+def k3.chr(
+  t9: Bool,
+  +uu: U32,
+  +e9: {U32.is_eq(uu, 9) == t9 : Bool},
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc,
+  +eb: {Laws.k3.bchar(Chr{uu}) == True{} : Bool}
+) -> k3.PcG(Chr{uu}, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, goal):
+  match t9:
+    case True{}:
+      %Equal.sym(Char, Chr{uu}, Chr{9}, Eq.u32_eq(uu, 9, e9)) : k3.PcG(_, hd, rw, hs, he, ps, sk, ab, bk, un, lf,
+        buf, rest, goal)
+      ih => k3.tab(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, goal, ih)
+    case False{}:
+      +tq = U32.is_eq(uu, 34)
+      +tb = U32.is_eq(uu, 92)
+      +tc = Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127))
+      +tt = U32.is_eq(uu, 9)
+      ih => k3.plain(uu, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, goal, k3.bc.q(tq, tb, tc, tt, eb),
+        k3.bc.b(tq, tb, tc, tt, eb), k3.bc.c(tq, tb, tc, tt, e9, eb), ih)
+
+# one piece a basic string may hold pushes the character it stands for
+def k3.pc(
+  pp: Laws.KPiece,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc,
+  eo: {Laws.k3.pc.ok(pp) == True{} : Bool},
+  ih: k3.Then(hd, rw, hs, he, ps, sk, ab, Laws.k3.pc.char(pp) <> buf, rest, goal)
+) -> {T.doc.read(Laws.k3.pc.text(pp, rest), T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)}) == goal
+  : T.Doc}:
+  match pp:
+    case Laws.KpChar{cc}:
+      match cc:
+        case Chr{+uu}:
+          k3.chr(U32.is_eq(uu, 9), uu, {==}, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, goal, eo)(ih)
+    case Laws.KpEsc{mm}:
+      k3.esc(mm, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, goal, ih)
+    case Laws.KpU4{+dd, +cc, +bb, +aa}:
+      k3.u4(dd, cc, bb, aa, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, goal, eo, ih)
+    case Laws.KpU8{+hh, +gg, +ff, +ee, +dd, +cc, +bb, +aa}:
+      k3.u8(hh, gg, ff, ee, dd, cc, bb, aa, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, goal, eo, ih)
+
+# every piece of a list a basic string may hold, in order: the rest is read
+# with their characters pushed, from wherever the last piece left back, uni
+# and left
+def k3.pcs(
+  pl: List<&2, Laws.KPiece>,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc,
+  +eo: {Laws.k3.pcs.ok(pl) == True{} : Bool},
+  ih: k3.Then(hd, rw, hs, he, ps, sk, ab, rev.onto(Laws.k3.pcs.name(pl), buf), rest, goal)
+) -> {T.doc.read(Laws.k3.pcs.text(pl, rest), T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)}) == goal
+  : T.Doc}:
+  match pl:
+    case []:
+      ih(bk, un, lf)
+    case +pp <> +pr:
+      k3.pc(pp, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, Laws.k3.pcs.text(pr, rest), goal,
+        Eq.and.left(Laws.k3.pc.ok(pp), Laws.k3.pcs.ok(pr), eo),
+        +b2 => +u2 => +l2 => k3.pcs(pr, hd, rw, hs, he, ps, sk, ab, b2, u2, l2, Laws.k3.pc.char(pp) <> buf, rest,
+          goal, Eq.and.right(Laws.k3.pc.ok(pp), Laws.k3.pcs.ok(pr), eo), ih))
+
+# a name's characters pushed onto an empty buffer read back as the name
+def k3.nm(+ss: String) -> {ss == T.buf.str.go(rev.onto(ss, []), "") : String}:
+  Equal.sym(String, T.buf.str.go(rev.onto(ss, []), ""), ss, Equal.trans(String, T.buf.str.go(rev.onto(ss, []), ""),
+    String.append(ss, ""), ss, ml.rev(ss, [], ""), Eq.append_nil(ss)))
+
+def Laws.basic_key_reads_back(pl, ok):
+  k3.pcs(pl, False{}, [], [], [], [], [], False{}, T.LTop{}, 0, 0, [], "\" = 1", T.Doc{"", [T.VPair{
+    Laws.k3.pcs.name(pl), Laws.one()}]}, ok, _b2 => _u2 => _l2 =>
+    %k3.nm(Laws.k3.pcs.name(pl)) : {T.Doc{"", [T.VPair{_, Laws.one()}]} == T.Doc{"", [T.VPair{Laws.k3.pcs.name(pl),
+      Laws.one()}]} : T.Doc}
+    {==})
