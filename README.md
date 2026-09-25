@@ -4,10 +4,19 @@ TOML for [Bend 2](https://github.com/bendlang/bend).
 
 ## Install
 
-Use with [Bend](https://github.com/bendlang/bend) or install easily with [ez](https://github.com/Emerging-Patterns/ez):
+With [Bend](https://github.com/bendlang/bend) alone there is nothing to
+install: import eztoml by its hub name and `bend` fetches it from
+[the hub](https://hub.bend-lang.com) into `~/.bend/lib` on the first run.
+`0xb652b3fca73c8a28ae49abaa395bb530` is eztoml v0.4.0.
 
 ```
-ez init
+import 0xb652b3fca73c8a28ae49abaa395bb530/main.bend as Toml
+```
+
+Or with [ez](https://github.com/Emerging-Patterns/ez), which records the
+package in `ez.toml` (`ez init` makes one):
+
+```
 ez add Emerging-Patterns/eztoml
 ```
 
@@ -21,7 +30,7 @@ a boolean. `root` is the document's table and `bad` is the first error.
 build values. `key` writes a name bare or as a basic string.
 
 ```
-import 0x60bccc8edd34707613da7f8d2b8bfd47/main.bend as Toml
+import 0xb652b3fca73c8a28ae49abaa395bb530/main.bend as Toml
 
 def main() -> IO(Unit):
   +doc = Toml.parse("[pkg]\nname = \"app\"\nver = 1\non = true\n")
