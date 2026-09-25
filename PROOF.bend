@@ -4165,24 +4165,177 @@ def Laws.esc_r(c, h):
   %ec : {Laws.esc(_) == "\\r" : String}
   {==}
 
-# WP0: the other controls, one at a time through Eq.ctl.all: the five with
-# short escapes are ruled out by their hypotheses, and the others compute.
+# CTL: the escape of each control, computed once. Laws.esc runs basic.hex,
+# four U32 divisions by 16, so computing a control's escape is the costly
+# part of every proof that takes the controls one at a time. ctl.esc.lit
+# computes it once per control, as ctl.txt, which reads the escape straight
+# off the code point's bits; ctl.esc.all then hands each family that text.
 
-# what esc_ctl says of a code point
-def ctl.eq(+uu: U32) -> Type:
-  {Laws.esc(Chr{uu}) == "\\u00" ++ String.from_list([Laws.char_at(Laws.hex_lower(), U32.to_nat(U32.div(uu, 16))),
+# one lowercase hex digit, from its four bits, low bit first
+def ctl.hx(b0: Bool, b1: Bool, b2: Bool, b3: Bool) -> Char:
+  match b0 b1 b2 b3:
+    case False{} False{} False{} False{}:
+      '0'
+    case True{} False{} False{} False{}:
+      '1'
+    case False{} True{} False{} False{}:
+      '2'
+    case True{} True{} False{} False{}:
+      '3'
+    case False{} False{} True{} False{}:
+      '4'
+    case True{} False{} True{} False{}:
+      '5'
+    case False{} True{} True{} False{}:
+      '6'
+    case True{} True{} True{} False{}:
+      '7'
+    case False{} False{} False{} True{}:
+      '8'
+    case True{} False{} False{} True{}:
+      '9'
+    case False{} True{} False{} True{}:
+      'a'
+    case True{} True{} False{} True{}:
+      'b'
+    case False{} False{} True{} True{}:
+      'c'
+    case True{} False{} True{} True{}:
+      'd'
+    case False{} True{} True{} True{}:
+      'e'
+    case True{} True{} True{} True{}:
+      'f'
+
+# u00 and two hex digits, the high one first
+def ctl.u00(hi: Char, lo: Char) -> String:
+  SCon{'u', SCon{'0', SCon{'0', SCon{hi, SCon{lo, SNil{}}}}}}
+
+# what follows the backslash for a code point below 16, from its four bits:
+# the five with a letter, and u000 and a digit for the rest
+def ctl.txt.lo(b0: Bool, b1: Bool, b2: Bool, b3: Bool) -> String:
+  match b0 b1 b2 b3:
+    case False{} False{} False{} True{}:
+      "b"
+    case True{} False{} False{} True{}:
+      "t"
+    case False{} True{} False{} True{}:
+      "n"
+    case False{} False{} True{} True{}:
+      "f"
+    case True{} False{} True{} True{}:
+      "r"
+    case _ _ _ _:
+      ctl.u00('0', ctl.hx(b0, b1, b2, b3))
+
+# below 16, or u00 and both hex digits of the low byte
+def ctl.txt.hi(
+  high: Bool,
+  b0: Bool,
+  b1: Bool,
+  b2: Bool,
+  b3: Bool,
+  b4: Bool,
+  b5: Bool,
+  b6: Bool,
+  b7: Bool
+) -> String:
+  match high:
+    case False{}:
+      ctl.txt.lo(b0, b1, b2, b3)
+    case True{}:
+      ctl.u00(ctl.hx(b4, b5, b6, b7), ctl.hx(b0, b1, b2, b3))
+
+# what follows the backslash, read off the low byte
+def ctl.tl(uu: U32) -> String:
+  match uu:
+    case U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{+b4, WCon{+b5, WCon{+b6, WCon{+b7, _hi}}}}}}}}}:
+      ctl.txt.hi(Bool.or(Bool.or(b4, b5), Bool.or(b6, b7)), b0, b1, b2, b3, b4, b5, b6, b7)
+
+# the text render writes for a control: a backslash, then ctl.tl
+def ctl.txt(uu: U32) -> String:
+  SCon{'\\', ctl.tl(uu)}
+
+# the escape of each control is ctl.txt: the only place a control's escape
+# is computed
+def ctl.esc.lit(
+  +uu: U32,
+  h_c: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == True{} : Bool}
+) -> {ctl.txt(uu) == Laws.esc(Chr{uu}) : String}:
+  Eq.ctl.all(kk => {ctl.txt(kk) == Laws.esc(Chr{kk}) : String}, uu, h_c,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+    {==})
+
+# a claim about a control and its escape holds for every control once it
+# holds for each of the thirty-three at its ctl.txt
+def ctl.esc.all(
+  -PP: U32 -> String -> Type,
+  +uu: U32,
+  +h_c: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == True{} : Bool},
+  c00: PP(0, ctl.txt(0)),
+  c01: PP(1, ctl.txt(1)),
+  c02: PP(2, ctl.txt(2)),
+  c03: PP(3, ctl.txt(3)),
+  c04: PP(4, ctl.txt(4)),
+  c05: PP(5, ctl.txt(5)),
+  c06: PP(6, ctl.txt(6)),
+  c07: PP(7, ctl.txt(7)),
+  c08: PP(8, ctl.txt(8)),
+  c09: PP(9, ctl.txt(9)),
+  c10: PP(10, ctl.txt(10)),
+  c11: PP(11, ctl.txt(11)),
+  c12: PP(12, ctl.txt(12)),
+  c13: PP(13, ctl.txt(13)),
+  c14: PP(14, ctl.txt(14)),
+  c15: PP(15, ctl.txt(15)),
+  c16: PP(16, ctl.txt(16)),
+  c17: PP(17, ctl.txt(17)),
+  c18: PP(18, ctl.txt(18)),
+  c19: PP(19, ctl.txt(19)),
+  c20: PP(20, ctl.txt(20)),
+  c21: PP(21, ctl.txt(21)),
+  c22: PP(22, ctl.txt(22)),
+  c23: PP(23, ctl.txt(23)),
+  c24: PP(24, ctl.txt(24)),
+  c25: PP(25, ctl.txt(25)),
+  c26: PP(26, ctl.txt(26)),
+  c27: PP(27, ctl.txt(27)),
+  c28: PP(28, ctl.txt(28)),
+  c29: PP(29, ctl.txt(29)),
+  c30: PP(30, ctl.txt(30)),
+  c31: PP(31, ctl.txt(31)),
+  c127: PP(127, ctl.txt(127))
+) -> PP(uu, Laws.esc(Chr{uu})):
+  %ctl.esc.lit(uu, h_c) : PP(uu, _)
+  Eq.ctl.all(kk => PP(kk, ctl.txt(kk)), uu, h_c,
+    c00, c01, c02, c03, c04, c05, c06, c07,
+    c08, c09, c10, c11, c12, c13, c14, c15,
+    c16, c17, c18, c19, c20, c21, c22, c23,
+    c24, c25, c26, c27, c28, c29, c30, c31,
+    c127)
+
+# WP0: the other controls, one at a time through ctl.esc.all: the five with
+# short escapes are ruled out by their hypotheses, and the others compute
+# from ctl.txt.
+
+# what esc_ctl says of a code point, with its escape written as ss
+def ctl.eqs(+uu: U32, ss: String) -> Type:
+  {ss == "\\u00" ++ String.from_list([Laws.char_at(Laws.hex_lower(), U32.to_nat(U32.div(uu, 16))),
     Laws.char_at(Laws.hex_lower(), U32.to_nat(U32.mod(uu, 16)))]) : String}
 
 # and with its other hypotheses first
-def ctl.goal(+uu: U32) -> Type:
+def ctl.goals(+uu: U32, ss: String) -> Type:
   {Chr{uu} != '\u{8}' : Char} -> {Chr{uu} != '\t' : Char} -> {Chr{uu} != '\n' : Char} ->
-    {Chr{uu} != '\u{c}' : Char} -> {Chr{uu} != '\r' : Char} -> ctl.eq(uu)
+    {Chr{uu} != '\u{c}' : Char} -> {Chr{uu} != '\r' : Char} -> ctl.eqs(uu, ss)
 
 # every other control is \u00 and two lowercase hex digits
 def Laws.esc_ctl(c, h_c, h_b, h_t, h_n, h_f, h_r):
   match c:
     case Chr{+uu}:
-      Eq.ctl.all(kk => ctl.goal(kk), uu, h_c,
+      ctl.esc.all(kk => ss => ctl.goals(kk, ss), uu, h_c,
         _hb => _ht => _hn => _hf => _hr => {==},
         _hb => _ht => _hn => _hf => _hr => {==},
         _hb => _ht => _hn => _hf => _hr => {==},
@@ -4192,16 +4345,16 @@ def Laws.esc_ctl(c, h_c, h_b, h_t, h_n, h_f, h_r):
         _hb => _ht => _hn => _hf => _hr => {==},
         _hb => _ht => _hn => _hf => _hr => {==},
         hb => _ht => _hn => _hf => _hr =>
-          Eq.bit.gone(&1, ctl.eq(8), hb({==})),
+          Eq.bit.gone(&1, ctl.eqs(8, ctl.txt(8)), hb({==})),
         _hb => ht => _hn => _hf => _hr =>
-          Eq.bit.gone(&1, ctl.eq(9), ht({==})),
+          Eq.bit.gone(&1, ctl.eqs(9, ctl.txt(9)), ht({==})),
         _hb => _ht => hn => _hf => _hr =>
-          Eq.bit.gone(&1, ctl.eq(10), hn({==})),
+          Eq.bit.gone(&1, ctl.eqs(10, ctl.txt(10)), hn({==})),
         _hb => _ht => _hn => _hf => _hr => {==},
         _hb => _ht => _hn => hf => _hr =>
-          Eq.bit.gone(&1, ctl.eq(12), hf({==})),
+          Eq.bit.gone(&1, ctl.eqs(12, ctl.txt(12)), hf({==})),
         _hb => _ht => _hn => _hf => hr =>
-          Eq.bit.gone(&1, ctl.eq(13), hr({==})),
+          Eq.bit.gone(&1, ctl.eqs(13, ctl.txt(13)), hr({==})),
         _hb => _ht => _hn => _hf => _hr => {==},
         _hb => _ht => _hn => _hf => _hr => {==},
         _hb => _ht => _hn => _hf => _hr => {==},
@@ -5792,6 +5945,26 @@ def qs.q92(
     case True{}:
       ih => ih(T.LHeadQ{})
 
+# CTL: qs.Goal with the escape's text as ss, for ctl.esc.all
+def qs.GoalS(
+  +uu: U32,
+  ss: String,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc
+) -> Type:
+  (@bk: T.Lex -> {T.doc.read(rest, T.MScan{qs(hd, rw, hs, he, ps, sk, ab, bk, Chr{uu} <> buf)}) == goal
+    : T.Doc}) ->
+    {T.doc.read(String.append(ss, rest), T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, buf)}) == goal : T.Doc}
+
 # a control: each of the thirty-three escapes reads back by computation, and
 # leaves back at the segment's state
 def qs.ctl(
@@ -5811,7 +5984,7 @@ def qs.ctl(
 ) -> qs.Goal(uu, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal):
   match hd:
     case False{}:
-      Eq.ctl.all(kk => qs.Goal(kk, False{}, rw, hs, he, ps, sk, ab, back, buf, rest, goal), uu,
+      ctl.esc.all(kk => ss => qs.GoalS(kk, ss, False{}, rw, hs, he, ps, sk, ab, back, buf, rest, goal), uu,
         h_c,
         ih => ih(T.LKeyQ{}),
         ih => ih(T.LKeyQ{}),
@@ -5847,7 +6020,7 @@ def qs.ctl(
         ih => ih(T.LKeyQ{}),
         ih => ih(T.LKeyQ{}))
     case True{}:
-      Eq.ctl.all(kk => qs.Goal(kk, True{}, rw, hs, he, ps, sk, ab, back, buf, rest, goal), uu,
+      ctl.esc.all(kk => ss => qs.GoalS(kk, ss, True{}, rw, hs, he, ps, sk, ab, back, buf, rest, goal), uu,
         h_c,
         ih => ih(T.LHeadQ{}),
         ih => ih(T.LHeadQ{}),
@@ -10091,6 +10264,27 @@ def ls.q92(
 ) -> ls.Goal(92, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP):
   ih => ih(un, lf)
 
+# CTL: ls.Goal with the escape's text as ss, for ctl.esc.all
+def ls.GoalS(
+  +uu: U32,
+  ss: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  (@u2: U32 -> @l2: U32 ->
+    PP(T.doc.read(rest, T.MScan{ls(bd, rw, hs, he, ps, sk, ab, u2, l2, Chr{uu} <> buf)}))) ->
+    PP(T.doc.read(String.append(ss, rest), T.MScan{ls(bd, rw, hs, he, ps, sk, ab, un, lf, buf)}))
+
 # a control: each of the thirty-three escapes reads back by computation. The
 # five with a letter (\b, \t, \n, \f, \r) leave uni and left as they were; a
 # \u escape leaves both at 0
@@ -10110,7 +10304,7 @@ def ls.ctl(
   -PP: T.Doc -> Type,
   h_c: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == True{} : Bool}
 ) -> ls.Goal(uu, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP):
-  Eq.ctl.all(kk => ls.Goal(kk, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP), uu, h_c,
+  ctl.esc.all(kk => ss => ls.GoalS(kk, ss, bd, rw, hs, he, ps, sk, ab, un, lf, buf, rest, PP), uu, h_c,
     ih => ih(0, 0),
     ih => ih(0, 0),
     ih => ih(0, 0),
@@ -10353,17 +10547,13 @@ def esc.lead.is(
   %Equal.sym(U32, uu, kk, eu) : esc.Lead(_)
   at
 
-# every control, by computation
+# every control: its escape is ctl.txt, a backslash first
 def esc.lead.ctl(
   +uu: U32,
   h_c: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == True{} : Bool}
 ) -> esc.Lead(uu):
-  Eq.ctl.all(kk => esc.Lead(kk), uu, h_c,
-    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
-    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
-    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
-    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
-    {==})
+  %ctl.esc.lit(uu, h_c) : {_ == SCon{'\\', str.tl(_)} : String}
+  {==}
 
 # span.rev copies the span's first n characters, reversed onto acc
 def sp.Rv(+src: String, +nn: U32, +acc: List<&2, Char>) -> Type:
