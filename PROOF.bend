@@ -9338,7 +9338,10 @@ def Laws.aot_header_extends_array_reads_back(
 # fields the string may change (back, and uni and left after a \u escape), as
 # in WP0's quoted-segment family. The value is a span of the text while no
 # character needs an escape, and an owned string once one does; either way
-# own reads it as the string's characters.
+# it holds the string's characters (sv.Is), and own reads it as them
+# (sv.own.pair, sv.own.item). The rest of the walk ends in a motive PP over
+# the document, so a caller proves what it needs of it (its owned form, for
+# WP-D's exact lemma) whichever value the string became.
 
 # the scanner just past the opening quote of a basic string in a value
 # position
@@ -9390,8 +9393,19 @@ def sv.took(
 ) -> T.St:
   T.take.top(sk, vv, bd, rw, hs, he, ps, bk, T.QBasic{}, un, lf, ab, False{})
 
+# a string value holding the characters ss: an owned string of them, or a
+# span of a text whose first n characters they are. No other value is one
+def sv.Is(vv: T.Val, ss: String) -> Type:
+  match vv:
+    case T.VStr{tt}:
+      {tt == ss : String}
+    case T.VSpan{src, +nn}:
+      {T.span.str(src, nn, U32.is_zero(nn)) == ss : String}
+    case _:
+      Empty
+
 # the rest of the walk, for the string ss: reading rest from the scanner with
-# any value that own reads as ss placed, and any back, uni and left, gives a
+# any string value holding ss placed (sv.Is), and any back, uni and left, gives a
 # document PP holds of. PP is what the caller proves of the document: its
 # owned form, say, as WP-D's exact lemma needs, since the value itself is a
 # span or an owned string depending on the escapes
@@ -9408,7 +9422,7 @@ def sv.Then(
   -PP: T.Doc -> Type
 ) -> Type:
   @vv: T.Val -> @bk: T.Lex -> @un: U32 -> @lf: U32 ->
-    {Laws.own.rows([vv]) == [T.VStr{ss}] : List<&2, T.Val>} ->
+    sv.Is(vv, ss) ->
     PP(T.doc.read(rest, T.MScan{sv.took(sk, vv, bd, rw, hs, he, ps, bk, un, lf, ab)}))
 
 # what holds of a document holds of one equal to it
@@ -9796,7 +9810,7 @@ def sp.pre(
           take.zero(more)),
         Eq.append_nil(pre))))
 
-# the placed span reads as the characters counted into it
+# the placed span holds the characters counted into it
 def se.own(
   +pre: String,
   +cut: String,
@@ -9804,10 +9818,9 @@ def se.own(
   +nn: U32,
   hc: {cut == String.append(pre, more) : String},
   hn: {U32.to_nat(nn) == plus(pre, 0n) : Nat}
-) -> {Laws.own.rows([T.VSpan{cut, nn}]) == [T.VStr{pre}] : List<&2, T.Val>}:
-  Equal.cong(String, List<&2, T.Val>, xs => [T.VStr{xs}], T.span.str(cut, nn, U32.is_zero(nn)), pre,
-    Equal.trans(String, T.span.str(cut, nn, U32.is_zero(nn)), take(cut, U32.to_nat(nn)), pre,
-      sp.take(cut, nn), sp.pre(pre, cut, more, nn, hc, hn)))
+) -> sv.Is(T.VSpan{cut, nn}, pre):
+  Equal.trans(String, T.span.str(cut, nn, U32.is_zero(nn)), take(cut, U32.to_nat(nn)), pre,
+    sp.take(cut, nn), sp.pre(pre, cut, more, nn, hc, hn))
 
 # The escapes. Once a character needs an escape the span is copied into the
 # buffer (eat.copy, span.rev) and the rest of the string is read in LStr,
@@ -10272,22 +10285,19 @@ def ls.close(
     T.MScan{sv.took(sk, T.VStr{T.buf.str(buf)}, bd, rw, hs, he, ps, T.LStr{}, un, lf, ab)},
     tk.fix(sk, T.VStr{T.buf.str(buf)}, bd, rw, hs, he, ps, T.LStr{}, T.QBasic{}, un, lf, ab, False{}))
 
-# a buffer the text pre and then ss were pushed onto owns pre and ss
+# a buffer the text pre and then ss were pushed onto holds pre and ss
 def ls.own(
   +pre: String,
   +ss: String
-) -> {Laws.own.rows([T.VStr{T.buf.str(rev.onto(ss, rev.onto(pre, [])))}])
-  == [T.VStr{String.append(pre, ss)}] : List<&2, T.Val>}:
-  Equal.cong(String, List<&2, T.Val>, xs => [T.VStr{xs}],
-    T.buf.str(rev.onto(ss, rev.onto(pre, []))), String.append(pre, ss),
-    Equal.trans(String, T.buf.str.go(rev.onto(ss, rev.onto(pre, [])), ""),
-      T.buf.str.go(rev.onto(pre, []), String.append(ss, "")), String.append(pre, ss),
-      ml.rev(ss, rev.onto(pre, []), ""),
-      Equal.trans(String, T.buf.str.go(rev.onto(pre, []), String.append(ss, "")),
-        String.append(pre, String.append(ss, "")), String.append(pre, ss),
-        ml.rev(pre, [], String.append(ss, "")),
-        Equal.cong(String, String, xs => String.append(pre, xs), String.append(ss, ""), ss,
-          Eq.append_nil(ss)))))
+) -> sv.Is(T.VStr{T.buf.str(rev.onto(ss, rev.onto(pre, [])))}, String.append(pre, ss)):
+  Equal.trans(String, T.buf.str.go(rev.onto(ss, rev.onto(pre, [])), ""),
+    T.buf.str.go(rev.onto(pre, []), String.append(ss, "")), String.append(pre, ss),
+    ml.rev(ss, rev.onto(pre, []), ""),
+    Equal.trans(String, T.buf.str.go(rev.onto(pre, []), String.append(ss, "")),
+      String.append(pre, String.append(ss, "")), String.append(pre, ss),
+      ml.rev(pre, [], String.append(ss, "")),
+      Equal.cong(String, String, xs => String.append(pre, xs), String.append(ss, ""), ss,
+        Eq.append_nil(ss))))
 
 # the rest of a string, from a buffer holding pre: the escapes of ss and the
 # closing quote read to the value pre and ss placed
@@ -10663,7 +10673,7 @@ def se.step(
 
 # the rest ss of a string inside its span, pre read so far: cut is the text
 # from the string's first character, and nn counts pre's characters without
-# wrapping. The string reads to a value own reads as pre and ss: the span
+# wrapping. The string reads to a value holding pre and ss (sv.Is): the span
 # itself when ss needs no escape, and the copied string otherwise
 def se.go(
   ss: String,
@@ -10874,7 +10884,7 @@ def so.first(
 
 # a nonempty string, as render writes it after the opening quote, then the
 # closing quote and any rest: from every value position the rest is read with
-# a value own reads as the string placed, back at LStr and uni and left as
+# a value holding the string placed (sv.Is), back at LStr and uni and left as
 # the last escape left them
 def sv.more(
   +uu: U32,
@@ -10898,3 +10908,1089 @@ def sv.more(
   so.first(uu, U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), {==},
     {==}, {==}, tt, bd, rw, hs, he, ps, bk, sk, un, lf, ab, rest, PP,
     Eq.and.right(Bool.not(U32.is_zero(U32.add(0, 1))), Laws.counts(tt, U32.add(0, 1)), es), ih)
+
+# The empty string. `""` goes through LQ2, which waits for the character
+# after the second quote to tell it from `"""`: that character is held and
+# read again by the full step from the state with "" placed, where every
+# other string's next character takes the fast step. The two agree in every
+# state a value leaves (LLine, LArrC, LInlC), on every character, so ""
+# followed by any rest that does not start with a quote reads as the others
+# do.
+
+# a scanner with no character held, past the first character of the text
+def fs.st(
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  ps: List<&2, String>,
+  buf: List<&2, Char>,
+  lx: T.Lex,
+  bk: T.Lex,
+  qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  ab: Bool
+) -> T.St:
+  T.St{bd, rw, hs, he, ps, buf, lx, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}
+
+# A placed value holds no character, so read.once2 leaves it as it is.
+
+# at the root
+def tk.once.root(
+  end: T.End,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +ld: Bool
+) -> {T.take.root(end, he, bk, qk, un, lf, ab, ld) == T.read.once2(T.take.root(end, he, bk, qk, un, lf, ab, ld))
+  : T.St}:
+  match end:
+    case T.End{_vs, _bad, _heads}:
+      {==}
+
+# in an inline table
+def tk.once.inl(
+  end: T.End,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +rest: List<&2, T.Ctx>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +ld: Bool
+) -> {T.take.inl(end, rw, hs, he, ps, rest, bk, qk, un, lf, ab, ld)
+  == T.read.once2(T.take.inl(end, rw, hs, he, ps, rest, bk, qk, un, lf, ab, ld)) : T.St}:
+  match end:
+    case T.End{_vs, _bad, _heads}:
+      {==}
+
+# wherever the value goes
+def tk.once(
+  sk: List<&2, T.Ctx>,
+  +vv: T.Val,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +ld: Bool
+) -> {T.take.top(sk, vv, bd, rw, hs, he, ps, bk, qk, un, lf, ab, ld)
+  == T.read.once2(T.take.top(sk, vv, bd, rw, hs, he, ps, bk, qk, un, lf, ab, ld)) : T.St}:
+  match sk:
+    case []:
+      tk.once.root(T.tree.walk(T.path.cat(he, ps), T.Tw{rw, T.JPut{vv}, [], bd, "", hs, False{}},
+        T.path.len(he, 0)), he, bk, qk, un, lf, ab, ld)
+    case T.CArr{_items, _saved, _at} <> _rest:
+      {==}
+    case T.CInl{inl, +saved, +at} <> +rest:
+      tk.once.inl(T.tree.walk(List.reverse(&2, String, ps), T.Tw{inl, T.JPut{vv}, [], bd, "", [],
+        True{}}, 0), rw, hs, at, saved, rest, bk, qk, un, lf, ab, ld)
+
+# and read.fin.close leaves it as it is too, at the end of the text
+def tk.fin.root(
+  end: T.End,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +ld: Bool
+) -> {T.take.root(end, he, bk, qk, un, lf, ab, ld)
+  == T.read.fin.close(T.read.once2(T.take.root(end, he, bk, qk, un, lf, ab, ld))) : T.St}:
+  match end:
+    case T.End{_vs, _bad, _heads}:
+      {==}
+
+# in an inline table
+def tk.fin.inl(
+  end: T.End,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +rest: List<&2, T.Ctx>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +ld: Bool
+) -> {T.take.inl(end, rw, hs, he, ps, rest, bk, qk, un, lf, ab, ld)
+  == T.read.fin.close(T.read.once2(T.take.inl(end, rw, hs, he, ps, rest, bk, qk, un, lf, ab, ld))) : T.St}:
+  match end:
+    case T.End{_vs, _bad, _heads}:
+      {==}
+
+# wherever the value goes
+def tk.fin(
+  sk: List<&2, T.Ctx>,
+  +vv: T.Val,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +ld: Bool
+) -> {T.take.top(sk, vv, bd, rw, hs, he, ps, bk, qk, un, lf, ab, ld)
+  == T.read.fin.close(T.read.once2(T.take.top(sk, vv, bd, rw, hs, he, ps, bk, qk, un, lf, ab, ld))) : T.St}:
+  match sk:
+    case []:
+      tk.fin.root(T.tree.walk(T.path.cat(he, ps), T.Tw{rw, T.JPut{vv}, [], bd, "", hs, False{}},
+        T.path.len(he, 0)), he, bk, qk, un, lf, ab, ld)
+    case T.CArr{_items, _saved, _at} <> _rest:
+      {==}
+    case T.CInl{inl, +saved, +at} <> +rest:
+      tk.fin.inl(T.tree.walk(List.reverse(&2, String, ps), T.Tw{inl, T.JPut{vv}, [], bd, "", [],
+        True{}}, 0), rw, hs, at, saved, rest, bk, qk, un, lf, ab, ld)
+
+# closing an array places it, so it holds no character either
+def arr.once(
+  sk: List<&2, T.Ctx>,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +ld: Bool
+) -> {T.arr.top(sk, bd, rw, hs, bk, qk, un, lf, ab, ld)
+  == T.read.once2(T.arr.top(sk, bd, rw, hs, bk, qk, un, lf, ab, ld)) : T.St}:
+  match sk:
+    case []:
+      {==}
+    case T.CArr{items, +parts, +here} <> rest:
+      tk.once(rest, T.VArr{List.reverse(&2, T.Val, items)}, bd, rw, hs, here, parts, bk, qk, un, lf, ab, ld)
+    case T.CInl{_rows, _parts, _here} <> _rest:
+      {==}
+
+# and so does closing an inline table
+def inl.once(
+  sk: List<&2, T.Ctx>,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +ld: Bool
+) -> {T.inl.top(sk, bd, rw, hs, bk, qk, un, lf, ab, ld)
+  == T.read.once2(T.inl.top(sk, bd, rw, hs, bk, qk, un, lf, ab, ld)) : T.St}:
+  match sk:
+    case []:
+      {==}
+    case T.CArr{_items, _parts, _here} <> _rest:
+      {==}
+    case T.CInl{inl, +parts, +here} <> rest:
+      tk.once(rest, T.VInl{T.inl.seal(inl)}, bd, rw, hs, here, parts, bk, qk, un, lf, ab, ld)
+
+# every step after a root pair's value holds no character
+def once.line(
+  sp: Bool,
+  hash: Bool,
+  nl: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +buf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> {T.lex.line.go(sp, hash, nl, fs.st(bd, rw, hs, he, ps, buf, T.LLine{}, bk, qk, sk, un, lf, ab), cc)
+  == T.read.once2(T.lex.line.go(sp, hash, nl, fs.st(bd, rw, hs, he, ps, buf, T.LLine{}, bk, qk, sk, un, lf,
+    ab), cc)) : T.St}:
+  match sp:
+    case True{}:
+      {==}
+    case False{}:
+      match hash:
+        case True{}:
+          {==}
+        case False{}:
+          match nl:
+            case True{}:
+              {==}
+            case False{}:
+              {==}
+
+# every step after an array item
+def once.arrc(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +buf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> {T.lex.arrc.go(sp, nl, hash, comma, end, fs.st(bd, rw, hs, he, ps, buf, T.LArrC{}, bk, qk, sk, un, lf,
+  ab), cc) == T.read.once2(T.lex.arrc.go(sp, nl, hash, comma, end, fs.st(bd, rw, hs, he, ps, buf, T.LArrC{},
+  bk, qk, sk, un, lf, ab), cc)) : T.St}:
+  match sp:
+    case True{}:
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          {==}
+        case False{}:
+          match hash:
+            case True{}:
+              {==}
+            case False{}:
+              match comma:
+                case True{}:
+                  {==}
+                case False{}:
+                  match end:
+                    case True{}:
+                      arr.once(sk, bd, rw, hs, bk, qk, un, lf, ab, False{})
+                    case False{}:
+                      {==}
+
+# every step after an inline table's value
+def once.inlc(
+  sp: Bool,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  nl: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +buf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> {T.lex.inlc.go(sp, hash, comma, end, nl, fs.st(bd, rw, hs, he, ps, buf, T.LInlC{}, bk, qk, sk, un, lf,
+  ab), cc) == T.read.once2(T.lex.inlc.go(sp, hash, comma, end, nl, fs.st(bd, rw, hs, he, ps, buf, T.LInlC{},
+  bk, qk, sk, un, lf, ab), cc)) : T.St}:
+  match sp:
+    case True{}:
+      {==}
+    case False{}:
+      match hash:
+        case True{}:
+          {==}
+        case False{}:
+          match comma:
+            case True{}:
+              {==}
+            case False{}:
+              match end:
+                case True{}:
+                  inl.once(sk, bd, rw, hs, bk, qk, un, lf, ab, False{})
+                case False{}:
+                  match nl:
+                    case True{}:
+                      {==}
+                    case False{}:
+                      {==}
+
+# after a root pair's value the full step is the fast step
+def fs.line(
+  sp: Bool,
+  nl: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +buf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  es: {T.ch.sp(cc) == sp : Bool}
+) -> {T.lex.line(fs.st(bd, rw, hs, he, ps, buf, T.LLine{}, bk, qk, sk, un, lf, ab), cc)
+  == T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, ps, buf, T.LLine{}, bk, qk, sk, un, lf, ab, cc) : T.St}:
+  match sp:
+    case True{}:
+      %Equal.sym(Bool, T.ch.sp(cc), True{}, es) :
+        {T.lex.line.go(_, Char.is_eq(cc, '#'), T.ch.nl(cc), fs.st(bd, rw, hs, he, ps, buf, T.LLine{}, bk, qk,
+          sk, un, lf, ab), cc) == T.read.fast.ws(True{}, nl, False{}, bd, rw, hs, he, ps, buf, T.LLine{}, bk,
+          qk, sk, un, lf, ab, cc) : T.St}
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          once.line(T.ch.sp(cc), Char.is_eq(cc, '#'), T.ch.nl(cc), cc, bd, rw, hs, he, ps, buf, bk, qk, sk, un,
+            lf, ab)
+        case False{}:
+          once.line(T.ch.sp(cc), Char.is_eq(cc, '#'), T.ch.nl(cc), cc, bd, rw, hs, he, ps, buf, bk, qk, sk, un,
+            lf, ab)
+
+# after an array item
+def fs.arrc(
+  sp: Bool,
+  nl: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +buf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  es: {T.ch.sp(cc) == sp : Bool},
+  en: {T.ch.nl(cc) == nl : Bool}
+) -> {T.lex.arrc(fs.st(bd, rw, hs, he, ps, buf, T.LArrC{}, bk, qk, sk, un, lf, ab), cc)
+  == T.read.fast.ws(sp, nl, True{}, bd, rw, hs, he, ps, buf, T.LArrC{}, bk, qk, sk, un, lf, ab, cc) : T.St}:
+  match sp:
+    case True{}:
+      %Equal.sym(Bool, T.ch.sp(cc), True{}, es) :
+        {T.lex.arrc.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, ']'),
+          fs.st(bd, rw, hs, he, ps, buf, T.LArrC{}, bk, qk, sk, un, lf, ab), cc) == T.read.fast.ws(True{}, nl,
+          True{}, bd, rw, hs, he, ps, buf, T.LArrC{}, bk, qk, sk, un, lf, ab, cc) : T.St}
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          %Equal.sym(Bool, T.ch.sp(cc), False{}, es) :
+            {T.lex.arrc.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, ']'),
+              fs.st(bd, rw, hs, he, ps, buf, T.LArrC{}, bk, qk, sk, un, lf, ab), cc) == T.read.fast.ws(False{},
+              True{}, True{}, bd, rw, hs, he, ps, buf, T.LArrC{}, bk, qk, sk, un, lf, ab, cc) : T.St}
+          %Equal.sym(Bool, T.ch.nl(cc), True{}, en) :
+            {T.lex.arrc.go(False{}, _, Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, ']'),
+              fs.st(bd, rw, hs, he, ps, buf, T.LArrC{}, bk, qk, sk, un, lf, ab), cc) == T.read.fast.ws(False{},
+              True{}, True{}, bd, rw, hs, he, ps, buf, T.LArrC{}, bk, qk, sk, un, lf, ab, cc) : T.St}
+          {==}
+        case False{}:
+          once.arrc(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, ']'), cc,
+            bd, rw, hs, he, ps, buf, bk, qk, sk, un, lf, ab)
+
+# after an inline table's value
+def fs.inlc(
+  sp: Bool,
+  nl: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +buf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  es: {T.ch.sp(cc) == sp : Bool}
+) -> {T.lex.inlc(fs.st(bd, rw, hs, he, ps, buf, T.LInlC{}, bk, qk, sk, un, lf, ab), cc)
+  == T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, ps, buf, T.LInlC{}, bk, qk, sk, un, lf, ab, cc) : T.St}:
+  match sp:
+    case True{}:
+      %Equal.sym(Bool, T.ch.sp(cc), True{}, es) :
+        {T.lex.inlc.go(_, Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, '}'), T.ch.nl(cc),
+          fs.st(bd, rw, hs, he, ps, buf, T.LInlC{}, bk, qk, sk, un, lf, ab), cc) == T.read.fast.ws(True{}, nl,
+          False{}, bd, rw, hs, he, ps, buf, T.LInlC{}, bk, qk, sk, un, lf, ab, cc) : T.St}
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          once.inlc(T.ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, '}'), T.ch.nl(cc), cc,
+            bd, rw, hs, he, ps, buf, bk, qk, sk, un, lf, ab)
+        case False{}:
+          once.inlc(T.ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, '}'), T.ch.nl(cc), cc,
+            bd, rw, hs, he, ps, buf, bk, qk, sk, un, lf, ab)
+
+# a character held after a root pair's value is read as the fast step reads it
+def fs.held.root(
+  end: T.End,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +cc: Char
+) -> {T.read.once2(T.bare.hold.on(T.take.root(end, he, bk, qk, un, lf, ab, False{}), cc))
+  == T.read.fast(T.take.root(end, he, bk, qk, un, lf, ab, False{}), cc) : T.St}:
+  match end:
+    case T.End{+vs, +bad, +heads}:
+      fs.line(T.ch.sp(cc), T.ch.nl(cc), cc, bad, vs, heads, he, [], [], bk, qk, [], un, lf, ab, {==})
+
+# after an inline table's value
+def fs.held.inl(
+  end: T.End,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +rest: List<&2, T.Ctx>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +cc: Char
+) -> {T.read.once2(T.bare.hold.on(T.take.inl(end, rw, hs, he, ps, rest, bk, qk, un, lf, ab, False{}), cc))
+  == T.read.fast(T.take.inl(end, rw, hs, he, ps, rest, bk, qk, un, lf, ab, False{}), cc) : T.St}:
+  match end:
+    case T.End{+inl, +bad, _heads}:
+      fs.inlc(T.ch.sp(cc), T.ch.nl(cc), cc, bad, rw, hs, he, [], [], bk, qk, T.CInl{inl, ps, he} <> rest, un,
+        lf, ab, {==})
+
+# wherever the value went
+def fs.held(
+  sk: List<&2, T.Ctx>,
+  +vv: T.Val,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> {T.read.once2(T.bare.hold.on(T.take.top(sk, vv, bd, rw, hs, he, ps, bk, qk, un, lf, ab, False{}), cc))
+  == T.read.fast(T.take.top(sk, vv, bd, rw, hs, he, ps, bk, qk, un, lf, ab, False{}), cc) : T.St}:
+  match sk:
+    case []:
+      fs.held.root(T.tree.walk(T.path.cat(he, ps), T.Tw{rw, T.JPut{vv}, [], bd, "", hs, False{}},
+        T.path.len(he, 0)), he, bk, qk, un, lf, ab, cc)
+    case T.CArr{items, +saved, +at} <> +rest:
+      fs.arrc(T.ch.sp(cc), T.ch.nl(cc), cc, bd, rw, hs, at, saved, [], bk, qk,
+        T.CArr{vv <> items, saved, at} <> rest, un, lf, ab, {==}, {==})
+    case T.CInl{inl, +saved, +at} <> +rest:
+      fs.held.inl(T.tree.walk(List.reverse(&2, String, ps), T.Tw{inl, T.JPut{vv}, [], bd, "", [],
+        True{}}, 0), rw, hs, at, saved, rest, bk, qk, un, lf, ab, cc)
+
+# the scanner after `""`, waiting for the next character
+def sv.q2(
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  ps: List<&2, String>,
+  bk: T.Lex,
+  sk: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  ab: Bool
+) -> T.St:
+  T.St{bd, rw, hs, he, ps, [], T.LQ2{}, bk, T.QBasic{}, sk, T.HNone{}, un, lf, ab, False{}}
+
+# a character after `""` that is no quote places the empty string and is
+# read as the fast step would read it with the string placed
+def fs.q2(
+  same: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  hq: {same == False{} : Bool}
+) -> {T.read.once2(T.lex.q2.go(same, sv.q2(bd, rw, hs, he, ps, bk, sk, un, lf, ab), cc, T.QBasic{}))
+  == T.read.fast(sv.took(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, un, lf, ab), cc) : T.St}:
+  match same:
+    case False{}:
+      fs.held(sk, T.VStr{""}, cc, bd, rw, hs, he, ps, bk, T.QBasic{}, un, lf, ab)
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.q2.go(True{}, sv.q2(bd, rw, hs, he, ps, bk, sk, un, lf, ab), cc,
+        T.QBasic{})) == T.read.fast(sv.took(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, un, lf, ab), cc) : T.St}, hq)
+
+# two states whose fast steps agree on a character are read alike from it
+def scan.fast(
+  dq: Bool,
+  sq: Bool,
+  cr: Bool,
+  +s1: T.St,
+  +s2: T.St,
+  +cc: Char,
+  ee: {T.read.fast(s1, cc) == T.read.fast(s2, cc) : T.St}
+) -> {T.doc.scan.q(dq, sq, cr, s1, cc) == T.doc.scan.q(dq, sq, cr, s2, cc) : T.Mode}:
+  match dq:
+    case True{}:
+      Equal.cong(T.St, T.Mode, st => T.doc.wrap(st), T.read.fast(s1, cc), T.read.fast(s2, cc), ee)
+    case False{}:
+      match sq:
+        case True{}:
+          Equal.cong(T.St, T.Mode, st => T.doc.wrap(st), T.read.fast(s1, cc), T.read.fast(s2, cc), ee)
+        case False{}:
+          match cr:
+            case True{}:
+              Equal.cong(T.St, T.Mode, st => T.MCr{st}, T.read.fast(s1, cc), T.read.fast(s2, cc), ee)
+            case False{}:
+              Equal.cong(T.St, T.Mode, st => T.MScan{st}, T.read.fast(s1, cc), T.read.fast(s2, cc), ee)
+
+# a text that does not start with a quote: what may follow `""`
+def sv.free(rest: String) -> Bool:
+  match rest:
+    case SNil{}:
+      True{}
+    case SCon{hh, _tt}:
+      Bool.not(Char.is_eq(hh, '"'))
+
+# `""` then any rest that does not start with a quote: the rest is read with
+# the empty string placed, back where the value position left it
+def sv.empty(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  rest: String,
+  -PP: T.Doc -> Type,
+  hr: {sv.free(rest) == True{} : Bool},
+  ih: sv.Then(SNil{}, bd, rw, hs, he, ps, sk, ab, rest, PP)
+) -> PP(T.doc.read(SCon{'"', rest}, sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab))):
+  match rest:
+    case SNil{}:
+      pp.step(PP, T.doc.read(SCon{'"', SNil{}}, sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab)),
+        T.doc.read(SNil{}, T.MScan{sv.took(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, un, lf, ab)}),
+        Equal.cong(T.St, T.Doc, st => T.read.fin2(st), sv.took(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, un, lf, ab),
+          T.read.fin.close(T.read.once2(sv.took(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, un, lf, ab))),
+          tk.fin(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, T.QBasic{}, un, lf, ab, False{})),
+        ih(T.VStr{""}, bk, un, lf, {==}))
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+uu}:
+          pp.step(PP, T.doc.read(SCon{'"', SCon{Chr{uu}, tt}}, sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab)),
+            T.doc.read(SCon{Chr{uu}, tt}, T.MScan{sv.took(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, un, lf, ab)}),
+            Equal.cong(T.Mode, T.Doc, md => T.doc.read(tt, md),
+              T.doc.scan(sv.q2(bd, rw, hs, he, ps, bk, sk, un, lf, ab), Chr{uu}),
+              T.doc.scan(sv.took(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, un, lf, ab), Chr{uu}),
+              scan.fast(U32.is_eq(uu, 34), U32.is_eq(uu, 39), U32.is_eq(uu, 13),
+                sv.q2(bd, rw, hs, he, ps, bk, sk, un, lf, ab),
+                sv.took(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, un, lf, ab), Chr{uu},
+                fs.q2(U32.is_eq(uu, 34), Chr{uu}, bd, rw, hs, he, ps, bk, sk, un, lf, ab,
+                  Eq.not.true(U32.is_eq(uu, 34), hr)))),
+            ih(T.VStr{""}, bk, un, lf, {==}))
+
+# The whole string, from each value position.
+
+# every string as render writes it after the opening quote, then the closing
+# quote and any rest that does not start with a quote: the rest is read with
+# a string value holding it placed, and whatever back, uni and left
+def sv.read(
+  ss: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  es: {Laws.short(ss) == True{} : Bool},
+  hr: {sv.free(rest) == True{} : Bool},
+  ih: sv.Then(ss, bd, rw, hs, he, ps, sk, ab, rest, PP)
+) -> PP(T.doc.read(String.append(Laws.escs(ss), SCon{'"', rest}), sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab))):
+  match ss:
+    case SNil{}:
+      sv.empty(bd, rw, hs, he, ps, bk, sk, un, lf, ab, rest, PP, hr, ih)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+uu}:
+          sv.more(uu, tt, bd, rw, hs, he, ps, bk, sk, un, lf, ab, rest, PP, es, ih)
+
+# key.basic(s) then rest, read from a scanner in state q: the premise form
+# WP-C and WP-D call
+def sv.Read(
+  +ss: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  PP: T.Doc -> Type
+) -> Type:
+  PP(T.doc.read(String.append(T.key.basic(ss), rest), T.MScan{fs.st(bd, rw, hs, he, ps, buf, lx, bk, qk, sk, un,
+    lf, ab)}))
+
+# the quotes around escs, and the text after them
+def sv.text(
+  +ss: String,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  +md: T.Mode,
+  kk: PP(T.doc.read(String.append(Laws.escs(ss), SCon{'"', rest}), md))
+) -> PP(T.doc.read(String.append(Laws.escs(ss), String.append("\"", rest)), md)):
+  kk
+
+# a value position: after `=` in a root pair or an inline table's pair, the
+# scanner waits for the value in LVal; the opening quote opens the string
+# with back where the pair left it
+def sv.val(
+  +ss: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +buf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  es: {Laws.short(ss) == True{} : Bool},
+  hr: {sv.free(rest) == True{} : Bool},
+  ih: sv.Then(ss, bd, rw, hs, he, ps, sk, ab, rest, PP)
+) -> sv.Read(ss, bd, rw, hs, he, ps, buf, T.LVal{}, bk, qk, sk, un, lf, ab, rest, PP):
+  %Equal.sym(String, T.key.basic(ss), "\"" ++ Laws.escs(ss) ++ "\"", Laws.basic_escs(ss)) :
+    PP(T.doc.read(String.append(_, rest), T.MScan{fs.st(bd, rw, hs, he, ps, buf, T.LVal{}, bk, qk, sk, un, lf,
+      ab)}))
+  %Equal.sym(String, String.append(String.append(Laws.escs(ss), "\""), rest),
+    String.append(Laws.escs(ss), String.append("\"", rest)), Eq.append_assoc(Laws.escs(ss), "\"", rest)) :
+    PP(T.doc.read(_, sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab)))
+  sv.text(ss, rest, PP, sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab),
+    sv.read(ss, bd, rw, hs, he, ps, bk, sk, un, lf, ab, rest, PP, es, hr, ih))
+
+# an array item: in LArr the quote is held, read in LVal, and opens the
+# string with back at LVal
+def sv.arr(
+  +ss: String,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +buf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  es: {Laws.short(ss) == True{} : Bool},
+  hr: {sv.free(rest) == True{} : Bool},
+  ih: sv.Then(ss, bd, rw, hs, he, ps, sk, ab, rest, PP)
+) -> sv.Read(ss, bd, rw, hs, he, ps, buf, T.LArr{}, bk, qk, sk, un, lf, ab, rest, PP):
+  %Equal.sym(String, T.key.basic(ss), "\"" ++ Laws.escs(ss) ++ "\"", Laws.basic_escs(ss)) :
+    PP(T.doc.read(String.append(_, rest), T.MScan{fs.st(bd, rw, hs, he, ps, buf, T.LArr{}, bk, qk, sk, un, lf,
+      ab)}))
+  %Equal.sym(String, String.append(String.append(Laws.escs(ss), "\""), rest),
+    String.append(Laws.escs(ss), String.append("\"", rest)), Eq.append_assoc(Laws.escs(ss), "\"", rest)) :
+    PP(T.doc.read(_, sv.open(bd, rw, hs, he, ps, T.LVal{}, sk, un, lf, ab)))
+  sv.text(ss, rest, PP, sv.open(bd, rw, hs, he, ps, T.LVal{}, sk, un, lf, ab),
+    sv.read(ss, bd, rw, hs, he, ps, T.LVal{}, sk, un, lf, ab, rest, PP, es, hr, ih))
+
+# A string value holding ss reads as the owned string ss, in a table's pair
+# or as an item: what WP-D needs to take own off the parsed side.
+
+# as a pair's value
+def sv.own.pair(
+  vv: T.Val,
+  +ss: String,
+  +kk: String,
+  +tt: List<&2, T.Val>,
+  hv: sv.Is(vv, ss)
+) -> {Laws.own.rows(T.VPair{kk, vv} <> tt) == T.VPair{kk, T.VStr{ss}} <> Laws.own.rows(tt) : List<&2, T.Val>}:
+  match vv:
+    case T.VStr{st}:
+      Equal.cong(String, List<&2, T.Val>, xs => T.VPair{kk, T.VStr{xs}} <> Laws.own.rows(tt), st, ss, hv)
+    case T.VSpan{src, +nn}:
+      Equal.cong(String, List<&2, T.Val>, xs => T.VPair{kk, T.VStr{xs}} <> Laws.own.rows(tt),
+        T.span.str(src, nn, U32.is_zero(nn)), ss, hv)
+    case T.VInt{_sign, _digits}:
+      match hv:
+    case T.VFlo{_sign, _text}:
+      match hv:
+    case T.VBool{_bit}:
+      match hv:
+    case T.VWhen{_when}:
+      match hv:
+    case T.VArr{_items}:
+      match hv:
+    case T.VInl{_rows}:
+      match hv:
+    case T.VHead{_path, _rows}:
+      match hv:
+    case T.VAot{_path, _rows}:
+      match hv:
+    case T.VAots{_path, _elems}:
+      match hv:
+    case T.VPair{_name, _val}:
+      match hv:
+
+# as an item
+def sv.own.item(
+  vv: T.Val,
+  +ss: String,
+  +tt: List<&2, T.Val>,
+  hv: sv.Is(vv, ss)
+) -> {Laws.own.rows(vv <> tt) == T.VStr{ss} <> Laws.own.rows(tt) : List<&2, T.Val>}:
+  match vv:
+    case T.VStr{st}:
+      Equal.cong(String, List<&2, T.Val>, xs => T.VStr{xs} <> Laws.own.rows(tt), st, ss, hv)
+    case T.VSpan{src, +nn}:
+      Equal.cong(String, List<&2, T.Val>, xs => T.VStr{xs} <> Laws.own.rows(tt),
+        T.span.str(src, nn, U32.is_zero(nn)), ss, hv)
+    case T.VInt{_sign, _digits}:
+      match hv:
+    case T.VFlo{_sign, _text}:
+      match hv:
+    case T.VBool{_bit}:
+      match hv:
+    case T.VWhen{_when}:
+      match hv:
+    case T.VArr{_items}:
+      match hv:
+    case T.VInl{_rows}:
+      match hv:
+    case T.VHead{_path, _rows}:
+      match hv:
+    case T.VAot{_path, _rows}:
+      match hv:
+    case T.VAots{_path, _elems}:
+      match hv:
+    case T.VPair{_name, _val}:
+      match hv:
+
+# The laws. A bare key, then " = " and whatever opens the value, bring the
+# scanner to the value position; the string is read there by sv.val or
+# sv.arr; the text after it closes the document, which own reads as the
+# document of s once the value is known to be a string.
+
+# a space ends a nonempty bare key, and " = " leaves the scanner waiting for
+# the value
+def kv.eq2(
+  +bb: List<&2, Char>,
+  full: {List.is_empty(&2, Char, bb) == False{} : Bool},
+  +vv: String
+) -> {T.doc.read(SCon{' ', SCon{'=', SCon{' ', vv}}}, T.MScan{ky(bb)})
+  == T.doc.read(vv, T.MScan{fs.st("", [], [], [], [T.buf.str.go(bb, "")], [], T.LVal{}, T.LTop{}, T.QBasic{}, [], 0,
+    0, False{})}) : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(SCon{'=', SCon{' ', vv}}, T.MScan{T.read.once2(T.lex.key.end.go(
+      List.is_empty(&2, Char, bb), ky(bb), T.LAfter{}))}),
+    T.doc.read(SCon{'=', SCon{' ', vv}}, T.MScan{T.read.once2(T.lex.key.end.go(
+      False{}, ky(bb), T.LAfter{}))}),
+    T.doc.read(vv, T.MScan{fs.st("", [], [], [], [T.buf.str.go(bb, "")], [], T.LVal{}, T.LTop{}, T.QBasic{}, [], 0,
+      0, False{})}),
+    Equal.cong(Bool, T.Doc,
+      bt => T.doc.read(SCon{'=', SCon{' ', vv}}, T.MScan{T.read.once2(
+        T.lex.key.end.go(bt, ky(bb), T.LAfter{}))}),
+      List.is_empty(&2, Char, bb), False{}, full),
+    {==})
+
+# a bare key, then " = ": the scanner waits for the value, the key its name
+def kv.key2(
+  +xx: U32,
+  +tt: String,
+  +vv: String,
+  +ee: {T.bare.all.step(T.bare.at(Chr{xx}), _u => T.bare.all(String.to_list(tt))) == True{} : Bool}
+) -> {T.parse(String.append(SCon{Chr{xx}, tt}, SCon{' ', SCon{'=', SCon{' ', vv}}}))
+  == T.doc.read(vv, T.MScan{fs.st("", [], [], [], [SCon{Chr{xx}, tt}], [], T.LVal{}, T.LTop{}, T.QBasic{}, [], 0,
+    0, False{})}) : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(String.append(tt, SCon{' ', SCon{'=', SCon{' ', vv}}}), T.doc.scan(T.st.start(), Chr{xx})),
+    T.doc.read(String.append(tt, SCon{' ', SCon{'=', SCon{' ', vv}}}), T.MScan{ky([Chr{xx}])}),
+    T.doc.read(vv, T.MScan{fs.st("", [], [], [], [SCon{Chr{xx}, tt}], [], T.LVal{}, T.LTop{}, T.QBasic{}, [], 0,
+      0, False{})}),
+    Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, SCon{' ', SCon{'=', SCon{' ', vv}}}), md),
+      T.doc.scan(T.st.start(), Chr{xx}), T.MScan{ky([Chr{xx}])},
+      key.first(xx, ball.head(T.bare.at(Chr{xx}), String.to_list(tt), ee))),
+    Equal.trans(T.Doc,
+      T.doc.read(String.append(tt, SCon{' ', SCon{'=', SCon{' ', vv}}}), T.MScan{ky([Chr{xx}])}),
+      T.doc.read(SCon{' ', SCon{'=', SCon{' ', vv}}}, T.MScan{ky(rev.onto(tt, [Chr{xx}]))}),
+      T.doc.read(vv, T.MScan{fs.st("", [], [], [], [SCon{Chr{xx}, tt}], [], T.LVal{}, T.LTop{}, T.QBasic{}, [], 0,
+        0, False{})}),
+      key.body(tt, SCon{' ', SCon{'=', SCon{' ', vv}}}, [Chr{xx}],
+        ball.tail(T.bare.at(Chr{xx}), String.to_list(tt), ee)),
+      Equal.trans(T.Doc,
+        T.doc.read(SCon{' ', SCon{'=', SCon{' ', vv}}}, T.MScan{ky(rev.onto(tt, [Chr{xx}]))}),
+        T.doc.read(vv, T.MScan{fs.st("", [], [], [], [T.buf.str.go(rev.onto(tt, [Chr{xx}]), "")], [], T.LVal{},
+          T.LTop{}, T.QBasic{}, [], 0, 0, False{})}),
+        T.doc.read(vv, T.MScan{fs.st("", [], [], [], [SCon{Chr{xx}, tt}], [], T.LVal{}, T.LTop{}, T.QBasic{}, [],
+          0, 0, False{})}),
+        kv.eq2(rev.onto(tt, [Chr{xx}]), rev.full(tt, Chr{xx}, []), vv),
+        Equal.cong(String, T.Doc, nm => T.doc.read(vv, T.MScan{fs.st("", [], [], [], [nm], [], T.LVal{},
+          T.LTop{}, T.QBasic{}, [], 0, 0, False{})}),
+          T.buf.str.go(rev.onto(tt, [Chr{xx}]), ""), SCon{Chr{xx}, tt},
+          Equal.trans(String, T.buf.str.go(rev.onto(tt, [Chr{xx}]), ""),
+            SCon{Chr{xx}, String.append(tt, "")}, SCon{Chr{xx}, tt},
+            ml.rev(tt, [Chr{xx}], ""),
+            Equal.cong(String, String, ss => SCon{Chr{xx}, ss}, String.append(tt, ""), tt,
+              Eq.append_nil(tt)))))))
+
+# the owned document is the one named
+def sw.Own(+want: T.Doc, dd: T.Doc) -> Type:
+  {Laws.own(dd) == want : T.Doc}
+
+# a root pair's string value, then a newline, end the document
+def sw.root(
+  vv: T.Val,
+  +kk: String,
+  +ss: String,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  hv: sv.Is(vv, ss)
+) -> sw.Own(T.Doc{"", [T.VPair{kk, T.VStr{ss}}]}, T.doc.read("\n", T.MScan{sv.took([], vv, "", [], [], [], [kk],
+  bk, un, lf, False{})})):
+  match vv:
+    case T.VStr{st}:
+      Equal.cong(String, T.Doc, xs => T.Doc{"", [T.VPair{kk, T.VStr{xs}}]}, st, ss, hv)
+    case T.VSpan{src, +nn}:
+      Equal.cong(String, T.Doc, xs => T.Doc{"", [T.VPair{kk, T.VStr{xs}}]}, T.span.str(src, nn, U32.is_zero(nn)),
+        ss, hv)
+    case T.VInt{_sign, _digits}:
+      match hv:
+    case T.VFlo{_sign, _text}:
+      match hv:
+    case T.VBool{_bit}:
+      match hv:
+    case T.VWhen{_when}:
+      match hv:
+    case T.VArr{_items}:
+      match hv:
+    case T.VInl{_rows}:
+      match hv:
+    case T.VHead{_path, _rows}:
+      match hv:
+    case T.VAot{_path, _rows}:
+      match hv:
+    case T.VAots{_path, _elems}:
+      match hv:
+    case T.VPair{_name, _val}:
+      match hv:
+
+# the root pair
+def sw.pair(
+  kk: String,
+  ek: {T.bare(kk) == True{} : Bool},
+  +ss: String,
+  es: {Laws.short(ss) == True{} : Bool}
+) -> sw.Own(T.Doc{"", [T.VPair{kk, T.VStr{ss}}]}, T.parse(String.append(kk, String.append(" = ",
+  String.append(T.key.basic(ss), "\n"))))):
+  match kk:
+    case SNil{}:
+      Eq.bit.absurd(&1, sw.Own(T.Doc{"", [T.VPair{SNil{}, T.VStr{ss}}]}, T.parse(String.append(SNil{},
+        String.append(" = ", String.append(T.key.basic(ss), "\n"))))), ek)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          pp.step(dd => sw.Own(T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VStr{ss}}]}, dd),
+            T.parse(String.append(SCon{Chr{xx}, tt}, String.append(" = ", String.append(T.key.basic(ss), "\n")))),
+            T.doc.read(String.append(T.key.basic(ss), "\n"), T.MScan{fs.st("", [], [], [], [SCon{Chr{xx}, tt}], [],
+              T.LVal{}, T.LTop{}, T.QBasic{}, [], 0, 0, False{})}),
+            kv.key2(xx, tt, String.append(T.key.basic(ss), "\n"), ek),
+            sv.val(ss, "", [], [], [], [SCon{Chr{xx}, tt}], [], T.LTop{}, T.QBasic{}, [], 0, 0, False{}, "\n",
+              dd => sw.Own(T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VStr{ss}}]}, dd), es, {==},
+              vv => bk => un => lf => hv => sw.root(vv, SCon{Chr{xx}, tt}, ss, bk, un, lf, hv)))
+
+def Laws.basic_string_reads_back(k, ek, s, es):
+  sw.pair(k, ek, s, es)
+
+# an array item's string value, then `]` and a newline, end the document
+def sw.item(
+  vv: T.Val,
+  +kk: String,
+  +ss: String,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  hv: sv.Is(vv, ss)
+) -> sw.Own(T.Doc{"", [T.VPair{kk, T.VArr{[T.VStr{ss}]}}]}, T.doc.read("]\n",
+  T.MScan{sv.took([T.CArr{[], [kk], []}], vv, "", [], [], [], [], bk, un, lf, False{})})):
+  match vv:
+    case T.VStr{st}:
+      Equal.cong(String, T.Doc, xs => T.Doc{"", [T.VPair{kk, T.VArr{[T.VStr{xs}]}}]}, st, ss, hv)
+    case T.VSpan{src, +nn}:
+      Equal.cong(String, T.Doc, xs => T.Doc{"", [T.VPair{kk, T.VArr{[T.VStr{xs}]}}]},
+        T.span.str(src, nn, U32.is_zero(nn)), ss, hv)
+    case T.VInt{_sign, _digits}:
+      match hv:
+    case T.VFlo{_sign, _text}:
+      match hv:
+    case T.VBool{_bit}:
+      match hv:
+    case T.VWhen{_when}:
+      match hv:
+    case T.VArr{_items}:
+      match hv:
+    case T.VInl{_rows}:
+      match hv:
+    case T.VHead{_path, _rows}:
+      match hv:
+    case T.VAot{_path, _rows}:
+      match hv:
+    case T.VAots{_path, _elems}:
+      match hv:
+    case T.VPair{_name, _val}:
+      match hv:
+
+# the array
+def sw.arr(
+  kk: String,
+  ek: {T.bare(kk) == True{} : Bool},
+  +ss: String,
+  es: {Laws.short(ss) == True{} : Bool}
+) -> sw.Own(T.Doc{"", [T.VPair{kk, T.VArr{[T.VStr{ss}]}}]}, T.parse(String.append(kk, String.append(" = [",
+  String.append(T.key.basic(ss), "]\n"))))):
+  match kk:
+    case SNil{}:
+      Eq.bit.absurd(&1, sw.Own(T.Doc{"", [T.VPair{SNil{}, T.VArr{[T.VStr{ss}]}}]}, T.parse(String.append(SNil{},
+        String.append(" = [", String.append(T.key.basic(ss), "]\n"))))), ek)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          pp.step(dd => sw.Own(T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VArr{[T.VStr{ss}]}}]}, dd),
+            T.parse(String.append(SCon{Chr{xx}, tt}, String.append(" = [", String.append(T.key.basic(ss),
+              "]\n")))),
+            T.doc.read(String.append(T.key.basic(ss), "]\n"), T.MScan{fs.st("", [], [], [], [], [], T.LArr{},
+              T.LTop{}, T.QBasic{}, [T.CArr{[], [SCon{Chr{xx}, tt}], []}], 0, 0, False{})}),
+            kv.key2(xx, tt, SCon{'[', String.append(T.key.basic(ss), "]\n")}, ek),
+            sv.arr(ss, "", [], [], [], [], [], T.LTop{}, T.QBasic{}, [T.CArr{[], [SCon{Chr{xx}, tt}], []}], 0, 0,
+              False{}, "]\n", dd => sw.Own(T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VArr{[T.VStr{ss}]}}]}, dd), es,
+              {==}, vv => bk => un => lf => hv => sw.item(vv, SCon{Chr{xx}, tt}, ss, bk, un, lf, hv)))
+
+def Laws.basic_string_reads_back_in_array(k, ek, s, es):
+  sw.arr(k, ek, s, es)
+
+# an inline table's string value, then `}` and a newline, end the document
+def sw.inl.val(
+  vv: T.Val,
+  +kk: String,
+  +ss: String,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  hv: sv.Is(vv, ss)
+) -> sw.Own(T.Doc{"", [T.VPair{kk, T.VInl{[T.VPair{"v", T.VStr{ss}}]}}]}, T.doc.read("}\n",
+  T.MScan{sv.took([T.CInl{[], [kk], []}], vv, "", [], [], [], ["v"], bk, un, lf, False{})})):
+  match vv:
+    case T.VStr{st}:
+      Equal.cong(String, T.Doc, xs => T.Doc{"", [T.VPair{kk, T.VInl{[T.VPair{"v", T.VStr{xs}}]}}]}, st, ss, hv)
+    case T.VSpan{src, +nn}:
+      Equal.cong(String, T.Doc, xs => T.Doc{"", [T.VPair{kk, T.VInl{[T.VPair{"v", T.VStr{xs}}]}}]},
+        T.span.str(src, nn, U32.is_zero(nn)), ss, hv)
+    case T.VInt{_sign, _digits}:
+      match hv:
+    case T.VFlo{_sign, _text}:
+      match hv:
+    case T.VBool{_bit}:
+      match hv:
+    case T.VWhen{_when}:
+      match hv:
+    case T.VArr{_items}:
+      match hv:
+    case T.VInl{_rows}:
+      match hv:
+    case T.VHead{_path, _rows}:
+      match hv:
+    case T.VAot{_path, _rows}:
+      match hv:
+    case T.VAots{_path, _elems}:
+      match hv:
+    case T.VPair{_name, _val}:
+      match hv:
+
+# the inline table
+def sw.inl(
+  kk: String,
+  ek: {T.bare(kk) == True{} : Bool},
+  +ss: String,
+  es: {Laws.short(ss) == True{} : Bool}
+) -> sw.Own(T.Doc{"", [T.VPair{kk, T.VInl{[T.VPair{"v", T.VStr{ss}}]}}]}, T.parse(String.append(kk,
+  String.append(" = {v = ", String.append(T.key.basic(ss), "}\n"))))):
+  match kk:
+    case SNil{}:
+      Eq.bit.absurd(&1, sw.Own(T.Doc{"", [T.VPair{SNil{}, T.VInl{[T.VPair{"v", T.VStr{ss}}]}}]},
+        T.parse(String.append(SNil{}, String.append(" = {v = ", String.append(T.key.basic(ss), "}\n"))))), ek)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          pp.step(dd => sw.Own(T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VInl{[T.VPair{"v", T.VStr{ss}}]}}]}, dd),
+            T.parse(String.append(SCon{Chr{xx}, tt}, String.append(" = {v = ", String.append(T.key.basic(ss),
+              "}\n")))),
+            T.doc.read(String.append(T.key.basic(ss), "}\n"), T.MScan{fs.st("", [], [], [], ["v"], [], T.LVal{},
+              T.LTop{}, T.QBasic{}, [T.CInl{[], [SCon{Chr{xx}, tt}], []}], 0, 0, False{})}),
+            kv.key2(xx, tt, SCon{'{', SCon{'v', SCon{' ', SCon{'=', SCon{' ', String.append(T.key.basic(ss),
+              "}\n")}}}}}, ek),
+            sv.val(ss, "", [], [], [], ["v"], [], T.LTop{}, T.QBasic{}, [T.CInl{[], [SCon{Chr{xx}, tt}], []}], 0, 0,
+              False{}, "}\n", dd => sw.Own(T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VInl{[T.VPair{"v",
+              T.VStr{ss}}]}}]}, dd), es, {==},
+              vv => bk => un => lf => hv => sw.inl.val(vv, SCon{Chr{xx}, tt}, ss, bk, un, lf, hv)))
+
+def Laws.basic_string_reads_back_in_inline_table(k, ek, s, es):
+  sw.inl(k, ek, s, es)
