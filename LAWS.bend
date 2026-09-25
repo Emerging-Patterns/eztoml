@@ -2372,3 +2372,421 @@ law scalar_reads_back:
   for +fx: Vf
   for +rest: String
   {from_val(fx, String.append(T.render.atom(v), SCon{'\n', rest})) == after_val(fx, v, rest) : T.Doc}
+
+# WP-K3: a key's name is its characters however it is written. A key segment
+# is bare, a basic string (written as key writes one, escapes decoded) or a
+# literal string (its characters as they are, no escapes); a dotted key is
+# segments joined by dots, with blank space allowed around each dot; the
+# segments of a header are spelled the same way. The laws below read each
+# spelling back as its characters, put a dotted key's value under the nested
+# tables its segments name, and find it with at.
+
+# a character a literal string may hold: any but the apostrophe and the
+# controls other than tab (toml.abnf literal-char)
+def lit.char(+cc: Char) -> Bool:
+  Bool.not(Bool.or(Char.is_eq(cc, '\''), Bool.and(is_ctl(cc), Bool.not(Char.is_eq(cc, '\t')))))
+
+# a text a literal string may hold
+def lit.text(ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      True{}
+    case SCon{+hh, tt}:
+      Bool.and(lit.char(hh), lit.text(tt))
+
+# LAW: a literal key reads back as its characters: for every text s a
+# literal string can hold, 's' followed by " = 1" parses with no error to
+# one pair, named s, holding the integer 1
+# TOML-KEY-3
+law literal_key_reads_back:
+  for +s: String
+  for e: {lit.text(s) == True{} : Bool}
+  {T.parse(SCon{'\'', String.append(s, "' = 1")})
+    == T.Doc{"", [T.VPair{s, T.VInt{T.Plus{}, "1"}}]} : T.Doc}
+
+# how a key segment is spelled: bare, as a basic string the way key writes
+# one, or as a literal string
+type Spell is Data:
+  SpBare{}
+  SpBasic{}
+  SpLit{}
+
+# a key segment: a name and how it is spelled
+type Seg is Data:
+  Seg{sp: Spell, name: String}
+
+# a segment of a dotted key that a dot follows, with the blank space before
+# the dot and after it (each blank a tab when true, a space when false)
+type Dot is Data:
+  Dot{seg: Seg, g1: List<&2, Bool>, g2: List<&2, Bool>}
+
+# blank space: a tab for each true, a space for each false
+def gap(gs: List<&2, Bool>) -> String:
+  match gs:
+    case []:
+      ""
+    case tab <> rest:
+      SCon{blank_char(tab), gap(rest)}
+
+# a segment's text
+def seg.text(sg: Seg) -> String:
+  match sg:
+    case Seg{SpBare{}, name}:
+      name
+    case Seg{SpBasic{}, name}:
+      T.key.basic(name)
+    case Seg{SpLit{}, name}:
+      SCon{'\'', String.append(name, "'")}
+
+# a segment's name
+def seg.name(sg: Seg) -> String:
+  match sg:
+    case Seg{_sp, name}:
+      name
+
+# whether a segment's name can be spelled so: a bare name is a bare key, a
+# literal one holds no apostrophe and no control but tab, and every name can
+# be written as a basic string
+def seg.ok(sg: Seg) -> Bool:
+  match sg:
+    case Seg{SpBare{}, name}:
+      T.bare(name)
+    case Seg{SpBasic{}, _name}:
+      True{}
+    case Seg{SpLit{}, name}:
+      lit.text(name)
+
+# the text of a dotted key, its segments joined by dots with their blank
+# space, then tail
+def dk.text(ds: List<&2, Dot>, last: Seg, tail: String) -> String:
+  match ds:
+    case []:
+      String.append(seg.text(last), tail)
+    case Dot{sg, g1, g2} <> rest:
+      String.append(seg.text(sg), String.append(gap(g1), SCon{'.', String.append(gap(g2),
+        dk.text(rest, last, tail))}))
+
+# the names of a dotted key's segments, in order
+def dk.names(ds: List<&2, Dot>, last: Seg) -> List<&2, String>:
+  match ds:
+    case []:
+      [seg.name(last)]
+    case Dot{sg, _g1, _g2} <> rest:
+      seg.name(sg) <> dk.names(rest, last)
+
+# whether every segment of a dotted key can be spelled as it is
+def dk.ok(ds: List<&2, Dot>, last: Seg) -> Bool:
+  match ds:
+    case []:
+      seg.ok(last)
+    case Dot{sg, _g1, _g2} <> rest:
+      Bool.and(seg.ok(sg), dk.ok(rest, last))
+
+# the scanner after a key's `=`, waiting for its value in the table here:
+# the key's segments in parts, newest first
+def kb.val(
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  back: T.Lex,
+  qkind: T.QKind,
+  arrtab: Bool
+) -> T.St:
+  T.St{"", rows, heads, here, parts, [], T.LVal{}, back, qkind, [], T.HNone{}, 0, 0, arrtab,
+    False{}}
+
+# LAW: a dotted key reads back as its segments' names: from the start of a
+# line in any table, a key of segments each bare, basic or literal, joined
+# by dots with blank space around them, then blank space and `=`, is the rest
+# read waiting for the value with every segment's characters, escapes
+# decoded, as the key's parts
+# TOML-KEY-3
+law dotted_key_reads_back:
+  for +ds: List<&2, Dot>
+  for +last: Seg
+  for ok: {dk.ok(ds, last) == True{} : Bool}
+  for +g: List<&2, Bool>
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +arrtab: Bool
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{kb.val(rows, heads, here,
+    List.reverse(&2, String, dk.names(ds, last)), bk, qk, arrtab)}) == goal : T.Doc}
+  {T.doc.read(dk.text(ds, last, String.append(gap(g), SCon{'=', rest})), T.MScan{hb.line(rows,
+    heads, here, back, qkind, arrtab)}) == goal : T.Doc}
+
+# A key's value is put by a walk along the current table's path then the
+# key's segments. The walk counts skip down past the current table's
+# segments, which are navigation; once skip reaches zero each segment is a
+# dotted key's, which may enter a table no header defined, or make a new
+# implicit one, and records the table's path behind `.` (heads.by.dot) the
+# first time. WP-W's walk_put_at_head is the case where skip never reaches
+# zero.
+
+# whether a dotted key's segment goes on through what its name refers to:
+# nothing yet, or a table no header defined
+def dk.can.dot(look: T.Look, heads: List<&2, String>, +path: String) -> Bool:
+  match look:
+    case T.KMiss{}:
+      True{}
+    case T.KHead{_p, _rows}:
+      Bool.not(T.heads.head(heads, path))
+    case _:
+      False{}
+
+# whether a walk step goes on: navigation when zz is false, a dotted key's
+# segment when it is true
+def dk.can(zz: Bool, look: T.Look, heads: List<&2, String>, +path: String) -> Bool:
+  match zz:
+    case False{}:
+      tb.can(look)
+    case True{}:
+      dk.can.dot(look, heads, path)
+
+# a table's path recorded behind `.`, unless it is recorded already
+def dk.mark.new(seen: Bool, path: String, heads: List<&2, String>) -> List<&2, String>:
+  match seen:
+    case True{}:
+      heads
+    case False{}:
+      SCon{'.', path} <> heads
+
+# the definitions after a walk step: navigation records none, a dotted key's
+# segment records its table's path behind `.` unless it is recorded already
+def dk.mark(zz: Bool, +path: String, +heads: List<&2, String>) -> List<&2, String>:
+  match zz:
+    case False{}:
+      heads
+    case True{}:
+      dk.mark.new(T.heads.has(heads, path), path, heads)
+
+# whether a put's walk goes on through every segment of the path, from the
+# table pre names, with the definitions heads and the count skip
+def dk.open(
+  path: List<&2, String>,
+  +pre: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +skip: U32
+) -> Bool:
+  match path:
+    case []:
+      True{}
+    case +seg <> rest:
+      Bool.and(dk.can(U32.is_zero(skip), T.rows.look(rows, seg), heads, T.tree.pre(pre, seg)),
+        dk.open(rest, T.tree.pre(pre, seg), tb.into(T.rows.look(rows, seg)),
+          dk.mark(U32.is_zero(skip), T.tree.pre(pre, seg), heads), T.path.dec(skip)))
+
+# the definitions after a put's walk along the path
+def dk.heads(
+  path: List<&2, String>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +skip: U32
+) -> List<&2, String>:
+  match path:
+    case []:
+      heads
+    case +seg <> rest:
+      dk.heads(rest, T.tree.pre(pre, seg), dk.mark(U32.is_zero(skip), T.tree.pre(pre, seg), heads),
+        T.path.dec(skip))
+
+# the names of the segments a dot follows
+def dk.init(ds: List<&2, Dot>) -> List<&2, String>:
+  match ds:
+    case []:
+      []
+    case Dot{sg, _g1, _g2} <> rest:
+      seg.name(sg) <> dk.init(rest)
+
+# the integer 1, the value the key/value laws below read
+def one() -> T.Val:
+  T.VInt{T.Plus{}, "1"}
+
+# LAW: a value put along a path the walk goes on through, navigation then a
+# dotted key's segments, to a name the table at its end does not hold, goes at
+# the head of that table's rows; every table on the way is entered or made
+# under its segment's name, and each table a dotted key's segment reached is
+# recorded as defined by dotted keys. This is walk_put_at_head with skip
+# allowed to reach zero
+# TOML-KEY-3
+law dotted_put_at_head:
+  for +path: List<&2, String>
+  for +k: String
+  for +v: T.Val
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +skip: U32
+  for +inl: Bool
+  for +eo: {dk.open(path, "", rows, heads, skip) == True{} : Bool}
+  for em: {T.get(tb.rows(path, rows), k) == T.Miss{} : T.Hit}
+  {T.tree.walk(List.append(&2, String, path, [k]), T.Tw{rows, T.JPut{v}, [], "", "", heads, inl}, skip)
+    == T.End{tb.set(path, "", rows, T.VPair{k, v} <> tb.rows(path, rows)), "",
+      dk.heads(path, "", heads, skip)} : T.End}
+
+# LAW: a key/value line of a dotted key, spelled any way, and the value 1,
+# read from the start of a line in the table here, is the rest read from the
+# start of the next line with the rows and definitions the put's walk along
+# here and the segments' names returns
+# TOML-KEY-3
+law dotted_key_pair_reads_back:
+  for +ds: List<&2, Dot>
+  for +last: Seg
+  for ok: {dk.ok(ds, last) == True{} : Bool}
+  for +g: List<&2, Bool>
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +arrtab: Bool
+  for +rows2: List<&2, T.Val>
+  for +heads2: List<&2, String>
+  for ew: {T.tree.walk(List.append(&2, String, here, dk.names(ds, last)), T.Tw{rows, T.JPut{one()}, [],
+    "", "", heads, False{}}, T.path.len(here, 0)) == T.End{rows2, "", heads2} : T.End}
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{hb.line(rows2, heads2, here, bk, qk,
+    arrtab)}) == goal : T.Doc}
+  {T.doc.read(dk.text(ds, last, String.append(gap(g), String.append("= 1\n", rest))),
+    T.MScan{hb.line(rows, heads, here, back, qkind, arrtab)}) == goal : T.Doc}
+
+# LAW: and when the walk goes on through the current table and every segment
+# before the last, and the table there does not hold the last name, the line
+# puts the value at the head of that table's rows, under the last name's
+# characters, in nested tables named by the other segments' characters
+# (dotted_put_at_head)
+# TOML-KEY-3
+law dotted_key_pair_puts_value:
+  for +ds: List<&2, Dot>
+  for +last: Seg
+  for ok: {dk.ok(ds, last) == True{} : Bool}
+  for +g: List<&2, Bool>
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +eo: {dk.open(List.append(&2, String, here, dk.init(ds)), "", rows, heads, T.path.len(here, 0))
+    == True{} : Bool}
+  for em: {T.get(tb.rows(List.append(&2, String, here, dk.init(ds)), rows), seg.name(last)) == T.Miss{}
+    : T.Hit}
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +arrtab: Bool
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{hb.line(tb.set(List.append(&2, String,
+    here, dk.init(ds)), "", rows, T.VPair{seg.name(last), one()} <> tb.rows(List.append(&2, String, here,
+    dk.init(ds)), rows)), dk.heads(List.append(&2, String, here, dk.init(ds)), "", heads, T.path.len(here,
+    0)), here, bk, qk, arrtab)}) == goal : T.Doc}
+  {T.doc.read(dk.text(ds, last, String.append(gap(g), String.append("= 1\n", rest))),
+    T.MScan{hb.line(rows, heads, here, back, qkind, arrtab)}) == goal : T.Doc}
+
+# LAW: a document of one key/value line, a dotted key spelled any way and the
+# value 1, parses with no error to the value under the last name's
+# characters, in nested tables named by the other segments' characters
+# TOML-KEY-3
+law dotted_key_line_reads_back:
+  for +ds: List<&2, Dot>
+  for +last: Seg
+  for +ok: {dk.ok(ds, last) == True{} : Bool}
+  for +g: List<&2, Bool>
+  {T.parse(dk.text(ds, last, String.append(gap(g), "= 1\n")))
+    == T.Doc{"", T.rows.seal(tb.set(dk.init(ds), "", [], [T.VPair{seg.name(last), one()}]))} : T.Doc}
+
+# LAW: and at finds the value by the segments' names: a key's name is its
+# characters however it was written
+# TOML-KEY-3
+law dotted_key_line_found_by_at:
+  for +ds: List<&2, Dot>
+  for +last: Seg
+  for ok: {dk.ok(ds, last) == True{} : Bool}
+  for +g: List<&2, Bool>
+  {T.at(T.root(T.parse(dk.text(ds, last, String.append(gap(g), "= 1\n")))), dk.names(ds, last))
+    == T.Found{one()} : T.Hit}
+
+# A header's segments are spelled the same way, bare, basic or literal, and
+# joined the same way, by dots with blank space around them, with blank
+# space allowed after the opening bracket and before the closing one. WP-H's
+# header_reads_back reads the segments as key writes them; the laws below
+# read every spelling.
+
+# a header line: `[` (`[[` for an array of tables), blank space, a dotted
+# key's text, blank space, `]` (`]]`), a newline, then rest
+def hd.line(
+  arr: Bool,
+  g0: List<&2, Bool>,
+  ds: List<&2, Dot>,
+  last: Seg,
+  g9: List<&2, Bool>,
+  rest: String
+) -> String:
+  match arr:
+    case False{}:
+      SCon{'[', String.append(gap(g0), dk.text(ds, last, String.append(gap(g9), SCon{']', SCon{'\n', rest}})))}
+    case True{}:
+      SCon{'[', SCon{'[', String.append(gap(g0), dk.text(ds, last, String.append(gap(g9), SCon{']', SCon{']',
+        SCon{'\n', rest}}})))}}
+
+# the path a header names: its segments' names, the last one last
+def hd.path(ds: List<&2, Dot>, last: Seg) -> List<&2, String>:
+  List.append(&2, String, dk.init(ds), [seg.name(last)])
+
+# LAW: a header line whose segments are each bare, basic or literal, with
+# blank space around its dots and inside its brackets, read from the start of
+# a line, is the rest read from the start of the next line in the table named
+# by the segments' characters, escapes decoded, with the rows and definitions
+# the header's walk along those names returns; for a `[table]` header and an
+# `[[array]]` one alike
+# TOML-KEY-3
+law header_segments_read_back:
+  for +arr: Bool
+  for +g0: List<&2, Bool>
+  for +ds: List<&2, Dot>
+  for +last: Seg
+  for ok: {dk.ok(ds, last) == True{} : Bool}
+  for +g9: List<&2, Bool>
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +arrtab: Bool
+  for +rows2: List<&2, T.Val>
+  for +heads2: List<&2, String>
+  for ew: {T.tree.walk(hd.path(ds, last), T.Tw{rows, header_job(arr), [], "", "", heads, False{}}, 0)
+    == T.End{rows2, "", heads2} : T.End}
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{hb.line(rows2, heads2, hd.path(ds, last), bk,
+    qk, False{})}) == goal : T.Doc}
+  {T.doc.read(hd.line(arr, g0, ds, last, g9, rest), T.MScan{hb.line(rows, heads, here, back, qkind, arrtab)})
+    == goal : T.Doc}
+
+# LAW: a document of one `[table]` header, its segments spelled any way,
+# parses with no error to an empty table under the last name's characters,
+# in nested tables named by the other segments' characters
+# TOML-KEY-3
+law header_line_reads_back:
+  for +g0: List<&2, Bool>
+  for +ds: List<&2, Dot>
+  for +last: Seg
+  for +ok: {dk.ok(ds, last) == True{} : Bool}
+  for +g9: List<&2, Bool>
+  {T.parse(hd.line(False{}, g0, ds, last, g9, "")) == T.Doc{"", T.rows.seal(tb.set(dk.init(ds), "", [],
+    [T.VPair{seg.name(last), T.VHead{T.tree.pre(tb.join(dk.init(ds), ""), seg.name(last)), []}}]))} : T.Doc}
+
+# LAW: and at finds that table by the segments' names
+# TOML-KEY-3
+law header_line_found_by_at:
+  for +g0: List<&2, Bool>
+  for +ds: List<&2, Dot>
+  for +last: Seg
+  for ok: {dk.ok(ds, last) == True{} : Bool}
+  for +g9: List<&2, Bool>
+  {T.at(T.root(T.parse(hd.line(False{}, g0, ds, last, g9, ""))), hd.path(ds, last))
+    == T.Found{T.VHead{T.tree.pre(tb.join(dk.init(ds), ""), seg.name(last)), []}} : T.Hit}
