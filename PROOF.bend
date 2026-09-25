@@ -42515,3 +42515,382 @@ def gd.w.pick(special: Bool, +cs: List<&2, Char>) -> {Laws.gd.gok(T.word.val.pic
 
 def Laws.gd_word(cs) :
   gd.w.pick(T.word.lead(cs), cs)
+
+
+# WP-R3: a bare word's states. A bare word ends through word.val (gd_word)
+# and gd_take; the character that ended it is held, or a newline that ended a
+# root value moves the line on.
+
+# a failed step, for any reason
+def gd.g.err2(
+  +st: T.St,
+  +why: String,
+  +eg: {Laws.good(st) == True{} : Bool}
+) -> {Laws.good(T.st.err(st, why)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      match bad:
+        case SNil{}:
+          gd.tt(Laws.gd.tr(why, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HNone{}),
+            gd.ifok.any(String.is_empty(why), Bool.and(T.wf.go(rows, T.WfRows{""}), Laws.gd.vals(stack)),
+              gd.l(Laws.gd.tr("", rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)),
+            gd.lx.mk(here, parts, buf, stack, T.HNone{}, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr("",
+              rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.p(here, parts, buf, stack, hold,
+                gd.r(Laws.gd.tr("", rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.b(here,
+                  parts, buf, stack, hold, gd.r(Laws.gd.tr("", rows, stack), Laws.gd.lx(here, parts, buf, stack,
+                    hold), eg)), gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr("", rows, stack),
+                      Laws.gd.lx(here, parts, buf, stack, hold), eg)), {==}))
+        case SCon{+bh, +bt}:
+          gd.tt(Laws.gd.tr(SCon{bh, bt}, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HNone{}), {==},
+            gd.lx.mk(here, parts, buf, stack, T.HNone{}, gd.lx.h(here, parts, buf, stack, hold,
+              gd.r(Laws.gd.tr(SCon{bh, bt}, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)),
+                gd.lx.p(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(SCon{bh, bt}, rows, stack), Laws.gd.lx(here,
+                  parts, buf, stack, hold), eg)), gd.lx.b(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(SCon{bh, bt},
+                    rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.s(here, parts, buf, stack,
+                      hold, gd.r(Laws.gd.tr(SCon{bh, bt}, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold),
+                        eg)), {==}))
+
+# a value a key may hold is one gd_take may put, whatever the state
+def gd.okv.of(+st: T.St, +vv: T.Val, +ev: {Laws.gd.vok(vv) == True{} : Bool}) -> {Laws.gd.okv(st, vv) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.ifok.any(String.is_empty(bad), Laws.gd.vok(vv), ev)
+
+# a newline that ended a root value moves the line on; any other state stays
+def gd.g.bline.lex(
+  lex: T.Lex,
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool}
+) -> {Laws.good(T.bare.line.lex(lex, st)) == True{} : Bool}:
+  match lex:
+    case T.LTop{}:
+      eg
+    case T.LLine{}:
+      gd.g.lex(st, T.LTop{}, eg)
+    case T.LKey{}:
+      eg
+    case T.LKeyDot{}:
+      eg
+    case T.LAfter{}:
+      eg
+    case T.LKeyQ{}:
+      eg
+    case T.LKeyE{}:
+      eg
+    case T.LKeyU{}:
+      eg
+    case T.LVal{}:
+      eg
+    case T.LQ{}:
+      eg
+    case T.LQ2{}:
+      eg
+    case T.LStr{}:
+      eg
+    case T.LEsc{}:
+      eg
+    case T.LUni{}:
+      eg
+    case T.LFold{}:
+      eg
+    case T.LMq{}:
+      eg
+    case T.LMqEnd{}:
+      eg
+    case T.LTrim{}:
+      eg
+    case T.LTrim2{}:
+      eg
+    case T.LBare{}:
+      eg
+    case T.LDate{}:
+      eg
+    case T.LCom{}:
+      eg
+    case T.LHead{}:
+      eg
+    case T.LHeadGap{}:
+      eg
+    case T.LHeadDot{}:
+      eg
+    case T.LHeadQ{}:
+      eg
+    case T.LHeadE{}:
+      eg
+    case T.LHeadU{}:
+      eg
+    case T.LHeadR{}:
+      eg
+    case T.LArr{}:
+      eg
+    case T.LArrC{}:
+      eg
+    case T.LInl{}:
+      eg
+    case T.LInlK{}:
+      eg
+    case T.LInlC{}:
+      eg
+    case T.LSink{}:
+      eg
+
+# the newline, read off the state
+def gd.g.bline.go(+st: T.St, +eg: {Laws.good(st) == True{} : Bool}) -> {Laws.good(T.bare.line.go(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.bline.lex(lex, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+        lead}, eg)
+
+# a newline, or another delimiter
+def gd.g.bline(
+  nl: Bool,
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool}
+) -> {Laws.good(T.bare.line(st, nl)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      gd.g.bline.go(st, eg)
+    case False{}:
+      eg
+
+# the delimiter held, or not
+def gd.g.bhold(
+  +st: T.St,
+  +cc: Char,
+  hold: Bool,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.bare.hold(st, cc, hold)) == True{} : Bool}:
+  match hold:
+    case False{}:
+      gd.g.bline(T.ch.nl(cc), st, eg)
+    case True{}:
+      gd.g.hold.on(st, cc, eg, ec)
+
+# a bare word's value placed, or its refusal
+def gd.g.bgot(
+  gg: T.Got,
+  +st: T.St,
+  +cc: Char,
+  +hold: Bool,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +ev: {Laws.gd.gok(gg) == True{} : Bool}
+) -> {Laws.good(T.bare.got(gg, st, cc, hold)) == True{} : Bool}:
+  match gg:
+    case T.GotBad{+why}:
+      gd.g.err2(st, why, eg)
+    case T.GotVal{+vv}:
+      gd.g.bhold(T.val.take(st, vv), cc, hold, gd.g.take(st, vv, eg, gd.okv.of(st, vv, ev)), ec)
+
+# a bare word ends: its buffer read as a value
+def gd.g.bfin(
+  +st: T.St,
+  +cc: Char,
+  +hd: Bool,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.bare.finish(st, cc, hd)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.bgot(T.word.val(List.reverse(&2, Char, buf)),
+        T.St{bad, rows, heads, here, parts, [], lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc, hd,
+        gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, [], stack, hold), gd.l(Laws.gd.tr(bad, rows,
+          stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+          gd.lx.mk(here, parts, [], stack, hold, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows,
+            stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.p(here, parts, buf, stack, hold,
+              gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), {==}, gd.lx.s(here,
+                parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold),
+                  eg)), gd.r(Laws.gd.keys(stack), Laws.gd.hold(hold), gd.lx.s1(here, parts, buf, stack, hold,
+                    gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg))))),
+        ec, Laws.gd_word(List.reverse(&2, Char, buf)))
+
+
+# a step of a bare word: bdgo
+def gd.g.bdgo(
+  date: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.bare.date.go(date, st, cc)) == True{} : Bool}:
+  match date:
+    case True{}:
+      gd.g.lex(st, T.LDate{}, eg)
+    case False{}:
+      gd.g.bfin(st, cc, False{}, eg, ec)
+
+
+# a step of a bare word: bdate
+def gd.g.bdate(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.bare.date(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.bdgo(T.date.shaped(buf), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
+        arrtab, lead}, cc, eg, ec)
+
+
+# a step of a bare word: bend
+def gd.g.bend(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.bare.end(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.bfin(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc,
+        T.lex.bare.hold(T.ch.skip(cc), T.ch.nl(cc), T.inl.open(stack)), eg, ec)
+
+
+# a step of a bare word: bsp
+def gd.g.bsp(
+  sp: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.bare.sp(sp, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      gd.g.bdate(st, cc, eg, ec)
+    case False{}:
+      gd.g.bend(st, cc, eg, ec)
+
+
+# a step of a bare word: bgo
+def gd.g.bgo(
+  delim: Bool,
+  +sp: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.bare.go(delim, sp, st, cc)) == True{} : Bool}:
+  match delim:
+    case False{}:
+      gd.g.push(st, cc, T.LBare{}, eg, ec)
+    case True{}:
+      gd.g.bsp(sp, st, cc, eg, ec)
+
+
+# a step of a bare word: datedig
+def gd.g.datedig(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.date.digit(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, cc <> (' ' <> buf), stack, hold),
+        gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+        gd.lx.mk(here, parts, cc <> (' ' <> buf), stack, hold, gd.lx.h(here, parts, buf, stack, hold,
+          gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.p(here, parts,
+            buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)),
+          gd.tt(T.wf.char(cc), Bool.and(T.wf.char(' '), Laws.gd.cs(buf)), ec,
+            gd.tt(T.wf.char(' '), Laws.gd.cs(buf), {==}, gd.lx.b(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad,
+              rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))), gd.lx.s(here, parts, buf, stack, hold,
+                gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)),
+                  gd.r(Laws.gd.keys(stack), Laws.gd.hold(hold), gd.lx.s1(here, parts, buf, stack, hold,
+                    gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))))
+
+
+# a step of a bare word: datego
+def gd.g.datego(
+  digit: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.date.go(digit, st, cc)) == True{} : Bool}:
+  match digit:
+    case True{}:
+      gd.g.datedig(st, cc, eg, ec)
+    case False{}:
+      gd.g.bfin(st, cc, True{}, eg, ec)
+
+
+def Laws.gd_bare_steps(lex, hl, st, eg, cc, ec) :
+  match lex:
+    case T.LTop{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LTop{}, st, cc)) == True{} : Bool}, hl)
+    case T.LLine{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LLine{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKey{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKey{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKeyDot{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKeyDot{}, st, cc)) == True{} : Bool}, hl)
+    case T.LAfter{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LAfter{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKeyQ{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKeyQ{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKeyE{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKeyE{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKeyU{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKeyU{}, st, cc)) == True{} : Bool}, hl)
+    case T.LVal{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LVal{}, st, cc)) == True{} : Bool}, hl)
+    case T.LQ{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LQ{}, st, cc)) == True{} : Bool}, hl)
+    case T.LQ2{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LQ2{}, st, cc)) == True{} : Bool}, hl)
+    case T.LStr{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LStr{}, st, cc)) == True{} : Bool}, hl)
+    case T.LEsc{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LEsc{}, st, cc)) == True{} : Bool}, hl)
+    case T.LUni{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LUni{}, st, cc)) == True{} : Bool}, hl)
+    case T.LFold{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LFold{}, st, cc)) == True{} : Bool}, hl)
+    case T.LMq{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LMq{}, st, cc)) == True{} : Bool}, hl)
+    case T.LMqEnd{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LMqEnd{}, st, cc)) == True{} : Bool}, hl)
+    case T.LTrim{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LTrim{}, st, cc)) == True{} : Bool}, hl)
+    case T.LTrim2{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LTrim2{}, st, cc)) == True{} : Bool}, hl)
+    case T.LBare{}:
+      gd.g.bgo(T.ch.delim(cc), T.ch.sp(cc), st, cc, eg, ec)
+    case T.LDate{}:
+      gd.g.datego(Char.is_digit(cc), st, cc, eg, ec)
+    case T.LCom{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LCom{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHead{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHead{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadGap{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadGap{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadDot{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadDot{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadQ{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadQ{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadE{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadE{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadU{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadU{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadR{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadR{}, st, cc)) == True{} : Bool}, hl)
+    case T.LArr{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LArr{}, st, cc)) == True{} : Bool}, hl)
+    case T.LArrC{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LArrC{}, st, cc)) == True{} : Bool}, hl)
+    case T.LInl{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LInl{}, st, cc)) == True{} : Bool}, hl)
+    case T.LInlK{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LInlK{}, st, cc)) == True{} : Bool}, hl)
+    case T.LInlC{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LInlC{}, st, cc)) == True{} : Bool}, hl)
+    case T.LSink{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LSink{}, st, cc)) == True{} : Bool}, hl)

@@ -3477,3 +3477,27 @@ def gd.gok(gg: T.Got) -> Bool:
 law gd_word:
   for +cs: List<&2, Char>
   {gd.gok(T.word.val(cs)) == True{} : Bool}
+
+# a bare word's two states: its characters, and the space a datetime may hold
+def gd.bw(lex: T.Lex) -> Bool:
+  match lex:
+    case T.LBare{}:
+      True{}
+    case T.LDate{}:
+      True{}
+    case _:
+      False{}
+
+# LAW: every step in a bare word keeps a state good: from every good state,
+# whatever its fields, one character that is a Unicode scalar value read in a
+# bare word's state or a datetime's space leaves a good state; a word that
+# ends is read as a value (gd_word) and placed (gd_take)
+# TOML-RT-3
+law gd_bare_steps:
+  for +lex: T.Lex
+  for hl: {gd.bw(lex) == True{} : Bool}
+  for +st: T.St
+  for eg: {good(st) == True{} : Bool}
+  for +cc: Char
+  for ec: {T.wf.char(cc) == True{} : Bool}
+  {good(T.read.on(lex, st, cc)) == True{} : Bool}
