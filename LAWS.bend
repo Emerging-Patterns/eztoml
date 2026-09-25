@@ -3640,3 +3640,23 @@ law parse_wf:
   for es: {short(text) == True{} : Bool}
   for eo: {String.is_empty(T.bad(T.parse(text))) == True{} : Bool}
   {T.wf(T.parse(text)) == True{} : Bool}
+
+# WP-R2: a parsed document renders, reparses and renders again unchanged.
+# The first half is TOML-RT-1 at parse(t), which TOML-RT-3 makes well-formed;
+# the second is render_parse_canon read through render: render writes a span
+# as its characters, and already writes each table's pairs that are no table
+# before its tables, so render(canon(d)) is render(d).
+
+# LAW: for every text of Unicode scalar values shorter than 2^32 characters
+# that parse reads with no error, and whose parse renders to a text shorter
+# than 2^32 characters, parse reads that rendering back as the same document,
+# which renders to the same text again
+# TOML-RT-2
+law parse_render_parse:
+  for +t: String
+  for h_u: {T.wf.text(t) == True{} : Bool}
+  for h_s: {short(t) == True{} : Bool}
+  for +h_r: {short(T.render(T.parse(t))) == True{} : Bool}
+  for ok: {String.is_empty(T.bad(T.parse(t))) == True{} : Bool}
+  {Bool.and(same(T.parse(T.render(T.parse(t))), T.parse(t)),
+    String.eq(T.render(T.parse(T.render(T.parse(t)))), T.render(T.parse(t)))) == True{} : Bool}
