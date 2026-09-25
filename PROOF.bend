@@ -43637,3 +43637,824 @@ def Laws.gd_fast_step(st, eg, cc, ec) :
 
 def Laws.gd_held(st, eg) :
   gd.once2(st, eg)
+
+
+# WP-R3: the span modes. doc.read reads the text in four modes. A scanning
+# state and one after a carriage return are good states; an opening quote's
+# mode is good as the quote left its state; a plain string's span keeps its
+# first character and its length, and gd.sp ties the span to the text still
+# to read, so each character the span takes is one the text had, a Unicode
+# scalar value. A span that closes is a VSpan whose n characters are scalar
+# values; one copied to the buffer puts scalar values there
+
+# a then that holds holds its first part
+def gd.th.l(aa: Bool, mm: Unit -> Bool, +ee: {T.wf.then(aa, mm) == True{} : Bool}) -> {aa == True{} : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      Eq.bit.absurd(&2, {False{} == True{} : Bool}, ee)
+
+# a then that holds holds its rest
+def gd.th.r(aa: Bool, mm: Unit -> Bool, +ee: {T.wf.then(aa, mm) == True{} : Bool}) -> {mm(Unit{}) == True{} : Bool}:
+  match aa:
+    case True{}:
+      ee
+    case False{}:
+      Eq.bit.absurd(&2, {mm(Unit{}) == True{} : Bool}, ee)
+
+# a Bool whose negation holds is False
+def gd.not.f(bb: Bool, +ee: {Bool.not(bb) == True{} : Bool}) -> {bb == False{} : Bool}:
+  match bb:
+    case True{}:
+      Eq.bit.absurd(&2, {True{} == False{} : Bool}, ee)
+    case False{}:
+      {==}
+
+# a text is as long as itself
+def gd.ln.self(+ss: String) -> {Laws.gd.ln(ss, ss) == True{} : Bool}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{_h, tt}:
+      gd.ln.self(tt)
+
+# taking a borrow from a word and then adding the carry back leaves the word
+def gd.decinc.w(
+  nn: Nat,
+  ww: Word(nn),
+  cc: Bool
+) -> {Word.adc(nn, Word.adc(nn, ww, Word.zero(nn), True{}, cc), Word.zero(nn), False{}, Bool.not(cc)) == ww : Word(nn)}:
+  match nn:
+    case 0n:
+      match ww:
+        case WNil{}:
+          {==}
+    case 1n+pp:
+      match ww:
+        case WCon{bb, +tt}:
+          match bb cc:
+            case False{} False{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{False{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), True{}, False{}), Word.zero(pp), False{}, True{}), tt,
+                gd.decinc.w(pp, tt, False{}))
+            case False{} True{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{False{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), True{}, True{}), Word.zero(pp), False{}, False{}), tt,
+                gd.decinc.w(pp, tt, True{}))
+            case True{} False{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{True{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), True{}, True{}), Word.zero(pp), False{}, False{}), tt,
+                gd.decinc.w(pp, tt, True{}))
+            case True{} True{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{True{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), True{}, True{}), Word.zero(pp), False{}, False{}), tt,
+                gd.decinc.w(pp, tt, True{}))
+
+# one more than one less than a U32 is the U32
+def gd.decinc(xx: U32) -> {U32.add(U32.sub(xx, 1), 1) == xx : U32}:
+  match xx:
+    case U32{ww}:
+      match ww:
+        case WCon{bb, +tt}:
+          match bb:
+            case False{}:
+              Equal.cong(Word(31n), U32, yy => U32{WCon{False{}, yy}},
+                Word.adc(31n, Word.adc(31n, tt, Word.zero(31n), True{}, False{}), Word.zero(31n), False{}, True{}),
+                tt, gd.decinc.w(31n, tt, False{}))
+            case True{}:
+              Equal.cong(Word(31n), U32, yy => U32{WCon{True{}, yy}},
+                Word.adc(31n, Word.adc(31n, tt, Word.zero(31n), True{}, True{}), Word.zero(31n), False{}, False{}),
+                tt, gd.decinc.w(31n, tt, True{}))
+
+# a span as gd.sp keeps it, at the count it has run down to
+def gd.spm(+cut: String, +nn: U32, text: String) -> Bool:
+  Laws.gd.sp(cut, U32.is_zero(nn), nn, text)
+
+# the span one character on, read back at the count it came from
+def gd.spm.back(
+  +cut: String,
+  +nn: U32,
+  +text: String
+) -> {gd.spm(cut, U32.sub(U32.add(nn, 1), 1), text) == gd.spm(cut, nn, text) : Bool}:
+  Equal.cong(U32, Bool, xx => gd.spm(cut, xx, text), U32.sub(U32.add(nn, 1), 1), nn, Eq.sub.inc(nn))
+
+# the span one character back and on again is at its count
+def gd.spm.fwd(
+  +cut: String,
+  +nn: U32,
+  +text: String
+) -> {gd.spm(cut, U32.add(U32.sub(nn, 1), 1), text) == gd.spm(cut, nn, text) : Bool}:
+  Equal.cong(U32, Bool, xx => gd.spm(cut, xx, text), U32.add(U32.sub(nn, 1), 1), nn, gd.decinc(nn))
+
+# a span's rest, where its count has run down
+def gd.sp.end(
+  +ct: String,
+  +nn: U32,
+  +tt: String,
+  +hz: {U32.is_zero(nn) == True{} : Bool},
+  +ee: {Laws.gd.sp(ct, True{}, nn, tt) == True{} : Bool}
+) -> {gd.spm(ct, U32.sub(U32.add(nn, 1), 1), tt) == True{} : Bool}:
+  Equal.trans(Bool, gd.spm(ct, U32.sub(U32.add(nn, 1), 1), tt), gd.spm(ct, nn, tt), True{},
+    gd.spm.back(ct, nn, tt),
+    Equal.trans(Bool, gd.spm(ct, nn, tt), Laws.gd.sp(ct, True{}, nn, tt), True{},
+      Equal.cong(Bool, Bool, zz => Laws.gd.sp(ct, zz, nn, tt), U32.is_zero(nn), True{}, hz), ee))
+
+# a span's rest of scalar values, as long as the text, where its count has run down
+def gd.sp.full(
+  +ct: String,
+  +nn: U32,
+  +tt: String,
+  +ew: {T.wf.text(ct) == True{} : Bool},
+  +el: {Laws.gd.ln(ct, tt) == True{} : Bool}
+) -> {Laws.gd.sp(ct, True{}, nn, tt) == True{} : Bool}:
+  match ct:
+    case SNil{}:
+      gd.tt(T.wf.text(SNil{}), Laws.gd.ln(SNil{}, tt), {==}, el)
+    case SCon{+dh, +dt}:
+      gd.tt(T.wf.text(SCon{dh, dt}), Laws.gd.ln(SCon{dh, dt}, tt), ew, el)
+
+# the rest of a span whose count has run down: scalar values, as long as the text
+def gd.sp.rest(
+  +ct: String,
+  +nn: U32,
+  +tt: String,
+  +ch: Char,
+  +ee: {Bool.and(T.wf.then(T.wf.char(ch), _u => T.wf.text(ct)), Laws.gd.ln(ct, tt)) == True{} : Bool}
+) -> {Laws.gd.sp(ct, True{}, nn, tt) == True{} : Bool}:
+  match ct:
+    case SNil{}:
+      gd.tt(T.wf.text(SNil{}), Laws.gd.ln(SNil{}, tt), {==},
+        gd.r(T.wf.then(T.wf.char(ch), _u => T.wf.text(SNil{})), Laws.gd.ln(SNil{}, tt), ee))
+    case SCon{+dh, +dt}:
+      gd.tt(T.wf.text(SCon{dh, dt}), Laws.gd.ln(SCon{dh, dt}, tt),
+        gd.th.r(T.wf.char(ch), _u => T.wf.text(SCon{dh, dt}),
+          gd.l(T.wf.then(T.wf.char(ch), _u => T.wf.text(SCon{dh, dt})), Laws.gd.ln(SCon{dh, dt}, tt), ee)),
+        gd.r(T.wf.then(T.wf.char(ch), _u => T.wf.text(SCon{dh, dt})), Laws.gd.ln(SCon{dh, dt}, tt), ee))
+
+# a span takes the text's next character: its count goes up by one, and the
+# span still reaches the text after that character
+def gd.sp.inc(
+  cut: String,
+  zz: Bool,
+  +nn: U32,
+  +hh: Char,
+  +tt: String,
+  +hz: {U32.is_zero(nn) == zz : Bool},
+  +en: {U32.is_zero(U32.add(nn, 1)) == False{} : Bool},
+  +ep: {Laws.gd.sp(cut, zz, nn, SCon{hh, tt}) == True{} : Bool}
+) -> {gd.spm(cut, U32.add(nn, 1), tt) == True{} : Bool}:
+  match cut:
+    case SNil{}:
+      match zz:
+        case True{}:
+          Eq.bit.absurd(&2, {gd.spm(SNil{}, U32.add(nn, 1), tt) == True{} : Bool}, ep)
+        case False{}:
+          Eq.bit.absurd(&2, {gd.spm(SNil{}, U32.add(nn, 1), tt) == True{} : Bool}, ep)
+    case SCon{+ch, +ct}:
+      match zz:
+        case True{}:
+          Equal.trans(Bool, gd.spm(SCon{ch, ct}, U32.add(nn, 1), tt),
+            Laws.gd.sp(SCon{ch, ct}, False{}, U32.add(nn, 1), tt), True{},
+            Equal.cong(Bool, Bool, yy => Laws.gd.sp(SCon{ch, ct}, yy, U32.add(nn, 1), tt),
+              U32.is_zero(U32.add(nn, 1)), False{}, en),
+            gd.tt(T.wf.char(ch), gd.spm(ct, U32.sub(U32.add(nn, 1), 1), tt),
+              gd.th.l(T.wf.char(ch), _u => T.wf.text(ct),
+                gd.l(T.wf.then(T.wf.char(ch), _u => T.wf.text(ct)), Laws.gd.ln(ct, tt), ep)),
+              gd.sp.end(ct, nn, tt, hz, gd.sp.rest(ct, nn, tt, ch, ep))))
+        case False{}:
+          Equal.trans(Bool, gd.spm(SCon{ch, ct}, U32.add(nn, 1), tt),
+            Laws.gd.sp(SCon{ch, ct}, False{}, U32.add(nn, 1), tt), True{},
+            Equal.cong(Bool, Bool, yy => Laws.gd.sp(SCon{ch, ct}, yy, U32.add(nn, 1), tt),
+              U32.is_zero(U32.add(nn, 1)), False{}, en),
+            gd.tt(T.wf.char(ch), gd.spm(ct, U32.sub(U32.add(nn, 1), 1), tt),
+              gd.l(T.wf.char(ch), gd.spm(ct, U32.sub(nn, 1), SCon{hh, tt}), ep),
+              Equal.trans(Bool, gd.spm(ct, U32.sub(U32.add(nn, 1), 1), tt), gd.spm(ct, nn, tt), True{},
+                gd.spm.back(ct, nn, tt),
+                Equal.trans(Bool, gd.spm(ct, nn, tt), gd.spm(ct, U32.add(U32.sub(nn, 1), 1), tt), True{},
+                  Equal.sym(Bool, gd.spm(ct, U32.add(U32.sub(nn, 1), 1), tt), gd.spm(ct, nn, tt),
+                    gd.spm.fwd(ct, nn, tt)),
+                  gd.sp.inc(ct, U32.is_zero(U32.sub(nn, 1)), U32.sub(nn, 1), hh, tt, {==},
+                    Equal.trans(Bool, U32.is_zero(U32.add(U32.sub(nn, 1), 1)), U32.is_zero(nn), False{},
+                      Equal.cong(U32, Bool, xx => U32.is_zero(xx), U32.add(U32.sub(nn, 1), 1), nn, gd.decinc(nn)),
+                      hz),
+                    gd.r(T.wf.char(ch), gd.spm(ct, U32.sub(nn, 1), SCon{hh, tt}), ep))))))
+
+# a span kept as gd.sp keeps it is a well-formed span
+def gd.sp.wf(
+  cut: String,
+  zz: Bool,
+  +nn: U32,
+  +text: String,
+  +ep: {Laws.gd.sp(cut, zz, nn, text) == True{} : Bool}
+) -> {T.wf.span(cut, nn, zz) == True{} : Bool}:
+  match cut:
+    case SNil{}:
+      match zz:
+        case True{}:
+          {==}
+        case False{}:
+          Eq.bit.absurd(&2, {T.wf.span(SNil{}, nn, False{}) == True{} : Bool}, ep)
+    case SCon{+ch, +ct}:
+      match zz:
+        case True{}:
+          {==}
+        case False{}:
+          gd.then(T.wf.char(ch), _u => T.wf.span(ct, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1))),
+            gd.l(T.wf.char(ch), gd.spm(ct, U32.sub(nn, 1), text), ep),
+            gd.sp.wf(ct, U32.is_zero(U32.sub(nn, 1)), U32.sub(nn, 1), text,
+              gd.r(T.wf.char(ch), gd.spm(ct, U32.sub(nn, 1), text), ep)))
+
+# a span copied to the buffer, reversed onto scalar values, is scalar values
+def gd.sp.rev(
+  cut: String,
+  zz: Bool,
+  +nn: U32,
+  +text: String,
+  +acc: List<&2, Char>,
+  +ep: {Laws.gd.sp(cut, zz, nn, text) == True{} : Bool},
+  +ea: {Laws.gd.cs(acc) == True{} : Bool}
+) -> {Laws.gd.cs(T.span.rev(cut, nn, zz, acc)) == True{} : Bool}:
+  match cut:
+    case SNil{}:
+      match zz:
+        case True{}:
+          ea
+        case False{}:
+          ea
+    case SCon{+ch, +ct}:
+      match zz:
+        case True{}:
+          ea
+        case False{}:
+          gd.sp.rev(ct, U32.is_zero(U32.sub(nn, 1)), U32.sub(nn, 1), text, ch <> acc,
+            gd.r(T.wf.char(ch), gd.spm(ct, U32.sub(nn, 1), text), ep),
+            gd.tt(T.wf.char(ch), Laws.gd.cs(acc), gd.l(T.wf.char(ch), gd.spm(ct, U32.sub(nn, 1), text), ep), ea))
+
+def Laws.gd_span_wf(cut, nn, text, ep) :
+  gd.sp.wf(cut, U32.is_zero(nn), nn, text, ep)
+
+def Laws.gd_next(mode, _hh, _tt):
+  match mode:
+    case T.MOpen{_b, _q, _k, _bd, _rw, _hs, _he, _pt, _bf, _bk, _sk, _un, _lf, _at}:
+      {==}
+    case T.MEat{_b, _q, _c, _n, _bd, _rw, _hs, _he, _pt, _k, _sk, _un, _lf, _at}:
+      {==}
+    case T.MScan{_st}:
+      {==}
+    case T.MCr{_st}:
+      {==}
+
+
+# a quote's state: a one-line string opens a span unless a character is held
+# or it is the first character; every other state scans on
+def gd.wlex(
+  lx: T.Lex,
+  hd: T.Hold,
+  ld: Bool,
+  qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tl: String,
+  +eg: {Laws.good(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.wrap.lex(lx, bd, rw, hs, he, pt, bf, bk, qk, sk, hd, un, lf, at, ld), tl) == True{} : Bool}:
+  match lx:
+    case T.LTop{}:
+      eg
+    case T.LLine{}:
+      eg
+    case T.LKey{}:
+      eg
+    case T.LKeyDot{}:
+      eg
+    case T.LAfter{}:
+      eg
+    case T.LKeyQ{}:
+      eg
+    case T.LKeyE{}:
+      eg
+    case T.LKeyU{}:
+      eg
+    case T.LVal{}:
+      eg
+    case T.LQ{}:
+      match hd:
+        case T.HChar{_held}:
+          eg
+        case T.HNone{}:
+          match ld:
+            case True{}:
+              eg
+            case False{}:
+              match qk:
+                case T.QBasic{}:
+                  eg
+                case T.QLit{}:
+                  eg
+                case T.QMulti{}:
+                  eg
+                case T.QMultiLit{}:
+                  eg
+    case T.LQ2{}:
+      eg
+    case T.LStr{}:
+      eg
+    case T.LEsc{}:
+      eg
+    case T.LUni{}:
+      eg
+    case T.LFold{}:
+      eg
+    case T.LMq{}:
+      eg
+    case T.LMqEnd{}:
+      eg
+    case T.LTrim{}:
+      eg
+    case T.LTrim2{}:
+      eg
+    case T.LBare{}:
+      eg
+    case T.LDate{}:
+      eg
+    case T.LCom{}:
+      eg
+    case T.LHead{}:
+      eg
+    case T.LHeadGap{}:
+      eg
+    case T.LHeadDot{}:
+      eg
+    case T.LHeadQ{}:
+      eg
+    case T.LHeadE{}:
+      eg
+    case T.LHeadU{}:
+      eg
+    case T.LHeadR{}:
+      eg
+    case T.LArr{}:
+      eg
+    case T.LArrC{}:
+      eg
+    case T.LInl{}:
+      eg
+    case T.LInlK{}:
+      eg
+    case T.LInlC{}:
+      eg
+    case T.LSink{}:
+      eg
+
+# a state a quote may have opened a string in
+def gd.wrap(
+  +st: T.St,
+  +tl: String,
+  +eg: {Laws.good(st) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.wrap(st), tl) == True{} : Bool}:
+  match st:
+    case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +hd, +un, +lf, +at, +ld}:
+      gd.wlex(lx, hd, ld, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, tl, eg)
+
+# a carriage return, or another character
+def gd.scr(
+  cr: Bool,
+  +st: T.St,
+  +cc: Char,
+  +tl: String,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.scan.cr(cr, st, cc), tl) == True{} : Bool}:
+  match cr:
+    case True{}:
+      gd.fast(st, cc, eg, ec)
+    case False{}:
+      gd.fast(st, cc, eg, ec)
+
+# an apostrophe, or another character
+def gd.ssq(
+  sq: Bool,
+  +cr: Bool,
+  +st: T.St,
+  +cc: Char,
+  +tl: String,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.scan.sq(sq, cr, st, cc), tl) == True{} : Bool}:
+  match sq:
+    case True{}:
+      gd.wrap(T.read.fast(st, cc), tl, gd.fast(st, cc, eg, ec))
+    case False{}:
+      gd.scr(cr, st, cc, tl, eg, ec)
+
+# a quote, or another character
+def gd.sdq(
+  dq: Bool,
+  +sq: Bool,
+  +cr: Bool,
+  +st: T.St,
+  +cc: Char,
+  +tl: String,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.scan.q(dq, sq, cr, st, cc), tl) == True{} : Bool}:
+  match dq:
+    case True{}:
+      gd.wrap(T.read.fast(st, cc), tl, gd.fast(st, cc, eg, ec))
+    case False{}:
+      gd.ssq(sq, cr, st, cc, tl, eg, ec)
+
+# a line feed after a carriage return, or the error
+def gd.dcr(
+  lf: Bool,
+  +st: T.St,
+  +cc: Char,
+  +tl: String,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.cr(lf, st, cc), tl) == True{} : Bool}:
+  match lf:
+    case True{}:
+      gd.fast(st, cc, eg, ec)
+    case False{}:
+      gd.g.err2(st, "carriage return without line feed", eg)
+
+
+# an empty buffer starts a span at this character; a buffer in use goes the
+# old way
+def gd.obuf(
+  bf: List<&2, Char>,
+  +ba: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tl: String,
+  +eg: {gd.gf(bd, rw, he, pt, bf, sk) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +et: {T.wf.text(tl) == True{} : Bool},
+  +es: {Laws.short(SCon{cc, tl}) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.open.buf(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl) == True{} : Bool}:
+  match bf:
+    case []:
+      gd.tt(gd.gf(bd, rw, he, pt, [], sk), Bool.and(gd.spm(SCon{cc, tl}, 1, tl), Laws.counts(tl, 1)), eg,
+        gd.tt(gd.spm(SCon{cc, tl}, 1, tl), Laws.counts(tl, 1),
+          gd.tt(T.wf.char(cc), Laws.gd.sp(tl, True{}, 0, tl), ec, gd.sp.full(tl, 0, tl, et, gd.ln.self(tl))),
+          gd.r(Bool.not(U32.is_zero(1)), Laws.counts(tl, 1), es)))
+    case +bh <> +bt:
+      gd.flex(T.LQ{}, qk, bd, rw, hs, he, pt, bh <> bt, bk, sk, un, lf, at, eg, cc, ec)
+
+
+# a forbidden control goes the old way; any other starts a span
+def gd.ook(
+  badc: Bool,
+  +ba: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tl: String,
+  +eg: {gd.gf(bd, rw, he, pt, bf, sk) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +et: {T.wf.text(tl) == True{} : Bool},
+  +es: {Laws.short(SCon{cc, tl}) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.open.ok(badc, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl),
+  tl) == True{} : Bool}:
+  match badc:
+    case True{}:
+      gd.flex(T.LQ{}, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc, ec)
+    case False{}:
+      gd.obuf(bf, ba, qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, cc, tl, eg, ec, et, es)
+
+
+# a backslash in a basic string goes the old way
+def gd.obs(
+  bs: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tl: String,
+  +eg: {gd.gf(bd, rw, he, pt, bf, sk) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +et: {T.wf.text(tl) == True{} : Bool},
+  +es: {Laws.short(SCon{cc, tl}) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.open.bs(bs, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl) == True{} : Bool}:
+  match bs:
+    case True{}:
+      gd.flex(T.LQ{}, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc, ec)
+    case False{}:
+      gd.ook(T.str.bad(Char.to_u32(cc), False{}), True{}, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl,
+        eg, ec, et, es)
+
+
+# a literal string keeps a backslash; a basic string does not
+def gd.ob(
+  ba: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tl: String,
+  +eg: {gd.gf(bd, rw, he, pt, bf, sk) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +et: {T.wf.text(tl) == True{} : Bool},
+  +es: {Laws.short(SCon{cc, tl}) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.open.b(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl) == True{} : Bool}:
+  match ba:
+    case False{}:
+      gd.ook(T.str.bad(Char.to_u32(cc), False{}), False{}, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl,
+        eg, ec, et, es)
+    case True{}:
+      gd.obs(Char.is_eq(cc, '\\'), qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl, eg, ec, et, es)
+
+
+# a second quote goes the old way
+def gd.oq(
+  same: Bool,
+  +ba: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tl: String,
+  +eg: {gd.gf(bd, rw, he, pt, bf, sk) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +et: {T.wf.text(tl) == True{} : Bool},
+  +es: {Laws.short(SCon{cc, tl}) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.open.q(same, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl),
+  tl) == True{} : Bool}:
+  match same:
+    case True{}:
+      gd.flex(T.LQ{}, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc, ec)
+    case False{}:
+      gd.ob(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl, eg, ec, et, es)
+
+
+# the span copied to the buffer, and the character read the old way
+def gd.ecopy(
+  +ct: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +hh: Char,
+  +tt: String,
+  +eg: {gd.gf(bd, rw, he, pt, [], sk) == True{} : Bool},
+  +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +eh: {T.wf.char(hh) == True{} : Bool},
+  _en: {Laws.counts(SCon{hh, tt}, nn) == True{} : Bool}
+) -> {Laws.gd.md(T.eat.copy(hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+  gd.g.str(T.St{bd, rw, hs, he, pt, T.span.rev(ct, nn, U32.is_zero(nn), []), T.LStr{}, T.LStr{}, qk, sk, T.HNone{},
+    un, lf, at, False{}}, hh,
+    gd.tt(Laws.gd.tr(bd, rw, sk), Laws.gd.lx(he, pt, T.span.rev(ct, nn, U32.is_zero(nn), []), sk, T.HNone{}),
+      gd.l(Laws.gd.tr(bd, rw, sk), Laws.gd.lx(he, pt, [], sk, T.HNone{}), eg),
+      gd.lx.mk(he, pt, T.span.rev(ct, nn, U32.is_zero(nn), []), sk, T.HNone{}, gd.lx.h(he, pt, [], sk, T.HNone{},
+        gd.r(Laws.gd.tr(bd, rw, sk), Laws.gd.lx(he, pt, [], sk, T.HNone{}), eg)), gd.lx.p(he, pt, [], sk, T.HNone{},
+          gd.r(Laws.gd.tr(bd, rw, sk), Laws.gd.lx(he, pt, [], sk, T.HNone{}), eg)),
+        gd.sp.rev(ct, U32.is_zero(nn), nn, SCon{hh, tt}, [], ep, {==}), gd.lx.s(he, pt, [], sk, T.HNone{},
+          gd.r(Laws.gd.tr(bd, rw, sk), Laws.gd.lx(he, pt, [], sk, T.HNone{}), eg)), {==})),
+    eh)
+
+# the span one character longer
+def gd.emore(
+  +ba: Bool,
+  +qq: Char,
+  +ct: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +hh: Char,
+  +tt: String,
+  +eg: {gd.gf(bd, rw, he, pt, [], sk) == True{} : Bool},
+  +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +en: {Laws.counts(SCon{hh, tt}, nn) == True{} : Bool}
+) -> {Laws.gd.md(T.MEat{ba, qq, ct, U32.add(nn, 1), bd, rw, hs, he, pt, qk, sk, un, lf, at}, tt) == True{} : Bool}:
+  gd.tt(gd.gf(bd, rw, he, pt, [], sk), Bool.and(gd.spm(ct, U32.add(nn, 1), tt), Laws.counts(tt, U32.add(nn, 1))), eg,
+    gd.tt(gd.spm(ct, U32.add(nn, 1), tt), Laws.counts(tt, U32.add(nn, 1)),
+      gd.sp.inc(ct, U32.is_zero(nn), nn, hh, tt, {==},
+        gd.not.f(U32.is_zero(U32.add(nn, 1)),
+          gd.l(Bool.not(U32.is_zero(U32.add(nn, 1))), Laws.counts(tt, U32.add(nn, 1)), en)),
+        ep),
+      gd.r(Bool.not(U32.is_zero(U32.add(nn, 1))), Laws.counts(tt, U32.add(nn, 1)), en)))
+
+
+# a forbidden control copies the span; a plain character extends it
+def gd.ectrl(
+  badc: Bool,
+  +ba: Bool,
+  +qq: Char,
+  +ct: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +hh: Char,
+  +tt: String,
+  +eg: {gd.gf(bd, rw, he, pt, [], sk) == True{} : Bool},
+  +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +en: {Laws.counts(SCon{hh, tt}, nn) == True{} : Bool},
+  +eh: {T.wf.char(hh) == True{} : Bool}
+) -> {Laws.gd.md(T.eat.ctrl(badc, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+  match badc:
+    case True{}:
+      gd.ecopy(ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, en)
+    case False{}:
+      gd.emore(ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, en)
+
+
+# a backslash in a basic string copies the span
+def gd.ebs(
+  bs: Bool,
+  +ba: Bool,
+  +qq: Char,
+  +ct: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +hh: Char,
+  +tt: String,
+  +eg: {gd.gf(bd, rw, he, pt, [], sk) == True{} : Bool},
+  +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +en: {Laws.counts(SCon{hh, tt}, nn) == True{} : Bool},
+  +eh: {T.wf.char(hh) == True{} : Bool}
+) -> {Laws.gd.md(T.eat.bs(bs, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+  match bs:
+    case True{}:
+      gd.ecopy(ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, en)
+    case False{}:
+      gd.ectrl(T.str.bad(Char.to_u32(hh), False{}), ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt,
+        eg, ep, en, eh)
+
+
+# a literal string's character, or a basic string's
+def gd.ebasic(
+  ba: Bool,
+  +qq: Char,
+  +ct: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +hh: Char,
+  +tt: String,
+  +eg: {gd.gf(bd, rw, he, pt, [], sk) == True{} : Bool},
+  +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +en: {Laws.counts(SCon{hh, tt}, nn) == True{} : Bool},
+  +eh: {T.wf.char(hh) == True{} : Bool}
+) -> {Laws.gd.md(T.eat.basic(ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+  match ba:
+    case False{}:
+      gd.ectrl(T.str.bad(Char.to_u32(hh), False{}), False{}, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh,
+        tt, eg, ep, en, eh)
+    case True{}:
+      gd.ebs(Char.is_eq(hh, '\\'), True{}, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, en, eh)
+
+
+# the quote closes the span as a VSpan; any other character goes on
+def gd.eq(
+  quote: Bool,
+  +ba: Bool,
+  +qq: Char,
+  +ct: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +hh: Char,
+  +tt: String,
+  +eg: {gd.gf(bd, rw, he, pt, [], sk) == True{} : Bool},
+  +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +en: {Laws.counts(SCon{hh, tt}, nn) == True{} : Bool},
+  +eh: {T.wf.char(hh) == True{} : Bool}
+) -> {Laws.gd.md(T.eat.feed.q(quote, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+  match quote:
+    case True{}:
+      gd.g.take(T.St{bd, rw, hs, he, pt, [], T.LStr{}, T.LStr{}, qk, sk, T.HNone{}, un, lf, at, False{}},
+        T.VSpan{ct, nn}, eg,
+        gd.okv.of(T.St{bd, rw, hs, he, pt, [], T.LStr{}, T.LStr{}, qk, sk, T.HNone{}, un, lf, at, False{}},
+          T.VSpan{ct, nn}, Laws.gd_span_wf(ct, nn, SCon{hh, tt}, ep)))
+    case False{}:
+      gd.ebasic(ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, en, eh)
+
+
+def Laws.gd_mode_step(mode, hh, tt, em, eh, et, es) :
+  match mode:
+    case T.MOpen{+ba, +qq, +qk, +bd, +rw, +hs, +he, +pt, +bf, +bk, +sk, +un, +lf, +at}:
+      gd.oq(Char.is_eq(hh, qq), ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, hh, tt, em, eh, et, es)
+    case T.MEat{+ba, +qq, +ct, +nn, +bd, +rw, +hs, +he, +pt, +qk, +sk, +un, +lf, +at}:
+      gd.eq(Char.is_eq(hh, qq), ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt,
+        gd.l(gd.gf(bd, rw, he, pt, [], sk), Bool.and(gd.spm(ct, nn, SCon{hh, tt}), Laws.counts(SCon{hh, tt}, nn)), em),
+        gd.l(gd.spm(ct, nn, SCon{hh, tt}), Laws.counts(SCon{hh, tt}, nn),
+          gd.r(gd.gf(bd, rw, he, pt, [], sk), Bool.and(gd.spm(ct, nn, SCon{hh, tt}), Laws.counts(SCon{hh, tt}, nn)),
+            em)),
+        gd.r(gd.spm(ct, nn, SCon{hh, tt}), Laws.counts(SCon{hh, tt}, nn),
+          gd.r(gd.gf(bd, rw, he, pt, [], sk), Bool.and(gd.spm(ct, nn, SCon{hh, tt}), Laws.counts(SCon{hh, tt}, nn)),
+            em)),
+        eh)
+    case T.MScan{+st}:
+      gd.sdq(Char.is_eq(hh, '"'), Char.is_eq(hh, '\''), U32.is_eq(Char.to_u32(hh), 13), st, hh, tt, em, eh)
+    case T.MCr{+st}:
+      gd.dcr(Char.is_eq(hh, '\n'), st, hh, tt, em, eh)
