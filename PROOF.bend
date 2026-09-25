@@ -18515,9 +18515,295 @@ def Laws.dotted_key_line_found_by_at(ds, last, ok, g):
         List.append(&2, String, Laws.dk.init(ds), [Laws.seg.name(last)]), dk.split(ds, last)),
       ka.nest(Laws.dk.init(ds), Laws.seg.name(last), "", Laws.one(), {==})))
 
-# WP-K3: header segments spelled any way. A bare or basic segment is read by
-# WP-H's wh.seg.bare and wh.qseg; a literal one by ql at hd = True, which
-# opens and closes in the header's states as a basic one does.
+# WP-K3: header segments spelled any way, with blank space. Blank space after
+# the bracket leaves the header waiting for a segment in LHeadDot, as after a
+# dot; a bare segment is read by WP-H's wh.b1 and wh.bbody and ended by a
+# blank (to LHeadGap), a dot or the bracket; a basic one by WP0's qs and a
+# literal one by ql at hd = True, each closing into LHeadGap, where blank
+# space stays until a dot or the bracket. The states are WP-H's wh.st.
+
+# whether there is any blank space
+def hg.nz(gs: List<&2, Bool>) -> Bool:
+  match gs:
+    case []:
+      False{}
+    case _t <> _r:
+      True{}
+
+# blank space after a dot stays in LHeadDot
+def hg.dgap(
+  gs: List<&2, Bool>,
+  +rr: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +arrtab: Bool
+) -> {T.doc.read(String.append(Laws.gap(gs), rr), T.MScan{wh.st(rows, heads, here, parts, [], T.LHeadDot{},
+  back, qkind, arrtab)}) == T.doc.read(rr, T.MScan{wh.st(rows, heads, here, parts, [], T.LHeadDot{}, back,
+  qkind, arrtab)}) : T.Doc}:
+  match gs:
+    case []:
+      {==}
+    case tab <> rest:
+      match tab:
+        case True{}:
+          hg.dgap(rest, rr, rows, heads, here, parts, back, qkind, arrtab)
+        case False{}:
+          hg.dgap(rest, rr, rows, heads, here, parts, back, qkind, arrtab)
+
+# and after a segment in LHeadGap
+def hg.hgap(
+  gs: List<&2, Bool>,
+  +rr: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +arrtab: Bool
+) -> {T.doc.read(String.append(Laws.gap(gs), rr), T.MScan{wh.st(rows, heads, here, parts, [], T.LHeadGap{},
+  back, qkind, arrtab)}) == T.doc.read(rr, T.MScan{wh.st(rows, heads, here, parts, [], T.LHeadGap{}, back,
+  qkind, arrtab)}) : T.Doc}:
+  match gs:
+    case []:
+      {==}
+    case tab <> rest:
+      match tab:
+        case True{}:
+          hg.hgap(rest, rr, rows, heads, here, parts, back, qkind, arrtab)
+        case False{}:
+          hg.hgap(rest, rr, rows, heads, here, parts, back, qkind, arrtab)
+
+# blank space right after the bracket waits for the first segment in LHeadDot
+def hg.lead(
+  g0: List<&2, Bool>,
+  +xx: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +arrtab: Bool
+) -> {T.doc.read(String.append(Laws.gap(g0), xx), T.MScan{wh.st(rows, heads, here, [], [], T.LHead{}, back, qkind,
+  arrtab)}) == T.doc.read(xx, T.MScan{wh.st(rows, heads, here, wh.ps(hg.nz(g0), []), [], wh.lex0(hg.nz(g0)), back,
+  qkind, arrtab)}) : T.Doc}:
+  match g0:
+    case []:
+      {==}
+    case tab <> rest:
+      match tab:
+        case True{}:
+          hg.dgap(rest, xx, rows, heads, here, [], back, qkind, arrtab)
+        case False{}:
+          hg.dgap(rest, xx, rows, heads, here, [], back, qkind, arrtab)
+
+# a dot or the bracket after a segment's blank space
+def hg.gdl(
+  cl: Bool,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +arrtab: Bool,
+  +rest: String
+) -> {T.doc.read(SCon{wh.dl(cl), rest}, T.MScan{wh.st(rows, heads, here, parts, [], T.LHeadGap{}, back, qkind,
+  arrtab)}) == T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, parts, back, qkind, arrtab)}) : T.Doc}:
+  match cl:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+# blank space, then a dot or the bracket, after a segment pushed onto parts
+def hg.gtail(
+  gs: List<&2, Bool>,
+  +cl: Bool,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +arrtab: Bool,
+  +rest: String
+) -> {T.doc.read(String.append(Laws.gap(gs), SCon{wh.dl(cl), rest}), T.MScan{wh.st(rows, heads, here, parts, [],
+  T.LHeadGap{}, back, qkind, arrtab)}) == T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, parts, back,
+  qkind, arrtab)}) : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(String.append(Laws.gap(gs), SCon{wh.dl(cl), rest}), T.MScan{wh.st(rows, heads, here, parts, [],
+      T.LHeadGap{}, back, qkind, arrtab)}),
+    T.doc.read(SCon{wh.dl(cl), rest}, T.MScan{wh.st(rows, heads, here, parts, [], T.LHeadGap{}, back, qkind,
+      arrtab)}),
+    T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, parts, back, qkind, arrtab)}),
+    hg.hgap(gs, SCon{wh.dl(cl), rest}, rows, heads, here, parts, back, qkind, arrtab),
+    hg.gdl(cl, rows, heads, here, parts, back, qkind, arrtab, rest))
+
+# a blank ends an open bare segment: it is pushed, and the header waits in
+# LHeadGap
+def hg.bsp(
+  tab: Bool,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +bf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +arrtab: Bool,
+  +rr: String,
+  full: {List.is_empty(&2, Char, bf) == False{} : Bool}
+) -> {T.doc.read(SCon{Laws.blank_char(tab), rr}, T.MScan{wh.st(rows, heads, here, parts, bf, T.LHead{}, back,
+  qkind, arrtab)}) == T.doc.read(rr, T.MScan{wh.st(rows, heads, here, T.buf.str(bf) <> parts, [], T.LHeadGap{},
+  back, qkind, arrtab)}) : T.Doc}:
+  match tab:
+    case True{}:
+      Equal.cong(Bool, T.Doc, bt => T.doc.read(rr, T.MScan{T.read.once2(T.lex.head.gap.go(bt, wh.st(rows, heads,
+        here, parts, bf, T.LHead{}, back, qkind, arrtab)))}), List.is_empty(&2, Char, bf), False{}, full)
+    case False{}:
+      Equal.cong(Bool, T.Doc, bt => T.doc.read(rr, T.MScan{T.read.once2(T.lex.head.gap.go(bt, wh.st(rows, heads,
+        here, parts, bf, T.LHead{}, back, qkind, arrtab)))}), List.is_empty(&2, Char, bf), False{}, full)
+
+# blank space and a dot or the bracket after an open bare segment push it
+def hg.bend(
+  gs: List<&2, Bool>,
+  +cl: Bool,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +bf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +arrtab: Bool,
+  +rest: String,
+  full: {List.is_empty(&2, Char, bf) == False{} : Bool}
+) -> {T.doc.read(String.append(Laws.gap(gs), SCon{wh.dl(cl), rest}), T.MScan{wh.st(rows, heads, here, parts, bf,
+  T.LHead{}, back, qkind, arrtab)}) == T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here,
+  T.buf.str(bf) <> parts, back, qkind, arrtab)}) : T.Doc}:
+  match gs:
+    case []:
+      wh.bdl(cl, rows, heads, here, parts, bf, back, qkind, arrtab, rest, full)
+    case tab <> +gr:
+      Equal.trans(T.Doc,
+        T.doc.read(SCon{Laws.blank_char(tab), String.append(Laws.gap(gr), SCon{wh.dl(cl), rest})},
+          T.MScan{wh.st(rows, heads, here, parts, bf, T.LHead{}, back, qkind, arrtab)}),
+        T.doc.read(String.append(Laws.gap(gr), SCon{wh.dl(cl), rest}), T.MScan{wh.st(rows, heads, here,
+          T.buf.str(bf) <> parts, [], T.LHeadGap{}, back, qkind, arrtab)}),
+        T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, T.buf.str(bf) <> parts, back, qkind, arrtab)}),
+        hg.bsp(tab, rows, heads, here, parts, bf, back, qkind, arrtab, String.append(Laws.gap(gr),
+          SCon{wh.dl(cl), rest}), full),
+        hg.gtail(gr, cl, rows, heads, here, T.buf.str(bf) <> parts, back, qkind, arrtab, rest))
+
+# the segment's buffer reads as its name, and the rest is read
+def hg.nm(
+  +nm: String,
+  +bf: List<&2, Char>,
+  en: {T.buf.str(bf) == nm : String},
+  +cl: Bool,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +arrtab: Bool,
+  +rest: String,
+  +goal: T.Doc,
+  ih: wh.Then(cl, rows, heads, here, nm <> parts, arrtab, rest, goal)
+) -> {T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, T.buf.str(bf) <> parts, bk, qk, arrtab)}) == goal
+  : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, T.buf.str(bf) <> parts, bk, qk, arrtab)}),
+    T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, nm <> parts, bk, qk, arrtab)}),
+    goal,
+    Equal.cong(String, T.Doc, xx => T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, xx <> parts, bk, qk,
+      arrtab)}), T.buf.str(bf), nm, en),
+    ih(bk, qk))
+
+# after a quoted segment's closing quote: blank space, a dot or the bracket,
+# and the rest
+def hg.fin(
+  +nm: String,
+  +bf: List<&2, Char>,
+  en: {T.buf.str(bf) == nm : String},
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +arrtab: Bool,
+  +rest: String,
+  +goal: T.Doc,
+  ih: wh.Then(cl, rows, heads, here, nm <> parts, arrtab, rest, goal)
+) -> {T.doc.read(String.append(Laws.gap(gs), SCon{wh.dl(cl), rest}), T.MScan{wh.st(rows, heads, here,
+  T.buf.str(bf) <> parts, [], T.LHeadGap{}, bk, qk, arrtab)}) == goal : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(String.append(Laws.gap(gs), SCon{wh.dl(cl), rest}), T.MScan{wh.st(rows, heads, here,
+      T.buf.str(bf) <> parts, [], T.LHeadGap{}, bk, qk, arrtab)}),
+    T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, T.buf.str(bf) <> parts, bk, qk, arrtab)}),
+    goal,
+    hg.gtail(gs, cl, rows, heads, here, T.buf.str(bf) <> parts, bk, qk, arrtab, rest),
+    hg.nm(nm, bf, en, cl, rows, heads, here, parts, bk, qk, arrtab, rest, goal, ih))
+
+# a bare header segment, its blank space and a dot or the bracket
+def hg.bseg(
+  +xx: U32,
+  +tt: String,
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +dt: Bool,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +arrtab: Bool,
+  +rest: String,
+  +goal: T.Doc,
+  +ee: {T.bare.all.step(T.bare.at(Chr{xx}), _u => T.bare.all(String.to_list(tt))) == True{} : Bool},
+  ih: wh.Then(cl, rows, heads, here, SCon{Chr{xx}, tt} <> wh.ps(dt, parts), arrtab, rest, goal)
+) -> {T.doc.read(String.append(SCon{Chr{xx}, tt}, String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})),
+  T.MScan{wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab)}) == goal : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(String.append(tt, String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})), T.doc.scan(wh.st(rows,
+      heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab), Chr{xx})),
+    T.doc.read(String.append(tt, String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})), T.MScan{wh.st(rows,
+      heads, here, wh.ps(dt, parts), [Chr{xx}], T.LHead{}, back, qkind, arrtab)}),
+    goal,
+    Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, String.append(Laws.gap(gs), SCon{wh.dl(cl),
+      rest})), md),
+      T.doc.scan(wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab), Chr{xx}),
+      T.MScan{wh.st(rows, heads, here, wh.ps(dt, parts), [Chr{xx}], T.LHead{}, back, qkind, arrtab)},
+      wh.b1(dt, rows, heads, here, parts, back, qkind, arrtab, xx,
+        ball.head(T.bare.at(Chr{xx}), String.to_list(tt), ee))),
+    Equal.trans(T.Doc,
+      T.doc.read(String.append(tt, String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})), T.MScan{wh.st(rows,
+        heads, here, wh.ps(dt, parts), [Chr{xx}], T.LHead{}, back, qkind, arrtab)}),
+      T.doc.read(String.append(Laws.gap(gs), SCon{wh.dl(cl), rest}), T.MScan{wh.st(rows, heads, here,
+        wh.ps(dt, parts), rev.onto(tt, [Chr{xx}]), T.LHead{}, back, qkind, arrtab)}),
+      goal,
+      wh.bbody(tt, String.append(Laws.gap(gs), SCon{wh.dl(cl), rest}), rows, heads, here, wh.ps(dt, parts),
+        Chr{xx}, [], back, qkind, arrtab, ball.tail(T.bare.at(Chr{xx}), String.to_list(tt), ee)),
+      Equal.trans(T.Doc,
+        T.doc.read(String.append(Laws.gap(gs), SCon{wh.dl(cl), rest}), T.MScan{wh.st(rows, heads, here,
+          wh.ps(dt, parts), rev.onto(tt, [Chr{xx}]), T.LHead{}, back, qkind, arrtab)}),
+        T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, T.buf.str(rev.onto(tt, [Chr{xx}])) <>
+          wh.ps(dt, parts), back, qkind, arrtab)}),
+        goal,
+        hg.bend(gs, cl, rows, heads, here, wh.ps(dt, parts), rev.onto(tt, [Chr{xx}]), back, qkind, arrtab, rest,
+          rev.full(tt, Chr{xx}, [])),
+        hg.nm(SCon{Chr{xx}, tt}, rev.onto(tt, [Chr{xx}]), wh.bname(xx, tt), cl, rows, heads, here,
+          wh.ps(dt, parts), back, qkind, arrtab, rest, goal, ih))))
 
 # an apostrophe where a header segment starts opens a literal segment
 def hs.lopen(
@@ -18537,29 +18823,78 @@ def hs.lopen(
     case True{}:
       {==}
 
-# the closing apostrophe pushes the segment, and the dot or bracket follows
-def hs.lend(
-  cl: Bool,
+# a basic header segment, its blank space and a dot or the bracket
+def hg.qseg(
+  +ss: String,
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +dt: Bool,
   +rows: List<&2, T.Val>,
   +heads: List<&2, String>,
   +here: List<&2, String>,
   +parts: List<&2, String>,
-  +arrtab: Bool,
   +back: T.Lex,
-  +bf: List<&2, Char>,
-  +rest: String
-) -> {T.doc.read(SCon{'\'', SCon{wh.dl(cl), rest}}, T.MScan{ql(True{}, rows, heads, here, parts, arrtab, back,
-  bf)}) == T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, T.buf.str(bf) <> parts, back, T.QLit{},
-  arrtab)}) : T.Doc}:
-  match cl:
-    case False{}:
-      {==}
-    case True{}:
-      {==}
+  +qkind: T.QKind,
+  +arrtab: Bool,
+  +rest: String,
+  +goal: T.Doc,
+  ih: wh.Then(cl, rows, heads, here, ss <> wh.ps(dt, parts), arrtab, rest, goal)
+) -> {T.doc.read(String.append(T.key.basic(ss), String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})),
+  T.MScan{wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab)}) == goal : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(String.append(T.key.basic(ss), String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})),
+      T.MScan{wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab)}),
+    T.doc.read(String.append(String.append(Laws.escs(ss), "\""), String.append(Laws.gap(gs),
+      SCon{wh.dl(cl), rest})), T.doc.scan(wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back,
+      qkind, arrtab), '"')),
+    goal,
+    Equal.cong(String, T.Doc, zz => T.doc.read(String.append(zz, String.append(Laws.gap(gs),
+      SCon{wh.dl(cl), rest})), T.MScan{wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back,
+      qkind, arrtab)}),
+      T.key.basic(ss), "\"" ++ Laws.escs(ss) ++ "\"", Laws.basic_escs(ss)),
+    Equal.trans(T.Doc,
+      T.doc.read(String.append(String.append(Laws.escs(ss), "\""), String.append(Laws.gap(gs),
+        SCon{wh.dl(cl), rest})), T.doc.scan(wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back,
+        qkind, arrtab), '"')),
+      T.doc.read(String.append(Laws.escs(ss), SCon{'"', String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})}),
+        T.MScan{qs(True{}, rows, heads, here, wh.ps(dt, parts), [], arrtab, back, [])}),
+      goal,
+      Equal.trans(T.Doc,
+        T.doc.read(String.append(String.append(Laws.escs(ss), "\""), String.append(Laws.gap(gs),
+          SCon{wh.dl(cl), rest})), T.doc.scan(wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt),
+          back, qkind, arrtab), '"')),
+        T.doc.read(String.append(Laws.escs(ss), SCon{'"', String.append(Laws.gap(gs), SCon{wh.dl(cl),
+          rest})}), T.doc.scan(wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind,
+          arrtab), '"')),
+        T.doc.read(String.append(Laws.escs(ss), SCon{'"', String.append(Laws.gap(gs), SCon{wh.dl(cl),
+          rest})}), T.MScan{qs(True{}, rows, heads, here, wh.ps(dt, parts), [], arrtab, back, [])}),
+        Equal.cong(String, T.Doc, zz => T.doc.read(zz, T.doc.scan(wh.st(rows, heads, here, wh.ps(dt, parts),
+          [], wh.lex0(dt), back, qkind, arrtab), '"')),
+          String.append(String.append(Laws.escs(ss), "\""), String.append(Laws.gap(gs), SCon{wh.dl(cl),
+            rest})),
+          String.append(Laws.escs(ss), SCon{'"', String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})}),
+          Eq.append_assoc(Laws.escs(ss), "\"", String.append(Laws.gap(gs), SCon{wh.dl(cl), rest}))),
+        Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(Laws.escs(ss), SCon{'"',
+          String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})}), md),
+          T.doc.scan(wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab), '"'),
+          T.MScan{qs(True{}, rows, heads, here, wh.ps(dt, parts), [], arrtab, back, [])},
+          wh.qopen(dt, rows, heads, here, parts, back, qkind, arrtab))),
+      qs.escs(ss, True{}, rows, heads, here, wh.ps(dt, parts), [], arrtab, back, [],
+        SCon{'"', String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})}, goal,
+        +bk => Equal.trans(T.Doc,
+          T.doc.read(SCon{'"', String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})}, T.MScan{qs(True{}, rows,
+            heads, here, wh.ps(dt, parts), [], arrtab, bk, rev.onto(ss, []))}),
+          T.doc.read(String.append(Laws.gap(gs), SCon{wh.dl(cl), rest}), T.MScan{wh.st(rows, heads, here,
+            T.buf.str(rev.onto(ss, [])) <> wh.ps(dt, parts), [], T.LHeadGap{}, bk, T.QBasic{}, arrtab)}),
+          goal,
+          {==},
+          hg.fin(ss, rev.onto(ss, []), wh.qname(ss), gs, cl, rows, heads, here, wh.ps(dt, parts), bk,
+            T.QBasic{}, arrtab, rest, goal, ih)))))
 
-# a literal header segment, then a dot or the bracket
-def hs.lseg(
+# a literal header segment, its blank space and a dot or the bracket
+def hg.lseg(
   +ss: String,
+  +gs: List<&2, Bool>,
   +cl: Bool,
   +dt: Bool,
   +rows: List<&2, T.Val>,
@@ -18573,59 +18908,55 @@ def hs.lseg(
   +goal: T.Doc,
   el: {Laws.lit.text(ss) == True{} : Bool},
   ih: wh.Then(cl, rows, heads, here, ss <> wh.ps(dt, parts), arrtab, rest, goal)
-) -> {T.doc.read(String.append(SCon{'\'', String.append(ss, "'")}, SCon{wh.dl(cl), rest}), T.MScan{wh.st(rows,
-  heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab)}) == goal : T.Doc}:
+) -> {T.doc.read(String.append(SCon{'\'', String.append(ss, "'")}, String.append(Laws.gap(gs),
+  SCon{wh.dl(cl), rest})), T.MScan{wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind,
+  arrtab)}) == goal : T.Doc}:
   Equal.trans(T.Doc,
-    T.doc.read(String.append(String.append(ss, "'"), SCon{wh.dl(cl), rest}), T.doc.scan(wh.st(rows, heads, here,
-      wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab), '\'')),
-    T.doc.read(String.append(ss, SCon{'\'', SCon{wh.dl(cl), rest}}), T.MScan{ql(True{}, rows, heads, here,
-      wh.ps(dt, parts), arrtab, back, [])}),
+    T.doc.read(String.append(String.append(ss, "'"), String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})),
+      T.doc.scan(wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab), '\'')),
+    T.doc.read(String.append(ss, SCon{'\'', String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})}),
+      T.MScan{ql(True{}, rows, heads, here, wh.ps(dt, parts), arrtab, back, [])}),
     goal,
     Equal.trans(T.Doc,
-      T.doc.read(String.append(String.append(ss, "'"), SCon{wh.dl(cl), rest}), T.doc.scan(wh.st(rows, heads,
-        here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab), '\'')),
-      T.doc.read(String.append(ss, SCon{'\'', SCon{wh.dl(cl), rest}}), T.doc.scan(wh.st(rows, heads, here,
-        wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab), '\'')),
-      T.doc.read(String.append(ss, SCon{'\'', SCon{wh.dl(cl), rest}}), T.MScan{ql(True{}, rows, heads, here,
-        wh.ps(dt, parts), arrtab, back, [])}),
+      T.doc.read(String.append(String.append(ss, "'"), String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})),
+        T.doc.scan(wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab), '\'')),
+      T.doc.read(String.append(ss, SCon{'\'', String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})}),
+        T.doc.scan(wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab), '\'')),
+      T.doc.read(String.append(ss, SCon{'\'', String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})}),
+        T.MScan{ql(True{}, rows, heads, here, wh.ps(dt, parts), arrtab, back, [])}),
       Equal.cong(String, T.Doc, zz => T.doc.read(zz, T.doc.scan(wh.st(rows, heads, here, wh.ps(dt, parts), [],
         wh.lex0(dt), back, qkind, arrtab), '\'')),
-        String.append(String.append(ss, "'"), SCon{wh.dl(cl), rest}),
-        String.append(ss, SCon{'\'', SCon{wh.dl(cl), rest}}),
-        Eq.append_assoc(ss, "'", SCon{wh.dl(cl), rest})),
-      Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(ss, SCon{'\'', SCon{wh.dl(cl), rest}}), md),
+        String.append(String.append(ss, "'"), String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})),
+        String.append(ss, SCon{'\'', String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})}),
+        Eq.append_assoc(ss, "'", String.append(Laws.gap(gs), SCon{wh.dl(cl), rest}))),
+      Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(ss, SCon{'\'', String.append(Laws.gap(gs),
+        SCon{wh.dl(cl), rest})}), md),
         T.doc.scan(wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab), '\''),
         T.MScan{ql(True{}, rows, heads, here, wh.ps(dt, parts), arrtab, back, [])},
         hs.lopen(dt, rows, heads, here, parts, back, qkind, arrtab))),
     Equal.trans(T.Doc,
-      T.doc.read(String.append(ss, SCon{'\'', SCon{wh.dl(cl), rest}}), T.MScan{ql(True{}, rows, heads, here,
-        wh.ps(dt, parts), arrtab, back, [])}),
-      T.doc.read(SCon{'\'', SCon{wh.dl(cl), rest}}, T.MScan{ql(True{}, rows, heads, here, wh.ps(dt, parts),
-        arrtab, back, rev.onto(ss, []))}),
+      T.doc.read(String.append(ss, SCon{'\'', String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})}),
+        T.MScan{ql(True{}, rows, heads, here, wh.ps(dt, parts), arrtab, back, [])}),
+      T.doc.read(SCon{'\'', String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})},
+        T.MScan{ql(True{}, rows, heads, here, wh.ps(dt, parts), arrtab, back, rev.onto(ss, []))}),
       goal,
-      ql.body(ss, SCon{'\'', SCon{wh.dl(cl), rest}}, True{}, rows, heads, here, wh.ps(dt, parts), arrtab, back,
-        [], el),
+      ql.body(ss, SCon{'\'', String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})}, True{}, rows, heads, here,
+        wh.ps(dt, parts), arrtab, back, [], el),
       Equal.trans(T.Doc,
-        T.doc.read(SCon{'\'', SCon{wh.dl(cl), rest}}, T.MScan{ql(True{}, rows, heads, here, wh.ps(dt, parts),
-          arrtab, back, rev.onto(ss, []))}),
-        T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, T.buf.str(rev.onto(ss, [])) <> wh.ps(dt, parts),
-          back, T.QLit{}, arrtab)}),
+        T.doc.read(SCon{'\'', String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})},
+          T.MScan{ql(True{}, rows, heads, here, wh.ps(dt, parts), arrtab, back, rev.onto(ss, []))}),
+        T.doc.read(String.append(Laws.gap(gs), SCon{wh.dl(cl), rest}), T.MScan{wh.st(rows, heads, here,
+          T.buf.str(rev.onto(ss, [])) <> wh.ps(dt, parts), [], T.LHeadGap{}, back, T.QLit{}, arrtab)}),
         goal,
-        hs.lend(cl, rows, heads, here, wh.ps(dt, parts), arrtab, back, rev.onto(ss, []), rest),
-        Equal.trans(T.Doc,
-          T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, T.buf.str(rev.onto(ss, [])) <>
-            wh.ps(dt, parts), back, T.QLit{}, arrtab)}),
-          T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here, ss <> wh.ps(dt, parts), back, T.QLit{},
-            arrtab)}),
-          goal,
-          Equal.cong(String, T.Doc, nm => T.doc.read(rest, T.MScan{wh.aft(cl, rows, heads, here,
-            nm <> wh.ps(dt, parts), back, T.QLit{}, arrtab)}), T.buf.str(rev.onto(ss, [])), ss,
-            wh.qname(ss)),
-          ih(back, T.QLit{})))))
+        {==},
+        hg.fin(ss, rev.onto(ss, []), wh.qname(ss), gs, cl, rows, heads, here, wh.ps(dt, parts), back,
+          T.QLit{}, arrtab, rest, goal, ih))))
 
-# a header segment spelled any way it can be, then a dot or the bracket
-def hs.seg(
+# a header segment spelled any way it can be, its blank space and a dot or
+# the bracket
+def hg.seg(
   sg: Laws.Seg,
+  +gs: List<&2, Bool>,
   +cl: Bool,
   +dt: Bool,
   +rows: List<&2, T.Val>,
@@ -18639,40 +18970,32 @@ def hs.seg(
   +goal: T.Doc,
   eo: {Laws.seg.ok(sg) == True{} : Bool},
   ih: wh.Then(cl, rows, heads, here, Laws.seg.name(sg) <> wh.ps(dt, parts), arrtab, rest, goal)
-) -> {T.doc.read(String.append(Laws.seg.text(sg), SCon{wh.dl(cl), rest}), T.MScan{wh.st(rows, heads, here,
-  wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab)}) == goal : T.Doc}:
+) -> {T.doc.read(String.append(Laws.seg.text(sg), String.append(Laws.gap(gs), SCon{wh.dl(cl), rest})),
+  T.MScan{wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab)}) == goal : T.Doc}:
   match sg:
     case Laws.Seg{sp, +name}:
       match sp:
         case Laws.SpBare{}:
-          wh.seg.bare(name, cl, dt, rows, heads, here, parts, back, qkind, arrtab, rest, goal, eo, ih)
+          match name:
+            case SNil{}:
+              Eq.bit.absurd(&2, {T.doc.read(String.append(SNil{}, String.append(Laws.gap(gs), SCon{wh.dl(cl),
+                rest})), T.MScan{wh.st(rows, heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind,
+                arrtab)}) == goal : T.Doc}, eo)
+            case SCon{hh, +tt}:
+              match hh:
+                case Chr{+xx}:
+                  hg.bseg(xx, tt, gs, cl, dt, rows, heads, here, parts, back, qkind, arrtab, rest, goal, eo, ih)
         case Laws.SpBasic{}:
-          wh.qseg(name, cl, dt, rows, heads, here, parts, back, qkind, arrtab, rest, goal, ih)
+          hg.qseg(name, gs, cl, dt, rows, heads, here, parts, back, qkind, arrtab, rest, goal, ih)
         case Laws.SpLit{}:
-          hs.lseg(name, cl, dt, rows, heads, here, parts, back, qkind, arrtab, rest, goal, eo, ih)
+          hg.lseg(name, gs, cl, dt, rows, heads, here, parts, back, qkind, arrtab, rest, goal, eo, ih)
 
-# a header's segment names, the last among them
-def hs.all(segs: List<&2, Laws.Seg>, last: Laws.Seg) -> List<&2, String>:
-  match segs:
-    case []:
-      [Laws.seg.name(last)]
-    case sg <> rest:
-      Laws.seg.name(sg) <> hs.all(rest, last)
-
-# the segments pushed onto the parts before them, newest first
-def hs.acc(
-  segs: List<&2, Laws.Seg>,
-  last: Laws.Seg,
-  dt: Bool,
-  parts: List<&2, String>
-) -> List<&2, String>:
-  List.reverse.go(&2, String, hs.all(segs, last), wh.ps(dt, parts))
-
-# a header's segments and the bracket after them: the rest is read with every
-# segment pushed
-def hs.segs(
-  segs: List<&2, Laws.Seg>,
+# a header's segments, then blank space and the bracket: the rest is read
+# with every segment pushed onto parts, newest first
+def hg.keys(
+  ds: List<&2, Laws.Dot>,
   +last: Laws.Seg,
+  +g9: List<&2, Bool>,
   +dt: Bool,
   +rows: List<&2, T.Val>,
   +heads: List<&2, String>,
@@ -18683,62 +19006,104 @@ def hs.segs(
   +arrtab: Bool,
   +rest: String,
   +goal: T.Doc,
-  +eo: {Laws.hd.ok(segs, last) == True{} : Bool},
-  ih: wh.Then(True{}, rows, heads, here, hs.acc(segs, last, dt, parts), arrtab, rest, goal)
-) -> {T.doc.read(Laws.hd.text(segs, last, SCon{']', rest}), T.MScan{wh.st(rows, heads, here, wh.ps(dt, parts),
-  [], wh.lex0(dt), back, qkind, arrtab)}) == goal : T.Doc}:
-  match segs:
+  +eo: {Laws.dk.ok(ds, last) == True{} : Bool},
+  ih: wh.Then(True{}, rows, heads, here, kl.acc(ds, last, dt, parts), arrtab, rest, goal)
+) -> {T.doc.read(Laws.dk.text(ds, last, String.append(Laws.gap(g9), SCon{']', rest})), T.MScan{wh.st(rows,
+  heads, here, wh.ps(dt, parts), [], wh.lex0(dt), back, qkind, arrtab)}) == goal : T.Doc}:
+  match ds:
     case []:
-      hs.seg(last, True{}, dt, rows, heads, here, parts, back, qkind, arrtab, rest, goal, eo, ih)
-    case +sg <> +more:
-      hs.seg(sg, False{}, dt, rows, heads, here, parts, back, qkind, arrtab, Laws.hd.text(more, last,
-        SCon{']', rest}), goal, Eq.and.left(Laws.seg.ok(sg), Laws.hd.ok(more, last), eo),
-        +bk => +qk => hs.segs(more, last, True{}, rows, heads, here, Laws.seg.name(sg) <> wh.ps(dt, parts), bk, qk,
-          arrtab, rest, goal, Eq.and.right(Laws.seg.ok(sg), Laws.hd.ok(more, last), eo), ih))
+      hg.seg(last, g9, True{}, dt, rows, heads, here, parts, back, qkind, arrtab, rest, goal, eo, ih)
+    case Laws.Dot{+sg, g1, +g2} <> +dr:
+      hg.seg(sg, g1, False{}, dt, rows, heads, here, parts, back, qkind, arrtab,
+        String.append(Laws.gap(g2), Laws.dk.text(dr, last, String.append(Laws.gap(g9), SCon{']', rest}))), goal,
+        Eq.and.left(Laws.seg.ok(sg), Laws.dk.ok(dr, last), eo),
+        +bk => +qk => Equal.trans(T.Doc,
+          T.doc.read(String.append(Laws.gap(g2), Laws.dk.text(dr, last, String.append(Laws.gap(g9), SCon{']',
+            rest}))), T.MScan{wh.st(rows, heads, here, Laws.seg.name(sg) <> wh.ps(dt, parts), [],
+            T.LHeadDot{}, bk, qk, arrtab)}),
+          T.doc.read(Laws.dk.text(dr, last, String.append(Laws.gap(g9), SCon{']', rest})), T.MScan{wh.st(rows,
+            heads, here, Laws.seg.name(sg) <> wh.ps(dt, parts), [], T.LHeadDot{}, bk, qk, arrtab)}),
+          goal,
+          hg.dgap(g2, Laws.dk.text(dr, last, String.append(Laws.gap(g9), SCon{']', rest})), rows, heads, here,
+            Laws.seg.name(sg) <> wh.ps(dt, parts), bk, qk, arrtab),
+          hg.keys(dr, last, g9, True{}, rows, heads, here, Laws.seg.name(sg) <> wh.ps(dt, parts), bk, qk, arrtab,
+            rest, goal, Eq.and.right(Laws.seg.ok(sg), Laws.dk.ok(dr, last), eo), ih)))
 
 # the names pushed are never none
-def hs.ne(
-  segs: List<&2, Laws.Seg>,
+def hg.ne(
+  ds: List<&2, Laws.Dot>,
   +last: Laws.Seg,
   +acc: List<&2, String>
-) -> {List.is_empty(&2, String, List.reverse.go(&2, String, hs.all(segs, last), acc)) == False{} : Bool}:
-  match segs:
+) -> {List.is_empty(&2, String, List.reverse.go(&2, String, Laws.dk.names(ds, last), acc)) == False{} : Bool}:
+  match ds:
     case []:
       {==}
-    case sg <> rest:
-      hs.ne(rest, last, Laws.seg.name(sg) <> acc)
+    case Laws.Dot{sg, _g1, _g2} <> rest:
+      hg.ne(rest, last, Laws.seg.name(sg) <> acc)
 
-# a header's names are the ones before the last, then the last
-def hs.split(
-  segs: List<&2, Laws.Seg>,
-  +last: Laws.Seg
-) -> {hs.all(segs, last) == List.append(&2, String, Laws.hd.init(segs), [Laws.seg.name(last)])
-  : List<&2, String>}:
-  match segs:
-    case []:
+# no segment before the first
+def hg.ps0(dt: Bool) -> {wh.ps(dt, []) == [] : List<&2, String>}:
+  match dt:
+    case False{}:
       {==}
-    case +sg <> rest:
-      Equal.cong(List<&2, String>, List<&2, String>, tt => Laws.seg.name(sg) <> tt, hs.all(rest, last),
-        List.append(&2, String, Laws.hd.init(rest), [Laws.seg.name(last)]), hs.split(rest, last))
+    case True{}:
+      {==}
 
 # so the names pushed, reversed, are the header's path
-def hs.path(
-  +segs: List<&2, Laws.Seg>,
+def hg.path(
+  +dt: Bool,
+  +ds: List<&2, Laws.Dot>,
   +last: Laws.Seg
-) -> {List.reverse(&2, String, List.reverse.go(&2, String, hs.all(segs, last), [])) == List.append(&2, String,
-  Laws.hd.init(segs), [Laws.seg.name(last)]) : List<&2, String>}:
+) -> {List.reverse(&2, String, List.reverse.go(&2, String, Laws.dk.names(ds, last), wh.ps(dt, [])))
+  == Laws.hd.path(ds, last) : List<&2, String>}:
   Equal.trans(List<&2, String>,
-    List.reverse(&2, String, List.reverse(&2, String, hs.all(segs, last))),
-    hs.all(segs, last),
-    List.append(&2, String, Laws.hd.init(segs), [Laws.seg.name(last)]),
-    kv.rr(hs.all(segs, last)),
-    hs.split(segs, last))
+    List.reverse(&2, String, List.reverse.go(&2, String, Laws.dk.names(ds, last), wh.ps(dt, []))),
+    List.reverse(&2, String, List.reverse(&2, String, Laws.dk.names(ds, last))),
+    Laws.hd.path(ds, last),
+    Equal.cong(List<&2, String>, List<&2, String>, xs => List.reverse(&2, String, List.reverse.go(&2, String,
+      Laws.dk.names(ds, last), xs)), wh.ps(dt, []), [], hg.ps0(dt)),
+    Equal.trans(List<&2, String>,
+      List.reverse(&2, String, List.reverse(&2, String, Laws.dk.names(ds, last))),
+      Laws.dk.names(ds, last),
+      Laws.hd.path(ds, last),
+      kv.rr(Laws.dk.names(ds, last)),
+      dk.split(ds, last)))
 
-# a whole header line of spelled segments, from the start of a line
-def hs.core(
+# after the path and the bracket: the header's walk, and the next line
+def hg.end(
   arr: Bool,
-  +segs: List<&2, Laws.Seg>,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +dt: Bool,
+  +ds: List<&2, Laws.Dot>,
   +last: Laws.Seg,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +rows2: List<&2, T.Val>,
+  +heads2: List<&2, String>,
+  +rest: String,
+  +goal: T.Doc,
+  ew: wh.Walk(arr, Laws.hd.path(ds, last), rows, heads, rows2, heads2),
+  ih: wh.Line(rows2, heads2, Laws.hd.path(ds, last), rest, goal)
+) -> {T.doc.read(wh.tail(arr, rest), T.MScan{wh.aft(True{}, rows, heads, here, kl.acc(ds, last, dt, []), bk, qk,
+  arr)}) == goal : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(wh.tail(arr, rest), T.MScan{wh.aft(True{}, rows, heads, here, kl.acc(ds, last, dt, []), bk, qk,
+      arr)}),
+    T.doc.read(rest, T.MScan{Laws.hb.line(rows2, heads2, Laws.hd.path(ds, last), bk, qk, False{})}),
+    goal,
+    wh.fin(arr, rows, heads, here, kl.acc(ds, last, dt, []), bk, qk, Laws.hd.path(ds, last), rows2, heads2, rest,
+      hg.ne(ds, last, wh.ps(dt, [])), hg.path(dt, ds, last), ew),
+    ih(bk, qk))
+
+# a whole header line, from the start of a line
+def hg.core(
+  arr: Bool,
+  +g0: List<&2, Bool>,
+  +ds: List<&2, Laws.Dot>,
+  +last: Laws.Seg,
+  +g9: List<&2, Bool>,
   +rows: List<&2, T.Val>,
   +heads: List<&2, String>,
   +here: List<&2, String>,
@@ -18749,42 +19114,44 @@ def hs.core(
   +heads2: List<&2, String>,
   +rest: String,
   +goal: T.Doc,
-  +eo: {Laws.hd.ok(segs, last) == True{} : Bool},
-  ew: wh.Walk(arr, List.append(&2, String, Laws.hd.init(segs), [Laws.seg.name(last)]), rows, heads, rows2, heads2),
-  ih: wh.Line(rows2, heads2, List.append(&2, String, Laws.hd.init(segs), [Laws.seg.name(last)]), rest, goal)
-) -> {T.doc.read(Laws.hd.line(arr, segs, last, rest), T.MScan{Laws.hb.line(rows, heads, here, back, qkind, a0)})
-  == goal : T.Doc}:
+  +eo: {Laws.dk.ok(ds, last) == True{} : Bool},
+  ew: wh.Walk(arr, Laws.hd.path(ds, last), rows, heads, rows2, heads2),
+  ih: wh.Line(rows2, heads2, Laws.hd.path(ds, last), rest, goal)
+) -> {T.doc.read(Laws.hd.line(arr, g0, ds, last, g9, rest), T.MScan{Laws.hb.line(rows, heads, here, back, qkind,
+  a0)}) == goal : T.Doc}:
   match arr:
     case False{}:
-      hs.segs(segs, last, False{}, rows, heads, here, [], back, qkind, False{}, wh.tail(False{}, rest), goal, eo,
-        +bk => +qk => Equal.trans(T.Doc,
-          T.doc.read(SCon{'\n', rest}, T.MScan{wh.aft(True{}, rows, heads, here, List.reverse.go(&2, String,
-            hs.all(segs, last), []), bk, qk, False{})}),
-          T.doc.read(rest, T.MScan{Laws.hb.line(rows2, heads2, List.append(&2, String, Laws.hd.init(segs),
-            [Laws.seg.name(last)]), bk, qk, False{})}),
-          goal,
-          wh.fin(False{}, rows, heads, here, List.reverse.go(&2, String, hs.all(segs, last), []), bk, qk,
-            List.append(&2, String, Laws.hd.init(segs), [Laws.seg.name(last)]), rows2, heads2, rest,
-            hs.ne(segs, last, []), hs.path(segs, last), ew),
-          ih(bk, qk)))
+      Equal.trans(T.Doc,
+        T.doc.read(String.append(Laws.gap(g0), Laws.dk.text(ds, last, String.append(Laws.gap(g9), SCon{']',
+          wh.tail(False{}, rest)}))), T.MScan{wh.st(rows, heads, here, [], [], T.LHead{}, back, qkind, False{})}),
+        T.doc.read(Laws.dk.text(ds, last, String.append(Laws.gap(g9), SCon{']', wh.tail(False{}, rest)})),
+          T.MScan{wh.st(rows, heads, here, wh.ps(hg.nz(g0), []), [], wh.lex0(hg.nz(g0)), back, qkind, False{})}),
+        goal,
+        hg.lead(g0, Laws.dk.text(ds, last, String.append(Laws.gap(g9), SCon{']', wh.tail(False{}, rest)})), rows,
+          heads, here, back, qkind, False{}),
+        hg.keys(ds, last, g9, hg.nz(g0), rows, heads, here, [], back, qkind, False{}, wh.tail(False{}, rest), goal,
+          eo, +bk => +qk => hg.end(False{}, rows, heads, here, hg.nz(g0), ds, last, bk, qk, rows2, heads2, rest,
+            goal, ew, ih)))
     case True{}:
-      hs.segs(segs, last, False{}, rows, heads, here, [], back, qkind, True{}, wh.tail(True{}, rest), goal, eo,
-        +bk => +qk => Equal.trans(T.Doc,
-          T.doc.read(SCon{']', SCon{'\n', rest}}, T.MScan{wh.aft(True{}, rows, heads, here, List.reverse.go(&2,
-            String, hs.all(segs, last), []), bk, qk, True{})}),
-          T.doc.read(rest, T.MScan{Laws.hb.line(rows2, heads2, List.append(&2, String, Laws.hd.init(segs),
-            [Laws.seg.name(last)]), bk, qk, False{})}),
-          goal,
-          wh.fin(True{}, rows, heads, here, List.reverse.go(&2, String, hs.all(segs, last), []), bk, qk,
-            List.append(&2, String, Laws.hd.init(segs), [Laws.seg.name(last)]), rows2, heads2, rest,
-            hs.ne(segs, last, []), hs.path(segs, last), ew),
-          ih(bk, qk)))
+      Equal.trans(T.Doc,
+        T.doc.read(String.append(Laws.gap(g0), Laws.dk.text(ds, last, String.append(Laws.gap(g9), SCon{']',
+          wh.tail(True{}, rest)}))), T.MScan{wh.st(rows, heads, here, [], [], T.LHead{}, back, qkind, True{})}),
+        T.doc.read(Laws.dk.text(ds, last, String.append(Laws.gap(g9), SCon{']', wh.tail(True{}, rest)})),
+          T.MScan{wh.st(rows, heads, here, wh.ps(hg.nz(g0), []), [], wh.lex0(hg.nz(g0)), back, qkind, True{})}),
+        goal,
+        hg.lead(g0, Laws.dk.text(ds, last, String.append(Laws.gap(g9), SCon{']', wh.tail(True{}, rest)})), rows,
+          heads, here, back, qkind, True{}),
+        hg.keys(ds, last, g9, hg.nz(g0), rows, heads, here, [], back, qkind, True{}, wh.tail(True{}, rest), goal,
+          eo, +bk => +qk => hg.end(True{}, rows, heads, here, hg.nz(g0), ds, last, bk, qk, rows2, heads2, rest,
+            goal, ew, ih)))
 
 def Laws.header_segments_read_back(
   arr,
-  segs,
+  g0,
+  ds,
   last,
   ok,
+  g9,
   rows,
   heads,
   here,
@@ -18798,7 +19165,7 @@ def Laws.header_segments_read_back(
   goal,
   ih
 ):
-  hs.core(arr, segs, last, rows, heads, here, back, qkind, arrtab, rows2, heads2, rest, goal, ok, ew, ih)
+  hg.core(arr, g0, ds, last, g9, rows, heads, here, back, qkind, arrtab, rows2, heads2, rest, goal, ok, ew, ih)
 
 # from the empty root a walk goes on through every segment
 def tb.open.nil(path: List<&2, String>) -> {Laws.tb.open(path, []) == True{} : Bool}:
@@ -18808,36 +19175,33 @@ def tb.open.nil(path: List<&2, String>) -> {Laws.tb.open(path, []) == True{} : B
     case _seg <> rest:
       tb.open.nil(rest)
 
-# the table a one-line header defines, and the root it is in
-def hs.new(segs: List<&2, Laws.Seg>, last: Laws.Seg) -> T.Val:
-  T.VHead{T.tree.pre(Laws.tb.join(Laws.hd.init(segs), ""), Laws.seg.name(last)), []}
+# the table a one-line header defines
+def hg.new(ds: List<&2, Laws.Dot>, last: Laws.Seg) -> T.Val:
+  T.VHead{T.tree.pre(Laws.tb.join(Laws.dk.init(ds), ""), Laws.seg.name(last)), []}
 
-def Laws.header_line_reads_back(segs, last, ok):
-  Laws.header_segments_read_back(False{}, segs, last, ok, [], [], [], T.LTop{}, T.QBasic{}, False{},
-    Laws.tb.set(Laws.hd.init(segs), "", [], T.VPair{Laws.seg.name(last), hs.new(segs, last)}
-      <> Laws.tb.rows(Laws.hd.init(segs), [])),
-    T.heads.by.head(T.tree.pre(Laws.tb.join(Laws.hd.init(segs), ""), Laws.seg.name(last))) <> [],
-    Laws.header_defines_new_table(Laws.hd.init(segs), Laws.seg.name(last), [], [], tb.open.nil(Laws.hd.init(segs)),
-      Equal.cong(List<&2, T.Val>, T.Hit, xs => T.get(xs, Laws.seg.name(last)), Laws.tb.rows(Laws.hd.init(segs), []),
-        [], tb.rows.nil(Laws.hd.init(segs)))),
+def Laws.header_line_reads_back(g0, ds, last, ok, g9):
+  Laws.header_segments_read_back(False{}, g0, ds, last, ok, g9, [], [], [], T.LTop{}, T.QBasic{}, False{},
+    Laws.tb.set(Laws.dk.init(ds), "", [], T.VPair{Laws.seg.name(last), hg.new(ds, last)}
+      <> Laws.tb.rows(Laws.dk.init(ds), [])),
+    T.heads.by.head(T.tree.pre(Laws.tb.join(Laws.dk.init(ds), ""), Laws.seg.name(last))) <> [],
+    Laws.header_defines_new_table(Laws.dk.init(ds), Laws.seg.name(last), [], [], tb.open.nil(Laws.dk.init(ds)),
+      Equal.cong(List<&2, T.Val>, T.Hit, xs => T.get(xs, Laws.seg.name(last)), Laws.tb.rows(Laws.dk.init(ds), []),
+        [], tb.rows.nil(Laws.dk.init(ds)))),
     "",
-    T.Doc{"", T.rows.seal(Laws.tb.set(Laws.hd.init(segs), "", [], [T.VPair{Laws.seg.name(last), hs.new(segs,
-      last)}]))},
+    T.Doc{"", T.rows.seal(Laws.tb.set(Laws.dk.init(ds), "", [], [T.VPair{Laws.seg.name(last), hg.new(ds, last)}]))},
     +_bk => +_qk => Equal.cong(List<&2, T.Val>, T.Doc,
-      xs => T.Doc{"", T.rows.seal(Laws.tb.set(Laws.hd.init(segs), "", [], T.VPair{Laws.seg.name(last),
-        hs.new(segs, last)} <> xs))}, Laws.tb.rows(Laws.hd.init(segs), []), [], tb.rows.nil(Laws.hd.init(segs))))
+      xs => T.Doc{"", T.rows.seal(Laws.tb.set(Laws.dk.init(ds), "", [], T.VPair{Laws.seg.name(last),
+        hg.new(ds, last)} <> xs))}, Laws.tb.rows(Laws.dk.init(ds), []), [], tb.rows.nil(Laws.dk.init(ds))))
 
-def Laws.header_line_found_by_at(segs, last, ok):
+def Laws.header_line_found_by_at(g0, ds, last, ok, g9):
   Equal.trans(T.Hit,
-    T.at(T.root(T.parse(Laws.hd.line(False{}, segs, last, ""))), List.append(&2, String, Laws.hd.init(segs),
-      [Laws.seg.name(last)])),
-    T.at(T.rows.seal(Laws.tb.set(Laws.hd.init(segs), "", [], [T.VPair{Laws.seg.name(last), hs.new(segs, last)}])),
-      List.append(&2, String, Laws.hd.init(segs), [Laws.seg.name(last)])),
-    T.Found{hs.new(segs, last)},
-    Equal.cong(T.Doc, T.Hit, dd => T.at(T.root(dd), List.append(&2, String, Laws.hd.init(segs),
-      [Laws.seg.name(last)])),
-      T.parse(Laws.hd.line(False{}, segs, last, "")),
-      T.Doc{"", T.rows.seal(Laws.tb.set(Laws.hd.init(segs), "", [], [T.VPair{Laws.seg.name(last), hs.new(segs,
+    T.at(T.root(T.parse(Laws.hd.line(False{}, g0, ds, last, g9, ""))), Laws.hd.path(ds, last)),
+    T.at(T.rows.seal(Laws.tb.set(Laws.dk.init(ds), "", [], [T.VPair{Laws.seg.name(last), hg.new(ds, last)}])),
+      Laws.hd.path(ds, last)),
+    T.Found{hg.new(ds, last)},
+    Equal.cong(T.Doc, T.Hit, dd => T.at(T.root(dd), Laws.hd.path(ds, last)),
+      T.parse(Laws.hd.line(False{}, g0, ds, last, g9, "")),
+      T.Doc{"", T.rows.seal(Laws.tb.set(Laws.dk.init(ds), "", [], [T.VPair{Laws.seg.name(last), hg.new(ds,
         last)}]))},
-      Laws.header_line_reads_back(segs, last, ok)),
-    ka.nest(Laws.hd.init(segs), Laws.seg.name(last), "", hs.new(segs, last), {==}))
+      Laws.header_line_reads_back(g0, ds, last, ok, g9)),
+    ka.nest(Laws.dk.init(ds), Laws.seg.name(last), "", hg.new(ds, last), {==}))
