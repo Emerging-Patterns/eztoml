@@ -1570,3 +1570,48 @@ law key_reads_back:
   for +s: String
   {T.parse(String.append(T.key(s), " = 1"))
     == T.Doc{"", [T.VPair{s, T.VInt{T.Plus{}, "1"}}]} : T.Doc}
+
+# TOML-RT-1 for a document of one pair: a bare key and a string render writes
+# with no escape. parse keeps such a string as a span of the text, whose
+# length it counts in a U32, so the string must be short enough that the
+# count does not wrap.
+
+# a character render writes as itself in a basic string: no control, no
+# quotation mark and no backslash (esc_plain)
+def plain.char(+cc: Char) -> Bool:
+  Bool.not(Bool.or(is_ctl(cc), Bool.or(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'))))
+
+# a text of such characters
+def plain.text(ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      True{}
+    case SCon{+hh, tt}:
+      Bool.and(plain.char(hh), plain.text(tt))
+
+# counting the characters of a text up from n in a U32 never comes back to 0
+def counts(ss: String, +nn: U32) -> Bool:
+  match ss:
+    case SNil{}:
+      True{}
+    case SCon{_hh, tt}:
+      Bool.and(Bool.not(U32.is_zero(U32.add(nn, 1))), counts(tt, U32.add(nn, 1)))
+
+# fewer than 2^32 characters: a U32 counts them from 0 without wrapping
+def short(ss: String) -> Bool:
+  counts(ss, 0)
+
+# LAW: a document of one pair, a bare key and a string that render writes
+# with no escape and that is shorter than 2^32 characters, reads back with no
+# error as the same document
+# TOML-RT-1
+law render_parse_plain_pair:
+  for +e: String
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +s: String
+  for ep: {plain.text(s) == True{} : Bool}
+  for es: {short(s) == True{} : Bool}
+  {Bool.and(String.is_empty(T.bad(T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})))),
+    same(T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})), T.Doc{e, [T.VPair{k, T.VStr{s}}]}))
+    == True{} : Bool}
