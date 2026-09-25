@@ -1,5 +1,51 @@
 # Changelog
 
+## [0.4.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.3.1...v0.4.0) (2026-09-25)
+
+
+### Features
+
+* **laws:** a header of bare segments joined by dots reads back ([288e469](https://github.com/Emerging-Patterns/eztoml/commit/288e469b5e1e50023c046af2d0697c72fcc617a5))
+* **laws:** a header of one bare segment reads back ([d672189](https://github.com/Emerging-Patterns/eztoml/commit/d67218981b50b9bd7c4ab0bbbcc6db07d37853a6))
+* **laws:** a table set by the walk reads back as what it was set to ([abbf69b](https://github.com/Emerging-Patterns/eztoml/commit/abbf69b455e85d37ed3c6e07e57d7ef196da4ac2))
+* **laws:** allow blank space in the headers the spelled-segment laws read ([4f2b7a1](https://github.com/Emerging-Patterns/eztoml/commit/4f2b7a1a3d2754a35a8fa0c323f63fa59611ad61))
+* **laws:** array-of-tables headers read back ([5abadbb](https://github.com/Emerging-Patterns/eztoml/commit/5abadbbf25f8e51c786c6e43f856077a3a43791b))
+* **laws:** contracts of the table walk (WP-W) ([e2494f4](https://github.com/Emerging-Patterns/eztoml/commit/e2494f48d4f7b02fe6b168b28d0e2ad753583d8f))
+* **laws:** contracts of the walk for a put and a table header ([dced53b](https://github.com/Emerging-Patterns/eztoml/commit/dced53ba5ca0891aa71b823683dd0f69521b355b))
+* **laws:** contracts of the walk for an array-of-tables header and a failed walk ([86fc6e3](https://github.com/Emerging-Patterns/eztoml/commit/86fc6e3c275d4191feb6bc66e5fbf6507c71a708))
+* **laws:** header segments read back under their names, quoted or bare ([90a64c5](https://github.com/Emerging-Patterns/eztoml/commit/90a64c5ffd685bd045b400061029b154028327bb))
+* **laws:** literal keys, dotted keys and spelled header segments read back (WP-K3) ([4fb7944](https://github.com/Emerging-Patterns/eztoml/commit/4fb7944ea8c3e499c5e2c4c2075233bcf4d552f3))
+* **laws:** numbers, booleans and datetimes read back (WP-N) ([ca81791](https://github.com/Emerging-Patterns/eztoml/commit/ca81791dfe35efd5314f62fb5c42bc7152ffa7fb))
+* **laws:** prove TOML-KEY-2, and plan the round-trip proofs ([b00055e](https://github.com/Emerging-Patterns/eztoml/commit/b00055ece9dc566fa547aa1de516bd0c323890b4))
+* **laws:** prove TOML-KEY-2's read-back ([5a24d72](https://github.com/Emerging-Patterns/eztoml/commit/5a24d729c93398333b7ac6fa996a787ad841bfec))
+* **laws:** prove TOML-RT-1 for a document of one string pair ([acda4c5](https://github.com/Emerging-Patterns/eztoml/commit/acda4c532661243cf9300c6f8e87589a9f815f8a))
+* **laws:** put a dotted key's value under its segments' tables and find it with at ([a6c136f](https://github.com/Emerging-Patterns/eztoml/commit/a6c136feab151585455031a0cd2a01aa6a69c6ca))
+* **laws:** read a bare value back from any value state, and booleans ([e310d11](https://github.com/Emerging-Patterns/eztoml/commit/e310d11ee49c190272a6a5445c0aa2a33083dad4))
+* **laws:** read a document of one pair of any value back as itself ([047e874](https://github.com/Emerging-Patterns/eztoml/commit/047e874fa9b272d202398e2659642da072f9b0b9))
+* **laws:** read a dotted key back as its segments' names ([6858cb4](https://github.com/Emerging-Patterns/eztoml/commit/6858cb4609b4892a6a9c18b38504575f71d4a84d))
+* **laws:** read a literal key back as its characters ([4b9541c](https://github.com/Emerging-Patterns/eztoml/commit/4b9541c2c4e1dd3ad71136a74d8c40e8f737f9cd))
+* **laws:** read a scalar back up to a comma, a closer or a newline ([56e95cf](https://github.com/Emerging-Patterns/eztoml/commit/56e95cfbcb99820b09a364c43d37fa1e392b0297))
+* **laws:** read a string's span back from any value position ([3e43886](https://github.com/Emerging-Patterns/eztoml/commit/3e438863da3423c8fa4e49aeac132b762ec5ce13))
+* **laws:** read a well-formed datetime back, and every scalar from any value state ([ddf84f8](https://github.com/Emerging-Patterns/eztoml/commit/ddf84f801eecd78070f812977484f3a0b328c8d5))
+* **laws:** read a well-formed float back as its sign and spelling ([318914b](https://github.com/Emerging-Patterns/eztoml/commit/318914b969726c35c5cb42f4a3df2c38889f82eb))
+* **laws:** read a well-formed integer back as its sign and digits ([908a9a6](https://github.com/Emerging-Patterns/eztoml/commit/908a9a63a14dbc5af8a1c1026b13af7b16241c5c))
+* **laws:** read an array's items back one at a time ([7960655](https://github.com/Emerging-Patterns/eztoml/commit/796065517ecdc4db711bd7a97a4123684d6d4cd7))
+* **laws:** read an inline table's pairs back one at a time ([b50b9f9](https://github.com/Emerging-Patterns/eztoml/commit/b50b9f900b9dec19afd9674a412a5a9b6d5e3b96))
+* **laws:** read any well-formed value back, nested to any depth ([67a5aa5](https://github.com/Emerging-Patterns/eztoml/commit/67a5aa5453b5b952a143155080c6e7a020d592a6))
+* **laws:** read back a nonempty string with escapes from any value position ([9bf9a5b](https://github.com/Emerging-Patterns/eztoml/commit/9bf9a5b72c6dabdcfa55d639f9d6b91eddea743a))
+* **laws:** read back every rendered string in each value position ([51d4f7e](https://github.com/Emerging-Patterns/eztoml/commit/51d4f7e0a7a17e71eae848444cfc1fadf33e6589))
+* **laws:** read header segments back however they are spelled ([0d01349](https://github.com/Emerging-Patterns/eztoml/commit/0d01349348bc8ef3b2afe4ec4bf53580c5fd59b5))
+* **laws:** rendered strings read back in every value position (WP-S) ([fd3df38](https://github.com/Emerging-Patterns/eztoml/commit/fd3df38d2be19d63dc3067b7a24d7e79901a3746))
+* **laws:** rows.seal puts the newest row last ([74589d7](https://github.com/Emerging-Patterns/eztoml/commit/74589d79d2e6e3423e2c6293e4d51ba9520e44f7))
+* **laws:** table headers read back (WP-H) ([f8b1078](https://github.com/Emerging-Patterns/eztoml/commit/f8b1078e6b72c916cc38de0e7b18a9a469e37a9f))
+* **laws:** WP-C, arrays and inline tables read back ([56d3967](https://github.com/Emerging-Patterns/eztoml/commit/56d3967d0876c4d7971342e9a5f3937ac6971017))
+
+
+### Performance Improvements
+
+* **proofs:** compute each control's escape once ([de6c356](https://github.com/Emerging-Patterns/eztoml/commit/de6c356bba3017302bd7a1a8381b7d29b953eb86))
+* **proofs:** compute each control's escape once ([2969a39](https://github.com/Emerging-Patterns/eztoml/commit/2969a394f69a39ead4f9e8d0c20824b1f8f1f443))
+
 ## [0.3.1](https://github.com/Emerging-Patterns/eztoml/compare/v0.3.0...v0.3.1) (2026-09-24)
 
 
