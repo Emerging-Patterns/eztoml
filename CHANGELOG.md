@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.4.0...v0.5.0) (2026-09-25)
+
+
+### Features
+
+* **laws:** WP-R2, parse then render is stable (TOML-RT-2 proved) ([#49](https://github.com/Emerging-Patterns/eztoml/issues/49)) ([6e3a716](https://github.com/Emerging-Patterns/eztoml/commit/6e3a7164b76510c56764ab4d87df72bc32d8bc7c))
+* **laws:** WP-R3 spike, TOML-RT-3's invariant over every scanner state ([#42](https://github.com/Emerging-Patterns/eztoml/issues/42)) ([af800c1](https://github.com/Emerging-Patterns/eztoml/commit/af800c1a81b87c3ab993bf29792217ab5ff76d47))
+* **laws:** WP-R3, parse gives a well-formed document (TOML-RT-3 proved) ([#47](https://github.com/Emerging-Patterns/eztoml/issues/47)) ([ba9c31e](https://github.com/Emerging-Patterns/eztoml/commit/ba9c31e28c8153d8180951225d7cc3efde0b1df8))
+
+
+### Bug Fixes
+
+* bend 2.0.28, no numeric name segments ([#48](https://github.com/Emerging-Patterns/eztoml/issues/48)) ([7a0fe8d](https://github.com/Emerging-Patterns/eztoml/commit/7a0fe8dc4f2d3cd47f0a59f9b0e2cdf2a5b0a3fd))
+
 ## [0.4.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.3.1...v0.4.0) (2026-09-25)
 
 
