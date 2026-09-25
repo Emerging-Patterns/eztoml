@@ -2790,3 +2790,154 @@ law header_line_found_by_at:
   for +g9: List<&2, Bool>
   {T.at(T.root(T.parse(hd.line(False{}, g0, ds, last, g9, ""))), hd.path(ds, last))
     == T.Found{T.VHead{T.tree.pre(tb.join(dk.init(ds), ""), seg.name(last)), []}} : T.Hit}
+
+# WP-C: arrays and inline tables read back. render writes an array as `[`,
+# its items joined by ", " and `]`, and an inline table as `{`, its pairs
+# `key = value` joined by ", " and `}`, nested to any depth. The scanner reads
+# such a value from the state that waits for a value up to the character
+# after it, which ends it: a newline at the top level, a comma or a closer
+# inside a container. The value it puts is in the raw form below: a string a
+# span or an owned string, an array's items in order, an inline table's pairs
+# newest first until rows.seal; own reads it as cv.raw says.
+
+# a text that starts with a character that may end a value: a newline, a
+# comma, or a closer
+def cv.end(rest: String) -> Bool:
+  match rest:
+    case SNil{}:
+      False{}
+    case SCon{+cc, _tt}:
+      Bool.or(Char.is_eq(cc, '\n'), Bool.or(Char.is_eq(cc, ','), Bool.or(Char.is_eq(cc, ']'),
+        Char.is_eq(cc, '}'))))
+
+# one value with every span read out, as own.rows reads the head of a list
+def cv.own1(vv: T.Val) -> T.Val:
+  match vv:
+    case T.VPair{nn, T.VSpan{src, +kk}}:
+      T.VPair{nn, T.VStr{T.span.str(src, kk, U32.is_zero(kk))}}
+    case T.VPair{nn, T.VArr{items}}:
+      T.VPair{nn, T.VArr{own.rows(items)}}
+    case T.VPair{nn, T.VInl{rows}}:
+      T.VPair{nn, T.VInl{own.rows(rows)}}
+    case T.VPair{nn, T.VHead{path, rows}}:
+      T.VPair{nn, T.VHead{path, own.rows(rows)}}
+    case T.VPair{nn, T.VAot{path, rows}}:
+      T.VPair{nn, T.VAot{path, own.rows(rows)}}
+    case T.VPair{nn, T.VAots{path, elems}}:
+      T.VPair{nn, T.VAots{path, own.rows(elems)}}
+    case T.VSpan{src, +kk}:
+      T.VStr{T.span.str(src, kk, U32.is_zero(kk))}
+    case T.VArr{items}:
+      T.VArr{own.rows(items)}
+    case T.VInl{rows}:
+      T.VInl{own.rows(rows)}
+    case T.VHead{path, rows}:
+      T.VHead{path, own.rows(rows)}
+    case T.VAot{path, rows}:
+      T.VAot{path, own.rows(rows)}
+    case T.VAots{path, elems}:
+      T.VAots{path, own.rows(elems)}
+    case other:
+      other
+
+# values as the scanner puts them, every span read out: strings owned, an
+# array's items in order, an inline table's pairs newest first
+def cv.raw(vs: List<&2, T.Val>) -> List<&2, T.Val>:
+  match vs:
+    case []:
+      []
+    case T.VPair{nn, T.VSpan{src, +kk}} <> tt:
+      T.VPair{nn, T.VStr{T.span.str(src, kk, U32.is_zero(kk))}} <> cv.raw(tt)
+    case T.VPair{nn, T.VArr{items}} <> tt:
+      T.VPair{nn, T.VArr{cv.raw(items)}} <> cv.raw(tt)
+    case T.VPair{nn, T.VInl{rows}} <> tt:
+      T.VPair{nn, T.VInl{List.reverse(&2, T.Val, cv.raw(rows))}} <> cv.raw(tt)
+    case T.VSpan{src, +kk} <> tt:
+      T.VStr{T.span.str(src, kk, U32.is_zero(kk))} <> cv.raw(tt)
+    case T.VArr{items} <> tt:
+      T.VArr{cv.raw(items)} <> cv.raw(tt)
+    case T.VInl{rows} <> tt:
+      T.VInl{List.reverse(&2, T.Val, cv.raw(rows))} <> cv.raw(tt)
+    case vv <> tt:
+      vv <> cv.raw(tt)
+
+# one value as the scanner puts it, as cv.raw reads the head of a list
+def cv.raw1(vv: T.Val) -> T.Val:
+  match vv:
+    case T.VPair{nn, T.VSpan{src, +kk}}:
+      T.VPair{nn, T.VStr{T.span.str(src, kk, U32.is_zero(kk))}}
+    case T.VPair{nn, T.VArr{items}}:
+      T.VPair{nn, T.VArr{cv.raw(items)}}
+    case T.VPair{nn, T.VInl{rows}}:
+      T.VPair{nn, T.VInl{List.reverse(&2, T.Val, cv.raw(rows))}}
+    case T.VSpan{src, +kk}:
+      T.VStr{T.span.str(src, kk, U32.is_zero(kk))}
+    case T.VArr{items}:
+      T.VArr{cv.raw(items)}
+    case T.VInl{rows}:
+      T.VInl{List.reverse(&2, T.Val, cv.raw(rows))}
+    case other:
+      other
+
+# the text render writes for a value in a value position, then xx: an array's
+# items joined by ", " in brackets, an inline table's pairs joined by ", " in
+# braces, or a scalar's text
+def cv.tx(vv: T.Val, xx: String) -> String:
+  match vv:
+    case T.VArr{items}:
+      SCon{'[', String.append(T.render.go(items, ", ", False{}), SCon{']', xx})}
+    case T.VInl{rows}:
+      SCon{'{', String.append(T.render.go(rows, ", ", False{}), SCon{'}', xx})}
+    case other:
+      String.append(T.render.atom(other), xx)
+
+# a value that may sit in a value position, well-formed as wf.go reads an
+# array's item or a pair's value: an array of well-formed items, an inline
+# table of well-formed pairs, or a well-formed scalar
+def cv.wf(vv: T.Val) -> Bool:
+  match vv:
+    case T.VArr{items}:
+      T.wf.go(items, T.WfItems{})
+    case T.VInl{rows}:
+      T.wf.go(rows, T.WfInl{})
+    case other:
+      T.wf.atom(other)
+
+# every string in the values, at any depth, is short: a span counts its
+# characters in a U32
+def cv.shorts(vs: List<&2, T.Val>) -> Bool:
+  match vs:
+    case []:
+      True{}
+    case T.VPair{_nn, T.VStr{ss}} <> tt:
+      Bool.and(short(ss), cv.shorts(tt))
+    case T.VPair{_nn, T.VSpan{src, +kk}} <> tt:
+      Bool.and(short(T.span.str(src, kk, U32.is_zero(kk))), cv.shorts(tt))
+    case T.VPair{_nn, T.VArr{items}} <> tt:
+      Bool.and(cv.shorts(items), cv.shorts(tt))
+    case T.VPair{_nn, T.VInl{rows}} <> tt:
+      Bool.and(cv.shorts(rows), cv.shorts(tt))
+    case T.VStr{ss} <> tt:
+      Bool.and(short(ss), cv.shorts(tt))
+    case T.VSpan{src, +kk} <> tt:
+      Bool.and(short(T.span.str(src, kk, U32.is_zero(kk))), cv.shorts(tt))
+    case T.VArr{items} <> tt:
+      Bool.and(cv.shorts(items), cv.shorts(tt))
+    case T.VInl{rows} <> tt:
+      Bool.and(cv.shorts(rows), cv.shorts(tt))
+    case _vv <> tt:
+      cv.shorts(tt)
+
+# every string in one value, at any depth, is short
+def cv.short1(vv: T.Val) -> Bool:
+  match vv:
+    case T.VStr{ss}:
+      short(ss)
+    case T.VSpan{src, +kk}:
+      short(T.span.str(src, kk, U32.is_zero(kk)))
+    case T.VArr{items}:
+      cv.shorts(items)
+    case T.VInl{rows}:
+      cv.shorts(rows)
+    case _vv:
+      True{}
