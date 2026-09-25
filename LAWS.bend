@@ -3221,3 +3221,40 @@ law gd_header_steps:
   for +cc: Char
   for ec: {T.wf.char(cc) == True{} : Bool}
   {good(T.read.on(lex, st, cc)) == True{} : Bool}
+
+# the scanner's states inside a key, before its `=`, and at the start and
+# the end of a line
+def gd.ky(lex: T.Lex) -> Bool:
+  match lex:
+    case T.LTop{}:
+      True{}
+    case T.LLine{}:
+      True{}
+    case T.LKey{}:
+      True{}
+    case T.LKeyDot{}:
+      True{}
+    case T.LAfter{}:
+      True{}
+    case T.LKeyQ{}:
+      True{}
+    case T.LKeyE{}:
+      True{}
+    case T.LKeyU{}:
+      True{}
+    case _:
+      False{}
+
+# LAW: every step at the start of a line, inside a key or after it keeps a
+# state good: from every good state, whatever its fields, one character that
+# is a Unicode scalar value read in any of the eight key states leaves a good
+# state
+# TOML-RT-3
+law gd_key_steps:
+  for +lex: T.Lex
+  for hl: {gd.ky(lex) == True{} : Bool}
+  for +st: T.St
+  for eg: {good(st) == True{} : Bool}
+  for +cc: Char
+  for ec: {T.wf.char(cc) == True{} : Bool}
+  {good(T.read.on(lex, st, cc)) == True{} : Bool}
