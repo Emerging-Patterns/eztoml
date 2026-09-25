@@ -223,7 +223,7 @@ def basic.cls.hex(hit: Bool) -> BK:
       BKCh{}
 
 # backslash
-def basic.cls.92(hit: Bool, +uu: U32) -> BK:
+def basic.cls.bslash(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'\\'}
@@ -231,56 +231,56 @@ def basic.cls.92(hit: Bool, +uu: U32) -> BK:
       basic.cls.hex(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)))
 
 # quotation mark
-def basic.cls.34(hit: Bool, +uu: U32) -> BK:
+def basic.cls.quote(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'"'}
     case False{}:
-      basic.cls.92(U32.is_eq(uu, 92), uu)
+      basic.cls.bslash(U32.is_eq(uu, 92), uu)
 
 # carriage return
-def basic.cls.13(hit: Bool, +uu: U32) -> BK:
+def basic.cls.cr(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'r'}
     case False{}:
-      basic.cls.34(U32.is_eq(uu, 34), uu)
+      basic.cls.quote(U32.is_eq(uu, 34), uu)
 
 # form feed
-def basic.cls.12(hit: Bool, +uu: U32) -> BK:
+def basic.cls.ff(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'f'}
     case False{}:
-      basic.cls.13(U32.is_eq(uu, 13), uu)
+      basic.cls.cr(U32.is_eq(uu, 13), uu)
 
 # line feed
-def basic.cls.10(hit: Bool, +uu: U32) -> BK:
+def basic.cls.lf(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'n'}
     case False{}:
-      basic.cls.12(U32.is_eq(uu, 12), uu)
+      basic.cls.ff(U32.is_eq(uu, 12), uu)
 
 # tab
-def basic.cls.9(hit: Bool, +uu: U32) -> BK:
+def basic.cls.tab(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'t'}
     case False{}:
-      basic.cls.10(U32.is_eq(uu, 10), uu)
+      basic.cls.lf(U32.is_eq(uu, 10), uu)
 
 # backspace, then the rest
-def basic.cls.8(hit: Bool, +uu: U32) -> BK:
+def basic.cls.bs(hit: Bool, +uu: U32) -> BK:
   match hit:
     case True{}:
       BKEsc{'b'}
     case False{}:
-      basic.cls.9(U32.is_eq(uu, 9), uu)
+      basic.cls.tab(U32.is_eq(uu, 9), uu)
 
 # the class of a code point in a basic string
 def basic.cls(+uu: U32) -> BK:
-  basic.cls.8(U32.is_eq(uu, 8), uu)
+  basic.cls.bs(U32.is_eq(uu, 8), uu)
 
 # one character of a basic string, reversed onto the output
 def basic.disp(kk: BK, cc: Char, uu: U32, out: List<&2, Char>) -> List<&2, Char>:
