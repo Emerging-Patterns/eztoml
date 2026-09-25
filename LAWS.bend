@@ -1571,10 +1571,10 @@ law key_reads_back:
   {T.parse(String.append(T.key(s), " = 1"))
     == T.Doc{"", [T.VPair{s, T.VInt{T.Plus{}, "1"}}]} : T.Doc}
 
-# TOML-RT-1 for a document of one pair: a bare key and a string render writes
-# with no escape. parse keeps such a string as a span of the text, whose
-# length it counts in a U32, so the string must be short enough that the
-# count does not wrap.
+# The bound on a text's length. parse keeps a string render writes with no
+# escape as a span of the text, whose length it counts in a U32, so the
+# string must be short enough that the count does not wrap; TOML-RT-1 bounds
+# the whole rendered text so.
 
 # a character render writes as itself in a basic string: no control, no
 # quotation mark and no backslash (esc_plain)
@@ -1600,21 +1600,6 @@ def counts(ss: String, +nn: U32) -> Bool:
 # fewer than 2^32 characters: a U32 counts them from 0 without wrapping
 def short(ss: String) -> Bool:
   counts(ss, 0)
-
-# LAW: a document of one pair, a bare key and a string that render writes
-# with no escape and that is shorter than 2^32 characters, reads back with no
-# error as the same document
-# TOML-RT-1
-law render_parse_plain_pair:
-  for +e: String
-  for +k: String
-  for ek: {T.bare(k) == True{} : Bool}
-  for +s: String
-  for ep: {plain.text(s) == True{} : Bool}
-  for es: {short(s) == True{} : Bool}
-  {Bool.and(String.is_empty(T.bad(T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})))),
-    same(T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})), T.Doc{e, [T.VPair{k, T.VStr{s}}]}))
-    == True{} : Bool}
 
 # WP-W: contracts of the walk. tree.walk follows a key path from the root and
 # applies a job at its end: a value put into a table (JPut), a [table] header
@@ -3370,3 +3355,107 @@ law gd_value_steps:
   for +cc: Char
   for ec: {T.wf.char(cc) == True{} : Bool}
   {good(T.read.on(lex, st, cc)) == True{} : Bool}
+
+
+# WP-D: the document render writes, read back. render writes a table's pairs
+# that are no table first, in order, then its tables and arrays of tables, in
+# order, each one's rows the same way; parse puts every pair in the order it
+# reads it and reads a span out only when own asks. canon is the document so
+# reordered, with every span read out and no error: an element of an array of
+# tables under the array's path, as the walk stores it.
+
+# a table's pairs that are no table and no array of tables, in order
+def canon.keys(xs: List<&2, T.Val>) -> List<&2, T.Val>:
+  match xs:
+    case []:
+      []
+    case T.VPair{_n, T.VHead{_p, _r}} <> tt:
+      canon.keys(tt)
+    case T.VPair{_n, T.VAots{_p, _es}} <> tt:
+      canon.keys(tt)
+    case hh <> tt:
+      hh <> canon.keys(tt)
+
+# which list canon.go reorders: a table's rows, or the elements of an array
+# of tables stored under path
+type CMode is Data:
+  CTabs{}
+  CElems{path: String}
+
+# a table's tables and arrays of tables, in order, each one's rows reordered;
+# or an array's elements, each under the array's path with its rows reordered
+def canon.go(xs: List<&2, T.Val>, md: CMode) -> List<&2, T.Val>:
+  match xs md:
+    case [] _m:
+      []
+    case T.VPair{nn, T.VHead{pp, +rr}} <> tt CTabs{}:
+      T.VPair{nn, T.VHead{pp, List.append(&2, T.Val, canon.keys(rr), canon.go(rr, CTabs{}))}} <>
+        canon.go(tt, CTabs{})
+    case T.VPair{nn, T.VAots{+pp, es}} <> tt CTabs{}:
+      T.VPair{nn, T.VAots{pp, canon.go(es, CElems{pp})}} <> canon.go(tt, CTabs{})
+    case T.VAot{_q, +rr} <> tt CElems{+pp}:
+      T.VAot{pp, List.append(&2, T.Val, canon.keys(rr), canon.go(rr, CTabs{}))} <> canon.go(tt, CElems{pp})
+    case _hh <> tt m2:
+      canon.go(tt, m2)
+
+# a table's tables and arrays of tables, reordered
+def canon.tabs(xs: List<&2, T.Val>) -> List<&2, T.Val>:
+  canon.go(xs, CTabs{})
+
+# a table's rows as render writes them: the pairs that are no table, then
+# the tables
+def canon.rows(+xs: List<&2, T.Val>) -> List<&2, T.Val>:
+  List.append(&2, T.Val, canon.keys(xs), canon.tabs(xs))
+
+# the document as parse reads back what render wrote for it
+def canon(dd: T.Doc) -> T.Doc:
+  match dd:
+    case T.Doc{_bad, rows}:
+      T.Doc{"", own.rows(canon.rows(rows))}
+
+# every string in the rows, at any depth and in every table, and every
+# table's path, is short
+def short.rows(xs: List<&2, T.Val>) -> Bool:
+  match xs:
+    case []:
+      True{}
+    case T.VPair{_n, T.VHead{pp, rr}} <> tt:
+      Bool.and(short(pp), Bool.and(short.rows(rr), short.rows(tt)))
+    case T.VPair{_n, T.VAots{pp, es}} <> tt:
+      Bool.and(short(pp), Bool.and(short.rows(es), short.rows(tt)))
+    case T.VAot{_p, rr} <> tt:
+      Bool.and(short.rows(rr), short.rows(tt))
+    case T.VPair{_n, vv} <> tt:
+      Bool.and(cv.short1(vv), short.rows(tt))
+    case vv <> tt:
+      Bool.and(cv.short1(vv), short.rows(tt))
+
+# LAW: for every well-formed document whose rendered text is shorter than
+# 2^32 characters, the document parse reads back from that text, every span
+# read out, is canon of it: no error, and every table's pairs that are no
+# table in order, before its tables and arrays of tables in order
+# TOML-RT-1
+law render_parse_canon:
+  for +d: T.Doc
+  for +w: {T.wf(d) == True{} : Bool}
+  for h_s: {short(T.render(d)) == True{} : Bool}
+  {own(T.parse(T.render(d))) == canon(d) : T.Doc}
+
+# LAW: a well-formed document is the same as canon of it: moving a table's
+# pairs that are no table in front of its tables, and reading every span
+# out, changes no value same compares
+# TOML-RT-1
+law canon_same:
+  for +d: T.Doc
+  for +w: {T.wf(d) == True{} : Bool}
+  {same(canon(d), d) == True{} : Bool}
+
+# LAW: render then parse is the same document: for every well-formed document
+# whose rendered text is shorter than 2^32 characters, parse reads that text
+# back with no error, as a document the same as the one render was given
+# TOML-RT-1
+law render_parse:
+  for +d: T.Doc
+  for +w: {T.wf(d) == True{} : Bool}
+  for h_s: {short(T.render(d)) == True{} : Bool}
+  {Bool.and(String.is_empty(T.bad(T.parse(T.render(d)))), same(T.parse(T.render(d)), d)) == True{} : Bool}
