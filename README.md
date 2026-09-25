@@ -7,10 +7,10 @@ TOML for [Bend 2](https://github.com/bendlang/bend).
 With [Bend](https://github.com/bendlang/bend) alone there is nothing to
 install: import eztoml by its hub name and `bend` fetches it from
 [the hub](https://hub.bend-lang.com) into `~/.bend/lib` on the first run.
-`0xb652b3fca73c8a28ae49abaa395bb530` is eztoml v0.4.0.
+`0xd79254973edee82bcf56616220876efe` is eztoml v0.5.0.
 
 ```
-import 0xb652b3fca73c8a28ae49abaa395bb530/main.bend as Toml
+import 0xd79254973edee82bcf56616220876efe/main.bend as Toml
 ```
 
 Or with [ez](https://github.com/Emerging-Patterns/ez), which records the
@@ -30,7 +30,7 @@ a boolean. `root` is the document's table and `bad` is the first error.
 build values. `key` writes a name bare or as a basic string.
 
 ```
-import 0xb652b3fca73c8a28ae49abaa395bb530/main.bend as Toml
+import 0xd79254973edee82bcf56616220876efe/main.bend as Toml
 
 def main() -> IO(Unit):
   +doc = Toml.parse("[pkg]\nname = \"app\"\nver = 1\non = true\n")
