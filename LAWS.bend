@@ -2327,3 +2327,48 @@ law flo_reads_back:
   for +rest: String
   {from_val(fx, String.append(T.render.atom(T.VFlo{sg, text}), SCon{'\n', rest}))
     == after_val(fx, T.VFlo{sg, text}, rest) : T.Doc}
+
+# LAW: a well-formed datetime's text is classified as the datetime: render
+# writes the year with four digits and every other field with two, with T and
+# Z in upper case and the fraction's digits kept, and the scan reads each field
+# back, for all four forms
+# TOML-TIME-1
+law when_word:
+  for +w: T.When
+  for +h: {T.wf.when(w) == True{} : Bool}
+  {T.word.val(String.to_list(T.render.atom(T.VWhen{w}))) == T.GotVal{T.VWhen{w}} : T.Got}
+
+# LAW: a well-formed datetime's text then a newline is read from every value
+# state as the datetime
+law when_reads_back:
+  for +w: T.When
+  for +h: {T.wf.when(w) == True{} : Bool}
+  for +fx: Vf
+  for +rest: String
+  {from_val(fx, String.append(T.render.atom(T.VWhen{w}), SCon{'\n', rest}))
+    == after_val(fx, T.VWhen{w}, rest) : T.Doc}
+
+# a well-formed scalar render writes as a bare value: an integer, a float, a
+# boolean or a datetime
+def bare_val(vv: T.Val) -> Bool:
+  match vv:
+    case T.VInt{+sg, +ds}:
+      T.wf.int(sg, ds)
+    case T.VFlo{_sg, +text}:
+      T.wf.flo(text)
+    case T.VBool{_b}:
+      True{}
+    case T.VWhen{ww}:
+      T.wf.when(ww)
+    case _:
+      False{}
+
+# LAW: every well-formed scalar render writes as a bare value, then a newline,
+# is read from every value state as itself, put where the state puts values,
+# and the text after the newline is read on from there
+law scalar_reads_back:
+  for +v: T.Val
+  for +w: {bare_val(v) == True{} : Bool}
+  for +fx: Vf
+  for +rest: String
+  {from_val(fx, String.append(T.render.atom(v), SCon{'\n', rest})) == after_val(fx, v, rest) : T.Doc}
