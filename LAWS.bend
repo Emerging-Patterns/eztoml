@@ -2708,3 +2708,88 @@ law dotted_key_line_found_by_at:
   for +g: List<&2, Bool>
   {T.at(T.root(T.parse(dk.text(ds, last, String.append(gap(g), "= 1\n")))), dk.names(ds, last))
     == T.Found{one()} : T.Hit}
+
+# A header's segments are spelled the same way: bare, basic or literal,
+# joined by dots. WP-H's header_reads_back reads the segments as key writes
+# them; the law below reads every spelling.
+
+# the text of a header's path, its segments joined by dots, then tail
+def hd.text(segs: List<&2, Seg>, last: Seg, tail: String) -> String:
+  match segs:
+    case []:
+      String.append(seg.text(last), tail)
+    case sg <> rest:
+      String.append(seg.text(sg), SCon{'.', hd.text(rest, last, tail)})
+
+# the names of a header's segments before the last
+def hd.init(segs: List<&2, Seg>) -> List<&2, String>:
+  match segs:
+    case []:
+      []
+    case sg <> rest:
+      seg.name(sg) <> hd.init(rest)
+
+# whether every segment of a header can be spelled as it is
+def hd.ok(segs: List<&2, Seg>, last: Seg) -> Bool:
+  match segs:
+    case []:
+      seg.ok(last)
+    case sg <> rest:
+      Bool.and(seg.ok(sg), hd.ok(rest, last))
+
+# a header line: `[` and the path and `]`, or `[[` and the path and `]]` for
+# an array of tables, then a newline and rest
+def hd.line(arr: Bool, segs: List<&2, Seg>, last: Seg, rest: String) -> String:
+  match arr:
+    case False{}:
+      SCon{'[', hd.text(segs, last, SCon{']', SCon{'\n', rest}})}
+    case True{}:
+      SCon{'[', SCon{'[', hd.text(segs, last, SCon{']', SCon{']', SCon{'\n', rest}}})}}
+
+# LAW: a header line whose segments are each bare, basic or literal, read
+# from the start of a line, is the rest read from the start of the next line
+# in the table named by the segments' characters, escapes decoded, with the
+# rows and definitions the header's walk along those names returns; for a
+# `[table]` header and an `[[array]]` one alike
+# TOML-KEY-3
+law header_segments_read_back:
+  for +arr: Bool
+  for +segs: List<&2, Seg>
+  for +last: Seg
+  for ok: {hd.ok(segs, last) == True{} : Bool}
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +arrtab: Bool
+  for +rows2: List<&2, T.Val>
+  for +heads2: List<&2, String>
+  for ew: {T.tree.walk(List.append(&2, String, hd.init(segs), [seg.name(last)]), T.Tw{rows, header_job(arr),
+    [], "", "", heads, False{}}, 0) == T.End{rows2, "", heads2} : T.End}
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{hb.line(rows2, heads2,
+    List.append(&2, String, hd.init(segs), [seg.name(last)]), bk, qk, False{})}) == goal : T.Doc}
+  {T.doc.read(hd.line(arr, segs, last, rest), T.MScan{hb.line(rows, heads, here, back, qkind, arrtab)})
+    == goal : T.Doc}
+
+# LAW: a document of one `[table]` header, its segments spelled any way,
+# parses with no error to an empty table under the last name's characters,
+# in nested tables named by the other segments' characters
+# TOML-KEY-3
+law header_line_reads_back:
+  for +segs: List<&2, Seg>
+  for +last: Seg
+  for +ok: {hd.ok(segs, last) == True{} : Bool}
+  {T.parse(hd.line(False{}, segs, last, "")) == T.Doc{"", T.rows.seal(tb.set(hd.init(segs), "", [],
+    [T.VPair{seg.name(last), T.VHead{T.tree.pre(tb.join(hd.init(segs), ""), seg.name(last)), []}}]))} : T.Doc}
+
+# LAW: and at finds that table by the segments' names
+# TOML-KEY-3
+law header_line_found_by_at:
+  for +segs: List<&2, Seg>
+  for +last: Seg
+  for ok: {hd.ok(segs, last) == True{} : Bool}
+  {T.at(T.root(T.parse(hd.line(False{}, segs, last, ""))), List.append(&2, String, hd.init(segs),
+    [seg.name(last)])) == T.Found{T.VHead{T.tree.pre(tb.join(hd.init(segs), ""), seg.name(last)), []}} : T.Hit}
