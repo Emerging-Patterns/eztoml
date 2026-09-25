@@ -3660,3 +3660,503 @@ law parse_render_parse:
   for ok: {String.is_empty(T.bad(T.parse(t))) == True{} : Bool}
   {Bool.and(same(T.parse(T.render(T.parse(t))), T.parse(t)),
     String.eq(T.render(T.parse(T.render(T.parse(t)))), T.render(T.parse(t)))) == True{} : Bool}
+
+# KEY-3: a key's name is its characters however it is written, read from
+# every place a key may start. toml.abnf spells a basic string as quotation
+# marks around basic-char pieces: basic-unescaped (any character but `"`,
+# `\` and the controls other than tab) written as itself, or escaped: a
+# backslash and one of `"`, `\`, b, f, n, r, t, or u and four HEXDIG, or U
+# and eight. HEXDIG is a digit or a letter A to F, in either case, and the
+# escape must name a Unicode scalar value. A basic key segment is a list of
+# such pieces, named by the characters they stand for; a key segment is
+# that, bare or literal, and a dotted key's segments are joined by dots with
+# blank space around them, in a key and in a header alike.
+
+# the letter of a two-character escape
+type KMark is Data:
+  KmQuote{}
+  KmBack{}
+  KmB{}
+  KmF{}
+  KmN{}
+  KmR{}
+  KmT{}
+
+# the letter written after the backslash
+def k3.mark.char(mm: KMark) -> Char:
+  match mm:
+    case KmQuote{}:
+      '"'
+    case KmBack{}:
+      '\\'
+    case KmB{}:
+      'b'
+    case KmF{}:
+      'f'
+    case KmN{}:
+      'n'
+    case KmR{}:
+      'r'
+    case KmT{}:
+      't'
+
+# the character it stands for: `"`, `\`, backspace, form feed, line feed,
+# carriage return, tab
+def k3.mark.dec(mm: KMark) -> Char:
+  match mm:
+    case KmQuote{}:
+      '"'
+    case KmBack{}:
+      '\\'
+    case KmB{}:
+      Chr{8}
+    case KmF{}:
+      Chr{12}
+    case KmN{}:
+      '\n'
+    case KmR{}:
+      '\r'
+    case KmT{}:
+      '\t'
+
+# a hexadecimal digit, a letter one in upper case when up
+type KHex is Data:
+  Kx0{}
+  Kx1{}
+  Kx2{}
+  Kx3{}
+  Kx4{}
+  Kx5{}
+  Kx6{}
+  Kx7{}
+  Kx8{}
+  Kx9{}
+  KxA{up: Bool}
+  KxB{up: Bool}
+  KxC{up: Bool}
+  KxD{up: Bool}
+  KxE{up: Bool}
+  KxF{up: Bool}
+
+# a letter digit's character: the upper case one, or the lower case one
+def k3.hex.case(up: Bool, +upper: Char, +lower: Char) -> Char:
+  match up:
+    case True{}:
+      upper
+    case False{}:
+      lower
+
+# a hexadecimal digit's character
+def k3.hex.char(hx: KHex) -> Char:
+  match hx:
+    case Kx0{}:
+      '0'
+    case Kx1{}:
+      '1'
+    case Kx2{}:
+      '2'
+    case Kx3{}:
+      '3'
+    case Kx4{}:
+      '4'
+    case Kx5{}:
+      '5'
+    case Kx6{}:
+      '6'
+    case Kx7{}:
+      '7'
+    case Kx8{}:
+      '8'
+    case Kx9{}:
+      '9'
+    case KxA{up}:
+      k3.hex.case(up, 'A', 'a')
+    case KxB{up}:
+      k3.hex.case(up, 'B', 'b')
+    case KxC{up}:
+      k3.hex.case(up, 'C', 'c')
+    case KxD{up}:
+      k3.hex.case(up, 'D', 'd')
+    case KxE{up}:
+      k3.hex.case(up, 'E', 'e')
+    case KxF{up}:
+      k3.hex.case(up, 'F', 'f')
+
+# a hexadecimal digit's value
+def k3.hex.val(hx: KHex) -> U32:
+  match hx:
+    case Kx0{}:
+      0
+    case Kx1{}:
+      1
+    case Kx2{}:
+      2
+    case Kx3{}:
+      3
+    case Kx4{}:
+      4
+    case Kx5{}:
+      5
+    case Kx6{}:
+      6
+    case Kx7{}:
+      7
+    case Kx8{}:
+      8
+    case Kx9{}:
+      9
+    case KxA{_up}:
+      10
+    case KxB{_up}:
+      11
+    case KxC{_up}:
+      12
+    case KxD{_up}:
+      13
+    case KxE{_up}:
+      14
+    case KxF{_up}:
+      15
+
+# a number read so far, then one more digit
+def k3.hex.acc(+acc: U32, hx: KHex) -> U32:
+  U32.add(U32.mul(acc, 16), k3.hex.val(hx))
+
+# the number four digits write, the most significant first
+def k3.hex4(dd: KHex, cc: KHex, bb: KHex, aa: KHex) -> U32:
+  k3.hex.acc(k3.hex.acc(k3.hex.acc(k3.hex.acc(0, dd), cc), bb), aa)
+
+# a Unicode scalar value: at most U+10FFFF, and no surrogate (U+D800 to
+# U+DFFF; 1114111 is %x10FFFF, 55296 %xD800 and 57343 %xDFFF)
+def k3.scalar(+uu: U32) -> Bool:
+  Bool.and(U32.is_le(uu, 1114111), Bool.not(Bool.and(U32.is_ge(uu, 55296), U32.is_le(uu, 57343))))
+
+# basic-unescaped: any character but `"`, `\` and the controls other than tab
+def k3.bchar(+cc: Char) -> Bool:
+  Bool.not(Bool.or(Char.is_eq(cc, '"'), Bool.or(Char.is_eq(cc, '\\'), Bool.and(is_ctl(cc),
+    Bool.not(Char.is_eq(cc, '\t'))))))
+
+# one piece of a basic string: a character written as itself, a
+# two-character escape, `\u` and four hexadecimal digits, or `\U` and eight
+type KPiece is Data:
+  KpChar{cc: Char}
+  KpEsc{mm: KMark}
+  KpU4{dd: KHex, cc: KHex, bb: KHex, aa: KHex}
+  KpU8{hh: KHex, gg: KHex, ff: KHex, ee: KHex, dd: KHex, cc: KHex, bb: KHex, aa: KHex}
+
+# four hexadecimal digits, then tail
+def k3.hex4.text(dd: KHex, cc: KHex, bb: KHex, aa: KHex, tail: String) -> String:
+  SCon{k3.hex.char(dd), SCon{k3.hex.char(cc), SCon{k3.hex.char(bb), SCon{k3.hex.char(aa), tail}}}}
+
+# a piece's text, then tail
+def k3.pc.text(pp: KPiece, tail: String) -> String:
+  match pp:
+    case KpChar{cc}:
+      SCon{cc, tail}
+    case KpEsc{mm}:
+      SCon{'\\', SCon{k3.mark.char(mm), tail}}
+    case KpU4{dd, cc, bb, aa}:
+      SCon{'\\', SCon{'u', k3.hex4.text(dd, cc, bb, aa, tail)}}
+    case KpU8{hh, gg, ff, ee, dd, cc, bb, aa}:
+      SCon{'\\', SCon{'U', k3.hex4.text(hh, gg, ff, ee, k3.hex4.text(dd, cc, bb, aa, tail))}}
+
+# the number eight digits write, the most significant first
+def k3.hex8(
+  hh: KHex,
+  gg: KHex,
+  ff: KHex,
+  ee: KHex,
+  dd: KHex,
+  cc: KHex,
+  bb: KHex,
+  aa: KHex
+) -> U32:
+  k3.hex.acc(k3.hex.acc(k3.hex.acc(k3.hex.acc(k3.hex4(hh, gg, ff, ee), dd), cc), bb), aa)
+
+# the character a piece stands for
+def k3.pc.char(pp: KPiece) -> Char:
+  match pp:
+    case KpChar{cc}:
+      cc
+    case KpEsc{mm}:
+      k3.mark.dec(mm)
+    case KpU4{dd, cc, bb, aa}:
+      Chr{k3.hex4(dd, cc, bb, aa)}
+    case KpU8{hh, gg, ff, ee, dd, cc, bb, aa}:
+      Chr{k3.hex8(hh, gg, ff, ee, dd, cc, bb, aa)}
+
+# whether a basic string may hold the piece: a character written as itself
+# must be basic-unescaped, and an escape's digits must name a Unicode scalar
+# value
+def k3.pc.ok(pp: KPiece) -> Bool:
+  match pp:
+    case KpChar{cc}:
+      k3.bchar(cc)
+    case KpEsc{_mm}:
+      True{}
+    case KpU4{dd, cc, bb, aa}:
+      k3.scalar(k3.hex4(dd, cc, bb, aa))
+    case KpU8{hh, gg, ff, ee, dd, cc, bb, aa}:
+      k3.scalar(k3.hex8(hh, gg, ff, ee, dd, cc, bb, aa))
+
+# the pieces' text, then tail
+def k3.pcs.text(ps: List<&2, KPiece>, tail: String) -> String:
+  match ps:
+    case []:
+      tail
+    case pp <> rest:
+      k3.pc.text(pp, k3.pcs.text(rest, tail))
+
+# the characters the pieces stand for
+def k3.pcs.name(ps: List<&2, KPiece>) -> String:
+  match ps:
+    case []:
+      ""
+    case pp <> rest:
+      SCon{k3.pc.char(pp), k3.pcs.name(rest)}
+
+# whether a basic string may hold every piece
+def k3.pcs.ok(ps: List<&2, KPiece>) -> Bool:
+  match ps:
+    case []:
+      True{}
+    case pp <> rest:
+      Bool.and(k3.pc.ok(pp), k3.pcs.ok(rest))
+
+# LAW: a basic key reads back as its characters however it is spelled: for
+# every list of pieces a basic string may hold, the key they spell in
+# quotation marks, then " = 1", parses with no error to one pair named by the
+# characters the pieces stand for, holding 1
+# TOML-KEY-3
+law basic_key_reads_back:
+  for +ps: List<&2, KPiece>
+  for ok: {k3.pcs.ok(ps) == True{} : Bool}
+  {T.parse(SCon{'"', k3.pcs.text(ps, "\" = 1")}) == T.Doc{"", [T.VPair{k3.pcs.name(ps), one()}]} : T.Doc}
+
+# a key segment: bare, a basic string of pieces, or a literal string
+type KSeg is Data:
+  KsBare{name: String}
+  KsBasic{pl: List<&2, KPiece>}
+  KsLit{name: String}
+
+# a segment's text, then tail
+def k3.seg.text(sg: KSeg, tail: String) -> String:
+  match sg:
+    case KsBare{name}:
+      String.append(name, tail)
+    case KsBasic{pl}:
+      SCon{'"', k3.pcs.text(pl, SCon{'"', tail})}
+    case KsLit{name}:
+      SCon{'\'', String.append(name, SCon{'\'', tail})}
+
+# a segment's name: its characters, a basic one's escapes decoded
+def k3.seg.name(sg: KSeg) -> String:
+  match sg:
+    case KsBare{name}:
+      name
+    case KsBasic{pl}:
+      k3.pcs.name(pl)
+    case KsLit{name}:
+      name
+
+# whether a segment is spelled as toml.abnf allows: a bare one is a bare
+# key, a basic one's pieces a basic string may hold, and a literal one's
+# characters a literal string may hold
+def k3.seg.ok(sg: KSeg) -> Bool:
+  match sg:
+    case KsBare{name}:
+      T.bare(name)
+    case KsBasic{pl}:
+      k3.pcs.ok(pl)
+    case KsLit{name}:
+      lit.text(name)
+
+# a segment of a dotted key that a dot follows, with the blank space before
+# the dot and after it
+type KDot is Data:
+  KDot{seg: KSeg, g1: List<&2, Bool>, g2: List<&2, Bool>}
+
+# the text of a dotted key, its segments joined by dots with their blank
+# space, then tail
+def k3.dk.text(ds: List<&2, KDot>, last: KSeg, tail: String) -> String:
+  match ds:
+    case []:
+      k3.seg.text(last, tail)
+    case KDot{sg, g1, g2} <> rest:
+      k3.seg.text(sg, String.append(gap(g1), SCon{'.', String.append(gap(g2), k3.dk.text(rest, last, tail))}))
+
+# the names of a dotted key's segments, in order
+def k3.dk.names(ds: List<&2, KDot>, last: KSeg) -> List<&2, String>:
+  match ds:
+    case []:
+      [k3.seg.name(last)]
+    case KDot{sg, _g1, _g2} <> rest:
+      k3.seg.name(sg) <> k3.dk.names(rest, last)
+
+# whether every segment of a dotted key is spelled as toml.abnf allows
+def k3.dk.ok(ds: List<&2, KDot>, last: KSeg) -> Bool:
+  match ds:
+    case []:
+      k3.seg.ok(last)
+    case KDot{sg, _g1, _g2} <> rest:
+      Bool.and(k3.seg.ok(sg), k3.dk.ok(rest, last))
+
+# where a key may start: at the start of a line, after an inline table's
+# `{`, or after a comma in one
+type KPos is Data:
+  AtLine{}
+  AtInl{}
+  AtInlK{}
+
+# the scanner's state there
+def k3.pos.lex(at: KPos) -> T.Lex:
+  match at:
+    case AtLine{}:
+      T.LTop{}
+    case AtInl{}:
+      T.LInl{}
+    case AtInlK{}:
+      T.LInlK{}
+
+# a scanner where a key may start, having read nothing of it, with the
+# tables, the stack of open arrays and inline tables and the other fields as
+# the text before left them
+def k3.at(
+  at: KPos,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  stack: List<&2, T.Ctx>,
+  arrtab: Bool,
+  back: T.Lex,
+  qkind: T.QKind,
+  uni: U32,
+  left: U32
+) -> T.St:
+  T.St{"", rows, heads, here, [], [], k3.pos.lex(at), back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}
+
+# a scanner after a key's `=`, waiting for its value: the key's segments in
+# parts, newest first
+def k3.val(
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  stack: List<&2, T.Ctx>,
+  arrtab: Bool,
+  back: T.Lex,
+  qkind: T.QKind,
+  uni: U32,
+  left: U32
+) -> T.St:
+  T.St{"", rows, heads, here, parts, [], T.LVal{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}
+
+# the rest of the text read once a key's `=` is read, wherever the key's
+# segments left back, qkind, uni and left
+def k3.KeyThen(
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  stack: List<&2, T.Ctx>,
+  arrtab: Bool,
+  rest: String,
+  goal: T.Doc
+) -> Type:
+  @bk: T.Lex -> @qk: T.QKind -> @un: U32 -> @lf: U32 ->
+    {T.doc.read(rest, T.MScan{k3.val(rows, heads, here, parts, stack, arrtab, bk, qk, un, lf)}) == goal : T.Doc}
+
+# LAW: a key reads back as its characters wherever a key may start: at the
+# start of a line in any table, or in an inline table after its `{` or a
+# comma, whatever the stack and the other fields hold, blank space, a key of
+# segments each bare, basic or literal and spelled any way toml.abnf allows,
+# joined by dots with blank space around them, then blank space and `=`,
+# leave the scanner waiting for the value with every segment's characters,
+# escapes decoded, as the key's parts
+# TOML-KEY-3
+law key_reads_back_anywhere:
+  for +at: KPos
+  for +g0: List<&2, Bool>
+  for +ds: List<&2, KDot>
+  for +last: KSeg
+  for ok: {k3.dk.ok(ds, last) == True{} : Bool}
+  for +g: List<&2, Bool>
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +stack: List<&2, T.Ctx>
+  for +arrtab: Bool
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +uni: U32
+  for +left: U32
+  for +rest: String
+  for +goal: T.Doc
+  for ih: k3.KeyThen(rows, heads, here, List.reverse(&2, String, k3.dk.names(ds, last)), stack, arrtab, rest, goal)
+  {T.doc.read(String.append(gap(g0), k3.dk.text(ds, last, String.append(gap(g), SCon{'=', rest}))),
+    T.MScan{k3.at(at, rows, heads, here, stack, arrtab, back, qkind, uni, left)}) == goal : T.Doc}
+
+# a header's text: `[` (`[[` for an array of tables), blank space, a dotted
+# key's text, blank space, `]` (`]]`), then rest
+def k3.hd.text(
+  arr: Bool,
+  g0: List<&2, Bool>,
+  ds: List<&2, KDot>,
+  last: KSeg,
+  g9: List<&2, Bool>,
+  rest: String
+) -> String:
+  match arr:
+    case False{}:
+      SCon{'[', String.append(gap(g0), k3.dk.text(ds, last, String.append(gap(g9), SCon{']', rest})))}
+    case True{}:
+      SCon{'[', SCon{'[', String.append(gap(g0), k3.dk.text(ds, last, String.append(gap(g9), SCon{']', SCon{']',
+        rest}})))}}
+
+# a scanner after a whole expression, in the table here, before the end of
+# its line
+def k3.line(
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  back: T.Lex,
+  qkind: T.QKind,
+  uni: U32,
+  left: U32
+) -> T.St:
+  T.St{"", rows, heads, here, [], [], T.LLine{}, back, qkind, [], T.HNone{}, uni, left, False{}, False{}}
+
+# LAW: a header reads back as the table named by its segments' characters,
+# however they are written: from the start of a line in any table, with no
+# array or inline table open and whatever the other fields hold, `[` (`[[`),
+# blank space, segments each bare, basic or literal and spelled any way
+# toml.abnf allows, joined by dots with blank space around them, blank space
+# and `]` (`]]`) run the header's walk along the segments' characters, escapes
+# decoded, and leave the scanner in that table with the rows and definitions
+# the walk returns
+# TOML-KEY-3
+law header_reads_back_anywhere:
+  for +arr: Bool
+  for +g0: List<&2, Bool>
+  for +ds: List<&2, KDot>
+  for +last: KSeg
+  for ok: {k3.dk.ok(ds, last) == True{} : Bool}
+  for +g9: List<&2, Bool>
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +arrtab: Bool
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +uni: U32
+  for +left: U32
+  for +rows2: List<&2, T.Val>
+  for +heads2: List<&2, String>
+  for ew: {T.tree.walk(k3.dk.names(ds, last), T.Tw{rows, header_job(arr), [], "", "", heads, False{}}, 0)
+    == T.End{rows2, "", heads2} : T.End}
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind -> @un: U32 -> @lf: U32 -> {T.doc.read(rest, T.MScan{k3.line(rows2, heads2,
+    k3.dk.names(ds, last), bk, qk, un, lf)}) == goal : T.Doc}
+  {T.doc.read(k3.hd.text(arr, g0, ds, last, g9, rest), T.MScan{k3.at(AtLine{}, rows, heads, here, [], arrtab, back,
+    qkind, uni, left)}) == goal : T.Doc}
