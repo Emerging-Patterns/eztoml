@@ -2076,3 +2076,79 @@ law header_implicit_table_reads_back:
     bk, qk, False{})}) == goal : T.Doc}
   {T.doc.read("[" ++ T.tree.pre(tb.join(segs, ""), k) ++ "]\n" ++ rest, T.MScan{hb.line(rows, heads,
     here, back, qkind, arrtab)}) == goal : T.Doc}
+
+# LAW: an array-of-tables header as render writes it, `[[`, the stored path,
+# `]]` and a newline, read from the start of a line, is the rest read from the
+# start of the next line in the table named by the segments' characters, with
+# the rows and definitions the walk along those names returns
+# TOML-KEY-3
+law aot_header_reads_back:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +arrtab: Bool
+  for +rows2: List<&2, T.Val>
+  for +heads2: List<&2, String>
+  for ew: {T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JAot{}, [], "", "", heads,
+    False{}}, 0) == T.End{rows2, "", heads2} : T.End}
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{hb.line(rows2, heads2,
+    List.append(&2, String, segs, [k]), bk, qk, False{})}) == goal : T.Doc}
+  {T.doc.read("[[" ++ T.tree.pre(tb.join(segs, ""), k) ++ "]]\n" ++ rest, T.MScan{hb.line(rows,
+    heads, here, back, qkind, arrtab)}) == goal : T.Doc}
+
+# LAW: an array-of-tables header whose last segment names nothing yet reads
+# back with an array of one empty element under k's characters at the head
+# of the rows its parent path leads to (aot_header_starts_array)
+# TOML-KEY-3
+law aot_header_new_array_reads_back:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +eo: {tb.open(segs, rows) == True{} : Bool}
+  for em: {T.get(tb.rows(segs, rows), k) == T.Miss{} : T.Hit}
+  for +here: List<&2, String>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +arrtab: Bool
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{hb.line(tb.set(segs, "", rows,
+    T.VPair{k, T.VAots{T.tree.pre(tb.join(segs, ""), k), [T.VAot{T.tree.pre(tb.join(segs, ""), k),
+    []}]}} <> tb.rows(segs, rows)), heads, List.append(&2, String, segs, [k]), bk, qk, False{})})
+    == goal : T.Doc}
+  {T.doc.read("[[" ++ T.tree.pre(tb.join(segs, ""), k) ++ "]]\n" ++ rest, T.MScan{hb.line(rows,
+    heads, here, back, qkind, arrtab)}) == goal : T.Doc}
+
+# LAW: an array-of-tables header whose last segment names an array of tables
+# reads back with a new empty element in front of its elements, and every
+# table under the array forgotten (aot_header_extends_array)
+# TOML-KEY-3
+law aot_header_extends_array_reads_back:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for p: String
+  for +elems: List<&2, T.Val>
+  for +eo: {tb.open(segs, rows) == True{} : Bool}
+  for ef: {T.get(tb.rows(segs, rows), k) == T.Found{T.VAots{p, elems}} : T.Hit}
+  for +here: List<&2, String>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +arrtab: Bool
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind -> {T.doc.read(rest, T.MScan{hb.line(tb.set(segs, "", rows,
+    T.rows.repl(tb.rows(segs, rows), k, T.VAots{T.tree.pre(tb.join(segs, ""), k),
+    T.VAot{T.tree.pre(tb.join(segs, ""), k), []} <> elems})),
+    T.heads.drop(heads, String.append(T.tree.pre(tb.join(segs, ""), k), ".")),
+    List.append(&2, String, segs, [k]), bk, qk, False{})}) == goal : T.Doc}
+  {T.doc.read("[[" ++ T.tree.pre(tb.join(segs, ""), k) ++ "]]\n" ++ rest, T.MScan{hb.line(rows,
+    heads, here, back, qkind, arrtab)}) == goal : T.Doc}

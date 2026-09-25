@@ -9264,3 +9264,65 @@ def Laws.header_implicit_table_reads_back(
       T.VHead{T.tree.pre(Laws.tb.join(segs, ""), k), sub})),
     T.heads.by.head(T.tree.pre(Laws.tb.join(segs, ""), k)) <> heads,
     Laws.header_defines_implicit_table(segs, k, rows, heads, p, sub, eo, ef, eh), rest, goal, ih)
+
+def Laws.aot_header_reads_back(
+  segs,
+  k,
+  rows,
+  heads,
+  here,
+  back,
+  qkind,
+  arrtab,
+  rows2,
+  heads2,
+  ew,
+  rest,
+  goal,
+  ih
+):
+  wh.law(True{}, segs, k, rows, heads, here, back, qkind, arrtab, rows2, heads2, rest, goal, ew, ih)
+
+def Laws.aot_header_new_array_reads_back(
+  segs,
+  k,
+  rows,
+  heads,
+  eo,
+  em,
+  here,
+  back,
+  qkind,
+  arrtab,
+  rest,
+  goal,
+  ih
+):
+  Laws.aot_header_reads_back(segs, k, rows, heads, here, back, qkind, arrtab,
+    Laws.tb.set(segs, "", rows, T.VPair{k, T.VAots{T.tree.pre(Laws.tb.join(segs, ""), k),
+      [T.VAot{T.tree.pre(Laws.tb.join(segs, ""), k), []}]}} <> Laws.tb.rows(segs, rows)),
+    heads, Laws.aot_header_starts_array(segs, k, rows, heads, eo, em), rest, goal, ih)
+
+def Laws.aot_header_extends_array_reads_back(
+  segs,
+  k,
+  rows,
+  heads,
+  p,
+  elems,
+  eo,
+  ef,
+  here,
+  back,
+  qkind,
+  arrtab,
+  rest,
+  goal,
+  ih
+):
+  Laws.aot_header_reads_back(segs, k, rows, heads, here, back, qkind, arrtab,
+    Laws.tb.set(segs, "", rows, T.rows.repl(Laws.tb.rows(segs, rows), k,
+      T.VAots{T.tree.pre(Laws.tb.join(segs, ""), k), T.VAot{T.tree.pre(Laws.tb.join(segs, ""), k), []}
+        <> elems})),
+    T.heads.drop(heads, String.append(T.tree.pre(Laws.tb.join(segs, ""), k), ".")),
+    Laws.aot_header_extends_array(segs, k, rows, heads, p, elems, eo, ef), rest, goal, ih)
