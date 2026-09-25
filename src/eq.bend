@@ -754,3 +754,432 @@ def or.right_false(u, v, e):
       bit.absurd2(&2, {v == False{} : Bool}, e)
     case False{}:
       e
+
+# WP0: Base-only lemmas the round-trip proofs share. The U32 arithmetic and
+# word comparisons came here from PROOF.bend under their old names, and the
+# controls U+0000 to U+001F and U+007F are taken one at a time over a motive,
+# so a proof about every control gives one answer per control instead of
+# copying the enumeration.
+
+# LAW: adding a carry to a word and then taking one with the other carry as
+# the borrow leaves the word
+law inc.dec:
+  for nn: Nat
+  for ww: Word(nn)
+  for cc: Bool
+  {Word.adc(nn, Word.adc(nn, ww, Word.zero(nn), False{}, cc), Word.zero(nn), True{},
+    Bool.not(cc)) == ww : Word(nn)}
+
+# bit by bit: the carry and the borrow cancel at each bit
+def inc.dec(nn, ww, cc):
+  match nn:
+    case 0n:
+      match ww:
+        case WNil{}:
+          {==}
+    case 1n+pp:
+      match ww:
+        case WCon{bb, +tt}:
+          match bb cc:
+            case False{} False{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{False{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, False{}), Word.zero(pp),
+                  True{}, True{}), tt, inc.dec(pp, tt, False{}))
+            case False{} True{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{False{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, False{}), Word.zero(pp),
+                  True{}, True{}), tt, inc.dec(pp, tt, False{}))
+            case True{} False{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{True{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, False{}), Word.zero(pp),
+                  True{}, True{}), tt, inc.dec(pp, tt, False{}))
+            case True{} True{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{True{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, True{}), Word.zero(pp),
+                  True{}, False{}), tt, inc.dec(pp, tt, True{}))
+
+# LAW: one taken from one more than a U32 is the U32
+law sub.inc:
+  for xx: U32
+  {U32.sub(U32.add(xx, 1), 1) == xx : U32}
+
+# the low bit decides the carry, and the word's law does the rest
+def sub.inc(xx):
+  match xx:
+    case U32{ww}:
+      match ww:
+        case WCon{bb, +tt}:
+          match bb:
+            case False{}:
+              Equal.cong(Word(31n), U32, yy => U32{WCon{False{}, yy}},
+                Word.adc(31n, Word.adc(31n, tt, Word.zero(31n), False{}, False{}),
+                  Word.zero(31n), True{}, True{}), tt, inc.dec(31n, tt, False{}))
+            case True{}:
+              Equal.cong(Word(31n), U32, yy => U32{WCon{True{}, yy}},
+                Word.adc(31n, Word.adc(31n, tt, Word.zero(31n), False{}, True{}),
+                  Word.zero(31n), True{}, False{}), tt, inc.dec(31n, tt, True{}))
+
+# LAW: one more than a U32, when that is not zero, counts one more
+law inc.nat:
+  for +xx: U32
+  for ez: {U32.is_zero(U32.add(xx, 1)) == False{} : Bool}
+  {U32.to_nat(U32.add(xx, 1)) == 1n+U32.to_nat(xx) : Nat}
+
+# the count of a U32 that is not zero, then sub.inc
+def inc.nat(xx, ez):
+  Equal.trans(Nat, U32.to_nat(U32.add(xx, 1)), 1n+U32.to_nat(U32.sub(U32.add(xx, 1), 1)),
+    1n+U32.to_nat(xx),
+    u32_dec_nat(U32.add(xx, 1), ez),
+    Equal.cong(U32, Nat, uu => 1n+U32.to_nat(uu), U32.sub(U32.add(xx, 1), 1), xx, sub.inc(xx)))
+
+# a word of n zero bits
+def zw(nn: Nat) -> Word(nn):
+  match nn:
+    case 0n:
+      WNil{}
+    case 1n+pp:
+      WCon{False{}, zw(pp)}
+
+# LAW: against a 0 bit, a word is below exactly when the bits above are
+law lt_fin_f:
+  for cc: Cmp
+  for aa: Bool
+  {Cmp.is_lt(Word.cmp.fin(aa, False{}, cc)) == Cmp.is_lt(cc) : Bool}
+
+# the three answers, and for EQ the two bits
+def lt_fin_f(cc, aa):
+  match cc:
+    case LT{}:
+      {==}
+    case GT{}:
+      {==}
+    case EQ{}:
+      match aa:
+        case False{}:
+          {==}
+        case True{}:
+          {==}
+
+# LAW: a word is never below zero
+law zw_nlt:
+  for nn: Nat
+  for ww: Word(nn)
+  {Cmp.is_lt(Word.cmp(nn, ww, zw(nn))) == False{} : Bool}
+
+# by induction on the width, each bit against a 0 bit
+def zw_nlt(nn, ww):
+  match nn:
+    case 0n:
+      match ww:
+        case WNil{}:
+          {==}
+    case 1n+(+pp):
+      match ww:
+        case WCon{bb, +tt}:
+          Equal.trans(Bool, Cmp.is_lt(Word.cmp.fin(bb, False{}, Word.cmp(pp, tt, zw(pp)))),
+            Cmp.is_lt(Word.cmp(pp, tt, zw(pp))), False{},
+            lt_fin_f(Word.cmp(pp, tt, zw(pp)), bb), zw_nlt(pp, tt))
+
+# LAW: below a word whose low bit is 0, the bits above are below
+law lt_up:
+  for aa: Bool
+  for +cc: Cmp
+  for h_lt: {Cmp.is_lt(Word.cmp.fin(aa, False{}, cc)) == True{} : Bool}
+  {Cmp.is_lt(cc) == True{} : Bool}
+
+# lt_fin_f read the other way round
+def lt_up(aa, cc, h_lt):
+  Equal.trans(Bool, Cmp.is_lt(cc), Cmp.is_lt(Word.cmp.fin(aa, False{}, cc)), True{},
+    Equal.sym(Bool, Cmp.is_lt(Word.cmp.fin(aa, False{}, cc)), Cmp.is_lt(cc), lt_fin_f(cc, aa)),
+    h_lt)
+
+# The controls. A code point below 32 has zeros above its five low bits, so
+# the thirty-two of them are told apart by those bits; U+007F is one more.
+
+# a code point below 32, by its five low bits
+def ctl.low(b0: Bool, b1: Bool, b2: Bool, b3: Bool, b4: Bool) -> U32:
+  U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{}, zw(26n)}}}}}}}
+
+# a claim for each code point below 32, as a function of its five low bits
+def ctl.Low(PP: U32 -> Type) -> Type:
+  @b0: Bool -> @b1: Bool -> @b2: Bool -> @b3: Bool -> @b4: Bool ->
+    PP(ctl.low(b0, b1, b2, b3, b4))
+
+# the bits above the fifth are zero and the fifth is 0, else the code point
+# is not below 32
+def ctl.at(
+  -PP: U32 -> Type,
+  cc: Cmp,
+  b5: Bool,
+  +b0: Bool,
+  +b1: Bool,
+  +b2: Bool,
+  +b3: Bool,
+  +b4: Bool,
+  +hi: Word(26n),
+  ec: {Word.cmp(26n, hi, zw(26n)) == cc : Cmp},
+  h_lt: {Cmp.is_lt(Word.cmp.fin(b5, True{}, cc)) == True{} : Bool},
+  low: ctl.Low(PP)
+) -> PP(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, hi}}}}}}}):
+  match cc:
+    case LT{}:
+      bit.gone(&1, PP(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, hi}}}}}}}),
+        bit.clash2(Equal.trans(Bool, True{}, Cmp.is_lt(Word.cmp(26n, hi, zw(26n))), False{},
+          Equal.sym(Bool, Cmp.is_lt(Word.cmp(26n, hi, zw(26n))), True{},
+            Equal.cong(Cmp, Bool, xx => Cmp.is_lt(xx), Word.cmp(26n, hi, zw(26n)), LT{}, ec)),
+          zw_nlt(26n, hi))))
+    case GT{}:
+      match b5:
+        case False{}:
+          bit.absurd(&1, PP(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{},
+            hi}}}}}}}), h_lt)
+        case True{}:
+          bit.absurd(&1, PP(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{True{},
+            hi}}}}}}}), h_lt)
+    case EQ{}:
+      match b5:
+        case True{}:
+          bit.absurd(&1, PP(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{True{},
+            hi}}}}}}}), h_lt)
+        case False{}:
+          er = Equal.sym(Word(26n), hi, zw(26n), word_eq(26n, hi, zw(26n), ec))
+          %er : PP(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{}, _}}}}}}})
+          low(b0, b1, b2, b3, b4)
+
+# a code point below 32 is one of the thirty-two
+def ctl.lt(
+  -PP: U32 -> Type,
+  uu: U32,
+  h_lt: {U32.is_lt(uu, 32) == True{} : Bool},
+  low: ctl.Low(PP)
+) -> PP(uu):
+  match uu:
+    case U32{WCon{+b0, WCon{+b1, WCon{+b2, WCon{+b3, WCon{+b4, WCon{+b5, +hi}}}}}}}:
+      +c5 = Word.cmp.fin(b5, True{}, Word.cmp(26n, hi, zw(26n)))
+      +c4 = Word.cmp.fin(b4, False{}, c5)
+      +c3 = Word.cmp.fin(b3, False{}, c4)
+      +c2 = Word.cmp.fin(b2, False{}, c3)
+      +c1 = Word.cmp.fin(b1, False{}, c2)
+      h5 = lt_up(b4, c5, lt_up(b3, c4, lt_up(b2, c3, lt_up(b1, c2, lt_up(b0, c1, h_lt)))))
+      ctl.at(PP, Word.cmp(26n, hi, zw(26n)), b5, b0, b1, b2, b3, b4, hi, {==}, h5, low)
+
+# a control is below U+0020 or is U+007F
+def ctl.each(
+  -PP: U32 -> Type,
+  +uu: U32,
+  lt: Bool,
+  eq: Bool,
+  elt: {U32.is_lt(uu, 32) == lt : Bool},
+  eeq: {U32.is_eq(uu, 127) == eq : Bool},
+  eo: {Bool.or(lt, eq) == True{} : Bool},
+  low: ctl.Low(PP),
+  del: PP(127)
+) -> PP(uu):
+  match lt:
+    case True{}:
+      ctl.lt(PP, uu, elt, low)
+    case False{}:
+      match eq:
+        case True{}:
+          eu = Equal.cong(Char, U32, cc => Char.to_u32(cc), Chr{uu}, Chr{127},
+            u32_eq(uu, 127, eeq))
+          %Equal.sym(U32, uu, 127, eu) : PP(_)
+          del
+        case False{}:
+          bit.absurd(&1, PP(uu), eo)
+
+# the answer for one code point below 32, picked by its five low bits
+def ctl.pick(
+  -PP: U32 -> Type,
+  c00: PP(0),
+  c01: PP(1),
+  c02: PP(2),
+  c03: PP(3),
+  c04: PP(4),
+  c05: PP(5),
+  c06: PP(6),
+  c07: PP(7),
+  c08: PP(8),
+  c09: PP(9),
+  c10: PP(10),
+  c11: PP(11),
+  c12: PP(12),
+  c13: PP(13),
+  c14: PP(14),
+  c15: PP(15),
+  c16: PP(16),
+  c17: PP(17),
+  c18: PP(18),
+  c19: PP(19),
+  c20: PP(20),
+  c21: PP(21),
+  c22: PP(22),
+  c23: PP(23),
+  c24: PP(24),
+  c25: PP(25),
+  c26: PP(26),
+  c27: PP(27),
+  c28: PP(28),
+  c29: PP(29),
+  c30: PP(30),
+  c31: PP(31),
+  b0: Bool,
+  b1: Bool,
+  b2: Bool,
+  b3: Bool,
+  b4: Bool
+) -> PP(ctl.low(b0, b1, b2, b3, b4)):
+  match b0 b1 b2 b3 b4:
+    case False{} False{} False{} False{} False{}:
+      c00
+    case True{} False{} False{} False{} False{}:
+      c01
+    case False{} True{} False{} False{} False{}:
+      c02
+    case True{} True{} False{} False{} False{}:
+      c03
+    case False{} False{} True{} False{} False{}:
+      c04
+    case True{} False{} True{} False{} False{}:
+      c05
+    case False{} True{} True{} False{} False{}:
+      c06
+    case True{} True{} True{} False{} False{}:
+      c07
+    case False{} False{} False{} True{} False{}:
+      c08
+    case True{} False{} False{} True{} False{}:
+      c09
+    case False{} True{} False{} True{} False{}:
+      c10
+    case True{} True{} False{} True{} False{}:
+      c11
+    case False{} False{} True{} True{} False{}:
+      c12
+    case True{} False{} True{} True{} False{}:
+      c13
+    case False{} True{} True{} True{} False{}:
+      c14
+    case True{} True{} True{} True{} False{}:
+      c15
+    case False{} False{} False{} False{} True{}:
+      c16
+    case True{} False{} False{} False{} True{}:
+      c17
+    case False{} True{} False{} False{} True{}:
+      c18
+    case True{} True{} False{} False{} True{}:
+      c19
+    case False{} False{} True{} False{} True{}:
+      c20
+    case True{} False{} True{} False{} True{}:
+      c21
+    case False{} True{} True{} False{} True{}:
+      c22
+    case True{} True{} True{} False{} True{}:
+      c23
+    case False{} False{} False{} True{} True{}:
+      c24
+    case True{} False{} False{} True{} True{}:
+      c25
+    case False{} True{} False{} True{} True{}:
+      c26
+    case True{} True{} False{} True{} True{}:
+      c27
+    case False{} False{} True{} True{} True{}:
+      c28
+    case True{} False{} True{} True{} True{}:
+      c29
+    case False{} True{} True{} True{} True{}:
+      c30
+    case True{} True{} True{} True{} True{}:
+      c31
+
+# LAW: a claim about a code point holds for every control once it holds for
+# each of the thirty-three: U+0000 to U+001F and U+007F
+law ctl.all:
+  for -PP: U32 -> Type
+  for +uu: U32
+  for h_c: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == True{} : Bool}
+  for c00: PP(0)
+  for c01: PP(1)
+  for c02: PP(2)
+  for c03: PP(3)
+  for c04: PP(4)
+  for c05: PP(5)
+  for c06: PP(6)
+  for c07: PP(7)
+  for c08: PP(8)
+  for c09: PP(9)
+  for c10: PP(10)
+  for c11: PP(11)
+  for c12: PP(12)
+  for c13: PP(13)
+  for c14: PP(14)
+  for c15: PP(15)
+  for c16: PP(16)
+  for c17: PP(17)
+  for c18: PP(18)
+  for c19: PP(19)
+  for c20: PP(20)
+  for c21: PP(21)
+  for c22: PP(22)
+  for c23: PP(23)
+  for c24: PP(24)
+  for c25: PP(25)
+  for c26: PP(26)
+  for c27: PP(27)
+  for c28: PP(28)
+  for c29: PP(29)
+  for c30: PP(30)
+  for c31: PP(31)
+  for c127: PP(127)
+  PP(uu)
+
+# split below 32 or U+007F, and below 32 pick the answer by the five low bits
+def ctl.all(
+  PP,
+  uu,
+  h_c,
+  c00,
+  c01,
+  c02,
+  c03,
+  c04,
+  c05,
+  c06,
+  c07,
+  c08,
+  c09,
+  c10,
+  c11,
+  c12,
+  c13,
+  c14,
+  c15,
+  c16,
+  c17,
+  c18,
+  c19,
+  c20,
+  c21,
+  c22,
+  c23,
+  c24,
+  c25,
+  c26,
+  c27,
+  c28,
+  c29,
+  c30,
+  c31,
+  c127
+):
+  ctl.each(PP, uu, U32.is_lt(uu, 32), U32.is_eq(uu, 127), {==}, {==}, h_c,
+    b0 => b1 => b2 => b3 => b4 => ctl.pick(PP,
+      c00, c01, c02, c03, c04, c05, c06, c07,
+      c08, c09, c10, c11, c12, c13, c14, c15,
+      c16, c17, c18, c19, c20, c21, c22, c23,
+      c24, c25, c26, c27, c28, c29, c30, c31,
+      b0, b1, b2, b3, b4),
+    c127)
