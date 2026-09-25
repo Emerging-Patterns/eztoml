@@ -39344,3 +39344,5436 @@ def Laws.render_parse(d, w, h_s):
         Equal.trans(Bool, Laws.same(pd, d0), Laws.same(Laws.own(pd), d0), True{}, own.same(pd, d0),
           Equal.trans(Bool, Laws.same(Laws.own(pd), d0), Laws.same(Laws.canon(d0), d0), True{},
             Equal.cong(T.Doc, Bool, dd => Laws.same(dd, d0), Laws.own(pd), Laws.canon(d0), ex), cs.same(ee, xs, w))))
+
+# WP-R3: a bare word's value is well-formed. word.val reads a special word, a
+# datetime or a numeral; each of them builds only well-formed values, which is
+# what gd_take asks of a bare word's value. Datetimes first: the scan checks
+# every field's range as wf.when does, except the year, which is four digits
+# and so below ten thousand.
+
+# what a datetime scan gives is well-formed when it gives a datetime
+def gd.wot(ww: T.WhenOut) -> Bool:
+  match ww:
+    case T.WSome{w}:
+      T.wf.when(w)
+    case _:
+      True{}
+
+# a take of digits below a bound, when it took them
+def gd.dk(dd: T.Dig, +kk: U32) -> Bool:
+  match dd:
+    case T.DigOk{nn, _cs}:
+      U32.is_lt(nn, kk)
+    case T.DigBad{}:
+      True{}
+
+# below a bound that a sum starts below
+def gd.n.lt.addl(
+  aa: Nat,
+  bb: Nat,
+  cc: Nat,
+  +hh: {Nat.is_lt(Nat.add(aa, bb), cc) == True{} : Bool}
+) -> {Nat.is_lt(aa, cc) == True{} : Bool}:
+  match aa cc:
+    case 0n 0n:
+      Eq.bit.absurd(&2, {Nat.is_lt(0n, 0n) == True{} : Bool},
+        Equal.trans(Bool, False{}, Nat.is_lt(bb, 0n), True{}, Equal.sym(Bool, Nat.is_lt(bb, 0n), False{},
+          nlt.zero(bb)), hh))
+    case 0n 1n+_c:
+      {==}
+    case 1n+a1 0n:
+      Eq.bit.absurd(&2, {Nat.is_lt(1n+a1, 0n) == True{} : Bool}, hh)
+    case 1n+a1 1n+c1:
+      gd.n.lt.addl(a1, bb, c1, hh)
+
+# ten times a U32 below k plus a digit is below ten times k, when ten times k
+# does not overflow
+def gd.u.step(
+  +uu: Unit,
+  +nn: U32,
+  +dd: U32,
+  +kk: U32,
+  en: {U32.is_lt(nn, kk) == True{} : Bool},
+  ed: {U32.is_lt(dd, 10) == True{} : Bool},
+  hk: {Ar.umk(kk) == 0n : Nat}
+) -> {U32.is_lt(U32.add(U32.mul(nn, 10), dd), U32.mul(kk, 10)) == True{} : Bool}:
+  Equal.trans(Bool, U32.is_lt(U32.add(U32.mul(nn, 10), dd), U32.mul(kk, 10)),
+    Nat.is_lt(U32.to_nat(U32.add(U32.mul(nn, 10), dd)), U32.to_nat(U32.mul(kk, 10))), True{},
+    u.lt(U32.add(U32.mul(nn, 10), dd), U32.mul(kk, 10)),
+    Equal.trans(Bool, Nat.is_lt(U32.to_nat(U32.add(U32.mul(nn, 10), dd)), U32.to_nat(U32.mul(kk, 10))),
+      Nat.is_lt(U32.to_nat(U32.add(U32.mul(nn, 10), dd)), Nat.mul(U32.to_nat(kk), 10n)), True{},
+      Equal.cong(Nat, Bool, xx => Nat.is_lt(U32.to_nat(U32.add(U32.mul(nn, 10), dd)), xx),
+        U32.to_nat(U32.mul(kk, 10)), Nat.mul(U32.to_nat(kk), 10n),
+        Equal.trans(Nat, U32.to_nat(U32.mul(kk, 10)), Nat.add(U32.to_nat(U32.mul(kk, 10)), 0n),
+          Nat.mul(U32.to_nat(kk), 10n),
+          Equal.sym(Nat, Nat.add(U32.to_nat(U32.mul(kk, 10)), 0n), U32.to_nat(U32.mul(kk, 10)),
+            Ar.nat_add_zero(U32.to_nat(U32.mul(kk, 10)))),
+          Equal.trans(Nat, Nat.add(U32.to_nat(U32.mul(kk, 10)), 0n),
+            Nat.add(U32.to_nat(U32.mul(kk, 10)), Nat.mul(Ar.umk(kk), Ar.pow2u(32n, uu))),
+            Nat.mul(U32.to_nat(kk), 10n),
+            Equal.cong(Nat, Nat, zz => Nat.add(U32.to_nat(U32.mul(kk, 10)), Nat.mul(zz, Ar.pow2u(32n, uu))), 0n,
+              Ar.umk(kk), Equal.sym(Nat, Ar.umk(kk), 0n, hk)),
+            Ar.u_mul10(uu, kk)))),
+      gd.n.lt.addl(U32.to_nat(U32.add(U32.mul(nn, 10), dd)), Nat.mul(Ar.step_ks(nn, dd), Ar.pow2u(32n, uu)),
+        Nat.mul(U32.to_nat(kk), 10n),
+        Equal.trans(Bool,
+          Nat.is_lt(Nat.add(U32.to_nat(U32.add(U32.mul(nn, 10), dd)), Nat.mul(Ar.step_ks(nn, dd),
+            Ar.pow2u(32n, uu))), Nat.mul(U32.to_nat(kk), 10n)),
+          Nat.is_lt(Nat.add(Nat.mul(U32.to_nat(nn), 10n), U32.to_nat(dd)), Nat.mul(U32.to_nat(kk), 10n)), True{},
+          Equal.cong(Nat, Bool, xx => Nat.is_lt(xx, Nat.mul(U32.to_nat(kk), 10n)),
+            Nat.add(U32.to_nat(U32.add(U32.mul(nn, 10), dd)), Nat.mul(Ar.step_ks(nn, dd), Ar.pow2u(32n, uu))),
+            Nat.add(Nat.mul(U32.to_nat(nn), 10n), U32.to_nat(dd)), Ar.step_k(uu, nn, dd)),
+          Equal.trans(Bool, Nat.is_lt(Nat.add(Nat.mul(U32.to_nat(nn), 10n), U32.to_nat(dd)),
+            Nat.mul(U32.to_nat(kk), 10n)), Nat.is_lt(U32.to_nat(nn), U32.to_nat(kk)), True{},
+            ltm(U32.to_nat(nn), U32.to_nat(kk), U32.to_nat(dd),
+              Equal.trans(Bool, Nat.is_lt(U32.to_nat(dd), 10n), U32.is_lt(dd, 10), True{},
+                Equal.sym(Bool, U32.is_lt(dd, 10), Nat.is_lt(U32.to_nat(dd), U32.to_nat(10)), u.lt(dd, 10)), ed)),
+            Equal.trans(Bool, Nat.is_lt(U32.to_nat(nn), U32.to_nat(kk)), U32.is_lt(nn, kk), True{},
+              Equal.sym(Bool, U32.is_lt(nn, kk), Nat.is_lt(U32.to_nat(nn), U32.to_nat(kk)), u.lt(nn, kk)), en))))))
+
+# a digit character's code less 48 is below ten
+def gd.dg.sub(
+  +cc: Char,
+  ed: {Char.is_digit(cc) == True{} : Bool}
+) -> {U32.is_lt(U32.sub(Char.to_u32(cc), 48), 10) == True{} : Bool}:
+  dg.elim(xx => {U32.is_lt(U32.sub(Char.to_u32(xx), 48), 10) == True{} : Bool}, cc, ed,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# and so is its digit value
+def gd.dg.val(+cc: Char, ed: {Char.is_digit(cc) == True{} : Bool}) -> {U32.is_lt(T.dig.val(cc), 10) == True{} : Bool}:
+  dg.elim(xx => {U32.is_lt(T.dig.val(xx), 10) == True{} : Bool}, cc, ed,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# one character of a take: a digit keeps the count below ten times the bound
+def gd.tk.accd(
+  digit: Bool,
+  +nn: U32,
+  +cc: Char,
+  +kk: U32,
+  ed: {Char.is_digit(cc) == digit : Bool},
+  +en: {U32.is_lt(nn, kk) == True{} : Bool},
+  +hk: {Ar.umk(kk) == 0n : Nat}
+) -> {Laws.gd.ifok(digit, U32.is_lt(T.take.acc.d(digit, nn, cc), U32.mul(kk, 10))) == True{} : Bool}:
+  match digit:
+    case True{}:
+      gd.u.step(Unit{}, nn, U32.sub(Char.to_u32(cc), 48), kk, en, gd.dg.sub(cc, ed), hk)
+    case False{}:
+      {==}
+
+# one character of a take, while the take is well
+def gd.tk.acc(
+  ok: Bool,
+  +nn: U32,
+  +cc: Char,
+  +kk: U32,
+  +en: {Laws.gd.ifok(ok, U32.is_lt(nn, kk)) == True{} : Bool},
+  +hk: {Ar.umk(kk) == 0n : Nat}
+) -> {Laws.gd.ifok(T.take.ok(ok, cc), U32.is_lt(T.take.acc(ok, nn, cc), U32.mul(kk, 10))) == True{} : Bool}:
+  match ok:
+    case True{}:
+      gd.tk.accd(Char.is_digit(cc), nn, cc, kk, {==}, en, hk)
+    case False{}:
+      {==}
+
+# the end of a take
+def gd.tk.fin(
+  ok: Bool,
+  +nn: U32,
+  +cs: List<&2, Char>,
+  +kk: U32,
+  +en: {Laws.gd.ifok(ok, U32.is_lt(nn, kk)) == True{} : Bool}
+) -> {gd.dk(T.take.fin(ok, nn, cs), kk) == True{} : Bool}:
+  match ok:
+    case True{}:
+      en
+    case False{}:
+      {==}
+
+# a take of one digit onto a count below k is below ten times k
+def gd.tk1(
+  cs: List<&2, Char>,
+  +nn: U32,
+  +ok: Bool,
+  +kk: U32,
+  +en: {Laws.gd.ifok(ok, U32.is_lt(nn, kk)) == True{} : Bool},
+  +hk: {Ar.umk(kk) == 0n : Nat}
+) -> {gd.dk(T.take.n(1n, cs, nn, ok), U32.mul(kk, 10)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +hh <> +tt:
+      gd.tk.fin(T.take.ok(ok, hh), T.take.acc(ok, nn, hh), tt, U32.mul(kk, 10), gd.tk.acc(ok, nn, hh, kk, en, hk))
+
+# a take of two digits from zero is below one hundred
+def gd.tk2(cs: List<&2, Char>) -> {gd.dk(T.take.n(2n, cs, 0, True{}), 100) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +hh <> +tt:
+      gd.tk1(tt, T.take.acc(True{}, 0, hh), T.take.ok(True{}, hh), 10, gd.tk.acc(True{}, 0, hh, 1, {==}, {==}), {==})
+
+
+# the upper half of a range check
+def gd.rng.hi(
+  +nn: U32,
+  +lo: U32,
+  +hi: U32,
+  +ee: {T.bound.rng(nn, lo, hi) == True{} : Bool}
+) -> {U32.is_le(nn, hi) == True{} : Bool}:
+  gd.r(U32.is_ge(nn, lo), U32.is_le(nn, hi), ee)
+
+# a zone Z after a date and a clock
+def gd.wz.z(
+  tt: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool}
+) -> {gd.wot(T.when.zone.z(tt, clock, date)) == True{} : Bool}:
+  match tt:
+    case []:
+      gd.tt(T.wf.date(date), Bool.and(T.wf.clock(clock), True{}), ed, gd.tt(T.wf.clock(clock), True{}, ec, {==}))
+    case _h <> _t:
+      {==}
+
+# a numeric offset whose minute is in range
+def gd.wz.ok2(
+  mi_ok: Bool,
+  +sign: T.Sign,
+  +hh: U32,
+  +mi: U32,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool},
+  +eh: {U32.is_le(hh, 23) == True{} : Bool},
+  +em: {T.bound.rng(mi, 0, 59) == mi_ok : Bool}
+) -> {gd.wot(T.when.zone.mm.ok2(mi_ok, sign, hh, mi, clock, date)) == True{} : Bool}:
+  match mi_ok:
+    case False{}:
+      {==}
+    case True{}:
+      gd.tt(T.wf.date(date), Bool.and(T.wf.clock(clock), Bool.and(U32.is_le(hh, 23), U32.is_le(mi, 59))), ed,
+        gd.tt(T.wf.clock(clock), Bool.and(U32.is_le(hh, 23), U32.is_le(mi, 59)), ec,
+          gd.tt(U32.is_le(hh, 23), U32.is_le(mi, 59), eh, gd.rng.hi(mi, 0, 59, em))))
+
+# and whose hour is
+def gd.wz.ok(
+  h_ok: Bool,
+  +mi_ok: Bool,
+  +sign: T.Sign,
+  +hh: U32,
+  +mi: U32,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool},
+  +eh: {T.bound.rng(hh, 0, 23) == h_ok : Bool},
+  +em: {T.bound.rng(mi, 0, 59) == mi_ok : Bool}
+) -> {gd.wot(T.when.zone.mm.ok(h_ok, mi_ok, sign, hh, mi, clock, date)) == True{} : Bool}:
+  match h_ok:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wz.ok2(mi_ok, sign, hh, mi, clock, date, ed, ec, gd.rng.hi(hh, 0, 23, eh), em)
+
+# nothing after an offset
+def gd.wz.end(
+  cs: List<&2, Char>,
+  +h_ok: Bool,
+  +mi_ok: Bool,
+  +sign: T.Sign,
+  +hh: U32,
+  +mi: U32,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool},
+  +eh: {T.bound.rng(hh, 0, 23) == h_ok : Bool},
+  +em: {T.bound.rng(mi, 0, 59) == mi_ok : Bool}
+) -> {gd.wot(T.when.zone.mm.end(cs, h_ok, mi_ok, sign, hh, mi, clock, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      gd.wz.ok(h_ok, mi_ok, sign, hh, mi, clock, date, ed, ec, eh, em)
+    case _h <> _t:
+      {==}
+
+# the offset minute
+def gd.wz.mmgo(
+  dd: T.Dig,
+  +sign: T.Sign,
+  +hh: U32,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool}
+) -> {gd.wot(T.when.zone.mm.go(dd, sign, hh, clock, date)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+nn, +cs}:
+      gd.wz.end(cs, T.bound.rng(hh, 0, 23), T.bound.rng(nn, 0, 59), sign, hh, nn, clock, date, ed, ec, {==}, {==})
+
+# the offset minute, after a colon
+def gd.wz.mm(
+  hit: Bool,
+  +dd: T.Dig,
+  +sign: T.Sign,
+  +hh: U32,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool}
+) -> {gd.wot(T.when.zone.mm(hit, dd, sign, hh, clock, date)) == True{} : Bool}:
+  match hit:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wz.mmgo(dd, sign, hh, clock, date, ed, ec)
+
+# the colon of an offset
+def gd.wz.colon(
+  cs: List<&2, Char>,
+  +sign: T.Sign,
+  +hh: U32,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool}
+) -> {gd.wot(T.when.zone.hh.colon(cs, sign, hh, clock, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +cc <> +tt:
+      gd.wz.mm(Char.is_eq(cc, ':'), T.take.n(2n, tt, 0, True{}), sign, hh, clock, date, ed, ec)
+
+# the offset hour
+def gd.wz.hh(
+  dd: T.Dig,
+  +sign: T.Sign,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool}
+) -> {gd.wot(T.when.zone.hh(dd, sign, clock, date)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+nn, +cs}:
+      gd.wz.colon(cs, sign, nn, clock, date, ed, ec)
+
+# a minus offset
+def gd.wz.minus(
+  minus: Bool,
+  +tt: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool}
+) -> {gd.wot(T.when.zone.minus(minus, tt, clock, date)) == True{} : Bool}:
+  match minus:
+    case True{}:
+      gd.wz.hh(T.take.n(2n, tt, 0, True{}), T.Minus{}, clock, date, ed, ec)
+    case False{}:
+      {==}
+
+# a signed offset
+def gd.wz.sign(
+  plus: Bool,
+  +minus: Bool,
+  +tt: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool}
+) -> {gd.wot(T.when.zone.sign(plus, minus, tt, clock, date)) == True{} : Bool}:
+  match plus:
+    case True{}:
+      gd.wz.hh(T.take.n(2n, tt, 0, True{}), T.Plus{}, clock, date, ed, ec)
+    case False{}:
+      gd.wz.minus(minus, tt, clock, date, ed, ec)
+
+# Z or an offset
+def gd.wz.go(
+  zee: Bool,
+  +plus: Bool,
+  +minus: Bool,
+  +tt: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool}
+) -> {gd.wot(T.when.zone.go(zee, plus, minus, tt, clock, date)) == True{} : Bool}:
+  match zee:
+    case True{}:
+      gd.wz.z(tt, clock, date, ed, ec)
+    case False{}:
+      gd.wz.sign(plus, minus, tt, clock, date, ed, ec)
+
+# a zone after a well-formed date and clock, or none
+def gd.wz(
+  cs: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool}
+) -> {gd.wot(T.when.zone(cs, clock, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      gd.tt(T.wf.date(date), T.wf.clock(clock), ed, ec)
+    case +cc <> +tt:
+      gd.wz.go(Bool.or(Char.is_eq(cc, 'Z'), Char.is_eq(cc, 'z')), Char.is_eq(cc, '+'), Char.is_eq(cc, '-'), tt,
+        clock, date, ed, ec)
+
+# every character is a digit
+def gd.dl(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      True{}
+    case +hh <> tt:
+      Bool.and(Char.is_digit(hh), gd.dl(tt))
+
+# digits reversed onto a text of digits are a text of digits
+def gd.dl.rev(
+  cs: List<&2, Char>,
+  +acc: List<&2, Char>,
+  +ec: {gd.dl(cs) == True{} : Bool},
+  +ea: {T.wf.digits(String.from_list(acc)) == True{} : Bool}
+) -> {T.wf.digits(String.from_list(List.reverse.go(&2, Char, cs, acc))) == True{} : Bool}:
+  match cs:
+    case []:
+      ea
+    case +hh <> +tt:
+      gd.dl.rev(tt, hh <> acc, gd.r(Char.is_digit(hh), gd.dl(tt), ec),
+        gd.then(Char.is_digit(hh), _u => T.wf.digits(String.from_list(acc)), gd.l(Char.is_digit(hh), gd.dl(tt), ec),
+          ea))
+
+# a clock with a fraction of digits is well-formed
+def gd.clock.with(
+  clock: T.Clock,
+  +frac: String,
+  +ec: {T.wf.clock(clock) == True{} : Bool},
+  +ef: {T.wf.digits(frac) == True{} : Bool}
+) -> {T.wf.clock(T.clock.with(clock, frac)) == True{} : Bool}:
+  match clock:
+    case T.Clock{+hh, +mi, +ss, +fr}:
+      gd.tt(U32.is_le(hh, 23), Bool.and(U32.is_le(mi, 59), Bool.and(U32.is_le(ss, 60), T.wf.digits(frac))),
+        gd.l(U32.is_le(hh, 23), Bool.and(U32.is_le(mi, 59), Bool.and(U32.is_le(ss, 60), T.wf.digits(fr))), ec),
+        gd.tt(U32.is_le(mi, 59), Bool.and(U32.is_le(ss, 60), T.wf.digits(frac)),
+          gd.l(U32.is_le(mi, 59), Bool.and(U32.is_le(ss, 60), T.wf.digits(fr)),
+            gd.r(U32.is_le(hh, 23), Bool.and(U32.is_le(mi, 59), Bool.and(U32.is_le(ss, 60), T.wf.digits(fr))), ec)),
+          gd.tt(U32.is_le(ss, 60), T.wf.digits(frac),
+            gd.l(U32.is_le(ss, 60), T.wf.digits(fr), gd.r(U32.is_le(mi, 59), Bool.and(U32.is_le(ss, 60),
+              T.wf.digits(fr)), gd.r(U32.is_le(hh, 23), Bool.and(U32.is_le(mi, 59), Bool.and(U32.is_le(ss, 60),
+              T.wf.digits(fr))), ec))),
+            ef)))
+
+# the fraction's end: it must hold a digit
+def gd.wf.endgo(
+  some: Bool,
+  +rev: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +rest: List<&2, Char>,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool},
+  +er: {gd.dl(rev) == True{} : Bool}
+) -> {gd.wot(T.when.frac.end.go(some, rev, clock, date, rest)) == True{} : Bool}:
+  match some:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wz(rest, T.clock.with(clock, String.from_list(List.reverse(&2, Char, rev))), date, ed,
+        gd.clock.with(clock, String.from_list(List.reverse(&2, Char, rev)), ec, gd.dl.rev(rev, [], er, {==})))
+
+# the fraction's digits, one at a time
+def gd.wf.dig(
+  digit: Bool,
+  +cc: Char,
+  +tt: List<&2, Char>,
+  +rev: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool},
+  +er: {gd.dl(rev) == True{} : Bool},
+  +eg: {Char.is_digit(cc) == digit : Bool},
+  ih: {gd.dl(cc <> rev) == True{} : Bool} -> {gd.wot(T.when.frac.digits(tt, cc <> rev, clock, date)) == True{} : Bool}
+) -> {gd.wot(T.when.frac.digit(digit, cc, tt, rev, clock, date, _u => T.when.frac.digits(tt, cc <> rev, clock,
+  date))) == True{} : Bool}:
+  match digit:
+    case True{}:
+      ih(gd.tt(Char.is_digit(cc), gd.dl(rev), eg, er))
+    case False{}:
+      gd.wf.endgo(T.cs.some(rev), rev, clock, date, cc <> tt, ed, ec, er)
+
+# the fraction's digits
+def gd.wf.digits(
+  cs: List<&2, Char>,
+  +rev: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool},
+  +er: {gd.dl(rev) == True{} : Bool}
+) -> {gd.wot(T.when.frac.digits(cs, rev, clock, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      gd.wf.endgo(T.cs.some(rev), rev, clock, date, [], ed, ec, er)
+    case +cc <> +tt:
+      gd.wf.dig(Char.is_digit(cc), cc, tt, rev, clock, date, ed, ec, er, {==},
+        e2 => gd.wf.digits(tt, cc <> rev, clock, date, ed, ec, e2))
+
+# a dot starts the fraction
+def gd.wf.go(
+  dot: Bool,
+  +tt: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +cc: Char,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool}
+) -> {gd.wot(T.when.frac.go(dot, tt, clock, date, cc)) == True{} : Bool}:
+  match dot:
+    case True{}:
+      gd.wf.digits(tt, [], clock, date, ed, ec, {==})
+    case False{}:
+      gd.wz(cc <> tt, clock, date, ed, ec)
+
+# an optional fraction
+def gd.wfr(
+  cs: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +ec: {T.wf.clock(clock) == True{} : Bool}
+) -> {gd.wot(T.when.frac(cs, clock, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      gd.tt(T.wf.date(date), T.wf.clock(clock), ed, ec)
+    case +cc <> +tt:
+      gd.wf.go(Char.is_eq(cc, '.'), tt, clock, date, cc, ed, ec)
+
+# the second's range
+def gd.wc.rs(
+  s_ok: Bool,
+  +hh: U32,
+  +mi: U32,
+  +ss: U32,
+  +cs: List<&2, Char>,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +eh: {U32.is_le(hh, 23) == True{} : Bool},
+  +em: {U32.is_le(mi, 59) == True{} : Bool},
+  +es: {T.bound.rng(ss, 0, 60) == s_ok : Bool}
+) -> {gd.wot(T.when.clock.range.s(s_ok, hh, mi, ss, cs, date)) == True{} : Bool}:
+  match s_ok:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wfr(cs, T.Clock{hh, mi, ss, ""}, date, ed,
+        gd.tt(U32.is_le(hh, 23), Bool.and(U32.is_le(mi, 59), Bool.and(U32.is_le(ss, 60), True{})), eh,
+          gd.tt(U32.is_le(mi, 59), Bool.and(U32.is_le(ss, 60), True{}), em,
+            gd.tt(U32.is_le(ss, 60), True{}, gd.rng.hi(ss, 0, 60, es), {==}))))
+
+# the minute's range
+def gd.wc.rm(
+  mi_ok: Bool,
+  +s_ok: Bool,
+  +hh: U32,
+  +mi: U32,
+  +ss: U32,
+  +cs: List<&2, Char>,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +eh: {U32.is_le(hh, 23) == True{} : Bool},
+  +em: {T.bound.rng(mi, 0, 59) == mi_ok : Bool},
+  +es: {T.bound.rng(ss, 0, 60) == s_ok : Bool}
+) -> {gd.wot(T.when.clock.range.m(mi_ok, s_ok, hh, mi, ss, cs, date)) == True{} : Bool}:
+  match mi_ok:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wc.rs(s_ok, hh, mi, ss, cs, date, ed, eh, gd.rng.hi(mi, 0, 59, em), es)
+
+# the hour's range
+def gd.wc.r(
+  h_ok: Bool,
+  +mi_ok: Bool,
+  +s_ok: Bool,
+  +hh: U32,
+  +mi: U32,
+  +ss: U32,
+  +cs: List<&2, Char>,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool},
+  +eh: {T.bound.rng(hh, 0, 23) == h_ok : Bool},
+  +em: {T.bound.rng(mi, 0, 59) == mi_ok : Bool},
+  +es: {T.bound.rng(ss, 0, 60) == s_ok : Bool}
+) -> {gd.wot(T.when.clock.range(h_ok, mi_ok, s_ok, hh, mi, ss, cs, date)) == True{} : Bool}:
+  match h_ok:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wc.rm(mi_ok, s_ok, hh, mi, ss, cs, date, ed, gd.rng.hi(hh, 0, 23, eh), em, es)
+
+# the seconds
+def gd.wc.ssgo(
+  dd: T.Dig,
+  +hh: U32,
+  +mi: U32,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool}
+) -> {gd.wot(T.when.clock.ss.go(dd, hh, mi, date)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+nn, +cs}:
+      gd.wc.r(T.bound.rng(hh, 0, 23), T.bound.rng(mi, 0, 59), T.bound.rng(nn, 0, 60), hh, mi, nn, cs, date, ed, {==},
+        {==}, {==})
+
+# the seconds, after a colon
+def gd.wc.ss(
+  hit: Bool,
+  +dd: T.Dig,
+  +hh: U32,
+  +mi: U32,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool}
+) -> {gd.wot(T.when.clock.ss(hit, dd, hh, mi, date)) == True{} : Bool}:
+  match hit:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wc.ssgo(dd, hh, mi, date, ed)
+
+# the colon after the minutes
+def gd.wc.mmcolon(
+  cs: List<&2, Char>,
+  +hh: U32,
+  +mi: U32,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool}
+) -> {gd.wot(T.when.clock.mm.colon(cs, hh, mi, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +cc <> +tt:
+      gd.wc.ss(Char.is_eq(cc, ':'), T.take.n(2n, tt, 0, True{}), hh, mi, date, ed)
+
+# the minutes
+def gd.wc.mm(
+  dd: T.Dig,
+  +hh: U32,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool}
+) -> {gd.wot(T.when.clock.mm(dd, hh, date)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+nn, +cs}:
+      gd.wc.mmcolon(cs, hh, nn, date, ed)
+
+# the colon after the hour
+def gd.wc.colongo(
+  hit: Bool,
+  +hh: U32,
+  +tt: List<&2, Char>,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool}
+) -> {gd.wot(T.when.clock.colon.go(hit, hh, tt, date)) == True{} : Bool}:
+  match hit:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wc.mm(T.take.n(2n, tt, 0, True{}), hh, date, ed)
+
+# the character after the hour
+def gd.wc.colon(
+  cs: List<&2, Char>,
+  +hh: U32,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool}
+) -> {gd.wot(T.when.clock.colon(cs, hh, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +cc <> +tt:
+      gd.wc.colongo(Char.is_eq(cc, ':'), hh, tt, date, ed)
+
+# a clock after a date
+def gd.wc.of(
+  dd: T.Dig,
+  +date: T.Date,
+  +ed: {T.wf.date(date) == True{} : Bool}
+) -> {gd.wot(T.when.clock.of(dd, date)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+nn, +cs}:
+      gd.wc.colon(cs, nn, date, ed)
+
+# a space before the time
+def gd.wd.sp(
+  sp: Bool,
+  +date: T.Date,
+  +tt: List<&2, Char>,
+  +ed: {T.wf.date(date) == True{} : Bool}
+) -> {gd.wot(T.when.after.sp(sp, date, tt)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      gd.wc.of(T.take.n(2n, tt, 0, True{}), date, ed)
+    case False{}:
+      {==}
+
+# T or a space before the time
+def gd.wd.sep(
+  tee: Bool,
+  +sp: Bool,
+  +date: T.Date,
+  +tt: List<&2, Char>,
+  +ed: {T.wf.date(date) == True{} : Bool}
+) -> {gd.wot(T.when.after.sep(tee, sp, date, tt)) == True{} : Bool}:
+  match tee:
+    case True{}:
+      gd.wc.of(T.take.n(2n, tt, 0, True{}), date, ed)
+    case False{}:
+      gd.wd.sp(sp, date, tt, ed)
+
+# what follows a well-formed date
+def gd.wd.after(
+  +date: T.Date,
+  cs: List<&2, Char>,
+  +ed: {T.wf.date(date) == True{} : Bool}
+) -> {gd.wot(T.when.after.date(date, cs)) == True{} : Bool}:
+  match cs:
+    case []:
+      ed
+    case +cc <> +tt:
+      gd.wd.sep(Bool.or(Char.is_eq(cc, 'T'), Char.is_eq(cc, 't')), Char.is_eq(cc, ' '), date, tt, ed)
+
+# the day's range
+def gd.wd.okd(
+  d_ok: Bool,
+  +yy: U32,
+  +mo: U32,
+  +dd: U32,
+  +cs: List<&2, Char>,
+  +ey: {U32.is_le(yy, 9999) == True{} : Bool},
+  +em: {T.bound.rng(mo, 1, 12) == True{} : Bool},
+  +ed: {T.bound.rng(dd, 1, T.when.days(yy, mo)) == d_ok : Bool}
+) -> {gd.wot(T.when.date.ok.d(d_ok, yy, mo, dd, cs)) == True{} : Bool}:
+  match d_ok:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wd.after(T.Date{yy, mo, dd}, cs,
+        gd.tt(U32.is_le(yy, 9999), Bool.and(T.bound.rng(mo, 1, 12), T.bound.rng(dd, 1, T.when.days(yy, mo))), ey,
+          gd.tt(T.bound.rng(mo, 1, 12), T.bound.rng(dd, 1, T.when.days(yy, mo)), em, ed)))
+
+# the month's range
+def gd.wd.okgo(
+  mo_ok: Bool,
+  +d_ok: Bool,
+  +yy: U32,
+  +mo: U32,
+  +dd: U32,
+  +cs: List<&2, Char>,
+  +ey: {U32.is_le(yy, 9999) == True{} : Bool},
+  +em: {T.bound.rng(mo, 1, 12) == mo_ok : Bool},
+  +ed: {T.bound.rng(dd, 1, T.when.days(yy, mo)) == d_ok : Bool}
+) -> {gd.wot(T.when.date.ok.go(mo_ok, d_ok, yy, mo, dd, cs)) == True{} : Bool}:
+  match mo_ok:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wd.okd(d_ok, yy, mo, dd, cs, ey, em, ed)
+
+# a date whose year is below ten thousand
+def gd.wd.ok(
+  +yy: U32,
+  +mo: U32,
+  +dd: U32,
+  +cs: List<&2, Char>,
+  +ey: {U32.is_le(yy, 9999) == True{} : Bool}
+) -> {gd.wot(T.when.date.ok(yy, mo, dd, cs)) == True{} : Bool}:
+  gd.wd.okgo(T.bound.rng(mo, 1, 12), T.bound.rng(dd, 1, T.when.days(yy, mo)), yy, mo, dd, cs, ey, {==}, {==})
+
+# the day's digits
+def gd.wd.dayend(
+  dd: T.Dig,
+  +yy: U32,
+  +mo: U32,
+  +ey: {U32.is_le(yy, 9999) == True{} : Bool}
+) -> {gd.wot(T.when.day.end(dd, yy, mo)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+nn, +cs}:
+      gd.wd.ok(yy, mo, nn, cs, ey)
+
+# the dash before the day
+def gd.wd.daygo(
+  hit: Bool,
+  +dd: T.Dig,
+  +yy: U32,
+  +mo: U32,
+  +ey: {U32.is_le(yy, 9999) == True{} : Bool}
+) -> {gd.wot(T.when.day.go(hit, dd, yy, mo)) == True{} : Bool}:
+  match hit:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wd.dayend(dd, yy, mo, ey)
+
+# the day
+def gd.wd.day(
+  cs: List<&2, Char>,
+  +yy: U32,
+  +mo: U32,
+  +ey: {U32.is_le(yy, 9999) == True{} : Bool}
+) -> {gd.wot(T.when.day(cs, yy, mo)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +cc <> +tt:
+      gd.wd.daygo(Char.is_eq(cc, '-'), T.take.n(2n, tt, 0, True{}), yy, mo, ey)
+
+# the month's digits
+def gd.wd.mogo(
+  dd: T.Dig,
+  +yy: U32,
+  +ey: {U32.is_le(yy, 9999) == True{} : Bool}
+) -> {gd.wot(T.when.month.go(dd, yy)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+nn, +cs}:
+      gd.wd.day(cs, yy, nn, ey)
+
+# the dash before the month
+def gd.wd.mo(
+  hit: Bool,
+  +dd: T.Dig,
+  +yy: U32,
+  +ey: {U32.is_le(yy, 9999) == True{} : Bool}
+) -> {gd.wot(T.when.month(hit, dd, yy)) == True{} : Bool}:
+  match hit:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wd.mogo(dd, yy, ey)
+
+# the month
+def gd.wd.ydash(
+  cs: List<&2, Char>,
+  +yy: U32,
+  +ey: {U32.is_le(yy, 9999) == True{} : Bool}
+) -> {gd.wot(T.when.year.dash(cs, yy)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +cc <> +tt:
+      gd.wd.mo(Char.is_eq(cc, '-'), T.take.n(2n, tt, 0, True{}), yy, ey)
+
+# four digits of year are below ten thousand
+def gd.wd.y4(dd: T.Dig, +ek: {gd.dk(dd, 10000) == True{} : Bool}) -> {gd.wot(T.when.year4(dd)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+nn, +cs}:
+      gd.wd.ydash(cs, nn, Equal.trans(Bool, U32.is_le(nn, 9999), U32.is_lt(nn, U32.add(9999, 1)), True{},
+        le2lt(nn, 9999, {==}), ek))
+
+# the third digit of a year
+def gd.wd.ymore(
+  digit: Bool,
+  +nn: U32,
+  +cc: Char,
+  +tt: List<&2, Char>,
+  +en: {U32.is_lt(nn, 100) == True{} : Bool},
+  +eg: {Char.is_digit(cc) == digit : Bool}
+) -> {gd.wot(T.when.year.more(digit, nn, cc, tt)) == True{} : Bool}:
+  match digit:
+    case False{}:
+      {==}
+    case True{}:
+      gd.wd.y4(T.take.n(1n, tt, U32.add(U32.mul(nn, 10), T.dig.val(cc)), True{}),
+        gd.tk1(tt, U32.add(U32.mul(nn, 10), T.dig.val(cc)), True{}, 1000,
+          gd.u.step(Unit{}, nn, T.dig.val(cc), 100, en, gd.dg.val(cc, eg), {==}), {==}))
+
+# a local time: its dummy date is well-formed, and only the clock is kept
+def gd.wt.only(ww: T.WhenOut, +ee: {gd.wot(ww) == True{} : Bool}) -> {gd.wot(T.when.time.only(ww)) == True{} : Bool}:
+  match ww:
+    case T.WSome{w}:
+      match w:
+        case T.WLocal{+d0, +c0}:
+          gd.r(T.wf.date(d0), T.wf.clock(c0), ee)
+        case T.WOff{_d, _c, _z}:
+          {==}
+        case T.WDate{_d}:
+          {==}
+        case T.WTime{_c}:
+          {==}
+    case T.WFail{_why}:
+      {==}
+    case T.WSkip{}:
+      {==}
+
+# a time or a date after two digits
+def gd.wd.branch(
+  colon: Bool,
+  +digit: Bool,
+  +nn: U32,
+  +cc: Char,
+  +tt: List<&2, Char>,
+  +en: {U32.is_lt(nn, 100) == True{} : Bool},
+  +eg: {Char.is_digit(cc) == digit : Bool}
+) -> {gd.wot(T.when.branch(colon, digit, nn, cc, tt)) == True{} : Bool}:
+  match colon:
+    case True{}:
+      gd.wt.only(T.when.time.rest(tt, nn), gd.wc.mm(T.take.n(2n, tt, 0, True{}), nn, T.Date{0, 1, 1}, {==}))
+    case False{}:
+      gd.wd.ymore(digit, nn, cc, tt, en, eg)
+
+# the character after two digits
+def gd.wd.a2go(
+  cs: List<&2, Char>,
+  +nn: U32,
+  +en: {U32.is_lt(nn, 100) == True{} : Bool}
+) -> {gd.wot(T.when.after2.go(cs, nn)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +cc <> +tt:
+      gd.wd.branch(Char.is_eq(cc, ':'), Char.is_digit(cc), nn, cc, tt, en, {==})
+
+# two digits
+def gd.wd.a2(dd: T.Dig, +ek: {gd.dk(dd, 100) == True{} : Bool}) -> {gd.wot(T.when.after2(dd)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+nn, +cs}:
+      gd.wd.a2go(cs, nn, ek)
+
+# every datetime the scan reads is well-formed
+def gd.when(+cs: List<&2, Char>) -> {gd.wot(T.when.read(cs)) == True{} : Bool}:
+  gd.wd.a2(T.take.n(2n, cs, 0, True{}), gd.tk2(cs))
+
+
+# Numerals. An integer's digits are decimal digits written with no leading
+# zero, since every digit dec.go makes is a remainder by ten and dec.drop
+# drops the leading zeros; its range is checked as wf.int does. A float's
+# spelling, its sign and underscores dropped, is read by wf.flo's automaton
+# in step with the numeral scan: gd.nk says which state of each the two are in.
+
+# every value is below ten
+def gd.d10(ds: List<&2, U32>) -> Bool:
+  match ds:
+    case []:
+      True{}
+    case +dd <> tt:
+      Bool.and(U32.is_lt(dd, 10), gd.d10(tt))
+
+# a remainder by ten, then the rest
+def gd.d10.cons(
+  +xx: U32,
+  +tt: List<&2, U32>,
+  +et: {gd.d10(tt) == True{} : Bool}
+) -> {gd.d10(U32.mod(xx, 10) <> tt) == True{} : Bool}:
+  gd.tt(U32.is_lt(U32.mod(xx, 10), 10), gd.d10(tt), md(xx), et)
+
+# the last digit of a carry
+def gd.d10.c0(zz: Bool, +cc: U32) -> {gd.d10(T.dec.carry.c0(zz, cc)) == True{} : Bool}:
+  match zz:
+    case True{}:
+      {==}
+    case False{}:
+      gd.d10.cons(cc, [], {==})
+
+# the middle digit of a carry
+def gd.d10.b0(zz: Bool, +cc: U32) -> {gd.d10(T.dec.carry.b0(zz, cc)) == True{} : Bool}:
+  match zz:
+    case True{}:
+      {==}
+    case False{}:
+      gd.d10.cons(cc, T.dec.carry.c(U32.div(cc, 10)), gd.d10.c0(U32.is_zero(U32.div(cc, 10)), U32.div(cc, 10)))
+
+# the first digit of a carry
+def gd.d10.a(zz: Bool, +cc: U32) -> {gd.d10(T.dec.carry.a(zz, cc)) == True{} : Bool}:
+  match zz:
+    case True{}:
+      {==}
+    case False{}:
+      gd.d10.cons(cc, T.dec.carry.b(U32.div(cc, 10)), gd.d10.b0(U32.is_zero(U32.div(cc, 10)), U32.div(cc, 10)))
+
+# every digit dec.go makes is below ten
+def gd.d10.go(ds: List<&2, U32>, +radix: U32, +carry: U32) -> {gd.d10(T.dec.go(ds, radix, carry)) == True{} : Bool}:
+  match ds:
+    case []:
+      gd.d10.a(U32.is_zero(carry), carry)
+    case +dd <> +tt:
+      gd.d10.cons(U32.add(U32.mul(dd, radix), carry),
+        T.dec.go(tt, radix, U32.div(U32.add(U32.mul(dd, radix), carry), 10)),
+        gd.d10.go(tt, radix, U32.div(U32.add(U32.mul(dd, radix), carry), 10)))
+
+# digits below ten reversed onto more
+def gd.d10.rev(
+  ds: List<&2, U32>,
+  +acc: List<&2, U32>,
+  +ed: {gd.d10(ds) == True{} : Bool},
+  +ea: {gd.d10(acc) == True{} : Bool}
+) -> {gd.d10(List.reverse.go(&2, U32, ds, acc)) == True{} : Bool}:
+  match ds:
+    case []:
+      ea
+    case +dd <> +tt:
+      gd.d10.rev(tt, dd <> acc, gd.r(U32.is_lt(dd, 10), gd.d10(tt), ed),
+        gd.tt(U32.is_lt(dd, 10), gd.d10(acc), gd.l(U32.is_lt(dd, 10), gd.d10(tt), ed), ea))
+
+# a value below ten is written as a digit
+def gd.dch(+dd: U32, +ed: {U32.is_lt(dd, 10) == True{} : Bool}) -> {Char.is_digit(T.dec.ch(dd)) == True{} : Bool}:
+  sm.elim(xx => {Char.is_digit(T.dec.ch(xx)) == True{} : Bool}, dd, ed,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# values below ten are written as digits
+def gd.dl.chars(ds: List<&2, U32>, +ed: {gd.d10(ds) == True{} : Bool}) -> {gd.dl(T.dec.chars(ds)) == True{} : Bool}:
+  match ds:
+    case []:
+      {==}
+    case +dd <> +tt:
+      gd.tt(Char.is_digit(T.dec.ch(dd)), gd.dl(T.dec.chars(tt)),
+        gd.dch(dd, gd.l(U32.is_lt(dd, 10), gd.d10(tt), ed)), gd.dl.chars(tt, gd.r(U32.is_lt(dd, 10), gd.d10(tt), ed)))
+
+# the rest of gd.rd: none left, so the digit was the first written
+def gd.rd.tail(tt: List<&2, Char>, +hh: Char) -> Bool:
+  match tt:
+    case []:
+      Bool.not(Char.is_eq(hh, '0'))
+    case +h2 <> t2:
+      Bool.and(Char.is_digit(h2), gd.rd.tail(t2, h2))
+
+# digits whose last, the first written, is not a zero
+def gd.rd(out: List<&2, Char>) -> Bool:
+  match out:
+    case []:
+      False{}
+    case +hh <> tt:
+      Bool.and(Char.is_digit(hh), gd.rd.tail(tt, hh))
+
+# the first written digit, not a zero, then digits
+def gd.rd.first(
+  zz: Bool,
+  +hh: Char,
+  +acc: String,
+  _ez: {Char.is_eq(hh, '0') == zz : Bool},
+  +en: {Bool.not(zz) == True{} : Bool},
+  +ed: {Char.is_digit(hh) == True{} : Bool},
+  +ea: {T.wf.digits(acc) == True{} : Bool}
+) -> {T.wf.dec.lead(zz, hh, acc) == True{} : Bool}:
+  match zz:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.wf.dec.lead(True{}, hh, acc) == True{} : Bool}, Equal.sym(Bool, False{}, True{}, en))
+    case False{}:
+      gd.tt(Char.is_digit(hh), T.wf.digits(acc), ed, ea)
+
+# digits reversed onto digits, the first written not a zero, are decimal
+def gd.rd.dec(
+  tt: List<&2, Char>,
+  +hh: Char,
+  +acc: List<&2, Char>,
+  +ed: {Bool.and(Char.is_digit(hh), gd.rd.tail(tt, hh)) == True{} : Bool},
+  +ea: {T.wf.digits(String.from_list(acc)) == True{} : Bool}
+) -> {T.wf.dec(String.from_list(List.reverse.go(&2, Char, tt, hh <> acc))) == True{} : Bool}:
+  match tt:
+    case []:
+      gd.rd.first(Char.is_eq(hh, '0'), hh, String.from_list(acc), {==},
+        gd.r(Char.is_digit(hh), Bool.not(Char.is_eq(hh, '0')), ed), gd.l(Char.is_digit(hh), Bool.not(Char.is_eq(hh,
+          '0')), ed), ea)
+    case +h2 <> +t2:
+      gd.rd.dec(t2, h2, hh <> acc, gd.r(Char.is_digit(hh), Bool.and(Char.is_digit(h2), gd.rd.tail(t2, h2)), ed),
+        gd.then(Char.is_digit(hh), _u => T.wf.digits(String.from_list(acc)), gd.l(Char.is_digit(hh),
+          Bool.and(Char.is_digit(h2), gd.rd.tail(t2, h2)), ed), ea))
+
+# the rest of the digits once a nonzero one was kept
+def gd.drop.f(
+  cs: List<&2, Char>,
+  +out: List<&2, Char>,
+  +ec: {gd.dl(cs) == True{} : Bool},
+  +eo: {gd.rd(out) == True{} : Bool}
+) -> {T.wf.dec(T.dec.drop(cs, False{}, out)) == True{} : Bool}:
+  match cs:
+    case []:
+      match out:
+        case []:
+          Eq.bit.absurd(&2, {T.wf.dec(T.dec.drop([], False{}, [])) == True{} : Bool}, eo)
+        case +o1 <> +ot:
+          gd.rd.dec(ot, o1, [], eo, {==})
+    case +hh <> +tt:
+      match out:
+        case []:
+          Eq.bit.absurd(&2, {T.wf.dec(T.dec.drop(hh <> tt, False{}, [])) == True{} : Bool}, eo)
+        case +o1 <> +ot:
+          gd.drop.f(tt, hh <> (o1 <> ot), gd.r(Char.is_digit(hh), gd.dl(tt), ec),
+            gd.tt(Char.is_digit(hh), gd.rd.tail(o1 <> ot, hh), gd.l(Char.is_digit(hh), gd.dl(tt), ec), eo))
+
+# the leading zeros are dropped
+def gd.drop.z(
+  zz: Bool,
+  +hh: Char,
+  +tt: List<&2, Char>,
+  +ez: {Char.is_eq(hh, '0') == zz : Bool},
+  +eh: {Char.is_digit(hh) == True{} : Bool},
+  +ec: {gd.dl(tt) == True{} : Bool},
+  +ih: {T.wf.dec(T.dec.drop(tt, True{}, [])) == True{} : Bool}
+) -> {T.wf.dec(T.dec.drop(tt, zz, T.dec.drop.outz(zz, hh, []))) == True{} : Bool}:
+  match zz:
+    case True{}:
+      ih
+    case False{}:
+      gd.drop.f(tt, [hh], ec, gd.tt(Char.is_digit(hh), Bool.not(Char.is_eq(hh, '0')), eh,
+        Equal.cong(Bool, Bool, bb => Bool.not(bb), Char.is_eq(hh, '0'), False{}, ez)))
+
+# digits with the leading zeros dropped are decimal
+def gd.drop.t(
+  cs: List<&2, Char>,
+  +ec: {gd.dl(cs) == True{} : Bool}
+) -> {T.wf.dec(T.dec.drop(cs, True{}, [])) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +hh <> +tt:
+      gd.drop.z(Char.is_eq(hh, '0'), hh, tt, {==}, gd.l(Char.is_digit(hh), gd.dl(tt), ec),
+        gd.r(Char.is_digit(hh), gd.dl(tt), ec), gd.drop.t(tt, gd.r(Char.is_digit(hh), gd.dl(tt), ec)))
+
+# an integer's text is decimal
+def gd.dec.text(+ds: List<&2, U32>, +ed: {gd.d10(ds) == True{} : Bool}) -> {T.wf.dec(T.dec.text(ds)) == True{} : Bool}:
+  gd.drop.t(T.dec.chars(List.reverse(&2, U32, ds)),
+    gd.dl.chars(List.reverse(&2, U32, ds), gd.d10.rev(ds, [], ed, {==})))
+
+
+# which state of wf.flo's automaton a spelling is in
+def gd.flq(aa: T.Fl, bb: T.Fl) -> Bool:
+  match aa bb:
+    case T.FlStart{} T.FlStart{}:
+      True{}
+    case T.FlZero{} T.FlZero{}:
+      True{}
+    case T.FlInt{} T.FlInt{}:
+      True{}
+    case T.FlDot{} T.FlDot{}:
+      True{}
+    case T.FlFrac{} T.FlFrac{}:
+      True{}
+    case T.FlE{} T.FlE{}:
+      True{}
+    case T.FlESign{} T.FlESign{}:
+      True{}
+    case T.FlExp{} T.FlExp{}:
+      True{}
+    case T.FlNo{} T.FlNo{}:
+      True{}
+    case _a _b:
+      False{}
+
+# the numeral scan's state and the automaton's state agree: the scan has read
+# the spelling the automaton has, and a numeral's first character, a sign,
+# is not part of a float's spelling
+def gd.nk(nk: T.NK, +lead: Bool, +saw: Bool, +fl: T.Fl) -> Bool:
+  match nk:
+    case T.NLead{}:
+      Bool.and(lead, gd.flq(fl, T.FlStart{}))
+    case T.NSign{}:
+      Bool.and(Bool.not(lead), gd.flq(fl, T.FlStart{}))
+    case T.NZero{}:
+      Bool.and(Bool.not(lead), gd.flq(fl, T.FlZero{}))
+    case T.NDig{}:
+      Bool.and(Bool.not(lead), gd.flq(fl, T.FlInt{}))
+    case T.NBase{}:
+      True{}
+    case T.NFrac{}:
+      Bool.and(Bool.not(lead), gd.flq(fl, Bool.pick(T.Fl, saw, T.FlFrac{}, T.FlDot{})))
+    case T.NExp{}:
+      Bool.and(Bool.not(lead), gd.flq(fl, T.FlE{}))
+    case T.NEDig{}:
+      Bool.and(Bool.not(lead), gd.flq(fl, Bool.pick(T.Fl, saw, T.FlExp{}, T.FlESign{})))
+    case T.NBad{}:
+      True{}
+
+# a numeral scan's state: its digits below ten, and its agreement
+def gd.nm(st: T.Num, +lead: Bool, +fl: T.Fl) -> Bool:
+  match st:
+    case T.Num{nk, _sign, _base, ds, _us, +saw, _why}:
+      Bool.and(gd.d10(ds), gd.nk(nk, lead, saw, fl))
+
+# one of two states
+def gd.fsel(bb: Bool, xx: T.Fl, yy: T.Fl) -> T.Fl:
+  match bb:
+    case True{}:
+      xx
+    case False{}:
+      yy
+
+# the automaton after one character of the spelling: word.body drops a
+# leading sign and every underscore
+def gd.fput(lead: Bool, +cc: Char, +fl: T.Fl) -> T.Fl:
+  match lead:
+    case True{}:
+      gd.fsel(Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')), fl, T.wf.flo.step(fl, cc))
+    case False{}:
+      gd.fsel(Char.is_eq(cc, '_'), fl, T.wf.flo.step(fl, cc))
+
+# the automaton after the spelling of these characters
+def gd.fb(cs: List<&2, Char>, +lead: Bool, +fl: T.Fl) -> T.Fl:
+  match cs:
+    case []:
+      fl
+    case +hh <> tt:
+      gd.fb(tt, False{}, gd.fput(lead, hh, fl))
+
+# a digit joined to the numeral
+def gd.n.digit(
+  ok: Bool,
+  +cc: Char,
+  +nk: T.NK,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +fl: T.Fl,
+  _ed: {gd.d10(ds) == True{} : Bool},
+  +efl: {gd.nk(nk, False{}, True{}, fl) == True{} : Bool}
+) -> {gd.nm(T.num.digit.ok(ok, cc, nk, sign, base, ds), False{}, fl) == True{} : Bool}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      gd.tt(gd.d10(T.dec.go(ds, base, T.dig.val(cc))), gd.nk(nk, False{}, True{}, fl),
+        gd.d10.go(ds, base, T.dig.val(cc)), efl)
+
+# an underscore between digits
+def gd.n.us(
+  ok: Bool,
+  +nk: T.NK,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +why: String,
+  +fl: T.Fl,
+  +ed: {gd.d10(ds) == True{} : Bool},
+  +efl: {Laws.gd.ifok(ok, gd.nk(nk, False{}, True{}, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.us.go(ok, nk, sign, base, ds, why), False{}, fl) == True{} : Bool}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      gd.tt(gd.d10(ds), gd.nk(nk, False{}, True{}, fl), ed, efl)
+
+# a dot
+def gd.n.dot(
+  ok: Bool,
+  +sign: T.Sign,
+  +fl: T.Fl,
+  +efl: {Laws.gd.ifok(ok, gd.nk(T.NFrac{}, False{}, False{}, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.dot.go(ok, sign), False{}, fl) == True{} : Bool}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      efl
+
+# an exponent mark
+def gd.n.exp(
+  ok: Bool,
+  +sign: T.Sign,
+  +fl: T.Fl,
+  +efl: {Laws.gd.ifok(ok, gd.nk(T.NExp{}, False{}, False{}, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.exp.go(ok, sign), False{}, fl) == True{} : Bool}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      efl
+
+
+# a digit's step of the automaton
+def gd.dst.lead(
+  +cc: Char,
+  +eD: {Char.is_digit(cc) == True{} : Bool}
+) -> {gd.fput(True{}, cc, T.FlStart{}) == Bool.pick(T.Fl, Char.is_eq(cc, '0'), T.FlZero{}, T.FlInt{}) : T.Fl}:
+  dg.elim(xx => {gd.fput(True{}, xx, T.FlStart{}) == Bool.pick(T.Fl, Char.is_eq(xx, '0'), T.FlZero{},
+    T.FlInt{}) : T.Fl}, cc, eD, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+    {==})
+
+# a digit's step of the automaton
+def gd.dst.int(
+  +cc: Char,
+  +eD: {Char.is_digit(cc) == True{} : Bool}
+) -> {gd.fput(False{}, cc, T.FlInt{}) == T.FlInt{} : T.Fl}:
+  dg.elim(xx => {gd.fput(False{}, xx, T.FlInt{}) == T.FlInt{} : T.Fl}, cc, eD, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, {==},
+    {==})
+
+# a digit's step of the automaton
+def gd.dst.dot(
+  +cc: Char,
+  +eD: {Char.is_digit(cc) == True{} : Bool}
+) -> {gd.fput(False{}, cc, T.FlDot{}) == T.FlFrac{} : T.Fl}:
+  dg.elim(xx => {gd.fput(False{}, xx, T.FlDot{}) == T.FlFrac{} : T.Fl}, cc, eD, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, {==},
+    {==})
+
+# a digit's step of the automaton
+def gd.dst.frac(
+  +cc: Char,
+  +eD: {Char.is_digit(cc) == True{} : Bool}
+) -> {gd.fput(False{}, cc, T.FlFrac{}) == T.FlFrac{} : T.Fl}:
+  dg.elim(xx => {gd.fput(False{}, xx, T.FlFrac{}) == T.FlFrac{} : T.Fl}, cc, eD, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, {==},
+    {==})
+
+# a digit's step of the automaton
+def gd.dst.e(
+  +cc: Char,
+  +eD: {Char.is_digit(cc) == True{} : Bool}
+) -> {gd.fput(False{}, cc, T.FlE{}) == T.FlExp{} : T.Fl}:
+  dg.elim(xx => {gd.fput(False{}, xx, T.FlE{}) == T.FlExp{} : T.Fl}, cc, eD, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==},
+    {==})
+
+# a digit's step of the automaton
+def gd.dst.esign(
+  +cc: Char,
+  +eD: {Char.is_digit(cc) == True{} : Bool}
+) -> {gd.fput(False{}, cc, T.FlESign{}) == T.FlExp{} : T.Fl}:
+  dg.elim(xx => {gd.fput(False{}, xx, T.FlESign{}) == T.FlExp{} : T.Fl}, cc, eD, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, {==},
+    {==})
+
+# a digit's step of the automaton
+def gd.dst.exp(
+  +cc: Char,
+  +eD: {Char.is_digit(cc) == True{} : Bool}
+) -> {gd.fput(False{}, cc, T.FlExp{}) == T.FlExp{} : T.Fl}:
+  dg.elim(xx => {gd.fput(False{}, xx, T.FlExp{}) == T.FlExp{} : T.Fl}, cc, eD, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, {==},
+    {==})
+
+# the scan and the automaton after one character, in NLead
+def gd.nd.NLead(
+  P: Bool,
+  M: Bool,
+  Z: Bool,
+  D: Bool,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +eP: {Char.is_eq(cc, '+') == P : Bool},
+  +eM: {Char.is_eq(cc, '-') == M : Bool},
+  +eZ: {Char.is_eq(cc, '0') == Z : Bool},
+  +eD: {Char.is_digit(cc) == D : Bool},
+  +ed: {gd.d10(ds) == True{} : Bool}
+) -> {gd.nm(T.num.lead.go(P, M, Z, D, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{}, gd.fput(True{},
+  cc, T.FlStart{})) == True{} : Bool}:
+  match P:
+    case True{}:
+      Equal.trans(Bool, gd.nm(T.num.sign(T.Num{T.NLead{}, sign, base, ds, us, saw, why}, T.Plus{}), False{},
+        gd.fput(True{}, cc, T.FlStart{})), gd.nm(T.num.sign(T.Num{T.NLead{}, sign, base, ds, us, saw, why}, T.Plus{}),
+          False{}, gd.fput(True{}, '+', T.FlStart{})), True{},
+        Equal.cong(Char, Bool, xx => gd.nm(T.num.sign(T.Num{T.NLead{}, sign, base, ds, us, saw, why}, T.Plus{}),
+          False{}, gd.fput(True{}, xx, T.FlStart{})), cc, '+', Eq.char_eq_true(cc, '+', eP)),
+        {==})
+    case False{}:
+      match M:
+        case True{}:
+          Equal.trans(Bool, gd.nm(T.num.sign(T.Num{T.NLead{}, sign, base, ds, us, saw, why}, T.Minus{}), False{},
+            gd.fput(True{}, cc, T.FlStart{})), gd.nm(T.num.sign(T.Num{T.NLead{}, sign, base, ds, us, saw, why},
+              T.Minus{}), False{}, gd.fput(True{}, '-', T.FlStart{})), True{},
+            Equal.cong(Char, Bool, xx => gd.nm(T.num.sign(T.Num{T.NLead{}, sign, base, ds, us, saw, why}, T.Minus{}),
+              False{}, gd.fput(True{}, xx, T.FlStart{})), cc, '-', Eq.char_eq_true(cc, '-', eM)),
+            {==})
+        case False{}:
+          match Z:
+            case True{}:
+              Equal.trans(Bool, gd.nm(T.Num{T.NZero{}, T.num.sign.of(T.Num{T.NLead{}, sign, base, ds, us, saw, why}),
+                10, [], False{}, True{}, ""}, False{}, gd.fput(True{}, cc, T.FlStart{})), gd.nm(T.Num{T.NZero{},
+                  T.num.sign.of(T.Num{T.NLead{}, sign, base, ds, us, saw, why}), 10, [], False{}, True{}, ""},
+                    False{}, gd.fput(True{}, '0', T.FlStart{})), True{},
+                Equal.cong(Char, Bool, xx => gd.nm(T.Num{T.NZero{}, T.num.sign.of(T.Num{T.NLead{}, sign, base, ds, us,
+                  saw, why}), 10, [], False{}, True{}, ""}, False{}, gd.fput(True{}, xx, T.FlStart{})), cc, '0',
+                    Eq.char_eq_true(cc, '0', eZ)),
+                {==})
+            case False{}:
+              match D:
+                case True{}:
+                  gd.n.digit(T.dig.ok(T.dig.val(cc), base), cc, T.NDig{}, sign, base, ds, gd.fput(True{}, cc,
+                    T.FlStart{}), ed,
+                    Equal.trans(Bool, gd.nk(T.NDig{}, False{}, True{}, gd.fput(True{}, cc, T.FlStart{})),
+                      gd.nk(T.NDig{}, False{}, True{}, T.FlInt{}), True{},
+                    Equal.cong(T.Fl, Bool, ff => gd.nk(T.NDig{}, False{}, True{}, ff), gd.fput(True{}, cc,
+                      T.FlStart{}), T.FlInt{}, Equal.trans(T.Fl, gd.fput(True{}, cc, T.FlStart{}), Bool.pick(T.Fl,
+                        Char.is_eq(cc, '0'), T.FlZero{}, T.FlInt{}), T.FlInt{}, gd.dst.lead(cc, eD), Equal.cong(Bool,
+                          T.Fl, bb => Bool.pick(T.Fl, bb, T.FlZero{}, T.FlInt{}), Char.is_eq(cc, '0'), False{}, eZ))),
+                            {==}))
+                case False{}:
+                  {==}
+
+# the scan and the automaton after one character, in NZero
+def gd.nd.NZero(
+  X: Bool,
+  O: Bool,
+  B: Bool,
+  DOT: Bool,
+  E1: Bool,
+  E2: Bool,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +eX: {Char.is_eq(cc, 'x') == X : Bool},
+  +eO: {Char.is_eq(cc, 'o') == O : Bool},
+  +eB: {Char.is_eq(cc, 'b') == B : Bool},
+  +eDOT: {Char.is_eq(cc, '.') == DOT : Bool},
+  +eE1: {Char.is_eq(cc, 'e') == E1 : Bool},
+  +eE2: {Char.is_eq(cc, 'E') == E2 : Bool},
+  _ed: {gd.d10(ds) == True{} : Bool}
+) -> {gd.nm(T.num.zero.go(X, O, B, DOT, E1, E2, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+  gd.fput(False{}, cc, T.FlZero{})) == True{} : Bool}:
+  match X:
+    case True{}:
+      Equal.trans(Bool, gd.nm(T.num.base(T.Num{T.NZero{}, sign, base, ds, us, saw, why}, 16), False{},
+        gd.fput(False{}, cc, T.FlZero{})), gd.nm(T.num.base(T.Num{T.NZero{}, sign, base, ds, us, saw, why}, 16),
+          False{}, gd.fput(False{}, 'x', T.FlZero{})), True{},
+        Equal.cong(Char, Bool, xx => gd.nm(T.num.base(T.Num{T.NZero{}, sign, base, ds, us, saw, why}, 16), False{},
+          gd.fput(False{}, xx, T.FlZero{})), cc, 'x', Eq.char_eq_true(cc, 'x', eX)),
+        {==})
+    case False{}:
+      match O:
+        case True{}:
+          Equal.trans(Bool, gd.nm(T.num.base(T.Num{T.NZero{}, sign, base, ds, us, saw, why}, 8), False{},
+            gd.fput(False{}, cc, T.FlZero{})), gd.nm(T.num.base(T.Num{T.NZero{}, sign, base, ds, us, saw, why}, 8),
+              False{}, gd.fput(False{}, 'o', T.FlZero{})), True{},
+            Equal.cong(Char, Bool, xx => gd.nm(T.num.base(T.Num{T.NZero{}, sign, base, ds, us, saw, why}, 8), False{},
+              gd.fput(False{}, xx, T.FlZero{})), cc, 'o', Eq.char_eq_true(cc, 'o', eO)),
+            {==})
+        case False{}:
+          match B:
+            case True{}:
+              Equal.trans(Bool, gd.nm(T.num.base(T.Num{T.NZero{}, sign, base, ds, us, saw, why}, 2), False{},
+                gd.fput(False{}, cc, T.FlZero{})), gd.nm(T.num.base(T.Num{T.NZero{}, sign, base, ds, us, saw, why},
+                  2), False{}, gd.fput(False{}, 'b', T.FlZero{})), True{},
+                Equal.cong(Char, Bool, xx => gd.nm(T.num.base(T.Num{T.NZero{}, sign, base, ds, us, saw, why}, 2),
+                  False{}, gd.fput(False{}, xx, T.FlZero{})), cc, 'b', Eq.char_eq_true(cc, 'b', eB)),
+                {==})
+            case False{}:
+              match DOT:
+                case True{}:
+                  Equal.trans(Bool, gd.nm(T.num.dot(T.Num{T.NZero{}, sign, base, ds, us, saw, why}), False{},
+                    gd.fput(False{}, cc, T.FlZero{})), gd.nm(T.num.dot(T.Num{T.NZero{}, sign, base, ds, us, saw,
+                      why}), False{}, gd.fput(False{}, '.', T.FlZero{})), True{},
+                    Equal.cong(Char, Bool, xx => gd.nm(T.num.dot(T.Num{T.NZero{}, sign, base, ds, us, saw, why}),
+                      False{}, gd.fput(False{}, xx, T.FlZero{})), cc, '.', Eq.char_eq_true(cc, '.', eDOT)),
+                    gd.n.dot(Bool.and(saw, Bool.not(us)), sign, gd.fput(False{}, '.', T.FlZero{}),
+                      gd.ifok.any(Bool.and(saw, Bool.not(us)), gd.nk(T.NFrac{}, False{}, False{}, gd.fput(False{},
+                        '.', T.FlZero{})), {==})))
+                case False{}:
+                  match E1:
+                    case True{}:
+                      Equal.trans(Bool, gd.nm(T.num.exp(T.Num{T.NZero{}, sign, base, ds, us, saw, why}), False{},
+                        gd.fput(False{}, cc, T.FlZero{})), gd.nm(T.num.exp(T.Num{T.NZero{}, sign, base, ds, us, saw,
+                          why}), False{}, gd.fput(False{}, 'e', T.FlZero{})), True{},
+                        Equal.cong(Char, Bool, xx => gd.nm(T.num.exp(T.Num{T.NZero{}, sign, base, ds, us, saw, why}),
+                          False{}, gd.fput(False{}, xx, T.FlZero{})), cc, 'e', Eq.char_eq_true(cc, 'e', eE1)),
+                        gd.n.exp(Bool.and(saw, Bool.not(us)), sign, gd.fput(False{}, 'e', T.FlZero{}),
+                          gd.ifok.any(Bool.and(saw, Bool.not(us)), gd.nk(T.NExp{}, False{}, False{}, gd.fput(False{},
+                            'e', T.FlZero{})), {==})))
+                    case False{}:
+                      match E2:
+                        case True{}:
+                          Equal.trans(Bool, gd.nm(T.num.exp(T.Num{T.NZero{}, sign, base, ds, us, saw, why}), False{},
+                            gd.fput(False{}, cc, T.FlZero{})), gd.nm(T.num.exp(T.Num{T.NZero{}, sign, base, ds, us,
+                              saw, why}), False{}, gd.fput(False{}, 'E', T.FlZero{})), True{},
+                            Equal.cong(Char, Bool, xx => gd.nm(T.num.exp(T.Num{T.NZero{}, sign, base, ds, us, saw,
+                              why}), False{}, gd.fput(False{}, xx, T.FlZero{})), cc, 'E', Eq.char_eq_true(cc, 'E',
+                                eE2)),
+                            gd.n.exp(Bool.and(saw, Bool.not(us)), sign, gd.fput(False{}, 'E', T.FlZero{}),
+                              gd.ifok.any(Bool.and(saw, Bool.not(us)), gd.nk(T.NExp{}, False{}, False{},
+                                gd.fput(False{}, 'E', T.FlZero{})), {==})))
+                        case False{}:
+                          {==}
+
+# the scan and the automaton after one character, in NDig
+def gd.nd.NDig(
+  D: Bool,
+  U: Bool,
+  DOT: Bool,
+  E1: Bool,
+  E2: Bool,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +eD: {Char.is_digit(cc) == D : Bool},
+  +eU: {Char.is_eq(cc, '_') == U : Bool},
+  +eDOT: {Char.is_eq(cc, '.') == DOT : Bool},
+  +eE1: {Char.is_eq(cc, 'e') == E1 : Bool},
+  +eE2: {Char.is_eq(cc, 'E') == E2 : Bool},
+  +ed: {gd.d10(ds) == True{} : Bool}
+) -> {gd.nm(T.num.digs.go(D, U, DOT, E1, E2, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+  gd.fput(False{}, cc, T.FlInt{})) == True{} : Bool}:
+  match D:
+    case True{}:
+      gd.n.digit(T.dig.ok(T.dig.val(cc), base), cc, T.NDig{}, sign, base, ds, gd.fput(False{}, cc, T.FlInt{}), ed,
+        Equal.trans(Bool, gd.nk(T.NDig{}, False{}, True{}, gd.fput(False{}, cc, T.FlInt{})), gd.nk(T.NDig{}, False{},
+          True{}, T.FlInt{}), True{},
+        Equal.cong(T.Fl, Bool, ff => gd.nk(T.NDig{}, False{}, True{}, ff), gd.fput(False{}, cc, T.FlInt{}), T.FlInt{},
+          gd.dst.int(cc, eD)), {==}))
+    case False{}:
+      match U:
+        case True{}:
+          Equal.trans(Bool, gd.nm(T.num.us(T.Num{T.NDig{}, sign, base, ds, us, saw, why}), False{}, gd.fput(False{},
+            cc, T.FlInt{})), gd.nm(T.num.us(T.Num{T.NDig{}, sign, base, ds, us, saw, why}), False{}, gd.fput(False{},
+              '_', T.FlInt{})), True{},
+            Equal.cong(Char, Bool, xx => gd.nm(T.num.us(T.Num{T.NDig{}, sign, base, ds, us, saw, why}), False{},
+              gd.fput(False{}, xx, T.FlInt{})), cc, '_', Eq.char_eq_true(cc, '_', eU)),
+            gd.n.us(Bool.and(saw, Bool.not(us)), T.NDig{}, sign, base, ds, why, gd.fput(False{}, '_', T.FlInt{}), ed,
+              gd.ifok.any(Bool.and(saw, Bool.not(us)), gd.nk(T.NDig{}, False{}, True{}, gd.fput(False{}, '_',
+                T.FlInt{})), {==})))
+        case False{}:
+          match DOT:
+            case True{}:
+              Equal.trans(Bool, gd.nm(T.num.dot(T.Num{T.NDig{}, sign, base, ds, us, saw, why}), False{},
+                gd.fput(False{}, cc, T.FlInt{})), gd.nm(T.num.dot(T.Num{T.NDig{}, sign, base, ds, us, saw, why}),
+                  False{}, gd.fput(False{}, '.', T.FlInt{})), True{},
+                Equal.cong(Char, Bool, xx => gd.nm(T.num.dot(T.Num{T.NDig{}, sign, base, ds, us, saw, why}), False{},
+                  gd.fput(False{}, xx, T.FlInt{})), cc, '.', Eq.char_eq_true(cc, '.', eDOT)),
+                gd.n.dot(Bool.and(saw, Bool.not(us)), sign, gd.fput(False{}, '.', T.FlInt{}),
+                  gd.ifok.any(Bool.and(saw, Bool.not(us)), gd.nk(T.NFrac{}, False{}, False{}, gd.fput(False{}, '.',
+                    T.FlInt{})), {==})))
+            case False{}:
+              match E1:
+                case True{}:
+                  Equal.trans(Bool, gd.nm(T.num.exp(T.Num{T.NDig{}, sign, base, ds, us, saw, why}), False{},
+                    gd.fput(False{}, cc, T.FlInt{})), gd.nm(T.num.exp(T.Num{T.NDig{}, sign, base, ds, us, saw, why}),
+                      False{}, gd.fput(False{}, 'e', T.FlInt{})), True{},
+                    Equal.cong(Char, Bool, xx => gd.nm(T.num.exp(T.Num{T.NDig{}, sign, base, ds, us, saw, why}),
+                      False{}, gd.fput(False{}, xx, T.FlInt{})), cc, 'e', Eq.char_eq_true(cc, 'e', eE1)),
+                    gd.n.exp(Bool.and(saw, Bool.not(us)), sign, gd.fput(False{}, 'e', T.FlInt{}),
+                      gd.ifok.any(Bool.and(saw, Bool.not(us)), gd.nk(T.NExp{}, False{}, False{}, gd.fput(False{}, 'e',
+                        T.FlInt{})), {==})))
+                case False{}:
+                  match E2:
+                    case True{}:
+                      Equal.trans(Bool, gd.nm(T.num.exp(T.Num{T.NDig{}, sign, base, ds, us, saw, why}), False{},
+                        gd.fput(False{}, cc, T.FlInt{})), gd.nm(T.num.exp(T.Num{T.NDig{}, sign, base, ds, us, saw,
+                          why}), False{}, gd.fput(False{}, 'E', T.FlInt{})), True{},
+                        Equal.cong(Char, Bool, xx => gd.nm(T.num.exp(T.Num{T.NDig{}, sign, base, ds, us, saw, why}),
+                          False{}, gd.fput(False{}, xx, T.FlInt{})), cc, 'E', Eq.char_eq_true(cc, 'E', eE2)),
+                        gd.n.exp(Bool.and(saw, Bool.not(us)), sign, gd.fput(False{}, 'E', T.FlInt{}),
+                          gd.ifok.any(Bool.and(saw, Bool.not(us)), gd.nk(T.NExp{}, False{}, False{}, gd.fput(False{},
+                            'E', T.FlInt{})), {==})))
+                    case False{}:
+                      {==}
+
+# the scan after one character, in NBase: an underscore or a digit of the base
+def gd.nd.NBase(
+  U: Bool,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +flx: T.Fl,
+  +ed: {gd.d10(ds) == True{} : Bool}
+) -> {gd.nm(T.num.based.go(U, T.Num{T.NBase{}, sign, base, ds, us, saw, why}, cc), False{}, flx) == True{} : Bool}:
+  match U:
+    case True{}:
+      gd.n.us(Bool.and(saw, Bool.not(us)), T.NBase{}, sign, base, ds, why, flx, ed,
+        gd.ifok.any(Bool.and(saw, Bool.not(us)), True{}, {==}))
+    case False{}:
+      gd.n.digit(T.dig.ok(T.dig.val(cc), base), cc, T.NBase{}, sign, base, ds, flx, ed, {==})
+
+# the scan and the automaton after one character, in NFrac
+def gd.nd.NFracT(
+  D: Bool,
+  U: Bool,
+  E1: Bool,
+  E2: Bool,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +why: String,
+  +cc: Char,
+  +eD: {Char.is_digit(cc) == D : Bool},
+  +eU: {Char.is_eq(cc, '_') == U : Bool},
+  +eE1: {Char.is_eq(cc, 'e') == E1 : Bool},
+  +eE2: {Char.is_eq(cc, 'E') == E2 : Bool},
+  +ed: {gd.d10(ds) == True{} : Bool}
+) -> {gd.nm(T.num.frac.go(D, U, E1, E2, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc), False{},
+  gd.fput(False{}, cc, T.FlFrac{})) == True{} : Bool}:
+  match D:
+    case True{}:
+      gd.n.digit(T.dig.ok(T.dig.val(cc), base), cc, T.NFrac{}, sign, base, ds, gd.fput(False{}, cc, T.FlFrac{}), ed,
+        Equal.trans(Bool, gd.nk(T.NFrac{}, False{}, True{}, gd.fput(False{}, cc, T.FlFrac{})), gd.nk(T.NFrac{},
+          False{}, True{}, T.FlFrac{}), True{},
+        Equal.cong(T.Fl, Bool, ff => gd.nk(T.NFrac{}, False{}, True{}, ff), gd.fput(False{}, cc, T.FlFrac{}),
+          T.FlFrac{}, gd.dst.frac(cc, eD)), {==}))
+    case False{}:
+      match U:
+        case True{}:
+          Equal.trans(Bool, gd.nm(T.num.us(T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}), False{},
+            gd.fput(False{}, cc, T.FlFrac{})), gd.nm(T.num.us(T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}),
+              False{}, gd.fput(False{}, '_', T.FlFrac{})), True{},
+            Equal.cong(Char, Bool, xx => gd.nm(T.num.us(T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}), False{},
+              gd.fput(False{}, xx, T.FlFrac{})), cc, '_', Eq.char_eq_true(cc, '_', eU)),
+            gd.n.us(Bool.and(True{}, Bool.not(us)), T.NFrac{}, sign, base, ds, why, gd.fput(False{}, '_', T.FlFrac{}),
+              ed, gd.ifok.any(Bool.and(True{}, Bool.not(us)), gd.nk(T.NFrac{}, False{}, True{}, gd.fput(False{}, '_',
+                T.FlFrac{})), {==})))
+        case False{}:
+          match E1:
+            case True{}:
+              Equal.trans(Bool, gd.nm(T.num.exp(T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}), False{},
+                gd.fput(False{}, cc, T.FlFrac{})), gd.nm(T.num.exp(T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}),
+                  False{}, gd.fput(False{}, 'e', T.FlFrac{})), True{},
+                Equal.cong(Char, Bool, xx => gd.nm(T.num.exp(T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}),
+                  False{}, gd.fput(False{}, xx, T.FlFrac{})), cc, 'e', Eq.char_eq_true(cc, 'e', eE1)),
+                gd.n.exp(Bool.and(True{}, Bool.not(us)), sign, gd.fput(False{}, 'e', T.FlFrac{}),
+                  gd.ifok.any(Bool.and(True{}, Bool.not(us)), gd.nk(T.NExp{}, False{}, False{}, gd.fput(False{}, 'e',
+                    T.FlFrac{})), {==})))
+            case False{}:
+              match E2:
+                case True{}:
+                  Equal.trans(Bool, gd.nm(T.num.exp(T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}), False{},
+                    gd.fput(False{}, cc, T.FlFrac{})), gd.nm(T.num.exp(T.Num{T.NFrac{}, sign, base, ds, us, True{},
+                      why}), False{}, gd.fput(False{}, 'E', T.FlFrac{})), True{},
+                    Equal.cong(Char, Bool, xx => gd.nm(T.num.exp(T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}),
+                      False{}, gd.fput(False{}, xx, T.FlFrac{})), cc, 'E', Eq.char_eq_true(cc, 'E', eE2)),
+                    gd.n.exp(Bool.and(True{}, Bool.not(us)), sign, gd.fput(False{}, 'E', T.FlFrac{}),
+                      gd.ifok.any(Bool.and(True{}, Bool.not(us)), gd.nk(T.NExp{}, False{}, False{}, gd.fput(False{},
+                        'E', T.FlFrac{})), {==})))
+                case False{}:
+                  {==}
+
+# the scan and the automaton after one character, in NFrac
+def gd.nd.NFracF(
+  D: Bool,
+  U: Bool,
+  E1: Bool,
+  E2: Bool,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +why: String,
+  +cc: Char,
+  +eD: {Char.is_digit(cc) == D : Bool},
+  +eU: {Char.is_eq(cc, '_') == U : Bool},
+  +eE1: {Char.is_eq(cc, 'e') == E1 : Bool},
+  +eE2: {Char.is_eq(cc, 'E') == E2 : Bool},
+  +ed: {gd.d10(ds) == True{} : Bool}
+) -> {gd.nm(T.num.frac.go(D, U, E1, E2, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc), False{},
+  gd.fput(False{}, cc, T.FlDot{})) == True{} : Bool}:
+  match D:
+    case True{}:
+      gd.n.digit(T.dig.ok(T.dig.val(cc), base), cc, T.NFrac{}, sign, base, ds, gd.fput(False{}, cc, T.FlDot{}), ed,
+        Equal.trans(Bool, gd.nk(T.NFrac{}, False{}, True{}, gd.fput(False{}, cc, T.FlDot{})), gd.nk(T.NFrac{},
+          False{}, True{}, T.FlFrac{}), True{},
+        Equal.cong(T.Fl, Bool, ff => gd.nk(T.NFrac{}, False{}, True{}, ff), gd.fput(False{}, cc, T.FlDot{}),
+          T.FlFrac{}, gd.dst.dot(cc, eD)), {==}))
+    case False{}:
+      match U:
+        case True{}:
+          Equal.trans(Bool, gd.nm(T.num.us(T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}), False{},
+            gd.fput(False{}, cc, T.FlDot{})), gd.nm(T.num.us(T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}),
+              False{}, gd.fput(False{}, '_', T.FlDot{})), True{},
+            Equal.cong(Char, Bool, xx => gd.nm(T.num.us(T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}), False{},
+              gd.fput(False{}, xx, T.FlDot{})), cc, '_', Eq.char_eq_true(cc, '_', eU)),
+            gd.n.us(Bool.and(False{}, Bool.not(us)), T.NFrac{}, sign, base, ds, why, gd.fput(False{}, '_', T.FlDot{}),
+              ed, {==}))
+        case False{}:
+          match E1:
+            case True{}:
+              Equal.trans(Bool, gd.nm(T.num.exp(T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}), False{},
+                gd.fput(False{}, cc, T.FlDot{})), gd.nm(T.num.exp(T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}),
+                  False{}, gd.fput(False{}, 'e', T.FlDot{})), True{},
+                Equal.cong(Char, Bool, xx => gd.nm(T.num.exp(T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}),
+                  False{}, gd.fput(False{}, xx, T.FlDot{})), cc, 'e', Eq.char_eq_true(cc, 'e', eE1)),
+                gd.n.exp(Bool.and(False{}, Bool.not(us)), sign, gd.fput(False{}, 'e', T.FlDot{}), {==}))
+            case False{}:
+              match E2:
+                case True{}:
+                  Equal.trans(Bool, gd.nm(T.num.exp(T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}), False{},
+                    gd.fput(False{}, cc, T.FlDot{})), gd.nm(T.num.exp(T.Num{T.NFrac{}, sign, base, ds, us, False{},
+                      why}), False{}, gd.fput(False{}, 'E', T.FlDot{})), True{},
+                    Equal.cong(Char, Bool, xx => gd.nm(T.num.exp(T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}),
+                      False{}, gd.fput(False{}, xx, T.FlDot{})), cc, 'E', Eq.char_eq_true(cc, 'E', eE2)),
+                    gd.n.exp(Bool.and(False{}, Bool.not(us)), sign, gd.fput(False{}, 'E', T.FlDot{}), {==}))
+                case False{}:
+                  {==}
+
+# the scan and the automaton after one character, in NExp
+def gd.nd.NExp(
+  P: Bool,
+  M: Bool,
+  D: Bool,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +eP: {Char.is_eq(cc, '+') == P : Bool},
+  +eM: {Char.is_eq(cc, '-') == M : Bool},
+  +eD: {Char.is_digit(cc) == D : Bool},
+  +ed: {gd.d10(ds) == True{} : Bool}
+) -> {gd.nm(T.num.expon.go(P, M, D, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{}, gd.fput(False{}, cc,
+  T.FlE{})) == True{} : Bool}:
+  match P:
+    case True{}:
+      Equal.trans(Bool, gd.nm(T.num.exp.sign(T.Num{T.NExp{}, sign, base, ds, us, saw, why}), False{}, gd.fput(False{},
+        cc, T.FlE{})), gd.nm(T.num.exp.sign(T.Num{T.NExp{}, sign, base, ds, us, saw, why}), False{}, gd.fput(False{},
+          '+', T.FlE{})), True{},
+        Equal.cong(Char, Bool, xx => gd.nm(T.num.exp.sign(T.Num{T.NExp{}, sign, base, ds, us, saw, why}), False{},
+          gd.fput(False{}, xx, T.FlE{})), cc, '+', Eq.char_eq_true(cc, '+', eP)),
+        {==})
+    case False{}:
+      match M:
+        case True{}:
+          Equal.trans(Bool, gd.nm(T.num.exp.sign(T.Num{T.NExp{}, sign, base, ds, us, saw, why}), False{},
+            gd.fput(False{}, cc, T.FlE{})), gd.nm(T.num.exp.sign(T.Num{T.NExp{}, sign, base, ds, us, saw, why}),
+              False{}, gd.fput(False{}, '-', T.FlE{})), True{},
+            Equal.cong(Char, Bool, xx => gd.nm(T.num.exp.sign(T.Num{T.NExp{}, sign, base, ds, us, saw, why}), False{},
+              gd.fput(False{}, xx, T.FlE{})), cc, '-', Eq.char_eq_true(cc, '-', eM)),
+            {==})
+        case False{}:
+          match D:
+            case True{}:
+              gd.n.digit(T.dig.ok(T.dig.val(cc), base), cc, T.NEDig{}, sign, base, ds, gd.fput(False{}, cc, T.FlE{}),
+                ed,
+                Equal.trans(Bool, gd.nk(T.NEDig{}, False{}, True{}, gd.fput(False{}, cc, T.FlE{})), gd.nk(T.NEDig{},
+                  False{}, True{}, T.FlExp{}), True{},
+                Equal.cong(T.Fl, Bool, ff => gd.nk(T.NEDig{}, False{}, True{}, ff), gd.fput(False{}, cc, T.FlE{}),
+                  T.FlExp{}, gd.dst.e(cc, eD)), {==}))
+            case False{}:
+              {==}
+
+# the scan and the automaton after one character, in NEDig
+def gd.nd.NEDigT(
+  D: Bool,
+  U: Bool,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +why: String,
+  +cc: Char,
+  +eD: {Char.is_digit(cc) == D : Bool},
+  +eU: {Char.is_eq(cc, '_') == U : Bool},
+  +ed: {gd.d10(ds) == True{} : Bool}
+) -> {gd.nm(T.num.edig.go(D, U, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc), False{}, gd.fput(False{}, cc,
+  T.FlExp{})) == True{} : Bool}:
+  match D:
+    case True{}:
+      gd.n.digit(T.dig.ok(T.dig.val(cc), base), cc, T.NEDig{}, sign, base, ds, gd.fput(False{}, cc, T.FlExp{}), ed,
+        Equal.trans(Bool, gd.nk(T.NEDig{}, False{}, True{}, gd.fput(False{}, cc, T.FlExp{})), gd.nk(T.NEDig{},
+          False{}, True{}, T.FlExp{}), True{},
+        Equal.cong(T.Fl, Bool, ff => gd.nk(T.NEDig{}, False{}, True{}, ff), gd.fput(False{}, cc, T.FlExp{}),
+          T.FlExp{}, gd.dst.exp(cc, eD)), {==}))
+    case False{}:
+      match U:
+        case True{}:
+          Equal.trans(Bool, gd.nm(T.num.us(T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}), False{},
+            gd.fput(False{}, cc, T.FlExp{})), gd.nm(T.num.us(T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}),
+              False{}, gd.fput(False{}, '_', T.FlExp{})), True{},
+            Equal.cong(Char, Bool, xx => gd.nm(T.num.us(T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}), False{},
+              gd.fput(False{}, xx, T.FlExp{})), cc, '_', Eq.char_eq_true(cc, '_', eU)),
+            gd.n.us(Bool.and(True{}, Bool.not(us)), T.NEDig{}, sign, base, ds, why, gd.fput(False{}, '_', T.FlExp{}),
+              ed, gd.ifok.any(Bool.and(True{}, Bool.not(us)), gd.nk(T.NEDig{}, False{}, True{}, gd.fput(False{}, '_',
+                T.FlExp{})), {==})))
+        case False{}:
+          {==}
+
+# the scan and the automaton after one character, in NEDig
+def gd.nd.NEDigF(
+  D: Bool,
+  U: Bool,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +why: String,
+  +cc: Char,
+  +eD: {Char.is_digit(cc) == D : Bool},
+  +eU: {Char.is_eq(cc, '_') == U : Bool},
+  +ed: {gd.d10(ds) == True{} : Bool}
+) -> {gd.nm(T.num.edig.go(D, U, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc), False{}, gd.fput(False{}, cc,
+  T.FlESign{})) == True{} : Bool}:
+  match D:
+    case True{}:
+      gd.n.digit(T.dig.ok(T.dig.val(cc), base), cc, T.NEDig{}, sign, base, ds, gd.fput(False{}, cc, T.FlESign{}), ed,
+        Equal.trans(Bool, gd.nk(T.NEDig{}, False{}, True{}, gd.fput(False{}, cc, T.FlESign{})), gd.nk(T.NEDig{},
+          False{}, True{}, T.FlExp{}), True{},
+        Equal.cong(T.Fl, Bool, ff => gd.nk(T.NEDig{}, False{}, True{}, ff), gd.fput(False{}, cc, T.FlESign{}),
+          T.FlExp{}, gd.dst.esign(cc, eD)), {==}))
+    case False{}:
+      match U:
+        case True{}:
+          Equal.trans(Bool, gd.nm(T.num.us(T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}), False{},
+            gd.fput(False{}, cc, T.FlESign{})), gd.nm(T.num.us(T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}),
+              False{}, gd.fput(False{}, '_', T.FlESign{})), True{},
+            Equal.cong(Char, Bool, xx => gd.nm(T.num.us(T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}), False{},
+              gd.fput(False{}, xx, T.FlESign{})), cc, '_', Eq.char_eq_true(cc, '_', eU)),
+            gd.n.us(Bool.and(False{}, Bool.not(us)), T.NEDig{}, sign, base, ds, why, gd.fput(False{}, '_',
+              T.FlESign{}), ed, {==}))
+        case False{}:
+          {==}
+
+
+# the scan after one character, in NSign: a second sign fails, an underscore
+# fails, and any other character is read as a numeral's first
+def gd.nd.NSign(
+  TW: Bool,
+  U: Bool,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +etw: {Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')) == TW : Bool},
+  +eU: {Char.is_eq(cc, '_') == U : Bool},
+  _ed: {gd.d10(ds) == True{} : Bool}
+) -> {gd.nm(T.num.after.sign.go(TW, T.num.sign.of(T.Num{T.NSign{}, sign, base, ds, us, saw, why}), cc), False{},
+  gd.fput(False{}, cc, T.FlStart{})) == True{} : Bool}:
+  match TW:
+    case True{}:
+      {==}
+    case False{}:
+      match U:
+        case True{}:
+          Equal.trans(Bool, gd.nm(T.num.after.sign.go(False{}, T.num.sign.of(T.Num{T.NSign{}, sign, base, ds, us, saw,
+            why}), cc), False{}, gd.fput(False{}, cc, T.FlStart{})),
+            gd.nm(T.num.after.sign.go(False{}, T.num.sign.of(T.Num{T.NSign{}, sign, base, ds, us, saw, why}), '_'),
+              False{}, gd.fput(False{}, '_', T.FlStart{})), True{},
+            Equal.cong(Char, Bool, xx => gd.nm(T.num.after.sign.go(False{}, T.num.sign.of(T.Num{T.NSign{}, sign, base,
+              ds, us, saw, why}), xx), False{}, gd.fput(False{}, xx, T.FlStart{})), cc,
+              '_', Eq.char_eq_true(cc, '_', eU)),
+            {==})
+        case False{}:
+          Equal.trans(Bool, gd.nm(T.num.lead(T.Num{T.NLead{}, sign, 10, [], False{}, False{}, ""}, cc), False{},
+            gd.fput(False{}, cc, T.FlStart{})), gd.nm(T.num.lead(T.Num{T.NLead{}, sign, 10, [], False{}, False{}, ""},
+              cc), False{}, gd.fput(True{}, cc, T.FlStart{})), True{},
+            Equal.cong(T.Fl, Bool, ff => gd.nm(T.num.lead(T.Num{T.NLead{}, sign, 10, [], False{}, False{}, ""}, cc),
+              False{}, ff), gd.fput(False{}, cc, T.FlStart{}), gd.fput(True{}, cc, T.FlStart{}),
+              Equal.trans(T.Fl, gd.fput(False{}, cc, T.FlStart{}), T.wf.flo.step(T.FlStart{}, cc), gd.fput(True{}, cc,
+                T.FlStart{}),
+                Equal.cong(Bool, T.Fl, bb => gd.fsel(bb, T.FlStart{}, T.wf.flo.step(T.FlStart{}, cc)), Char.is_eq(cc,
+                  '_'), False{}, eU),
+                Equal.sym(T.Fl, gd.fput(True{}, cc, T.FlStart{}), T.wf.flo.step(T.FlStart{}, cc), Equal.cong(Bool,
+                  T.Fl, bb => gd.fsel(bb, T.FlStart{}, T.wf.flo.step(T.FlStart{}, cc)),
+                  Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')), False{}, etw)))),
+            gd.nd.NLead(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'), Char.is_eq(cc, '0'), Char.is_digit(cc), sign, 10, [],
+              False{}, False{}, "", cc, {==}, {==}, {==}, {==}, {==}))
+
+# the scan and the automaton in NLead: the one pair of states that agree
+def gd.nx.NLead(
+  lead: Bool,
+  fl: T.Fl,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +e: {Bool.and(gd.d10(ds), gd.nk(T.NLead{}, lead, saw, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{}, gd.fput(lead, cc,
+  fl)) == True{} : Bool}:
+  match lead:
+    case True{}:
+      match fl:
+        case T.FlStart{}:
+          gd.nd.NLead(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'), Char.is_eq(cc, '0'), Char.is_digit(cc), sign, base,
+            ds, us, saw, why, cc, {==}, {==}, {==}, {==}, gd.l(gd.d10(ds), gd.nk(T.NLead{}, True{}, saw, T.FlStart{}),
+              e))
+        case T.FlZero{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlZero{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, True{}, saw, T.FlZero{}), e))
+        case T.FlInt{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlInt{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, True{}, saw, T.FlInt{}), e))
+        case T.FlDot{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlDot{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, True{}, saw, T.FlDot{}), e))
+        case T.FlFrac{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlFrac{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, True{}, saw, T.FlFrac{}), e))
+        case T.FlE{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlE{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, True{}, saw, T.FlE{}), e))
+        case T.FlESign{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlESign{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, True{}, saw, T.FlESign{}), e))
+        case T.FlExp{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlExp{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, True{}, saw, T.FlExp{}), e))
+        case T.FlNo{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlNo{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, True{}, saw, T.FlNo{}), e))
+    case False{}:
+      match fl:
+        case T.FlStart{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlStart{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, False{}, saw, T.FlStart{}), e))
+        case T.FlZero{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlZero{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, False{}, saw, T.FlZero{}), e))
+        case T.FlInt{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlInt{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, False{}, saw, T.FlInt{}), e))
+        case T.FlDot{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlDot{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, False{}, saw, T.FlDot{}), e))
+        case T.FlFrac{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlFrac{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, False{}, saw, T.FlFrac{}), e))
+        case T.FlE{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlE{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, False{}, saw, T.FlE{}), e))
+        case T.FlESign{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlESign{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, False{}, saw, T.FlESign{}), e))
+        case T.FlExp{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlExp{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, False{}, saw, T.FlExp{}), e))
+        case T.FlNo{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NLead{}, T.Num{T.NLead{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlNo{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NLead{}, False{}, saw, T.FlNo{}), e))
+
+# the scan and the automaton in NSign: the one pair of states that agree
+def gd.nx.NSign(
+  lead: Bool,
+  fl: T.Fl,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +e: {Bool.and(gd.d10(ds), gd.nk(T.NSign{}, lead, saw, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{}, gd.fput(lead, cc,
+  fl)) == True{} : Bool}:
+  match lead:
+    case True{}:
+      match fl:
+        case T.FlStart{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlStart{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, True{}, saw, T.FlStart{}), e))
+        case T.FlZero{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlZero{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, True{}, saw, T.FlZero{}), e))
+        case T.FlInt{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlInt{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, True{}, saw, T.FlInt{}), e))
+        case T.FlDot{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlDot{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, True{}, saw, T.FlDot{}), e))
+        case T.FlFrac{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlFrac{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, True{}, saw, T.FlFrac{}), e))
+        case T.FlE{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlE{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, True{}, saw, T.FlE{}), e))
+        case T.FlESign{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlESign{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, True{}, saw, T.FlESign{}), e))
+        case T.FlExp{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlExp{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, True{}, saw, T.FlExp{}), e))
+        case T.FlNo{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlNo{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, True{}, saw, T.FlNo{}), e))
+    case False{}:
+      match fl:
+        case T.FlStart{}:
+          gd.nd.NSign(Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')), Char.is_eq(cc, '_'), sign, base, ds, us, saw,
+            why, cc, {==}, {==}, gd.l(gd.d10(ds), gd.nk(T.NSign{}, False{}, saw, T.FlStart{}), e))
+        case T.FlZero{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlZero{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, False{}, saw, T.FlZero{}), e))
+        case T.FlInt{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlInt{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, False{}, saw, T.FlInt{}), e))
+        case T.FlDot{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlDot{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, False{}, saw, T.FlDot{}), e))
+        case T.FlFrac{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlFrac{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, False{}, saw, T.FlFrac{}), e))
+        case T.FlE{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlE{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, False{}, saw, T.FlE{}), e))
+        case T.FlESign{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlESign{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, False{}, saw, T.FlESign{}), e))
+        case T.FlExp{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlExp{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, False{}, saw, T.FlExp{}), e))
+        case T.FlNo{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NSign{}, T.Num{T.NSign{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlNo{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NSign{}, False{}, saw, T.FlNo{}), e))
+
+# the scan and the automaton in NZero: the one pair of states that agree
+def gd.nx.NZero(
+  lead: Bool,
+  fl: T.Fl,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +e: {Bool.and(gd.d10(ds), gd.nk(T.NZero{}, lead, saw, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{}, gd.fput(lead, cc,
+  fl)) == True{} : Bool}:
+  match lead:
+    case True{}:
+      match fl:
+        case T.FlStart{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlStart{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, True{}, saw, T.FlStart{}), e))
+        case T.FlZero{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlZero{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, True{}, saw, T.FlZero{}), e))
+        case T.FlInt{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlInt{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, True{}, saw, T.FlInt{}), e))
+        case T.FlDot{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlDot{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, True{}, saw, T.FlDot{}), e))
+        case T.FlFrac{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlFrac{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, True{}, saw, T.FlFrac{}), e))
+        case T.FlE{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlE{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, True{}, saw, T.FlE{}), e))
+        case T.FlESign{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlESign{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, True{}, saw, T.FlESign{}), e))
+        case T.FlExp{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlExp{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, True{}, saw, T.FlExp{}), e))
+        case T.FlNo{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlNo{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, True{}, saw, T.FlNo{}), e))
+    case False{}:
+      match fl:
+        case T.FlStart{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlStart{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, False{}, saw, T.FlStart{}), e))
+        case T.FlZero{}:
+          gd.nd.NZero(Char.is_eq(cc, 'x'), Char.is_eq(cc, 'o'), Char.is_eq(cc, 'b'), Char.is_eq(cc, '.'),
+            Char.is_eq(cc, 'e'), Char.is_eq(cc, 'E'), sign, base, ds, us, saw, why, cc, {==}, {==}, {==}, {==}, {==},
+              {==}, gd.l(gd.d10(ds), gd.nk(T.NZero{}, False{}, saw, T.FlZero{}), e))
+        case T.FlInt{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlInt{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, False{}, saw, T.FlInt{}), e))
+        case T.FlDot{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlDot{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, False{}, saw, T.FlDot{}), e))
+        case T.FlFrac{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlFrac{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, False{}, saw, T.FlFrac{}), e))
+        case T.FlE{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlE{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, False{}, saw, T.FlE{}), e))
+        case T.FlESign{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlESign{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, False{}, saw, T.FlESign{}), e))
+        case T.FlExp{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlExp{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, False{}, saw, T.FlExp{}), e))
+        case T.FlNo{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NZero{}, T.Num{T.NZero{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlNo{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NZero{}, False{}, saw, T.FlNo{}), e))
+
+# the scan and the automaton in NDig: the one pair of states that agree
+def gd.nx.NDig(
+  lead: Bool,
+  fl: T.Fl,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +e: {Bool.and(gd.d10(ds), gd.nk(T.NDig{}, lead, saw, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{}, gd.fput(lead, cc,
+  fl)) == True{} : Bool}:
+  match lead:
+    case True{}:
+      match fl:
+        case T.FlStart{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlStart{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, True{}, saw, T.FlStart{}), e))
+        case T.FlZero{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlZero{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, True{}, saw, T.FlZero{}), e))
+        case T.FlInt{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlInt{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, True{}, saw, T.FlInt{}), e))
+        case T.FlDot{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlDot{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, True{}, saw, T.FlDot{}), e))
+        case T.FlFrac{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlFrac{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, True{}, saw, T.FlFrac{}), e))
+        case T.FlE{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlE{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, True{}, saw, T.FlE{}), e))
+        case T.FlESign{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlESign{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, True{}, saw, T.FlESign{}), e))
+        case T.FlExp{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlExp{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, True{}, saw, T.FlExp{}), e))
+        case T.FlNo{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlNo{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, True{}, saw, T.FlNo{}), e))
+    case False{}:
+      match fl:
+        case T.FlStart{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlStart{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, False{}, saw, T.FlStart{}), e))
+        case T.FlZero{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlZero{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, False{}, saw, T.FlZero{}), e))
+        case T.FlInt{}:
+          gd.nd.NDig(Char.is_digit(cc), Char.is_eq(cc, '_'), Char.is_eq(cc, '.'), Char.is_eq(cc, 'e'), Char.is_eq(cc,
+            'E'), sign, base, ds, us, saw, why, cc, {==}, {==}, {==}, {==}, {==}, gd.l(gd.d10(ds), gd.nk(T.NDig{},
+              False{}, saw, T.FlInt{}), e))
+        case T.FlDot{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlDot{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, False{}, saw, T.FlDot{}), e))
+        case T.FlFrac{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlFrac{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, False{}, saw, T.FlFrac{}), e))
+        case T.FlE{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlE{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, False{}, saw, T.FlE{}), e))
+        case T.FlESign{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlESign{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, False{}, saw, T.FlESign{}), e))
+        case T.FlExp{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlExp{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, False{}, saw, T.FlExp{}), e))
+        case T.FlNo{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NDig{}, T.Num{T.NDig{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlNo{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NDig{}, False{}, saw, T.FlNo{}), e))
+
+# the scan and the automaton in NExp: the one pair of states that agree
+def gd.nx.NExp(
+  lead: Bool,
+  fl: T.Fl,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +e: {Bool.and(gd.d10(ds), gd.nk(T.NExp{}, lead, saw, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{}, gd.fput(lead, cc,
+  fl)) == True{} : Bool}:
+  match lead:
+    case True{}:
+      match fl:
+        case T.FlStart{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlStart{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, True{}, saw, T.FlStart{}), e))
+        case T.FlZero{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlZero{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, True{}, saw, T.FlZero{}), e))
+        case T.FlInt{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlInt{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, True{}, saw, T.FlInt{}), e))
+        case T.FlDot{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlDot{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, True{}, saw, T.FlDot{}), e))
+        case T.FlFrac{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlFrac{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, True{}, saw, T.FlFrac{}), e))
+        case T.FlE{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlE{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, True{}, saw, T.FlE{}), e))
+        case T.FlESign{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlESign{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, True{}, saw, T.FlESign{}), e))
+        case T.FlExp{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlExp{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, True{}, saw, T.FlExp{}), e))
+        case T.FlNo{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(True{}, cc, T.FlNo{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, True{}, saw, T.FlNo{}), e))
+    case False{}:
+      match fl:
+        case T.FlStart{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlStart{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, False{}, saw, T.FlStart{}), e))
+        case T.FlZero{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlZero{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, False{}, saw, T.FlZero{}), e))
+        case T.FlInt{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlInt{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, False{}, saw, T.FlInt{}), e))
+        case T.FlDot{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlDot{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, False{}, saw, T.FlDot{}), e))
+        case T.FlFrac{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlFrac{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, False{}, saw, T.FlFrac{}), e))
+        case T.FlE{}:
+          gd.nd.NExp(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'), Char.is_digit(cc), sign, base, ds, us, saw, why, cc,
+            {==}, {==}, {==}, gd.l(gd.d10(ds), gd.nk(T.NExp{}, False{}, saw, T.FlE{}), e))
+        case T.FlESign{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlESign{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, False{}, saw, T.FlESign{}), e))
+        case T.FlExp{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlExp{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, False{}, saw, T.FlExp{}), e))
+        case T.FlNo{}:
+          Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NExp{}, T.Num{T.NExp{}, sign, base, ds, us, saw, why}, cc), False{},
+            gd.fput(False{}, cc, T.FlNo{})) == True{} : Bool},
+            gd.r(gd.d10(ds), gd.nk(T.NExp{}, False{}, saw, T.FlNo{}), e))
+
+# the scan and the automaton in NFrac, by whether a digit was seen
+def gd.nx.NFrac(
+  lead: Bool,
+  saw: Bool,
+  fl: T.Fl,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +why: String,
+  +cc: Char,
+  +e: {Bool.and(gd.d10(ds), gd.nk(T.NFrac{}, lead, saw, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, saw, why}, cc), False{}, gd.fput(lead, cc,
+  fl)) == True{} : Bool}:
+  match lead:
+    case True{}:
+      match saw:
+        case True{}:
+          match fl:
+            case T.FlStart{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlStart{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, True{}, T.FlStart{}), e))
+            case T.FlZero{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlZero{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, True{}, T.FlZero{}), e))
+            case T.FlInt{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlInt{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, True{}, T.FlInt{}), e))
+            case T.FlDot{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlDot{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, True{}, T.FlDot{}), e))
+            case T.FlFrac{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlFrac{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, True{}, T.FlFrac{}), e))
+            case T.FlE{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlE{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, True{}, T.FlE{}), e))
+            case T.FlESign{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlESign{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, True{}, T.FlESign{}), e))
+            case T.FlExp{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlExp{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, True{}, T.FlExp{}), e))
+            case T.FlNo{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlNo{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, True{}, T.FlNo{}), e))
+        case False{}:
+          match fl:
+            case T.FlStart{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlStart{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, False{}, T.FlStart{}), e))
+            case T.FlZero{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlZero{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, False{}, T.FlZero{}), e))
+            case T.FlInt{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlInt{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, False{}, T.FlInt{}), e))
+            case T.FlDot{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlDot{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, False{}, T.FlDot{}), e))
+            case T.FlFrac{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlFrac{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, False{}, T.FlFrac{}), e))
+            case T.FlE{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlE{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, False{}, T.FlE{}), e))
+            case T.FlESign{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlESign{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, False{}, T.FlESign{}), e))
+            case T.FlExp{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlExp{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, False{}, T.FlExp{}), e))
+            case T.FlNo{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlNo{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, True{}, False{}, T.FlNo{}), e))
+    case False{}:
+      match saw:
+        case True{}:
+          match fl:
+            case T.FlStart{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlStart{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, True{}, T.FlStart{}), e))
+            case T.FlZero{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlZero{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, True{}, T.FlZero{}), e))
+            case T.FlInt{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlInt{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, True{}, T.FlInt{}), e))
+            case T.FlDot{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlDot{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, True{}, T.FlDot{}), e))
+            case T.FlFrac{}:
+              gd.nd.NFracT(Char.is_digit(cc), Char.is_eq(cc, '_'), Char.is_eq(cc, 'e'), Char.is_eq(cc, 'E'), sign,
+                base, ds, us, why, cc, {==}, {==}, {==}, {==}, gd.l(gd.d10(ds), gd.nk(T.NFrac{}, False{}, True{},
+                  T.FlFrac{}), e))
+            case T.FlE{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlE{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, True{}, T.FlE{}), e))
+            case T.FlESign{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlESign{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, True{}, T.FlESign{}), e))
+            case T.FlExp{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlExp{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, True{}, T.FlExp{}), e))
+            case T.FlNo{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlNo{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, True{}, T.FlNo{}), e))
+        case False{}:
+          match fl:
+            case T.FlStart{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlStart{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, False{}, T.FlStart{}), e))
+            case T.FlZero{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlZero{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, False{}, T.FlZero{}), e))
+            case T.FlInt{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlInt{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, False{}, T.FlInt{}), e))
+            case T.FlDot{}:
+              gd.nd.NFracF(Char.is_digit(cc), Char.is_eq(cc, '_'), Char.is_eq(cc, 'e'), Char.is_eq(cc, 'E'), sign,
+                base, ds, us, why, cc, {==}, {==}, {==}, {==}, gd.l(gd.d10(ds), gd.nk(T.NFrac{}, False{}, False{},
+                  T.FlDot{}), e))
+            case T.FlFrac{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlFrac{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, False{}, T.FlFrac{}), e))
+            case T.FlE{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlE{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, False{}, T.FlE{}), e))
+            case T.FlESign{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlESign{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, False{}, T.FlESign{}), e))
+            case T.FlExp{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlExp{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, False{}, T.FlExp{}), e))
+            case T.FlNo{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NFrac{}, T.Num{T.NFrac{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlNo{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NFrac{}, False{}, False{}, T.FlNo{}), e))
+
+# the scan and the automaton in NEDig, by whether a digit was seen
+def gd.nx.NEDig(
+  lead: Bool,
+  saw: Bool,
+  fl: T.Fl,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +why: String,
+  +cc: Char,
+  +e: {Bool.and(gd.d10(ds), gd.nk(T.NEDig{}, lead, saw, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, saw, why}, cc), False{}, gd.fput(lead, cc,
+  fl)) == True{} : Bool}:
+  match lead:
+    case True{}:
+      match saw:
+        case True{}:
+          match fl:
+            case T.FlStart{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlStart{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, True{}, T.FlStart{}), e))
+            case T.FlZero{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlZero{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, True{}, T.FlZero{}), e))
+            case T.FlInt{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlInt{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, True{}, T.FlInt{}), e))
+            case T.FlDot{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlDot{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, True{}, T.FlDot{}), e))
+            case T.FlFrac{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlFrac{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, True{}, T.FlFrac{}), e))
+            case T.FlE{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlE{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, True{}, T.FlE{}), e))
+            case T.FlESign{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlESign{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, True{}, T.FlESign{}), e))
+            case T.FlExp{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlExp{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, True{}, T.FlExp{}), e))
+            case T.FlNo{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlNo{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, True{}, T.FlNo{}), e))
+        case False{}:
+          match fl:
+            case T.FlStart{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlStart{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, False{}, T.FlStart{}), e))
+            case T.FlZero{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlZero{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, False{}, T.FlZero{}), e))
+            case T.FlInt{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlInt{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, False{}, T.FlInt{}), e))
+            case T.FlDot{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlDot{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, False{}, T.FlDot{}), e))
+            case T.FlFrac{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlFrac{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, False{}, T.FlFrac{}), e))
+            case T.FlE{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlE{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, False{}, T.FlE{}), e))
+            case T.FlESign{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlESign{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, False{}, T.FlESign{}), e))
+            case T.FlExp{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlExp{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, False{}, T.FlExp{}), e))
+            case T.FlNo{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(True{}, cc, T.FlNo{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, True{}, False{}, T.FlNo{}), e))
+    case False{}:
+      match saw:
+        case True{}:
+          match fl:
+            case T.FlStart{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlStart{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, True{}, T.FlStart{}), e))
+            case T.FlZero{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlZero{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, True{}, T.FlZero{}), e))
+            case T.FlInt{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlInt{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, True{}, T.FlInt{}), e))
+            case T.FlDot{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlDot{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, True{}, T.FlDot{}), e))
+            case T.FlFrac{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlFrac{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, True{}, T.FlFrac{}), e))
+            case T.FlE{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlE{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, True{}, T.FlE{}), e))
+            case T.FlESign{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlESign{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, True{}, T.FlESign{}), e))
+            case T.FlExp{}:
+              gd.nd.NEDigT(Char.is_digit(cc), Char.is_eq(cc, '_'), sign, base, ds, us, why, cc, {==}, {==},
+                gd.l(gd.d10(ds), gd.nk(T.NEDig{}, False{}, True{}, T.FlExp{}), e))
+            case T.FlNo{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, True{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlNo{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, True{}, T.FlNo{}), e))
+        case False{}:
+          match fl:
+            case T.FlStart{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlStart{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, False{}, T.FlStart{}), e))
+            case T.FlZero{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlZero{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, False{}, T.FlZero{}), e))
+            case T.FlInt{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlInt{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, False{}, T.FlInt{}), e))
+            case T.FlDot{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlDot{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, False{}, T.FlDot{}), e))
+            case T.FlFrac{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlFrac{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, False{}, T.FlFrac{}), e))
+            case T.FlE{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlE{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, False{}, T.FlE{}), e))
+            case T.FlESign{}:
+              gd.nd.NEDigF(Char.is_digit(cc), Char.is_eq(cc, '_'), sign, base, ds, us, why, cc, {==}, {==},
+                gd.l(gd.d10(ds), gd.nk(T.NEDig{}, False{}, False{}, T.FlESign{}), e))
+            case T.FlExp{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlExp{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, False{}, T.FlExp{}), e))
+            case T.FlNo{}:
+              Eq.bit.absurd(&2, {gd.nm(T.num.on(T.NEDig{}, T.Num{T.NEDig{}, sign, base, ds, us, False{}, why}, cc),
+                False{}, gd.fput(False{}, cc, T.FlNo{})) == True{} : Bool},
+                gd.r(gd.d10(ds), gd.nk(T.NEDig{}, False{}, False{}, T.FlNo{}), e))
+
+# the scan after one character, in NBase: the automaton's state is not asked
+def gd.nx.NBase(
+  +lead: Bool,
+  +fl: T.Fl,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +e: {Bool.and(gd.d10(ds), gd.nk(T.NBase{}, lead, saw, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.on(T.NBase{}, T.Num{T.NBase{}, sign, base, ds, us, saw, why}, cc), False{}, gd.fput(lead, cc,
+  fl)) == True{} : Bool}:
+  gd.nd.NBase(Char.is_eq(cc, '_'), sign, base, ds, us, saw, why, cc, gd.fput(lead, cc, fl), gd.l(gd.d10(ds), True{}, e))
+
+# a failed scan stays failed
+def gd.nx.NBad(
+  +lead: Bool,
+  +fl: T.Fl,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +e: {Bool.and(gd.d10(ds), gd.nk(T.NBad{}, lead, saw, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.on(T.NBad{}, T.Num{T.NBad{}, sign, base, ds, us, saw, why}, cc), False{}, gd.fput(lead, cc,
+  fl)) == True{} : Bool}:
+  gd.tt(gd.d10(ds), True{}, gd.l(gd.d10(ds), True{}, e), {==})
+
+# the scan and the automaton after one character, by the scan's state
+def gd.ns.nk(
+  nk: T.NK,
+  +lead: Bool,
+  +fl: T.Fl,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +us: Bool,
+  +saw: Bool,
+  +why: String,
+  +cc: Char,
+  +e: {Bool.and(gd.d10(ds), gd.nk(nk, lead, saw, fl)) == True{} : Bool}
+) -> {gd.nm(T.num.on(nk, T.Num{nk, sign, base, ds, us, saw, why}, cc), False{}, gd.fput(lead, cc,
+  fl)) == True{} : Bool}:
+  match nk:
+    case T.NLead{}:
+      gd.nx.NLead(lead, fl, sign, base, ds, us, saw, why, cc, e)
+    case T.NSign{}:
+      gd.nx.NSign(lead, fl, sign, base, ds, us, saw, why, cc, e)
+    case T.NZero{}:
+      gd.nx.NZero(lead, fl, sign, base, ds, us, saw, why, cc, e)
+    case T.NDig{}:
+      gd.nx.NDig(lead, fl, sign, base, ds, us, saw, why, cc, e)
+    case T.NBase{}:
+      gd.nx.NBase(lead, fl, sign, base, ds, us, saw, why, cc, e)
+    case T.NFrac{}:
+      gd.nx.NFrac(lead, saw, fl, sign, base, ds, us, why, cc, e)
+    case T.NExp{}:
+      gd.nx.NExp(lead, fl, sign, base, ds, us, saw, why, cc, e)
+    case T.NEDig{}:
+      gd.nx.NEDig(lead, saw, fl, sign, base, ds, us, why, cc, e)
+    case T.NBad{}:
+      gd.nx.NBad(lead, fl, sign, base, ds, us, saw, why, cc, e)
+
+# one step of the numeral scan keeps it in step with the automaton
+def gd.ns(
+  st: T.Num,
+  +lead: Bool,
+  +fl: T.Fl,
+  +cc: Char,
+  +e: {gd.nm(st, lead, fl) == True{} : Bool}
+) -> {gd.nm(T.num.step(st, cc), False{}, gd.fput(lead, cc, fl)) == True{} : Bool}:
+  match st:
+    case T.Num{+nk, +sign, +base, +ds, +us, +saw, +why}:
+      gd.ns.nk(nk, lead, fl, sign, base, ds, us, saw, why, cc, e)
+
+# the first character of a spelling, then none
+def gd.nlead(cs: List<&2, Char>, lead: Bool) -> Bool:
+  match cs:
+    case []:
+      lead
+    case _h <> tt:
+      gd.nlead(tt, False{})
+
+# the whole scan keeps it in step
+def gd.ngo(
+  cs: List<&2, Char>,
+  +st: T.Num,
+  +lead: Bool,
+  +fl: T.Fl,
+  +e: {gd.nm(st, lead, fl) == True{} : Bool}
+) -> {gd.nm(T.num.go(cs, st), gd.nlead(cs, lead), gd.fb(cs, lead, fl)) == True{} : Bool}:
+  match cs:
+    case []:
+      e
+    case +hh <> +tt:
+      gd.ngo(tt, T.num.step(st, hh), False{}, gd.fput(lead, hh, fl), gd.ns(st, lead, fl, hh, e))
+
+# a list made a text and back is itself
+def gd.tlfl(xs: List<&2, Char>) -> {String.to_list(String.from_list(xs)) == xs : List<&2, Char>}:
+  match xs:
+    case []:
+      {==}
+    case +hh <> +tt:
+      Equal.cong(List<&2, Char>, List<&2, Char>, ys => hh <> ys, String.to_list(String.from_list(tt)), tt, gd.tlfl(tt))
+
+# the automaton over characters reversed onto more
+def gd.rg(
+  xs: List<&2, Char>,
+  +acc: List<&2, Char>,
+  +ss: T.Fl
+) -> {T.wf.flo.go(List.reverse.go(&2, Char, xs, acc), ss) == T.wf.flo.go(acc, T.wf.flo.go(List.reverse.go(&2, Char,
+  xs, []), ss)) : T.Fl}:
+  match xs:
+    case []:
+      {==}
+    case +xx <> +rr:
+      Equal.trans(T.Fl, T.wf.flo.go(List.reverse.go(&2, Char, rr, xx <> acc), ss),
+        T.wf.flo.go(acc, T.wf.flo.step(T.wf.flo.go(List.reverse.go(&2, Char, rr, []), ss), xx)),
+        T.wf.flo.go(acc, T.wf.flo.go(List.reverse.go(&2, Char, rr, [xx]), ss)),
+        gd.rg(rr, xx <> acc, ss),
+        Equal.sym(T.Fl, T.wf.flo.go(acc, T.wf.flo.go(List.reverse.go(&2, Char, rr, [xx]), ss)),
+          T.wf.flo.go(acc, T.wf.flo.step(T.wf.flo.go(List.reverse.go(&2, Char, rr, []), ss), xx)),
+          Equal.cong(T.Fl, T.Fl, yy => T.wf.flo.go(acc, yy), T.wf.flo.go(List.reverse.go(&2, Char, rr, [xx]), ss),
+            T.wf.flo.step(T.wf.flo.go(List.reverse.go(&2, Char, rr, []), ss), xx), gd.rg(rr, [xx], ss))))
+
+# a character kept or dropped by the spelling of a sign
+def gd.fbput.s(
+  bb: Bool,
+  +cc: Char,
+  +out: List<&2, Char>,
+  +ss: T.Fl
+) -> {T.wf.flo.go(List.reverse(&2, Char, T.word.body.put.sign(bb, cc, out)), ss) == gd.fsel(bb,
+  T.wf.flo.go(List.reverse(&2, Char, out), ss), T.wf.flo.step(T.wf.flo.go(List.reverse(&2, Char, out), ss),
+    cc)) : T.Fl}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      gd.rg(out, [cc], ss)
+
+# a character kept or dropped by the spelling of an underscore
+def gd.fbput.u(
+  bb: Bool,
+  +cc: Char,
+  +out: List<&2, Char>,
+  +ss: T.Fl
+) -> {T.wf.flo.go(List.reverse(&2, Char, T.word.body.put.us(bb, cc, out)), ss) == gd.fsel(bb,
+  T.wf.flo.go(List.reverse(&2, Char, out), ss), T.wf.flo.step(T.wf.flo.go(List.reverse(&2, Char, out), ss),
+    cc)) : T.Fl}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      gd.rg(out, [cc], ss)
+
+# one character of the spelling
+def gd.fbput(
+  lead: Bool,
+  +cc: Char,
+  +out: List<&2, Char>,
+  +ss: T.Fl
+) -> {T.wf.flo.go(List.reverse(&2, Char, T.word.body.put(lead, cc, out)), ss) == gd.fput(lead, cc,
+  T.wf.flo.go(List.reverse(&2, Char, out), ss)) : T.Fl}:
+  match lead:
+    case True{}:
+      gd.fbput.s(Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')), cc, out, ss)
+    case False{}:
+      gd.fbput.u(Char.is_eq(cc, '_'), cc, out, ss)
+
+# the automaton over a spelling is gd.fb
+def gd.fbl(
+  cs: List<&2, Char>,
+  +lead: Bool,
+  +out: List<&2, Char>,
+  +ss: T.Fl
+) -> {T.wf.flo.go(T.word.body.go(cs, lead, out), ss) == gd.fb(cs, lead, T.wf.flo.go(List.reverse(&2, Char, out),
+  ss)) : T.Fl}:
+  match cs:
+    case []:
+      {==}
+    case +hh <> +tt:
+      Equal.trans(T.Fl, T.wf.flo.go(T.word.body.go(tt, False{}, T.word.body.put(lead, hh, out)), ss),
+        gd.fb(tt, False{}, T.wf.flo.go(List.reverse(&2, Char, T.word.body.put(lead, hh, out)), ss)),
+        gd.fb(tt, False{}, gd.fput(lead, hh, T.wf.flo.go(List.reverse(&2, Char, out), ss))),
+        gd.fbl(tt, False{}, T.word.body.put(lead, hh, out), ss),
+        Equal.cong(T.Fl, T.Fl, yy => gd.fb(tt, False{}, yy),
+          T.wf.flo.go(List.reverse(&2, Char, T.word.body.put(lead, hh, out)), ss),
+          gd.fput(lead, hh, T.wf.flo.go(List.reverse(&2, Char, out), ss)), gd.fbput(lead, hh, out, ss)))
+
+
+
+# a spelling the automaton ends in a fraction's digit reads as a float
+def gd.fl.frac(fl: T.Fl, +ee: {gd.flq(fl, T.FlFrac{}) == True{} : Bool}) -> {T.wf.flo.end(fl) == True{} : Bool}:
+  match fl:
+    case T.FlFrac{}:
+      {==}
+    case T.FlStart{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlStart{}) == True{} : Bool}, ee)
+    case T.FlZero{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlZero{}) == True{} : Bool}, ee)
+    case T.FlInt{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlInt{}) == True{} : Bool}, ee)
+    case T.FlDot{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlDot{}) == True{} : Bool}, ee)
+    case T.FlE{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlE{}) == True{} : Bool}, ee)
+    case T.FlESign{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlESign{}) == True{} : Bool}, ee)
+    case T.FlExp{}:
+      {==}
+    case T.FlNo{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlNo{}) == True{} : Bool}, ee)
+
+# or an exponent's digit
+def gd.fl.exp(fl: T.Fl, +ee: {gd.flq(fl, T.FlExp{}) == True{} : Bool}) -> {T.wf.flo.end(fl) == True{} : Bool}:
+  match fl:
+    case T.FlExp{}:
+      {==}
+    case T.FlStart{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlStart{}) == True{} : Bool}, ee)
+    case T.FlZero{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlZero{}) == True{} : Bool}, ee)
+    case T.FlInt{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlInt{}) == True{} : Bool}, ee)
+    case T.FlDot{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlDot{}) == True{} : Bool}, ee)
+    case T.FlFrac{}:
+      {==}
+    case T.FlE{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlE{}) == True{} : Bool}, ee)
+    case T.FlESign{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlESign{}) == True{} : Bool}, ee)
+    case T.FlNo{}:
+      Eq.bit.absurd(&2, {T.wf.flo.end(T.FlNo{}) == True{} : Bool}, ee)
+
+# the last of three ors
+def gd.or3(
+  aa: Bool,
+  bb: Bool,
+  +cc: Bool,
+  +ec: {cc == True{} : Bool}
+) -> {Bool.or(aa, Bool.or(bb, cc)) == True{} : Bool}:
+  match aa bb:
+    case True{} _b:
+      {==}
+    case False{} True{}:
+      {==}
+    case False{} False{}:
+      ec
+
+# a float's spelling that the automaton ends well in is well-formed
+def gd.flo.ok(
+  +text: String,
+  +fl: T.Fl,
+  +ef: {fl == T.wf.flo.go(String.to_list(text), T.FlStart{}) : T.Fl},
+  +ee: {T.wf.flo.end(fl) == True{} : Bool}
+) -> {T.wf.flo(text) == True{} : Bool}:
+  gd.or3(T.str.eq(text, "inf"), T.str.eq(text, "nan"), T.wf.flo.end(T.wf.flo.go(String.to_list(text), T.FlStart{})),
+    Equal.trans(Bool, T.wf.flo.end(T.wf.flo.go(String.to_list(text), T.FlStart{})), T.wf.flo.end(fl), True{},
+      Equal.cong(T.Fl, Bool, ff => T.wf.flo.end(ff), T.wf.flo.go(String.to_list(text), T.FlStart{}), fl,
+        Equal.sym(T.Fl, fl, T.wf.flo.go(String.to_list(text), T.FlStart{}), ef)), ee))
+
+# an integer whose range was checked
+def gd.nfin.rng(
+  ok: Bool,
+  +sign: T.Sign,
+  +digits: String,
+  +ew: {T.wf.dec(digits) == True{} : Bool},
+  +eo: {T.i64.fits(sign, digits) == ok : Bool}
+) -> {Laws.gd.gok(T.num.fin.range(ok, sign, digits)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      gd.tt(T.wf.dec(digits), T.i64.fits(sign, digits), ew, eo)
+    case False{}:
+      {==}
+
+# an integer, when a digit was seen
+def gd.nfin.int(
+  saw: Bool,
+  +sign: T.Sign,
+  +ds: List<&2, U32>,
+  +ed: {gd.d10(ds) == True{} : Bool}
+) -> {Laws.gd.gok(T.num.fin.int(saw, sign, T.dec.text(ds))) == True{} : Bool}:
+  match saw:
+    case True{}:
+      gd.nfin.rng(T.i64.fits(sign, T.dec.text(ds)), sign, T.dec.text(ds), gd.dec.text(ds, ed), {==})
+    case False{}:
+      {==}
+
+# a prefixed integer, when no sign was written
+def gd.nfin.base(
+  signed: Bool,
+  +saw: Bool,
+  +sign: T.Sign,
+  +ds: List<&2, U32>,
+  +ed: {gd.d10(ds) == True{} : Bool}
+) -> {Laws.gd.gok(T.num.fin.base(signed, saw, sign, ds)) == True{} : Bool}:
+  match signed:
+    case True{}:
+      {==}
+    case False{}:
+      gd.nfin.int(saw, sign, ds, ed)
+
+# a float, when a digit was seen
+def gd.nfin.flo(
+  saw: Bool,
+  +sign: T.Sign,
+  +text: String,
+  +ee: {Laws.gd.ifok(saw, T.wf.flo(text)) == True{} : Bool}
+) -> {Laws.gd.gok(T.num.fin.saw(saw, T.VFlo{sign, text})) == True{} : Bool}:
+  match saw:
+    case True{}:
+      ee
+    case False{}:
+      {==}
+
+# a zero
+def gd.nfin.zero(sign: T.Sign) -> {Laws.gd.gok(T.GotVal{T.VInt{sign, "0"}}) == True{} : Bool}:
+  match sign:
+    case T.Plus{}:
+      {==}
+    case T.Minus{}:
+      {==}
+
+# the float's end state from the scan's
+def gd.nfin.fe(
+  saw: Bool,
+  +lead: Bool,
+  +fl: T.Fl,
+  +text: String,
+  +ef: {fl == T.wf.flo.go(String.to_list(text), T.FlStart{}) : T.Fl},
+  +ee: {gd.nk(T.NFrac{}, lead, saw, fl) == True{} : Bool}
+) -> {Laws.gd.ifok(saw, T.wf.flo(text)) == True{} : Bool}:
+  match saw:
+    case True{}:
+      gd.flo.ok(text, fl, ef, gd.fl.frac(fl, gd.r(Bool.not(lead), gd.flq(fl, T.FlFrac{}), ee)))
+    case False{}:
+      {==}
+
+# and an exponent's
+def gd.nfin.ee(
+  saw: Bool,
+  +lead: Bool,
+  +fl: T.Fl,
+  +text: String,
+  +ef: {fl == T.wf.flo.go(String.to_list(text), T.FlStart{}) : T.Fl},
+  +ee: {gd.nk(T.NEDig{}, lead, saw, fl) == True{} : Bool}
+) -> {Laws.gd.ifok(saw, T.wf.flo(text)) == True{} : Bool}:
+  match saw:
+    case True{}:
+      gd.flo.ok(text, fl, ef, gd.fl.exp(fl, gd.r(Bool.not(lead), gd.flq(fl, T.FlExp{}), ee)))
+    case False{}:
+      {==}
+
+# the value a finished scan gives, by its state
+def gd.nfin.nk(
+  nk: T.NK,
+  +sign: T.Sign,
+  +ds: List<&2, U32>,
+  +saw: Bool,
+  +why: String,
+  +cs: List<&2, Char>,
+  +lead: Bool,
+  +fl: T.Fl,
+  +e: {Bool.and(gd.d10(ds), gd.nk(nk, lead, saw, fl)) == True{} : Bool},
+  +ef: {fl == T.wf.flo.go(String.to_list(T.word.body(cs)), T.FlStart{}) : T.Fl}
+) -> {Laws.gd.gok(T.num.fin.nk(nk, sign, ds, saw, why, cs)) == True{} : Bool}:
+  match nk:
+    case T.NBad{}:
+      {==}
+    case T.NLead{}:
+      {==}
+    case T.NSign{}:
+      {==}
+    case T.NZero{}:
+      gd.nfin.zero(sign)
+    case T.NDig{}:
+      gd.nfin.int(saw, sign, ds, gd.l(gd.d10(ds), gd.nk(T.NDig{}, lead, saw, fl), e))
+    case T.NBase{}:
+      gd.nfin.base(T.num.signed(cs), saw, sign, ds, gd.l(gd.d10(ds), True{}, e))
+    case T.NFrac{}:
+      gd.nfin.flo(saw, sign, T.word.body(cs),
+        gd.nfin.fe(saw, lead, fl, T.word.body(cs), ef, gd.r(gd.d10(ds), gd.nk(T.NFrac{}, lead, saw, fl), e)))
+    case T.NExp{}:
+      {==}
+    case T.NEDig{}:
+      gd.nfin.flo(saw, sign, T.word.body(cs),
+        gd.nfin.ee(saw, lead, fl, T.word.body(cs), ef, gd.r(gd.d10(ds), gd.nk(T.NEDig{}, lead, saw, fl), e)))
+
+# no trailing underscore
+def gd.nfin.us(
+  us: Bool,
+  +nk: T.NK,
+  +sign: T.Sign,
+  +ds: List<&2, U32>,
+  +saw: Bool,
+  +why: String,
+  +cs: List<&2, Char>,
+  +lead: Bool,
+  +fl: T.Fl,
+  +e: {Bool.and(gd.d10(ds), gd.nk(nk, lead, saw, fl)) == True{} : Bool},
+  +ef: {fl == T.wf.flo.go(String.to_list(T.word.body(cs)), T.FlStart{}) : T.Fl}
+) -> {Laws.gd.gok(T.num.fin.us(us, nk, sign, ds, saw, why, cs)) == True{} : Bool}:
+  match us:
+    case True{}:
+      {==}
+    case False{}:
+      gd.nfin.nk(nk, sign, ds, saw, why, cs, lead, fl, e, ef)
+
+# a finished scan's value is well-formed
+def gd.nfin(
+  st: T.Num,
+  +cs: List<&2, Char>,
+  +lead: Bool,
+  +fl: T.Fl,
+  +e: {gd.nm(st, lead, fl) == True{} : Bool},
+  +ef: {fl == T.wf.flo.go(String.to_list(T.word.body(cs)), T.FlStart{}) : T.Fl}
+) -> {Laws.gd.gok(T.num.fin(st, cs)) == True{} : Bool}:
+  match st:
+    case T.Num{+nk, +sign, _b, +ds, +us, +saw, +why}:
+      gd.nfin.us(us, nk, sign, ds, saw, why, cs, lead, fl, e, ef)
+
+# every numeral's value is well-formed
+def gd.num(+cs: List<&2, Char>) -> {Laws.gd.gok(T.word.num(cs)) == True{} : Bool}:
+  gd.nfin(T.num.go(cs, T.num.start()), cs, gd.nlead(cs, True{}), gd.fb(cs, True{}, T.FlStart{}),
+    gd.ngo(cs, T.num.start(), True{}, T.FlStart{}, {==}),
+    Equal.sym(T.Fl, T.wf.flo.go(String.to_list(T.word.body(cs)), T.FlStart{}), gd.fb(cs, True{}, T.FlStart{}),
+      Equal.trans(T.Fl, T.wf.flo.go(String.to_list(T.word.body(cs)), T.FlStart{}),
+        T.wf.flo.go(T.word.body.go(cs, True{}, []), T.FlStart{}), gd.fb(cs, True{}, T.FlStart{}),
+        Equal.cong(List<&2, Char>, T.Fl, xs => T.wf.flo.go(xs, T.FlStart{}),
+          String.to_list(String.from_list(T.word.body.go(cs, True{}, []))), T.word.body.go(cs, True{}, []),
+          gd.tlfl(T.word.body.go(cs, True{}, []))),
+        gd.fbl(cs, True{}, [], T.FlStart{}))))
+
+# the specials: true, false, inf and nan, signed or not
+def gd.w.nan(aa: Bool, bb: Bool, cc: Bool) -> {Laws.gd.gok(T.word.spec.nan(aa, bb, cc)) == True{} : Bool}:
+  match aa bb cc:
+    case True{} _b _c:
+      {==}
+    case False{} True{} _c:
+      {==}
+    case False{} False{} True{}:
+      {==}
+    case False{} False{} False{}:
+      {==}
+
+# inf, or nan
+def gd.w.inf(
+  aa: Bool,
+  bb: Bool,
+  cc: Bool,
+  +ss: String
+) -> {Laws.gd.gok(T.word.spec.inf(aa, bb, cc, ss)) == True{} : Bool}:
+  match aa bb cc:
+    case True{} _b _c:
+      {==}
+    case False{} True{} _c:
+      {==}
+    case False{} False{} True{}:
+      {==}
+    case False{} False{} False{}:
+      gd.w.nan(T.str.eq(ss, "nan"), T.str.eq(ss, "+nan"), T.str.eq(ss, "-nan"))
+
+# true, false, or the rest
+def gd.w.st(hit: Bool, other: Bool, +ss: String) -> {Laws.gd.gok(T.word.spec.t(hit, other, ss)) == True{} : Bool}:
+  match hit other:
+    case True{} _o:
+      {==}
+    case False{} True{}:
+      {==}
+    case False{} False{}:
+      gd.w.inf(T.str.eq(ss, "inf"), T.str.eq(ss, "+inf"), T.str.eq(ss, "-inf"), ss)
+
+# every special's value is well-formed
+def gd.w.spec(+ss: String) -> {Laws.gd.gok(T.word.spec(ss)) == True{} : Bool}:
+  gd.w.st(T.str.eq(ss, "true"), T.str.eq(ss, "false"), ss)
+
+# a datetime's value
+def gd.w.when(
+  ww: T.WhenOut,
+  +ee: {gd.wot(ww) == True{} : Bool}
+) -> {Laws.gd.gok(T.word.from.when(ww)) == True{} : Bool}:
+  match ww:
+    case T.WSome{_w}:
+      ee
+    case T.WFail{_why}:
+      {==}
+    case T.WSkip{}:
+      {==}
+
+# a datetime or a numeral
+def gd.w.rdate(dt: Bool, +cs: List<&2, Char>) -> {Laws.gd.gok(T.word.route.date(dt, cs)) == True{} : Bool}:
+  match dt:
+    case True{}:
+      gd.w.when(T.when.read(cs), gd.when(cs))
+    case False{}:
+      gd.num(cs)
+
+# a special's value, or a datetime or a numeral
+def gd.w.route(
+  gg: T.Got,
+  +dt: Bool,
+  +cs: List<&2, Char>,
+  +eg: {Laws.gd.gok(gg) == True{} : Bool}
+) -> {Laws.gd.gok(T.word.route(gg, dt, cs)) == True{} : Bool}:
+  match gg:
+    case T.GotVal{_v}:
+      eg
+    case T.GotBad{_why}:
+      gd.w.rdate(T.word.as_date(dt, T.word.ee(cs)), cs)
+
+# a word that may be special, or not
+def gd.w.pick(special: Bool, +cs: List<&2, Char>) -> {Laws.gd.gok(T.word.val.pick(special, cs)) == True{} : Bool}:
+  match special:
+    case True{}:
+      gd.w.route(T.word.spec(String.from_list(cs)), T.word.or(T.word.colon(cs), T.word.dash(cs, True{})), cs,
+        gd.w.spec(String.from_list(cs)))
+    case False{}:
+      gd.w.route(T.GotBad{""}, T.word.or(T.word.colon(cs), T.word.dash(cs, True{})), cs, {==})
+
+def Laws.gd_word(cs) :
+  gd.w.pick(T.word.lead(cs), cs)
+
+
+# WP-R3: a bare word's states. A bare word ends through word.val (gd_word)
+# and gd_take; the character that ended it is held, or a newline that ended a
+# root value moves the line on.
+
+# a failed step, for any reason
+def gd.g.err2(
+  +st: T.St,
+  +why: String,
+  +eg: {Laws.good(st) == True{} : Bool}
+) -> {Laws.good(T.st.err(st, why)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      match bad:
+        case SNil{}:
+          gd.tt(Laws.gd.tr(why, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HNone{}),
+            gd.ifok.any(String.is_empty(why), Bool.and(T.wf.go(rows, T.WfRows{""}), Laws.gd.vals(stack)),
+              gd.l(Laws.gd.tr("", rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)),
+            gd.lx.mk(here, parts, buf, stack, T.HNone{}, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr("",
+              rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.p(here, parts, buf, stack, hold,
+                gd.r(Laws.gd.tr("", rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.b(here,
+                  parts, buf, stack, hold, gd.r(Laws.gd.tr("", rows, stack), Laws.gd.lx(here, parts, buf, stack,
+                    hold), eg)), gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr("", rows, stack),
+                      Laws.gd.lx(here, parts, buf, stack, hold), eg)), {==}))
+        case SCon{+bh, +bt}:
+          gd.tt(Laws.gd.tr(SCon{bh, bt}, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HNone{}), {==},
+            gd.lx.mk(here, parts, buf, stack, T.HNone{}, gd.lx.h(here, parts, buf, stack, hold,
+              gd.r(Laws.gd.tr(SCon{bh, bt}, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)),
+                gd.lx.p(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(SCon{bh, bt}, rows, stack), Laws.gd.lx(here,
+                  parts, buf, stack, hold), eg)), gd.lx.b(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(SCon{bh, bt},
+                    rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.s(here, parts, buf, stack,
+                      hold, gd.r(Laws.gd.tr(SCon{bh, bt}, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold),
+                        eg)), {==}))
+
+# a value a key may hold is one gd_take may put, whatever the state
+def gd.okv.of(+st: T.St, +vv: T.Val, +ev: {Laws.gd.vok(vv) == True{} : Bool}) -> {Laws.gd.okv(st, vv) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.ifok.any(String.is_empty(bad), Laws.gd.vok(vv), ev)
+
+# a newline that ended a root value moves the line on; any other state stays
+def gd.g.bline.lex(
+  lex: T.Lex,
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool}
+) -> {Laws.good(T.bare.line.lex(lex, st)) == True{} : Bool}:
+  match lex:
+    case T.LTop{}:
+      eg
+    case T.LLine{}:
+      gd.g.lex(st, T.LTop{}, eg)
+    case T.LKey{}:
+      eg
+    case T.LKeyDot{}:
+      eg
+    case T.LAfter{}:
+      eg
+    case T.LKeyQ{}:
+      eg
+    case T.LKeyE{}:
+      eg
+    case T.LKeyU{}:
+      eg
+    case T.LVal{}:
+      eg
+    case T.LQ{}:
+      eg
+    case T.LQ2{}:
+      eg
+    case T.LStr{}:
+      eg
+    case T.LEsc{}:
+      eg
+    case T.LUni{}:
+      eg
+    case T.LFold{}:
+      eg
+    case T.LMq{}:
+      eg
+    case T.LMqEnd{}:
+      eg
+    case T.LTrim{}:
+      eg
+    case T.LTrim2{}:
+      eg
+    case T.LBare{}:
+      eg
+    case T.LDate{}:
+      eg
+    case T.LCom{}:
+      eg
+    case T.LHead{}:
+      eg
+    case T.LHeadGap{}:
+      eg
+    case T.LHeadDot{}:
+      eg
+    case T.LHeadQ{}:
+      eg
+    case T.LHeadE{}:
+      eg
+    case T.LHeadU{}:
+      eg
+    case T.LHeadR{}:
+      eg
+    case T.LArr{}:
+      eg
+    case T.LArrC{}:
+      eg
+    case T.LInl{}:
+      eg
+    case T.LInlK{}:
+      eg
+    case T.LInlC{}:
+      eg
+    case T.LSink{}:
+      eg
+
+# the newline, read off the state
+def gd.g.bline.go(+st: T.St, +eg: {Laws.good(st) == True{} : Bool}) -> {Laws.good(T.bare.line.go(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.bline.lex(lex, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+        lead}, eg)
+
+# a newline, or another delimiter
+def gd.g.bline(
+  nl: Bool,
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool}
+) -> {Laws.good(T.bare.line(st, nl)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      gd.g.bline.go(st, eg)
+    case False{}:
+      eg
+
+# the delimiter held, or not
+def gd.g.bhold(
+  +st: T.St,
+  +cc: Char,
+  hold: Bool,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.bare.hold(st, cc, hold)) == True{} : Bool}:
+  match hold:
+    case False{}:
+      gd.g.bline(T.ch.nl(cc), st, eg)
+    case True{}:
+      gd.g.hold.on(st, cc, eg, ec)
+
+# a bare word's value placed, or its refusal
+def gd.g.bgot(
+  gg: T.Got,
+  +st: T.St,
+  +cc: Char,
+  +hold: Bool,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +ev: {Laws.gd.gok(gg) == True{} : Bool}
+) -> {Laws.good(T.bare.got(gg, st, cc, hold)) == True{} : Bool}:
+  match gg:
+    case T.GotBad{+why}:
+      gd.g.err2(st, why, eg)
+    case T.GotVal{+vv}:
+      gd.g.bhold(T.val.take(st, vv), cc, hold, gd.g.take(st, vv, eg, gd.okv.of(st, vv, ev)), ec)
+
+# a bare word ends: its buffer read as a value
+def gd.g.bfin(
+  +st: T.St,
+  +cc: Char,
+  +hd: Bool,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.bare.finish(st, cc, hd)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.bgot(T.word.val(List.reverse(&2, Char, buf)),
+        T.St{bad, rows, heads, here, parts, [], lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc, hd,
+        gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, [], stack, hold), gd.l(Laws.gd.tr(bad, rows,
+          stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+          gd.lx.mk(here, parts, [], stack, hold, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows,
+            stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.p(here, parts, buf, stack, hold,
+              gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), {==}, gd.lx.s(here,
+                parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold),
+                  eg)), gd.r(Laws.gd.keys(stack), Laws.gd.hold(hold), gd.lx.s1(here, parts, buf, stack, hold,
+                    gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg))))),
+        ec, Laws.gd_word(List.reverse(&2, Char, buf)))
+
+
+# a step of a bare word: bdgo
+def gd.g.bdgo(
+  date: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.bare.date.go(date, st, cc)) == True{} : Bool}:
+  match date:
+    case True{}:
+      gd.g.lex(st, T.LDate{}, eg)
+    case False{}:
+      gd.g.bfin(st, cc, False{}, eg, ec)
+
+
+# a step of a bare word: bdate
+def gd.g.bdate(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.bare.date(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.bdgo(T.date.shaped(buf), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
+        arrtab, lead}, cc, eg, ec)
+
+
+# a step of a bare word: bend
+def gd.g.bend(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.bare.end(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.bfin(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc,
+        T.lex.bare.hold(T.ch.skip(cc), T.ch.nl(cc), T.inl.open(stack)), eg, ec)
+
+
+# a step of a bare word: bsp
+def gd.g.bsp(
+  sp: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.bare.sp(sp, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      gd.g.bdate(st, cc, eg, ec)
+    case False{}:
+      gd.g.bend(st, cc, eg, ec)
+
+
+# a step of a bare word: bgo
+def gd.g.bgo(
+  delim: Bool,
+  +sp: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.bare.go(delim, sp, st, cc)) == True{} : Bool}:
+  match delim:
+    case False{}:
+      gd.g.push(st, cc, T.LBare{}, eg, ec)
+    case True{}:
+      gd.g.bsp(sp, st, cc, eg, ec)
+
+
+# a step of a bare word: datedig
+def gd.g.datedig(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.date.digit(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, cc <> (' ' <> buf), stack, hold),
+        gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+        gd.lx.mk(here, parts, cc <> (' ' <> buf), stack, hold, gd.lx.h(here, parts, buf, stack, hold,
+          gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.p(here, parts,
+            buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)),
+          gd.tt(T.wf.char(cc), Bool.and(T.wf.char(' '), Laws.gd.cs(buf)), ec,
+            gd.tt(T.wf.char(' '), Laws.gd.cs(buf), {==}, gd.lx.b(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad,
+              rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))), gd.lx.s(here, parts, buf, stack, hold,
+                gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)),
+                  gd.r(Laws.gd.keys(stack), Laws.gd.hold(hold), gd.lx.s1(here, parts, buf, stack, hold,
+                    gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))))
+
+
+# a step of a bare word: datego
+def gd.g.datego(
+  digit: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.lex.date.go(digit, st, cc)) == True{} : Bool}:
+  match digit:
+    case True{}:
+      gd.g.datedig(st, cc, eg, ec)
+    case False{}:
+      gd.g.bfin(st, cc, True{}, eg, ec)
+
+
+def Laws.gd_bare_steps(lex, hl, st, eg, cc, ec) :
+  match lex:
+    case T.LTop{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LTop{}, st, cc)) == True{} : Bool}, hl)
+    case T.LLine{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LLine{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKey{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKey{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKeyDot{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKeyDot{}, st, cc)) == True{} : Bool}, hl)
+    case T.LAfter{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LAfter{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKeyQ{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKeyQ{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKeyE{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKeyE{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKeyU{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKeyU{}, st, cc)) == True{} : Bool}, hl)
+    case T.LVal{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LVal{}, st, cc)) == True{} : Bool}, hl)
+    case T.LQ{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LQ{}, st, cc)) == True{} : Bool}, hl)
+    case T.LQ2{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LQ2{}, st, cc)) == True{} : Bool}, hl)
+    case T.LStr{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LStr{}, st, cc)) == True{} : Bool}, hl)
+    case T.LEsc{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LEsc{}, st, cc)) == True{} : Bool}, hl)
+    case T.LUni{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LUni{}, st, cc)) == True{} : Bool}, hl)
+    case T.LFold{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LFold{}, st, cc)) == True{} : Bool}, hl)
+    case T.LMq{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LMq{}, st, cc)) == True{} : Bool}, hl)
+    case T.LMqEnd{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LMqEnd{}, st, cc)) == True{} : Bool}, hl)
+    case T.LTrim{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LTrim{}, st, cc)) == True{} : Bool}, hl)
+    case T.LTrim2{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LTrim2{}, st, cc)) == True{} : Bool}, hl)
+    case T.LBare{}:
+      gd.g.bgo(T.ch.delim(cc), T.ch.sp(cc), st, cc, eg, ec)
+    case T.LDate{}:
+      gd.g.datego(Char.is_digit(cc), st, cc, eg, ec)
+    case T.LCom{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LCom{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHead{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHead{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadGap{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadGap{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadDot{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadDot{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadQ{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadQ{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadE{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadE{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadU{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadU{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadR{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadR{}, st, cc)) == True{} : Bool}, hl)
+    case T.LArr{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LArr{}, st, cc)) == True{} : Bool}, hl)
+    case T.LArrC{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LArrC{}, st, cc)) == True{} : Bool}, hl)
+    case T.LInl{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LInl{}, st, cc)) == True{} : Bool}, hl)
+    case T.LInlK{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LInlK{}, st, cc)) == True{} : Bool}, hl)
+    case T.LInlC{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LInlC{}, st, cc)) == True{} : Bool}, hl)
+    case T.LSink{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LSink{}, st, cc)) == True{} : Bool}, hl)
+
+
+# WP-R3: the dispatch. read.fast keeps a plain character in the buffer or
+# ignores it, and gives every other character, and a held one, to read.on:
+# every state good (gd_header_steps, gd_key_steps, gd_value_steps,
+# gd_bare_steps). A byte-order mark is dropped.
+
+# a state good, as the fast step builds it: good reads no other field
+def gd.gf(
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +stack: List<&2, T.Ctx>
+) -> Bool:
+  Laws.good(T.St{bad, rows, [], here, parts, buf, T.LTop{}, T.LTop{}, T.QBasic{}, stack, T.HNone{}, 0, 0, False{},
+    False{}})
+
+# one character in any state
+def gd.on(
+  lex: T.Lex,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.on(lex, st, cc)) == True{} : Bool}:
+  match lex:
+    case T.LTop{}:
+      Laws.gd_key_steps(T.LTop{}, {==}, st, eg, cc, ec)
+    case T.LLine{}:
+      Laws.gd_key_steps(T.LLine{}, {==}, st, eg, cc, ec)
+    case T.LKey{}:
+      Laws.gd_key_steps(T.LKey{}, {==}, st, eg, cc, ec)
+    case T.LKeyDot{}:
+      Laws.gd_key_steps(T.LKeyDot{}, {==}, st, eg, cc, ec)
+    case T.LAfter{}:
+      Laws.gd_key_steps(T.LAfter{}, {==}, st, eg, cc, ec)
+    case T.LKeyQ{}:
+      Laws.gd_key_steps(T.LKeyQ{}, {==}, st, eg, cc, ec)
+    case T.LKeyE{}:
+      Laws.gd_key_steps(T.LKeyE{}, {==}, st, eg, cc, ec)
+    case T.LKeyU{}:
+      Laws.gd_key_steps(T.LKeyU{}, {==}, st, eg, cc, ec)
+    case T.LVal{}:
+      Laws.gd_value_steps(T.LVal{}, {==}, st, eg, cc, ec)
+    case T.LQ{}:
+      Laws.gd_value_steps(T.LQ{}, {==}, st, eg, cc, ec)
+    case T.LQ2{}:
+      Laws.gd_value_steps(T.LQ2{}, {==}, st, eg, cc, ec)
+    case T.LStr{}:
+      Laws.gd_value_steps(T.LStr{}, {==}, st, eg, cc, ec)
+    case T.LEsc{}:
+      Laws.gd_value_steps(T.LEsc{}, {==}, st, eg, cc, ec)
+    case T.LUni{}:
+      Laws.gd_value_steps(T.LUni{}, {==}, st, eg, cc, ec)
+    case T.LFold{}:
+      Laws.gd_value_steps(T.LFold{}, {==}, st, eg, cc, ec)
+    case T.LMq{}:
+      Laws.gd_value_steps(T.LMq{}, {==}, st, eg, cc, ec)
+    case T.LMqEnd{}:
+      Laws.gd_value_steps(T.LMqEnd{}, {==}, st, eg, cc, ec)
+    case T.LTrim{}:
+      Laws.gd_value_steps(T.LTrim{}, {==}, st, eg, cc, ec)
+    case T.LTrim2{}:
+      Laws.gd_value_steps(T.LTrim2{}, {==}, st, eg, cc, ec)
+    case T.LBare{}:
+      Laws.gd_bare_steps(T.LBare{}, {==}, st, eg, cc, ec)
+    case T.LDate{}:
+      Laws.gd_bare_steps(T.LDate{}, {==}, st, eg, cc, ec)
+    case T.LCom{}:
+      Laws.gd_value_steps(T.LCom{}, {==}, st, eg, cc, ec)
+    case T.LHead{}:
+      Laws.gd_header_steps(T.LHead{}, {==}, st, eg, cc, ec)
+    case T.LHeadGap{}:
+      Laws.gd_header_steps(T.LHeadGap{}, {==}, st, eg, cc, ec)
+    case T.LHeadDot{}:
+      Laws.gd_header_steps(T.LHeadDot{}, {==}, st, eg, cc, ec)
+    case T.LHeadQ{}:
+      Laws.gd_header_steps(T.LHeadQ{}, {==}, st, eg, cc, ec)
+    case T.LHeadE{}:
+      Laws.gd_header_steps(T.LHeadE{}, {==}, st, eg, cc, ec)
+    case T.LHeadU{}:
+      Laws.gd_header_steps(T.LHeadU{}, {==}, st, eg, cc, ec)
+    case T.LHeadR{}:
+      Laws.gd_header_steps(T.LHeadR{}, {==}, st, eg, cc, ec)
+    case T.LArr{}:
+      Laws.gd_value_steps(T.LArr{}, {==}, st, eg, cc, ec)
+    case T.LArrC{}:
+      Laws.gd_value_steps(T.LArrC{}, {==}, st, eg, cc, ec)
+    case T.LInl{}:
+      Laws.gd_value_steps(T.LInl{}, {==}, st, eg, cc, ec)
+    case T.LInlK{}:
+      Laws.gd_value_steps(T.LInlK{}, {==}, st, eg, cc, ec)
+    case T.LInlC{}:
+      Laws.gd_value_steps(T.LInlC{}, {==}, st, eg, cc, ec)
+    case T.LSink{}:
+      Laws.gd_value_steps(T.LSink{}, {==}, st, eg, cc, ec)
+
+# one character, the state read off
+def gd.onst(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.on.st(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.on(lex, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc,
+        eg, ec)
+
+# a byte-order mark is dropped
+def gd.sbom(
+  bom: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.step.bom(bom, st, cc)) == True{} : Bool}:
+  match bom:
+    case True{}:
+      eg
+    case False{}:
+      gd.onst(st, cc, eg, ec)
+
+# the first character may be a byte-order mark
+def gd.slead(
+  lead: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.step.lead(lead, st, cc)) == True{} : Bool}:
+  match lead:
+    case False{}:
+      gd.onst(st, cc, eg, ec)
+    case True{}:
+      gd.sbom(U32.is_eq(Char.to_u32(cc), 65279), st, cc, eg, ec)
+
+# one character of the document by the full step
+def gd.step(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.step(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.slead(lead, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+        False{}},
+        cc, eg, ec)
+
+# a held character is read once
+def gd.ohold(
+  hold: T.Hold,
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +eh: {Laws.gd.hold(hold) == True{} : Bool}
+) -> {Laws.good(T.read.once.hold(hold, st)) == True{} : Bool}:
+  match hold:
+    case T.HNone{}:
+      eg
+    case T.HChar{+c0}:
+      gd.step(st, c0, eg, eh)
+
+# the held character, read off the state
+def gd.once2(+st: T.St, +eg: {Laws.good(st) == True{} : Bool}) -> {Laws.good(T.read.once2(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.ohold(hold, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, T.HNone{}, uni, left, arrtab,
+        lead},
+        gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HNone{}),
+          gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+          gd.lx.mk(here, parts, buf, stack, T.HNone{},
+            gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf,
+              stack,
+              hold), eg)),
+            gd.lx.p(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf,
+              stack,
+              hold), eg)),
+            gd.lx.b(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf,
+              stack,
+              hold), eg)),
+            gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf,
+              stack,
+              hold), eg)),
+            {==})),
+        gd.r(Laws.gd.keys(stack), Laws.gd.hold(hold), gd.lx.s1(here, parts, buf, stack, hold,
+          gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg))))
+
+# one character, then a held one
+def gd.once(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.once(st, cc)) == True{} : Bool}:
+  gd.once2(T.read.step(st, cc), gd.step(st, cc, eg, ec))
+
+
+# the full step, from the fast step's state
+def gd.fold(
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lex: T.Lex,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.old(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  gd.once2(T.read.on.st(T.read.fast.st(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
+    arrtab), cc), gd.onst(T.read.fast.st(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
+      arrtab), cc, eg, ec))
+
+# the character joins the buffer
+def gd.fcons(
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lex: T.Lex,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.cons(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, cc <> buf, stack, T.HNone{}),
+    gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HNone{}), eg),
+    gd.lx.mk(here, parts, cc <> buf, stack, T.HNone{},
+      gd.lx.h(here, parts, buf, stack, T.HNone{}, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack,
+        T.HNone{}), eg)),
+      gd.lx.p(here, parts, buf, stack, T.HNone{}, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack,
+        T.HNone{}), eg)),
+      gd.tt(T.wf.char(cc), Laws.gd.cs(buf), ec, gd.lx.b(here, parts, buf, stack, T.HNone{},
+        gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HNone{}), eg))),
+      gd.lx.s(here, parts, buf, stack, T.HNone{}, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack,
+        T.HNone{}), eg)),
+      {==}))
+
+
+# a control takes the full step; a plain character is kept
+def gd.fpush(
+  ctrl: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lex: T.Lex,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.push(ctrl, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match ctrl:
+    case False{}:
+      gd.fcons(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case True{}:
+      gd.fold(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# a backslash in a basic string takes the full step
+def gd.fbbs(
+  bs: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.basic.bs(bs, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match bs:
+    case True{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QBasic{}, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      gd.fpush(T.str.bad(Char.to_u32(cc), False{}), bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QBasic{},
+        stack, uni, left, arrtab, eg, cc, ec)
+
+
+# a quote in a basic string takes the full step
+def gd.fbasic(
+  quote: Bool,
+  +bs: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.basic(quote, bs, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match quote:
+    case True{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QBasic{}, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      gd.fbbs(bs, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# a quote in a literal string takes the full step
+def gd.flit(
+  quote: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.lit(quote, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match quote:
+    case True{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QLit{}, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      gd.fpush(T.str.bad(Char.to_u32(cc), False{}), bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QLit{},
+        stack, uni, left, arrtab, eg, cc, ec)
+
+
+# one character of a string on the fast step
+def gd.fstr(
+  qkind: T.QKind,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.str(qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match qkind:
+    case T.QBasic{}:
+      gd.fbasic(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), bad, rows, heads, here, parts, buf, back, stack, uni, left,
+        arrtab, eg, cc, ec)
+    case T.QLit{}:
+      gd.flit(Char.is_eq(cc, '\''), bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab, eg, cc, ec)
+    case T.QMulti{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QMulti{}, stack, uni, left, arrtab, eg, cc, ec)
+    case T.QMultiLit{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QMultiLit{}, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# one character of a bare key on the fast step
+def gd.fkey(
+  ok: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.key(ok, bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      gd.fcons(bad, rows, heads, here, parts, buf, T.LKey{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LKey{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# one character of a bare value on the fast step
+def gd.fbare(
+  delim: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.bare(delim, bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match delim:
+    case True{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LBare{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      gd.fcons(bad, rows, heads, here, parts, buf, T.LBare{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# one character of a comment on the fast step
+def gd.fcom(
+  ctl: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.com(ctl, bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match ctl:
+    case True{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      eg
+
+
+# a newline this state ignores
+def gd.fkeep(
+  keep: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lex: T.Lex,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.ws.keep(keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
+  arrtab, cc)) == True{} : Bool}:
+  match keep:
+    case True{}:
+      eg
+    case False{}:
+      gd.fold(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# a newline, or the full step
+def gd.fwsnl(
+  nl: Bool,
+  +keep: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lex: T.Lex,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.ws.nl(nl, keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
+  arrtab, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      gd.fkeep(keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      gd.fold(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# blank space this state ignores
+def gd.fws(
+  sp: Bool,
+  +nl: Bool,
+  +keep: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lex: T.Lex,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.ws(sp, nl, keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
+  arrtab, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      gd.fwsnl(nl, keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# the fast step, by the state
+def gd.flex(
+  lex: T.Lex,
+  +qkind: T.QKind,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.lex(lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match lex:
+    case T.LTop{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), True{}, bad, rows, heads, here, parts, buf, T.LTop{}, back, qkind, stack, uni,
+        left, arrtab, eg, cc, ec)
+    case T.LLine{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, buf, T.LLine{}, back, qkind, stack,
+        uni, left, arrtab, eg, cc, ec)
+    case T.LKey{}:
+      gd.fkey(T.bare.at(cc), bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LKeyDot{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LKeyDot{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LAfter{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, buf, T.LAfter{}, back, qkind, stack,
+        uni, left, arrtab, eg, cc, ec)
+    case T.LKeyQ{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LKeyQ{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LKeyE{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LKeyE{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LKeyU{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LKeyU{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LVal{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, buf, T.LVal{}, back, qkind, stack, uni,
+        left, arrtab, eg, cc, ec)
+    case T.LQ{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LQ{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LQ2{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LQ2{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LStr{}:
+      gd.fstr(qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LEsc{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LEsc{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LUni{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LUni{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LFold{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LFold{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LMq{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LMq{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LMqEnd{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LMqEnd{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LTrim{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LTrim{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LTrim2{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LTrim2{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LBare{}:
+      gd.fbare(T.ch.delim(cc), bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LDate{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LDate{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LCom{}:
+      gd.fcom(T.ch.ctl(cc), bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHead{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHead{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHeadGap{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHeadGap{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHeadDot{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHeadDot{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHeadQ{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHeadQ{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHeadE{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHeadE{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHeadU{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHeadU{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHeadR{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHeadR{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LArr{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), True{}, bad, rows, heads, here, parts, buf, T.LArr{}, back, qkind, stack, uni,
+        left, arrtab, eg, cc, ec)
+    case T.LArrC{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), True{}, bad, rows, heads, here, parts, buf, T.LArrC{}, back, qkind, stack, uni,
+        left, arrtab, eg, cc, ec)
+    case T.LInl{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, buf, T.LInl{}, back, qkind, stack, uni,
+        left, arrtab, eg, cc, ec)
+    case T.LInlK{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, buf, T.LInlK{}, back, qkind, stack,
+        uni, left, arrtab, eg, cc, ec)
+    case T.LInlC{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, buf, T.LInlC{}, back, qkind, stack,
+        uni, left, arrtab, eg, cc, ec)
+    case T.LSink{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LSink{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+# the first character takes the full step
+def gd.flead(
+  lead: Bool,
+  +lex: T.Lex,
+  +qkind: T.QKind,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.lead(lead, lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match lead:
+    case True{}:
+      gd.once(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, T.HNone{}, uni, left, arrtab, True{}},
+        cc, eg, ec)
+    case False{}:
+      gd.flex(lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab, eg, cc, ec)
+
+# a held character takes the full step first
+def gd.fhold(
+  hd: T.Hold,
+  +ld: Bool,
+  +lx: T.Lex,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +eg: {Laws.good(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}) == True{} : Bool}
+) -> {Laws.good(T.read.fast.hold(hd, ld, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+  match hd:
+    case T.HChar{+held}:
+      gd.once(T.read.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, ld}), cc,
+        gd.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, ld}, eg), ec)
+    case T.HNone{}:
+      gd.flead(ld, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc, ec)
+
+# one character by the fast step
+def gd.fast(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.fhold(hold, lead, lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab, cc, ec, eg)
+
+def Laws.gd_fast_step(st, eg, cc, ec) :
+  gd.fast(st, cc, eg, ec)
+
+def Laws.gd_held(st, eg) :
+  gd.once2(st, eg)
+
+
+# WP-R3: the span modes. doc.read reads the text in four modes. A scanning
+# state and one after a carriage return are good states; an opening quote's
+# mode is good as the quote left its state; a plain string's span keeps its
+# first character and its length, and gd.sp ties the span to the text still
+# to read, so each character the span takes is one the text had, a Unicode
+# scalar value. A span that closes is a VSpan whose n characters are scalar
+# values; one copied to the buffer puts scalar values there
+
+# a then that holds holds its first part
+def gd.th.l(aa: Bool, mm: Unit -> Bool, +ee: {T.wf.then(aa, mm) == True{} : Bool}) -> {aa == True{} : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      Eq.bit.absurd(&2, {False{} == True{} : Bool}, ee)
+
+# a then that holds holds its rest
+def gd.th.r(aa: Bool, mm: Unit -> Bool, +ee: {T.wf.then(aa, mm) == True{} : Bool}) -> {mm(Unit{}) == True{} : Bool}:
+  match aa:
+    case True{}:
+      ee
+    case False{}:
+      Eq.bit.absurd(&2, {mm(Unit{}) == True{} : Bool}, ee)
+
+# a Bool whose negation holds is False
+def gd.not.f(bb: Bool, +ee: {Bool.not(bb) == True{} : Bool}) -> {bb == False{} : Bool}:
+  match bb:
+    case True{}:
+      Eq.bit.absurd(&2, {True{} == False{} : Bool}, ee)
+    case False{}:
+      {==}
+
+# a text is as long as itself
+def gd.ln.self(+ss: String) -> {Laws.gd.ln(ss, ss) == True{} : Bool}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{_h, tt}:
+      gd.ln.self(tt)
+
+# taking a borrow from a word and then adding the carry back leaves the word
+def gd.decinc.w(
+  nn: Nat,
+  ww: Word(nn),
+  cc: Bool
+) -> {Word.adc(nn, Word.adc(nn, ww, Word.zero(nn), True{}, cc), Word.zero(nn), False{}, Bool.not(cc)) == ww : Word(nn)}:
+  match nn:
+    case 0n:
+      match ww:
+        case WNil{}:
+          {==}
+    case 1n+pp:
+      match ww:
+        case WCon{bb, +tt}:
+          match bb cc:
+            case False{} False{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{False{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), True{}, False{}), Word.zero(pp), False{}, True{}), tt,
+                gd.decinc.w(pp, tt, False{}))
+            case False{} True{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{False{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), True{}, True{}), Word.zero(pp), False{}, False{}), tt,
+                gd.decinc.w(pp, tt, True{}))
+            case True{} False{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{True{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), True{}, True{}), Word.zero(pp), False{}, False{}), tt,
+                gd.decinc.w(pp, tt, True{}))
+            case True{} True{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{True{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), True{}, True{}), Word.zero(pp), False{}, False{}), tt,
+                gd.decinc.w(pp, tt, True{}))
+
+# one more than one less than a U32 is the U32
+def gd.decinc(xx: U32) -> {U32.add(U32.sub(xx, 1), 1) == xx : U32}:
+  match xx:
+    case U32{ww}:
+      match ww:
+        case WCon{bb, +tt}:
+          match bb:
+            case False{}:
+              Equal.cong(Word(31n), U32, yy => U32{WCon{False{}, yy}},
+                Word.adc(31n, Word.adc(31n, tt, Word.zero(31n), True{}, False{}), Word.zero(31n), False{}, True{}),
+                tt, gd.decinc.w(31n, tt, False{}))
+            case True{}:
+              Equal.cong(Word(31n), U32, yy => U32{WCon{True{}, yy}},
+                Word.adc(31n, Word.adc(31n, tt, Word.zero(31n), True{}, True{}), Word.zero(31n), False{}, False{}),
+                tt, gd.decinc.w(31n, tt, True{}))
+
+# a span as gd.sp keeps it, at the count it has run down to
+def gd.spm(+cut: String, +nn: U32, text: String) -> Bool:
+  Laws.gd.sp(cut, U32.is_zero(nn), nn, text)
+
+# the span one character on, read back at the count it came from
+def gd.spm.back(
+  +cut: String,
+  +nn: U32,
+  +text: String
+) -> {gd.spm(cut, U32.sub(U32.add(nn, 1), 1), text) == gd.spm(cut, nn, text) : Bool}:
+  Equal.cong(U32, Bool, xx => gd.spm(cut, xx, text), U32.sub(U32.add(nn, 1), 1), nn, Eq.sub.inc(nn))
+
+# the span one character back and on again is at its count
+def gd.spm.fwd(
+  +cut: String,
+  +nn: U32,
+  +text: String
+) -> {gd.spm(cut, U32.add(U32.sub(nn, 1), 1), text) == gd.spm(cut, nn, text) : Bool}:
+  Equal.cong(U32, Bool, xx => gd.spm(cut, xx, text), U32.add(U32.sub(nn, 1), 1), nn, gd.decinc(nn))
+
+# a span's rest, where its count has run down
+def gd.sp.end(
+  +ct: String,
+  +nn: U32,
+  +tt: String,
+  +hz: {U32.is_zero(nn) == True{} : Bool},
+  +ee: {Laws.gd.sp(ct, True{}, nn, tt) == True{} : Bool}
+) -> {gd.spm(ct, U32.sub(U32.add(nn, 1), 1), tt) == True{} : Bool}:
+  Equal.trans(Bool, gd.spm(ct, U32.sub(U32.add(nn, 1), 1), tt), gd.spm(ct, nn, tt), True{},
+    gd.spm.back(ct, nn, tt),
+    Equal.trans(Bool, gd.spm(ct, nn, tt), Laws.gd.sp(ct, True{}, nn, tt), True{},
+      Equal.cong(Bool, Bool, zz => Laws.gd.sp(ct, zz, nn, tt), U32.is_zero(nn), True{}, hz), ee))
+
+# a span's rest of scalar values, as long as the text, where its count has run down
+def gd.sp.full(
+  +ct: String,
+  +nn: U32,
+  +tt: String,
+  +ew: {T.wf.text(ct) == True{} : Bool},
+  +el: {Laws.gd.ln(ct, tt) == True{} : Bool}
+) -> {Laws.gd.sp(ct, True{}, nn, tt) == True{} : Bool}:
+  match ct:
+    case SNil{}:
+      gd.tt(T.wf.text(SNil{}), Laws.gd.ln(SNil{}, tt), {==}, el)
+    case SCon{+dh, +dt}:
+      gd.tt(T.wf.text(SCon{dh, dt}), Laws.gd.ln(SCon{dh, dt}, tt), ew, el)
+
+# the rest of a span whose count has run down: scalar values, as long as the text
+def gd.sp.rest(
+  +ct: String,
+  +nn: U32,
+  +tt: String,
+  +ch: Char,
+  +ee: {Bool.and(T.wf.then(T.wf.char(ch), _u => T.wf.text(ct)), Laws.gd.ln(ct, tt)) == True{} : Bool}
+) -> {Laws.gd.sp(ct, True{}, nn, tt) == True{} : Bool}:
+  match ct:
+    case SNil{}:
+      gd.tt(T.wf.text(SNil{}), Laws.gd.ln(SNil{}, tt), {==},
+        gd.r(T.wf.then(T.wf.char(ch), _u => T.wf.text(SNil{})), Laws.gd.ln(SNil{}, tt), ee))
+    case SCon{+dh, +dt}:
+      gd.tt(T.wf.text(SCon{dh, dt}), Laws.gd.ln(SCon{dh, dt}, tt),
+        gd.th.r(T.wf.char(ch), _u => T.wf.text(SCon{dh, dt}),
+          gd.l(T.wf.then(T.wf.char(ch), _u => T.wf.text(SCon{dh, dt})), Laws.gd.ln(SCon{dh, dt}, tt), ee)),
+        gd.r(T.wf.then(T.wf.char(ch), _u => T.wf.text(SCon{dh, dt})), Laws.gd.ln(SCon{dh, dt}, tt), ee))
+
+# a span takes the text's next character: its count goes up by one, and the
+# span still reaches the text after that character
+def gd.sp.inc(
+  cut: String,
+  zz: Bool,
+  +nn: U32,
+  +hh: Char,
+  +tt: String,
+  +hz: {U32.is_zero(nn) == zz : Bool},
+  +en: {U32.is_zero(U32.add(nn, 1)) == False{} : Bool},
+  +ep: {Laws.gd.sp(cut, zz, nn, SCon{hh, tt}) == True{} : Bool}
+) -> {gd.spm(cut, U32.add(nn, 1), tt) == True{} : Bool}:
+  match cut:
+    case SNil{}:
+      match zz:
+        case True{}:
+          Eq.bit.absurd(&2, {gd.spm(SNil{}, U32.add(nn, 1), tt) == True{} : Bool}, ep)
+        case False{}:
+          Eq.bit.absurd(&2, {gd.spm(SNil{}, U32.add(nn, 1), tt) == True{} : Bool}, ep)
+    case SCon{+ch, +ct}:
+      match zz:
+        case True{}:
+          Equal.trans(Bool, gd.spm(SCon{ch, ct}, U32.add(nn, 1), tt),
+            Laws.gd.sp(SCon{ch, ct}, False{}, U32.add(nn, 1), tt), True{},
+            Equal.cong(Bool, Bool, yy => Laws.gd.sp(SCon{ch, ct}, yy, U32.add(nn, 1), tt),
+              U32.is_zero(U32.add(nn, 1)), False{}, en),
+            gd.tt(T.wf.char(ch), gd.spm(ct, U32.sub(U32.add(nn, 1), 1), tt),
+              gd.th.l(T.wf.char(ch), _u => T.wf.text(ct),
+                gd.l(T.wf.then(T.wf.char(ch), _u => T.wf.text(ct)), Laws.gd.ln(ct, tt), ep)),
+              gd.sp.end(ct, nn, tt, hz, gd.sp.rest(ct, nn, tt, ch, ep))))
+        case False{}:
+          Equal.trans(Bool, gd.spm(SCon{ch, ct}, U32.add(nn, 1), tt),
+            Laws.gd.sp(SCon{ch, ct}, False{}, U32.add(nn, 1), tt), True{},
+            Equal.cong(Bool, Bool, yy => Laws.gd.sp(SCon{ch, ct}, yy, U32.add(nn, 1), tt),
+              U32.is_zero(U32.add(nn, 1)), False{}, en),
+            gd.tt(T.wf.char(ch), gd.spm(ct, U32.sub(U32.add(nn, 1), 1), tt),
+              gd.l(T.wf.char(ch), gd.spm(ct, U32.sub(nn, 1), SCon{hh, tt}), ep),
+              Equal.trans(Bool, gd.spm(ct, U32.sub(U32.add(nn, 1), 1), tt), gd.spm(ct, nn, tt), True{},
+                gd.spm.back(ct, nn, tt),
+                Equal.trans(Bool, gd.spm(ct, nn, tt), gd.spm(ct, U32.add(U32.sub(nn, 1), 1), tt), True{},
+                  Equal.sym(Bool, gd.spm(ct, U32.add(U32.sub(nn, 1), 1), tt), gd.spm(ct, nn, tt),
+                    gd.spm.fwd(ct, nn, tt)),
+                  gd.sp.inc(ct, U32.is_zero(U32.sub(nn, 1)), U32.sub(nn, 1), hh, tt, {==},
+                    Equal.trans(Bool, U32.is_zero(U32.add(U32.sub(nn, 1), 1)), U32.is_zero(nn), False{},
+                      Equal.cong(U32, Bool, xx => U32.is_zero(xx), U32.add(U32.sub(nn, 1), 1), nn, gd.decinc(nn)),
+                      hz),
+                    gd.r(T.wf.char(ch), gd.spm(ct, U32.sub(nn, 1), SCon{hh, tt}), ep))))))
+
+# a span kept as gd.sp keeps it is a well-formed span
+def gd.sp.wf(
+  cut: String,
+  zz: Bool,
+  +nn: U32,
+  +text: String,
+  +ep: {Laws.gd.sp(cut, zz, nn, text) == True{} : Bool}
+) -> {T.wf.span(cut, nn, zz) == True{} : Bool}:
+  match cut:
+    case SNil{}:
+      match zz:
+        case True{}:
+          {==}
+        case False{}:
+          Eq.bit.absurd(&2, {T.wf.span(SNil{}, nn, False{}) == True{} : Bool}, ep)
+    case SCon{+ch, +ct}:
+      match zz:
+        case True{}:
+          {==}
+        case False{}:
+          gd.then(T.wf.char(ch), _u => T.wf.span(ct, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1))),
+            gd.l(T.wf.char(ch), gd.spm(ct, U32.sub(nn, 1), text), ep),
+            gd.sp.wf(ct, U32.is_zero(U32.sub(nn, 1)), U32.sub(nn, 1), text,
+              gd.r(T.wf.char(ch), gd.spm(ct, U32.sub(nn, 1), text), ep)))
+
+# a span copied to the buffer, reversed onto scalar values, is scalar values
+def gd.sp.rev(
+  cut: String,
+  zz: Bool,
+  +nn: U32,
+  +text: String,
+  +acc: List<&2, Char>,
+  +ep: {Laws.gd.sp(cut, zz, nn, text) == True{} : Bool},
+  +ea: {Laws.gd.cs(acc) == True{} : Bool}
+) -> {Laws.gd.cs(T.span.rev(cut, nn, zz, acc)) == True{} : Bool}:
+  match cut:
+    case SNil{}:
+      match zz:
+        case True{}:
+          ea
+        case False{}:
+          ea
+    case SCon{+ch, +ct}:
+      match zz:
+        case True{}:
+          ea
+        case False{}:
+          gd.sp.rev(ct, U32.is_zero(U32.sub(nn, 1)), U32.sub(nn, 1), text, ch <> acc,
+            gd.r(T.wf.char(ch), gd.spm(ct, U32.sub(nn, 1), text), ep),
+            gd.tt(T.wf.char(ch), Laws.gd.cs(acc), gd.l(T.wf.char(ch), gd.spm(ct, U32.sub(nn, 1), text), ep), ea))
+
+def Laws.gd_span_wf(cut, nn, text, ep) :
+  gd.sp.wf(cut, U32.is_zero(nn), nn, text, ep)
+
+def Laws.gd_next(mode, _hh, _tt):
+  match mode:
+    case T.MOpen{_b, _q, _k, _bd, _rw, _hs, _he, _pt, _bf, _bk, _sk, _un, _lf, _at}:
+      {==}
+    case T.MEat{_b, _q, _c, _n, _bd, _rw, _hs, _he, _pt, _k, _sk, _un, _lf, _at}:
+      {==}
+    case T.MScan{_st}:
+      {==}
+    case T.MCr{_st}:
+      {==}
+
+
+# a quote's state: a one-line string opens a span unless a character is held
+# or it is the first character; every other state scans on
+def gd.wlex(
+  lx: T.Lex,
+  hd: T.Hold,
+  ld: Bool,
+  qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tl: String,
+  +eg: {Laws.good(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.wrap.lex(lx, bd, rw, hs, he, pt, bf, bk, qk, sk, hd, un, lf, at, ld), tl) == True{} : Bool}:
+  match lx:
+    case T.LTop{}:
+      eg
+    case T.LLine{}:
+      eg
+    case T.LKey{}:
+      eg
+    case T.LKeyDot{}:
+      eg
+    case T.LAfter{}:
+      eg
+    case T.LKeyQ{}:
+      eg
+    case T.LKeyE{}:
+      eg
+    case T.LKeyU{}:
+      eg
+    case T.LVal{}:
+      eg
+    case T.LQ{}:
+      match hd:
+        case T.HChar{_held}:
+          eg
+        case T.HNone{}:
+          match ld:
+            case True{}:
+              eg
+            case False{}:
+              match qk:
+                case T.QBasic{}:
+                  eg
+                case T.QLit{}:
+                  eg
+                case T.QMulti{}:
+                  eg
+                case T.QMultiLit{}:
+                  eg
+    case T.LQ2{}:
+      eg
+    case T.LStr{}:
+      eg
+    case T.LEsc{}:
+      eg
+    case T.LUni{}:
+      eg
+    case T.LFold{}:
+      eg
+    case T.LMq{}:
+      eg
+    case T.LMqEnd{}:
+      eg
+    case T.LTrim{}:
+      eg
+    case T.LTrim2{}:
+      eg
+    case T.LBare{}:
+      eg
+    case T.LDate{}:
+      eg
+    case T.LCom{}:
+      eg
+    case T.LHead{}:
+      eg
+    case T.LHeadGap{}:
+      eg
+    case T.LHeadDot{}:
+      eg
+    case T.LHeadQ{}:
+      eg
+    case T.LHeadE{}:
+      eg
+    case T.LHeadU{}:
+      eg
+    case T.LHeadR{}:
+      eg
+    case T.LArr{}:
+      eg
+    case T.LArrC{}:
+      eg
+    case T.LInl{}:
+      eg
+    case T.LInlK{}:
+      eg
+    case T.LInlC{}:
+      eg
+    case T.LSink{}:
+      eg
+
+# a state a quote may have opened a string in
+def gd.wrap(
+  +st: T.St,
+  +tl: String,
+  +eg: {Laws.good(st) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.wrap(st), tl) == True{} : Bool}:
+  match st:
+    case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +hd, +un, +lf, +at, +ld}:
+      gd.wlex(lx, hd, ld, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, tl, eg)
+
+# a carriage return, or another character
+def gd.scr(
+  cr: Bool,
+  +st: T.St,
+  +cc: Char,
+  +tl: String,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.scan.cr(cr, st, cc), tl) == True{} : Bool}:
+  match cr:
+    case True{}:
+      gd.fast(st, cc, eg, ec)
+    case False{}:
+      gd.fast(st, cc, eg, ec)
+
+# an apostrophe, or another character
+def gd.ssq(
+  sq: Bool,
+  +cr: Bool,
+  +st: T.St,
+  +cc: Char,
+  +tl: String,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.scan.sq(sq, cr, st, cc), tl) == True{} : Bool}:
+  match sq:
+    case True{}:
+      gd.wrap(T.read.fast(st, cc), tl, gd.fast(st, cc, eg, ec))
+    case False{}:
+      gd.scr(cr, st, cc, tl, eg, ec)
+
+# a quote, or another character
+def gd.sdq(
+  dq: Bool,
+  +sq: Bool,
+  +cr: Bool,
+  +st: T.St,
+  +cc: Char,
+  +tl: String,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.scan.q(dq, sq, cr, st, cc), tl) == True{} : Bool}:
+  match dq:
+    case True{}:
+      gd.wrap(T.read.fast(st, cc), tl, gd.fast(st, cc, eg, ec))
+    case False{}:
+      gd.ssq(sq, cr, st, cc, tl, eg, ec)
+
+# a line feed after a carriage return, or the error
+def gd.dcr(
+  lf: Bool,
+  +st: T.St,
+  +cc: Char,
+  +tl: String,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.cr(lf, st, cc), tl) == True{} : Bool}:
+  match lf:
+    case True{}:
+      gd.fast(st, cc, eg, ec)
+    case False{}:
+      gd.g.err2(st, "carriage return without line feed", eg)
+
+
+# an empty buffer starts a span at this character; a buffer in use goes the
+# old way
+def gd.obuf(
+  bf: List<&2, Char>,
+  +ba: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tl: String,
+  +eg: {gd.gf(bd, rw, he, pt, bf, sk) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +et: {T.wf.text(tl) == True{} : Bool},
+  +es: {Laws.short(SCon{cc, tl}) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.open.buf(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl) == True{} : Bool}:
+  match bf:
+    case []:
+      gd.tt(gd.gf(bd, rw, he, pt, [], sk), Bool.and(gd.spm(SCon{cc, tl}, 1, tl), Laws.counts(tl, 1)), eg,
+        gd.tt(gd.spm(SCon{cc, tl}, 1, tl), Laws.counts(tl, 1),
+          gd.tt(T.wf.char(cc), Laws.gd.sp(tl, True{}, 0, tl), ec, gd.sp.full(tl, 0, tl, et, gd.ln.self(tl))),
+          gd.r(Bool.not(U32.is_zero(1)), Laws.counts(tl, 1), es)))
+    case +bh <> +bt:
+      gd.flex(T.LQ{}, qk, bd, rw, hs, he, pt, bh <> bt, bk, sk, un, lf, at, eg, cc, ec)
+
+
+# a forbidden control goes the old way; any other starts a span
+def gd.ook(
+  badc: Bool,
+  +ba: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tl: String,
+  +eg: {gd.gf(bd, rw, he, pt, bf, sk) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +et: {T.wf.text(tl) == True{} : Bool},
+  +es: {Laws.short(SCon{cc, tl}) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.open.ok(badc, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl),
+  tl) == True{} : Bool}:
+  match badc:
+    case True{}:
+      gd.flex(T.LQ{}, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc, ec)
+    case False{}:
+      gd.obuf(bf, ba, qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, cc, tl, eg, ec, et, es)
+
+
+# a backslash in a basic string goes the old way
+def gd.obs(
+  bs: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tl: String,
+  +eg: {gd.gf(bd, rw, he, pt, bf, sk) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +et: {T.wf.text(tl) == True{} : Bool},
+  +es: {Laws.short(SCon{cc, tl}) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.open.bs(bs, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl) == True{} : Bool}:
+  match bs:
+    case True{}:
+      gd.flex(T.LQ{}, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc, ec)
+    case False{}:
+      gd.ook(T.str.bad(Char.to_u32(cc), False{}), True{}, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl,
+        eg, ec, et, es)
+
+
+# a literal string keeps a backslash; a basic string does not
+def gd.ob(
+  ba: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tl: String,
+  +eg: {gd.gf(bd, rw, he, pt, bf, sk) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +et: {T.wf.text(tl) == True{} : Bool},
+  +es: {Laws.short(SCon{cc, tl}) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.open.b(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl) == True{} : Bool}:
+  match ba:
+    case False{}:
+      gd.ook(T.str.bad(Char.to_u32(cc), False{}), False{}, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl,
+        eg, ec, et, es)
+    case True{}:
+      gd.obs(Char.is_eq(cc, '\\'), qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl, eg, ec, et, es)
+
+
+# a second quote goes the old way
+def gd.oq(
+  same: Bool,
+  +ba: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tl: String,
+  +eg: {gd.gf(bd, rw, he, pt, bf, sk) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +et: {T.wf.text(tl) == True{} : Bool},
+  +es: {Laws.short(SCon{cc, tl}) == True{} : Bool}
+) -> {Laws.gd.md(T.doc.open.q(same, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl),
+  tl) == True{} : Bool}:
+  match same:
+    case True{}:
+      gd.flex(T.LQ{}, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc, ec)
+    case False{}:
+      gd.ob(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl, eg, ec, et, es)
+
+
+# the span copied to the buffer, and the character read the old way
+def gd.ecopy(
+  +ct: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +hh: Char,
+  +tt: String,
+  +eg: {gd.gf(bd, rw, he, pt, [], sk) == True{} : Bool},
+  +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +eh: {T.wf.char(hh) == True{} : Bool},
+  _en: {Laws.counts(SCon{hh, tt}, nn) == True{} : Bool}
+) -> {Laws.gd.md(T.eat.copy(hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+  gd.g.str(T.St{bd, rw, hs, he, pt, T.span.rev(ct, nn, U32.is_zero(nn), []), T.LStr{}, T.LStr{}, qk, sk, T.HNone{},
+    un, lf, at, False{}}, hh,
+    gd.tt(Laws.gd.tr(bd, rw, sk), Laws.gd.lx(he, pt, T.span.rev(ct, nn, U32.is_zero(nn), []), sk, T.HNone{}),
+      gd.l(Laws.gd.tr(bd, rw, sk), Laws.gd.lx(he, pt, [], sk, T.HNone{}), eg),
+      gd.lx.mk(he, pt, T.span.rev(ct, nn, U32.is_zero(nn), []), sk, T.HNone{}, gd.lx.h(he, pt, [], sk, T.HNone{},
+        gd.r(Laws.gd.tr(bd, rw, sk), Laws.gd.lx(he, pt, [], sk, T.HNone{}), eg)), gd.lx.p(he, pt, [], sk, T.HNone{},
+          gd.r(Laws.gd.tr(bd, rw, sk), Laws.gd.lx(he, pt, [], sk, T.HNone{}), eg)),
+        gd.sp.rev(ct, U32.is_zero(nn), nn, SCon{hh, tt}, [], ep, {==}), gd.lx.s(he, pt, [], sk, T.HNone{},
+          gd.r(Laws.gd.tr(bd, rw, sk), Laws.gd.lx(he, pt, [], sk, T.HNone{}), eg)), {==})),
+    eh)
+
+# the span one character longer
+def gd.emore(
+  +ba: Bool,
+  +qq: Char,
+  +ct: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +hh: Char,
+  +tt: String,
+  +eg: {gd.gf(bd, rw, he, pt, [], sk) == True{} : Bool},
+  +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +en: {Laws.counts(SCon{hh, tt}, nn) == True{} : Bool}
+) -> {Laws.gd.md(T.MEat{ba, qq, ct, U32.add(nn, 1), bd, rw, hs, he, pt, qk, sk, un, lf, at}, tt) == True{} : Bool}:
+  gd.tt(gd.gf(bd, rw, he, pt, [], sk), Bool.and(gd.spm(ct, U32.add(nn, 1), tt), Laws.counts(tt, U32.add(nn, 1))), eg,
+    gd.tt(gd.spm(ct, U32.add(nn, 1), tt), Laws.counts(tt, U32.add(nn, 1)),
+      gd.sp.inc(ct, U32.is_zero(nn), nn, hh, tt, {==},
+        gd.not.f(U32.is_zero(U32.add(nn, 1)),
+          gd.l(Bool.not(U32.is_zero(U32.add(nn, 1))), Laws.counts(tt, U32.add(nn, 1)), en)),
+        ep),
+      gd.r(Bool.not(U32.is_zero(U32.add(nn, 1))), Laws.counts(tt, U32.add(nn, 1)), en)))
+
+
+# a forbidden control copies the span; a plain character extends it
+def gd.ectrl(
+  badc: Bool,
+  +ba: Bool,
+  +qq: Char,
+  +ct: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +hh: Char,
+  +tt: String,
+  +eg: {gd.gf(bd, rw, he, pt, [], sk) == True{} : Bool},
+  +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +en: {Laws.counts(SCon{hh, tt}, nn) == True{} : Bool},
+  +eh: {T.wf.char(hh) == True{} : Bool}
+) -> {Laws.gd.md(T.eat.ctrl(badc, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+  match badc:
+    case True{}:
+      gd.ecopy(ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, en)
+    case False{}:
+      gd.emore(ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, en)
+
+
+# a backslash in a basic string copies the span
+def gd.ebs(
+  bs: Bool,
+  +ba: Bool,
+  +qq: Char,
+  +ct: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +hh: Char,
+  +tt: String,
+  +eg: {gd.gf(bd, rw, he, pt, [], sk) == True{} : Bool},
+  +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +en: {Laws.counts(SCon{hh, tt}, nn) == True{} : Bool},
+  +eh: {T.wf.char(hh) == True{} : Bool}
+) -> {Laws.gd.md(T.eat.bs(bs, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+  match bs:
+    case True{}:
+      gd.ecopy(ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, en)
+    case False{}:
+      gd.ectrl(T.str.bad(Char.to_u32(hh), False{}), ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt,
+        eg, ep, en, eh)
+
+
+# a literal string's character, or a basic string's
+def gd.ebasic(
+  ba: Bool,
+  +qq: Char,
+  +ct: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +hh: Char,
+  +tt: String,
+  +eg: {gd.gf(bd, rw, he, pt, [], sk) == True{} : Bool},
+  +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +en: {Laws.counts(SCon{hh, tt}, nn) == True{} : Bool},
+  +eh: {T.wf.char(hh) == True{} : Bool}
+) -> {Laws.gd.md(T.eat.basic(ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+  match ba:
+    case False{}:
+      gd.ectrl(T.str.bad(Char.to_u32(hh), False{}), False{}, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh,
+        tt, eg, ep, en, eh)
+    case True{}:
+      gd.ebs(Char.is_eq(hh, '\\'), True{}, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, en, eh)
+
+
+# the quote closes the span as a VSpan; any other character goes on
+def gd.eq(
+  quote: Bool,
+  +ba: Bool,
+  +qq: Char,
+  +ct: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +hh: Char,
+  +tt: String,
+  +eg: {gd.gf(bd, rw, he, pt, [], sk) == True{} : Bool},
+  +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +en: {Laws.counts(SCon{hh, tt}, nn) == True{} : Bool},
+  +eh: {T.wf.char(hh) == True{} : Bool}
+) -> {Laws.gd.md(T.eat.feed.q(quote, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+  match quote:
+    case True{}:
+      gd.g.take(T.St{bd, rw, hs, he, pt, [], T.LStr{}, T.LStr{}, qk, sk, T.HNone{}, un, lf, at, False{}},
+        T.VSpan{ct, nn}, eg,
+        gd.okv.of(T.St{bd, rw, hs, he, pt, [], T.LStr{}, T.LStr{}, qk, sk, T.HNone{}, un, lf, at, False{}},
+          T.VSpan{ct, nn}, Laws.gd_span_wf(ct, nn, SCon{hh, tt}, ep)))
+    case False{}:
+      gd.ebasic(ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, en, eh)
+
+
+def Laws.gd_mode_step(mode, hh, tt, em, eh, et, es) :
+  match mode:
+    case T.MOpen{+ba, +qq, +qk, +bd, +rw, +hs, +he, +pt, +bf, +bk, +sk, +un, +lf, +at}:
+      gd.oq(Char.is_eq(hh, qq), ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, hh, tt, em, eh, et, es)
+    case T.MEat{+ba, +qq, +ct, +nn, +bd, +rw, +hs, +he, +pt, +qk, +sk, +un, +lf, +at}:
+      gd.eq(Char.is_eq(hh, qq), ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt,
+        gd.l(gd.gf(bd, rw, he, pt, [], sk), Bool.and(gd.spm(ct, nn, SCon{hh, tt}), Laws.counts(SCon{hh, tt}, nn)), em),
+        gd.l(gd.spm(ct, nn, SCon{hh, tt}), Laws.counts(SCon{hh, tt}, nn),
+          gd.r(gd.gf(bd, rw, he, pt, [], sk), Bool.and(gd.spm(ct, nn, SCon{hh, tt}), Laws.counts(SCon{hh, tt}, nn)),
+            em)),
+        gd.r(gd.spm(ct, nn, SCon{hh, tt}), Laws.counts(SCon{hh, tt}, nn),
+          gd.r(gd.gf(bd, rw, he, pt, [], sk), Bool.and(gd.spm(ct, nn, SCon{hh, tt}), Laws.counts(SCon{hh, tt}, nn)),
+            em)),
+        eh)
+    case T.MScan{+st}:
+      gd.sdq(Char.is_eq(hh, '"'), Char.is_eq(hh, '\''), U32.is_eq(Char.to_u32(hh), 13), st, hh, tt, em, eh)
+    case T.MCr{+st}:
+      gd.dcr(Char.is_eq(hh, '\n'), st, hh, tt, em, eh)
+
+
+# WP-R3: the induction over the text. Each character keeps doc.read's mode
+# good (gd_mode_step); the text runs out in a scanning state, one after a
+# carriage return, or an opening quote's, whose token is closed and held
+# character read before gd_fin seals it, or in a string's span, which is an
+# error. Every end that is not an error is well-formed
+
+# counting from one more without wrapping counts from one less too
+def gd.cm(
+  ss: String,
+  +mm: U32,
+  +hz: {U32.is_zero(U32.add(mm, 1)) == False{} : Bool},
+  +hc: {Laws.counts(ss, U32.add(mm, 1)) == True{} : Bool}
+) -> {Laws.counts(ss, mm) == True{} : Bool}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{_h, +st}:
+      gd.tt(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(st, U32.add(mm, 1)),
+        Equal.cong(Bool, Bool, bb => Bool.not(bb), U32.is_zero(U32.add(mm, 1)), False{}, hz),
+        gd.cm(st, U32.add(mm, 1),
+          gd.not.f(U32.is_zero(U32.add(U32.add(mm, 1), 1)),
+            gd.l(Bool.not(U32.is_zero(U32.add(U32.add(mm, 1), 1))), Laws.counts(st, U32.add(U32.add(mm, 1), 1)), hc)),
+          gd.r(Bool.not(U32.is_zero(U32.add(U32.add(mm, 1), 1))), Laws.counts(st, U32.add(U32.add(mm, 1), 1)), hc)))
+
+# the rest of a short text is short
+def gd.short.tail(
+  +hh: Char,
+  +tt: String,
+  +es: {Laws.short(SCon{hh, tt}) == True{} : Bool}
+) -> {Laws.short(tt) == True{} : Bool}:
+  gd.cm(tt, 0, {==}, gd.r(Bool.not(U32.is_zero(1)), Laws.counts(tt, 1), es))
+
+# an unfinished document is an error, so a document with no error is not one
+def gd.unc(
+  +st: T.St,
+  +eo: {String.is_empty(T.bad(T.read.fin.unclosed(st))) == True{} : Bool}
+) -> {T.wf(T.read.fin.unclosed(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +hd, +un, +lf, +at, +ld}:
+      match bd:
+        case SNil{}:
+          Eq.bit.absurd(&2, {T.wf(T.read.fin.unclosed(T.St{"", rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at,
+            ld})) == True{} : Bool}, eo)
+        case SCon{+bh, +bt}:
+          Eq.bit.absurd(&2, {T.wf(T.read.fin.unclosed(T.St{SCon{bh, bt}, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un,
+            lf, at, ld})) == True{} : Bool}, eo)
+
+# a token still open at the end is closed: a bare word read as a value, an
+# empty string or a multiline string placed
+def gd.rlex(
+  lx: T.Lex,
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool}
+) -> {Laws.good(T.read.fin.lex(lx, st)) == True{} : Bool}:
+  match lx:
+    case T.LTop{}:
+      eg
+    case T.LLine{}:
+      eg
+    case T.LKey{}:
+      eg
+    case T.LKeyDot{}:
+      eg
+    case T.LAfter{}:
+      eg
+    case T.LKeyQ{}:
+      eg
+    case T.LKeyE{}:
+      eg
+    case T.LKeyU{}:
+      eg
+    case T.LVal{}:
+      eg
+    case T.LQ{}:
+      eg
+    case T.LQ2{}:
+      gd.g.take(st, T.VStr{""}, eg, gd.okv.of(st, T.VStr{""}, {==}))
+    case T.LStr{}:
+      eg
+    case T.LEsc{}:
+      eg
+    case T.LUni{}:
+      eg
+    case T.LFold{}:
+      eg
+    case T.LMq{}:
+      eg
+    case T.LMqEnd{}:
+      gd.g.strfin(st, eg)
+    case T.LTrim{}:
+      eg
+    case T.LTrim2{}:
+      eg
+    case T.LBare{}:
+      gd.g.bfin(st, ' ', False{}, eg, {==})
+    case T.LDate{}:
+      gd.g.bfin(st, ' ', False{}, eg, {==})
+    case T.LCom{}:
+      eg
+    case T.LHead{}:
+      eg
+    case T.LHeadGap{}:
+      eg
+    case T.LHeadDot{}:
+      eg
+    case T.LHeadQ{}:
+      eg
+    case T.LHeadE{}:
+      eg
+    case T.LHeadU{}:
+      eg
+    case T.LHeadR{}:
+      eg
+    case T.LArr{}:
+      eg
+    case T.LArrC{}:
+      eg
+    case T.LInl{}:
+      eg
+    case T.LInlK{}:
+      eg
+    case T.LInlC{}:
+      eg
+    case T.LSink{}:
+      eg
+
+# the end's token closed, read off the state
+def gd.rclose(+st: T.St, +eg: {Laws.good(st) == True{} : Bool}) -> {Laws.good(T.read.fin.close(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +hd, +un, +lf, +at, +ld}:
+      gd.rlex(lx, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, eg)
+
+# a comment at the end ends the document where the line could, and is an
+# error anywhere else
+def gd.rcom(
+  ok: Bool,
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +eo: {String.is_empty(T.bad(T.read.fin.com(ok, st))) == True{} : Bool}
+) -> {T.wf(T.read.fin.com(ok, st)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      Laws.gd_fin(st, eg, eo)
+    case False{}:
+      gd.unc(st, eo)
+
+# a comment at the end, read off the state
+def gd.rcomst(
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +eo: {String.is_empty(T.bad(T.read.fin.com.st(st))) == True{} : Bool}
+) -> {T.wf(T.read.fin.com.st(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +hd, +un, +lf, +at, +ld}:
+      gd.rcom(T.read.fin.end(bk), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, eg, eo)
+
+# the states that may end a document end it; any other is an error
+def gd.rok(
+  lx: T.Lex,
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +eo: {String.is_empty(T.bad(T.read.fin.ok(lx, st))) == True{} : Bool}
+) -> {T.wf(T.read.fin.ok(lx, st)) == True{} : Bool}:
+  match lx:
+    case T.LTop{}:
+      Laws.gd_fin(st, eg, eo)
+    case T.LLine{}:
+      Laws.gd_fin(st, eg, eo)
+    case T.LKey{}:
+      gd.unc(st, eo)
+    case T.LKeyDot{}:
+      gd.unc(st, eo)
+    case T.LAfter{}:
+      gd.unc(st, eo)
+    case T.LKeyQ{}:
+      gd.unc(st, eo)
+    case T.LKeyE{}:
+      gd.unc(st, eo)
+    case T.LKeyU{}:
+      gd.unc(st, eo)
+    case T.LVal{}:
+      gd.unc(st, eo)
+    case T.LQ{}:
+      gd.unc(st, eo)
+    case T.LQ2{}:
+      gd.unc(st, eo)
+    case T.LStr{}:
+      gd.unc(st, eo)
+    case T.LEsc{}:
+      gd.unc(st, eo)
+    case T.LUni{}:
+      gd.unc(st, eo)
+    case T.LFold{}:
+      gd.unc(st, eo)
+    case T.LMq{}:
+      gd.unc(st, eo)
+    case T.LMqEnd{}:
+      gd.unc(st, eo)
+    case T.LTrim{}:
+      gd.unc(st, eo)
+    case T.LTrim2{}:
+      gd.unc(st, eo)
+    case T.LBare{}:
+      gd.unc(st, eo)
+    case T.LDate{}:
+      gd.unc(st, eo)
+    case T.LCom{}:
+      gd.rcomst(st, eg, eo)
+    case T.LHead{}:
+      gd.unc(st, eo)
+    case T.LHeadGap{}:
+      gd.unc(st, eo)
+    case T.LHeadDot{}:
+      gd.unc(st, eo)
+    case T.LHeadQ{}:
+      gd.unc(st, eo)
+    case T.LHeadE{}:
+      gd.unc(st, eo)
+    case T.LHeadU{}:
+      gd.unc(st, eo)
+    case T.LHeadR{}:
+      gd.unc(st, eo)
+    case T.LArr{}:
+      gd.unc(st, eo)
+    case T.LArrC{}:
+      gd.unc(st, eo)
+    case T.LInl{}:
+      gd.unc(st, eo)
+    case T.LInlK{}:
+      gd.unc(st, eo)
+    case T.LInlC{}:
+      gd.unc(st, eo)
+    case T.LSink{}:
+      Laws.gd_fin(st, eg, eo)
+
+# the end, read off the closed state
+def gd.rfin2(
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +eo: {String.is_empty(T.bad(T.read.fin2(st))) == True{} : Bool}
+) -> {T.wf(T.read.fin2(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +hd, +un, +lf, +at, +ld}:
+      gd.rok(lx, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, eg, eo)
+
+# a good state at the end of the text gives a well-formed document, unless
+# it gives an error
+def gd.rfin(
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +eo: {String.is_empty(T.bad(T.read.fin(st))) == True{} : Bool}
+) -> {T.wf(T.read.fin(st)) == True{} : Bool}:
+  gd.rfin2(T.read.fin.close(st), gd.rclose(st, eg), eo)
+
+# the text runs out: in a scanning state, after a carriage return, after an
+# opening quote, or in a span, which is an error
+def gd.dend(
+  mode: T.Mode,
+  +em: {Laws.gd.md(mode, SNil{}) == True{} : Bool},
+  +eo: {String.is_empty(T.bad(T.doc.read(SNil{}, mode))) == True{} : Bool}
+) -> {T.wf(T.doc.read(SNil{}, mode)) == True{} : Bool}:
+  match mode:
+    case T.MScan{+st}:
+      gd.rfin(T.read.once2(st), gd.once2(st, em), eo)
+    case T.MCr{+st}:
+      gd.rfin(T.read.once2(T.st.err(st, "carriage return without line feed")),
+        gd.once2(T.st.err(st, "carriage return without line feed"),
+          gd.g.err2(st, "carriage return without line feed", em)), eo)
+    case T.MOpen{_ba, _qq, +qk, +bd, +rw, +hs, +he, +pt, +bf, +bk, +sk, +un, +lf, +at}:
+      gd.rfin(T.read.once2(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}),
+        gd.once2(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}, em), eo)
+    case T.MEat{_ba, _qq, _ct, _nn, +bd, +rw, +hs, +he, +pt, +qk, +sk, +un, +lf, +at}:
+      gd.unc(T.St{bd, rw, hs, he, pt, [], T.LStr{}, T.LStr{}, qk, sk, T.HNone{}, un, lf, at, False{}}, eo)
+
+# doc.read's error, one character on
+def gd.nexto(
+  +mode: T.Mode,
+  +hh: Char,
+  +tt: String,
+  +eo: {String.is_empty(T.bad(T.doc.read(SCon{hh, tt}, mode))) == True{} : Bool}
+) -> {String.is_empty(T.bad(T.doc.read(tt, Laws.gd.next(mode, hh, tt)))) == True{} : Bool}:
+  Equal.trans(Bool, String.is_empty(T.bad(T.doc.read(tt, Laws.gd.next(mode, hh, tt)))),
+    String.is_empty(T.bad(T.doc.read(SCon{hh, tt}, mode))), True{},
+    Equal.sym(Bool, String.is_empty(T.bad(T.doc.read(SCon{hh, tt}, mode))),
+      String.is_empty(T.bad(T.doc.read(tt, Laws.gd.next(mode, hh, tt)))),
+      Equal.cong(T.Doc, Bool, dd => String.is_empty(T.bad(dd)), T.doc.read(SCon{hh, tt}, mode),
+        T.doc.read(tt, Laws.gd.next(mode, hh, tt)), Laws.gd_next(mode, hh, tt))),
+    eo)
+
+# doc.read's document, one character on
+def gd.nextw(
+  +mode: T.Mode,
+  +hh: Char,
+  +tt: String,
+  +ew: {T.wf(T.doc.read(tt, Laws.gd.next(mode, hh, tt))) == True{} : Bool}
+) -> {T.wf(T.doc.read(SCon{hh, tt}, mode)) == True{} : Bool}:
+  Equal.trans(Bool, T.wf(T.doc.read(SCon{hh, tt}, mode)), T.wf(T.doc.read(tt, Laws.gd.next(mode, hh, tt))), True{},
+    Equal.cong(T.Doc, Bool, dd => T.wf(dd), T.doc.read(SCon{hh, tt}, mode),
+      T.doc.read(tt, Laws.gd.next(mode, hh, tt)), Laws.gd_next(mode, hh, tt)),
+    ew)
+
+def Laws.gd_read(text, mode, em, ew, es, eo) :
+  match text:
+    case SNil{}:
+      gd.dend(mode, em, eo)
+    case SCon{+hh, +tt}:
+      gd.nextw(mode, hh, tt,
+        Laws.gd_read(tt, Laws.gd.next(mode, hh, tt),
+          Laws.gd_mode_step(mode, hh, tt, em, gd.th.l(T.wf.char(hh), _u => T.wf.text(tt), ew),
+            gd.th.r(T.wf.char(hh), _u => T.wf.text(tt), ew), es),
+          gd.th.r(T.wf.char(hh), _u => T.wf.text(tt), ew),
+          gd.short.tail(hh, tt, es),
+          gd.nexto(mode, hh, tt, eo)))
+
+def Laws.parse_wf(text, ew, es, eo) :
+  Laws.gd_read(text, T.MScan{T.st.start()},
+    Laws.gd_start([], [], [], T.LTop{}, T.LTop{}, T.QBasic{}, 0, 0, False{}, True{}, {==}, {==}), ew, es, eo)

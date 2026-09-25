@@ -3459,3 +3459,184 @@ law render_parse:
   for +w: {T.wf(d) == True{} : Bool}
   for h_s: {short(T.render(d)) == True{} : Bool}
   {Bool.and(String.is_empty(T.bad(T.parse(T.render(d)))), same(T.parse(T.render(d)), d)) == True{} : Bool}
+
+# a bare word's value, when it has one, is one a key may hold
+def gd.gok(gg: T.Got) -> Bool:
+  match gg:
+    case T.GotVal{vv}:
+      gd.vok(vv)
+    case T.GotBad{_why}:
+      True{}
+
+# LAW: every value a bare word reads as is well-formed where a key or an array
+# holds it: for every list of characters, word.val gives a boolean, a float
+# spelled as wf.flo's grammar or inf or nan, an integer of decimal digits with
+# no leading zero within signed 64 bits, or a datetime whose fields are in
+# range, or no value at all
+# TOML-RT-3
+law gd_word:
+  for +cs: List<&2, Char>
+  {gd.gok(T.word.val(cs)) == True{} : Bool}
+
+# a bare word's two states: its characters, and the space a datetime may hold
+def gd.bw(lex: T.Lex) -> Bool:
+  match lex:
+    case T.LBare{}:
+      True{}
+    case T.LDate{}:
+      True{}
+    case _:
+      False{}
+
+# LAW: every step in a bare word keeps a state good: from every good state,
+# whatever its fields, one character that is a Unicode scalar value read in a
+# bare word's state or a datetime's space leaves a good state; a word that
+# ends is read as a value (gd_word) and placed (gd_take)
+# TOML-RT-3
+law gd_bare_steps:
+  for +lex: T.Lex
+  for hl: {gd.bw(lex) == True{} : Bool}
+  for +st: T.St
+  for eg: {good(st) == True{} : Bool}
+  for +cc: Char
+  for ec: {T.wf.char(cc) == True{} : Bool}
+  {good(T.read.on(lex, st, cc)) == True{} : Bool}
+
+# LAW: the step parse takes for each character keeps a state good: from every
+# good state, whatever its fields, one character that is a Unicode scalar
+# value read by the fast step, with a held character and a byte-order mark,
+# leaves a good state
+# TOML-RT-3
+law gd_fast_step:
+  for +st: T.St
+  for eg: {good(st) == True{} : Bool}
+  for +cc: Char
+  for ec: {T.wf.char(cc) == True{} : Bool}
+  {good(T.read.fast(st, cc)) == True{} : Bool}
+
+# LAW: reading a held character keeps a state good
+# TOML-RT-3
+law gd_held:
+  for +st: T.St
+  for eg: {good(st) == True{} : Bool}
+  {good(T.read.once2(st)) == True{} : Bool}
+
+# two texts of the same length
+def gd.ln(aa: String, bb: String) -> Bool:
+  match aa bb:
+    case SNil{} SNil{}:
+      True{}
+    case SCon{_ah, at} SCon{_bh, bt}:
+      gd.ln(at, bt)
+    case _a _b:
+      False{}
+
+# a plain string's span as parse keeps it: n characters of the cut, each a
+# Unicode scalar value, and then the rest of the cut, of scalar values and as
+# long as the text still to read. zz says whether n has run down to 0
+def gd.sp(cut: String, zz: Bool, +nn: U32, +text: String) -> Bool:
+  match cut:
+    case SNil{}:
+      match zz:
+        case True{}:
+          Bool.and(T.wf.text(SNil{}), gd.ln(SNil{}, text))
+        case False{}:
+          False{}
+    case SCon{+hh, +tt}:
+      match zz:
+        case True{}:
+          Bool.and(T.wf.text(SCon{hh, tt}), gd.ln(SCon{hh, tt}, text))
+        case False{}:
+          Bool.and(T.wf.char(hh), gd.sp(tt, U32.is_zero(U32.sub(nn, 1)), U32.sub(nn, 1), text))
+
+# TOML-RT-3's invariant over the modes doc.read reads the text in: a state
+# that scans, or follows a carriage return, is good; an opening quote's state
+# is good as the quote left it; a plain string's state is good with its
+# buffer empty, its span holds scalar values up to the text still to read,
+# and the span's count runs on through that text without wrapping
+def gd.md(mode: T.Mode, +text: String) -> Bool:
+  match mode:
+    case T.MScan{st}:
+      good(st)
+    case T.MCr{st}:
+      good(st)
+    case T.MOpen{_basic, _q, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab}:
+      good(T.St{bad, rows, heads, here, parts, buf, T.LQ{}, back, qkind, stack, T.HNone{}, uni, left, arrtab,
+        False{}})
+    case T.MEat{_basic, _q, +cut, +nn, bad, rows, heads, here, parts, qkind, stack, uni, left, arrtab}:
+      Bool.and(good(T.St{bad, rows, heads, here, parts, [], T.LStr{}, T.LStr{}, qkind, stack, T.HNone{}, uni,
+        left, arrtab, False{}}), Bool.and(gd.sp(cut, U32.is_zero(nn), nn, text), counts(text, nn)))
+
+# the mode doc.read moves to on one character, with the text after it
+def gd.next(mode: T.Mode, +hh: Char, tt: String) -> T.Mode:
+  match mode:
+    case T.MOpen{basic, qq, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab}:
+      T.doc.open(basic, qq, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab, hh, tt)
+    case T.MEat{basic, qq, cut, nn, bad, rows, heads, here, parts, qkind, stack, uni, left, arrtab}:
+      T.eat.feed(basic, qq, cut, nn, bad, rows, heads, here, parts, qkind, stack, uni, left, arrtab, hh)
+    case T.MScan{st}:
+      T.doc.scan(st, hh)
+    case T.MCr{st}:
+      T.doc.cr(Char.is_eq(hh, '\n'), st, hh)
+
+# LAW: a plain string's span, kept as gd.md keeps it, is a well-formed span:
+# its n characters are there and are Unicode scalar values
+# TOML-RT-3
+law gd_span_wf:
+  for +cut: String
+  for +nn: U32
+  for +text: String
+  for ep: {gd.sp(cut, U32.is_zero(nn), nn, text) == True{} : Bool}
+  {T.wf.span(cut, nn, U32.is_zero(nn)) == True{} : Bool}
+
+# LAW: every step doc.read takes keeps its mode good: from a mode good for a
+# text of Unicode scalar values shorter than 2^32 characters, the mode after
+# its first character is good for the rest. A scanning state takes the fast
+# step, and a quote may open a string's span; a carriage return must meet a
+# line feed; an opening quote's next character starts the span, or goes the
+# old way; a span's character extends it, or closes it as a VSpan, or copies
+# it to the buffer
+# TOML-RT-3
+law gd_mode_step:
+  for +mode: T.Mode
+  for +hh: Char
+  for +tt: String
+  for +em: {gd.md(mode, SCon{hh, tt}) == True{} : Bool}
+  for eh: {T.wf.char(hh) == True{} : Bool}
+  for et: {T.wf.text(tt) == True{} : Bool}
+  for es: {short(SCon{hh, tt}) == True{} : Bool}
+  {gd.md(gd.next(mode, hh, tt), tt) == True{} : Bool}
+
+# LAW: doc.read takes a character to the mode gd.next names
+# TOML-RT-3
+law gd_next:
+  for +mode: T.Mode
+  for +hh: Char
+  for +tt: String
+  {T.doc.read(SCon{hh, tt}, mode) == T.doc.read(tt, gd.next(mode, hh, tt)) : T.Doc}
+
+# LAW: doc.read, from a mode good for a text of Unicode scalar values shorter
+# than 2^32 characters, gives a well-formed document whenever it gives no
+# error: each character keeps the mode good (gd_mode_step), and at the end a
+# token still open is closed, a held character read, and a good end state
+# sealed (gd_fin); a string still open is an error
+# TOML-RT-3
+law gd_read:
+  for +text: String
+  for +mode: T.Mode
+  for em: {gd.md(mode, text) == True{} : Bool}
+  for +ew: {T.wf.text(text) == True{} : Bool}
+  for +es: {short(text) == True{} : Bool}
+  for eo: {String.is_empty(T.bad(T.doc.read(text, mode))) == True{} : Bool}
+  {T.wf(T.doc.read(text, mode)) == True{} : Bool}
+
+# LAW: parse only accepts what it can give back well-formed: for every text
+# of Unicode scalar values shorter than 2^32 characters, a parse with no
+# error is a well-formed document
+# TOML-RT-3
+law parse_wf:
+  for +text: String
+  for ew: {T.wf.text(text) == True{} : Bool}
+  for es: {short(text) == True{} : Bool}
+  for eo: {String.is_empty(T.bad(T.parse(text))) == True{} : Bool}
+  {T.wf(T.parse(text)) == True{} : Bool}
