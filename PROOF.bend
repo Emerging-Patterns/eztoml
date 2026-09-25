@@ -20694,3 +20694,2306 @@ def cv.item(
       cv.a2v(Laws.cv.tx(ii, zz), rw, hs, he, ps, bk, qk, T.CArr{acc, ps0, he0} <> sk, un, lf, ab, cv.xb(ii, zz, hw))),
     rd(cv.tl.end(tt, rest), +vv => b2 => q2 => u2 => l2 => hh => cv.after(tt, ii, vv, acc, ps0, he0, rw, hs, he, ps,
       b2, q2, sk, u2, l2, ab, rest, PP, hh, ih_t, hwt, hst, hn, then)))
+
+# Inline tables. An inline table's key is read from any uni and left: a
+# string value before it, in the same inline table, may have left them
+# anywhere a \u escape puts them. WP0's quoted-segment family fixes both at
+# 0, so a quoted key is read here by the same family over a scanner that
+# keeps them as parameters, as WP-S's ls does for a string (qu).
+
+# a scanner inside a quoted key, its characters so far reversed in buf, back
+# wherever the last escape left it, and uni and left as they are
+def qu(
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  ps: List<&2, String>,
+  sk: List<&2, T.Ctx>,
+  ab: Bool,
+  bk: T.Lex,
+  un: U32,
+  lf: U32,
+  buf: List<&2, Char>
+) -> T.St:
+  T.St{"", rw, hs, he, ps, buf, T.LKeyQ{}, bk, T.QBasic{}, sk, T.HNone{}, un, lf, ab, False{}}
+
+# the rest of the walk from a quoted key with buf in its buffer, whatever
+# back, uni and left are
+def qu.Then(
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  @b2: T.Lex -> @u2: U32 -> @l2: U32 ->
+    PP(T.doc.read(rest, T.MScan{qu(rw, hs, he, ps, sk, ab, b2, u2, l2, buf)}))
+
+# one character's escape read in a quoted key, then the rest of the text
+def qu.Goal(
+  +uu: U32,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  qu.Then(rw, hs, he, ps, sk, ab, Chr{uu} <> buf, rest, PP) ->
+    PP(T.doc.read(String.append(Laws.esc(Chr{uu}), rest), T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf)}))
+
+# the fast step of a character in a quoted key is the key's full step
+def qu.fast(
+  +uu: U32,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>
+) -> {T.read.fast(qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}) == T.read.once2(T.lex.kq.go(U32.is_eq(uu, 34),
+  U32.is_eq(uu, 92), True{}, Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf),
+  Chr{uu}, T.LAfter{}, T.LKeyQ{})) : T.St}:
+  {==}
+
+# a character that is no control is pushed: str.bad passes it
+def qu.char(
+  ctl: Bool,
+  +uu: U32,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  hc: {ctl == False{} : Bool}
+) -> {T.read.once2(T.lex.kq.char.go(T.str.bad.go(ctl, U32.is_eq(uu, 9), Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)),
+  False{}), qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}, T.LKeyQ{}))
+  == qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf) : T.St}:
+  match ctl:
+    case False{}:
+      {==}
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.char.go(T.str.bad.go(True{}, U32.is_eq(uu, 9),
+        Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), False{}), qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu},
+        T.LKeyQ{})) == qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf) : T.St}, hc)
+
+# a character that is no quote, no backslash and no newline is no closer and
+# no escape
+def qu.go(
+  quote: Bool,
+  bs: Bool,
+  nl: Bool,
+  +uu: U32,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  hq: {quote == False{} : Bool},
+  hb: {bs == False{} : Bool},
+  hn: {nl == False{} : Bool},
+  hc: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
+) -> {T.read.once2(T.lex.kq.go(quote, bs, True{}, nl, qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}, T.LAfter{},
+  T.LKeyQ{})) == qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf) : T.St}:
+  match quote:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(True{}, bs, True{}, nl, qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf),
+        Chr{uu}, T.LAfter{}, T.LKeyQ{})) == qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf) : T.St}, hq)
+    case False{}:
+      match bs:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(False{}, True{}, True{}, nl, qu(rw, hs, he, ps, sk, ab, bk, un,
+            lf, buf), Chr{uu}, T.LAfter{}, T.LKeyQ{})) == qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)
+            : T.St}, hb)
+        case False{}:
+          match nl:
+            case True{}:
+              Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(False{}, False{}, True{}, True{}, qu(rw, hs, he, ps, sk,
+                ab, bk, un, lf, buf), Chr{uu}, T.LAfter{}, T.LKeyQ{})) == qu(rw, hs, he, ps, sk, ab, bk, un, lf,
+                Chr{uu} <> buf) : T.St}, hn)
+            case False{}:
+              qu.char(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), uu, rw, hs, he, ps, sk, ab, bk, un, lf, buf, hc)
+
+# the fast step pushes a character
+def qu.Fast(
+  +uu: U32,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>
+) -> Type:
+  {T.read.fast(qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu})
+    == qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf) : T.St}
+
+# the doc.scan dispatch sends such a character to the fast step, and an
+# apostrophe comes back from doc.wrap in the key's state
+def qu.q(
+  dq: Bool,
+  sq: Bool,
+  cr: Bool,
+  +uu: U32,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  hq: {dq == False{} : Bool},
+  hr: {cr == False{} : Bool},
+  fast: qu.Fast(uu, rw, hs, he, ps, sk, ab, bk, un, lf, buf)
+) -> {T.doc.scan.q(dq, sq, cr, qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu})
+  == T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)} : T.Mode}:
+  match dq:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.doc.scan.q(True{}, sq, cr, qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu})
+        == T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)} : T.Mode}, hq)
+    case False{}:
+      match sq:
+        case True{}:
+          Equal.cong(T.St, T.Mode, st => T.doc.wrap(st),
+            T.read.fast(qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}),
+            qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf), fast)
+        case False{}:
+          match cr:
+            case True{}:
+              Eq.bit.absurd2(&2, {T.doc.scan.q(False{}, False{}, True{}, qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf),
+                Chr{uu}) == T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)} : T.Mode}, hr)
+            case False{}:
+              Equal.cong(T.St, T.Mode, st => T.MScan{st},
+                T.read.fast(qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}),
+                qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf), fast)
+
+# a character written as itself is pushed, and back, uni and left stay
+def qu.plain(
+  +uu: U32,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool},
+  ih: qu.Then(rw, hs, he, ps, sk, ab, Chr{uu} <> buf, rest, PP)
+) -> PP(T.doc.read(String.append(Laws.esc(Chr{uu}), rest), T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf)})):
+  +e10 = {ctl.off(uu, 10, ec, {==}) : {U32.is_eq(uu, 10) == False{} : Bool}}
+  +e13 = {ctl.off(uu, 13, ec, {==}) : {U32.is_eq(uu, 13) == False{} : Bool}}
+  %Equal.sym(String, Laws.esc(Chr{uu}), SCon{Chr{uu}, SNil{}}, esc.pl2(uu, e34, e92, ec)) :
+    PP(T.doc.read(String.append(_, rest), T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf)}))
+  pp.step(PP,
+    T.doc.read(rest, T.doc.scan(qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu})),
+    T.doc.read(rest, T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)}),
+    Equal.cong(T.Mode, T.Doc, md => T.doc.read(rest, md),
+      T.doc.scan(qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}),
+      T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf)},
+      qu.q(U32.is_eq(uu, 34), U32.is_eq(uu, 39), U32.is_eq(uu, 13), uu, rw, hs, he, ps, sk, ab, bk, un, lf, buf, e34,
+        e13, Equal.trans(T.St, T.read.fast(qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}),
+          T.read.once2(T.lex.kq.go(U32.is_eq(uu, 34), U32.is_eq(uu, 92), True{},
+            Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu},
+            T.LAfter{}, T.LKeyQ{})),
+          qu(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf),
+          qu.fast(uu, rw, hs, he, ps, sk, ab, bk, un, lf, buf),
+          qu.go(U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), uu, rw, hs, he,
+            ps, sk, ab, bk, un, lf, buf, e34, e92, or.ff(U32.is_eq(uu, 10), U32.is_eq(uu, 13), e10, e13), ec)))),
+    ih(bk, un, lf))
+
+# a quotation mark: its escape reads back by computation, and leaves back at
+# the key's state and uni and left as they were
+def qu.q34(
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> qu.Goal(34, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP):
+  ih => ih(T.LKeyQ{}, un, lf)
+
+# and a backslash
+def qu.q92(
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> qu.Goal(92, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP):
+  ih => ih(T.LKeyQ{}, un, lf)
+
+# CTL: qu.Goal with the escape's text as ss, for ctl.esc.all
+def qu.GoalS(
+  +uu: U32,
+  ss: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  qu.Then(rw, hs, he, ps, sk, ab, Chr{uu} <> buf, rest, PP) ->
+    PP(T.doc.read(String.append(ss, rest), T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf)}))
+
+# a control: each of the thirty-three escapes reads back by computation and
+# leaves back at the key's state. The five with a letter (\b, \t, \n, \f,
+# \r) leave uni and left as they were; a \u escape leaves both at 0
+def qu.ctl(
+  +uu: U32,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  h_c: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == True{} : Bool}
+) -> qu.Goal(uu, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP):
+  ctl.esc.all(kk => ss => qu.GoalS(kk, ss, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP), uu, h_c,
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, un, lf),
+    ih => ih(T.LKeyQ{}, un, lf),
+    ih => ih(T.LKeyQ{}, un, lf),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, un, lf),
+    ih => ih(T.LKeyQ{}, un, lf),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0),
+    ih => ih(T.LKeyQ{}, 0, 0))
+
+# one code point k that the test found: its answer answers for the character
+def qu.is(
+  +uu: U32,
+  +kk: U32,
+  ee: {U32.is_eq(uu, kk) == True{} : Bool},
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  at: qu.Goal(kk, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP)
+) -> qu.Goal(uu, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP):
+  eu = Equal.cong(Char, U32, cc => Char.to_u32(cc), Chr{uu}, Chr{kk}, Eq.u32_eq(uu, kk, ee))
+  %Equal.sym(U32, uu, kk, eu) : qu.Goal(_, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP)
+  at
+
+# every character: a quote, a backslash, a control, or one written as itself
+def qu.split(
+  +uu: U32,
+  q34: Bool,
+  b92: Bool,
+  ctl: Bool,
+  +e34: {U32.is_eq(uu, 34) == q34 : Bool},
+  +e92: {U32.is_eq(uu, 92) == b92 : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == ctl : Bool},
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> qu.Goal(uu, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP):
+  match q34:
+    case True{}:
+      qu.is(uu, 34, e34, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP,
+        qu.q34(rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP))
+    case False{}:
+      match b92:
+        case True{}:
+          qu.is(uu, 92, e92, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP,
+            qu.q92(rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP))
+        case False{}:
+          match ctl:
+            case True{}:
+              qu.ctl(uu, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP, ec)
+            case False{}:
+              ih => qu.plain(uu, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP, e34, e92, ec, ih)
+
+# one character of a quoted key
+def qu.one(
+  +uu: U32,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> qu.Goal(uu, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP):
+  qu.split(uu, U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), {==}, {==}, {==},
+    rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, PP)
+
+# every character of a name, as escs writes it, read in a quoted key: the
+# rest is read with the characters pushed, from wherever the last escape
+# left back, uni and left
+def qu.escs(
+  ss: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  ih: qu.Then(rw, hs, he, ps, sk, ab, rev.onto(ss, buf), rest, PP)
+) -> PP(T.doc.read(String.append(Laws.escs(ss), rest), T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf)})):
+  match ss:
+    case SNil{}:
+      ih(bk, un, lf)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+uu}:
+          pp.step(PP,
+            T.doc.read(String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), rest),
+              T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf)}),
+            T.doc.read(String.append(Laws.esc(Chr{uu}), String.append(Laws.escs(tt), rest)),
+              T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf)}),
+            Equal.cong(String, T.Doc, xs => T.doc.read(xs, T.MScan{qu(rw, hs, he, ps, sk, ab, bk, un, lf, buf)}),
+              String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), rest),
+              String.append(Laws.esc(Chr{uu}), String.append(Laws.escs(tt), rest)),
+              Eq.append_assoc(Laws.esc(Chr{uu}), Laws.escs(tt), rest)),
+            qu.one(uu, rw, hs, he, ps, sk, ab, bk, un, lf, buf, String.append(Laws.escs(tt), rest), PP)(
+              b2 => u2 => l2 => qu.escs(tt, rw, hs, he, ps, sk, ab, b2, u2, l2, Chr{uu} <> buf, rest, PP, ih)))
+
+# An inline table's key, from the state after `{` or ", " (LInlK), with the
+# frame and every other field as parameters: a quoted key through qu, a bare
+# key on the key's fast path, then " = " leaves the scanner waiting for the
+# value with the key's name as the one part.
+
+# the scanner waiting for an inline table's key
+def cv.ks(
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  bk: T.Lex,
+  qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  ab: Bool
+) -> T.St:
+  T.St{"", rw, hs, he, [], [], T.LInlK{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}
+
+# the scanner inside a bare key, its characters so far reversed in buf
+def cv.kbs(
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  bk: T.Lex,
+  qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  ab: Bool,
+  buf: List<&2, Char>
+) -> T.St:
+  T.St{"", rw, hs, he, [], buf, T.LKey{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}
+
+# the rest of the walk once a key named kk and " = " are read: the scanner
+# waits for the value, from whatever back, qkind, uni and left the key left
+def cv.KThen(
+  +kk: String,
+  +yy: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  -PP: T.Doc -> Type
+) -> Type:
+  @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
+    PP(T.doc.read(yy, T.MScan{cv.vp(rw, hs, he, [kk], b2, q2, sk, u2, l2, ab)}))
+
+# a buffer a name was pushed onto reads as the name
+def cv.bufk(+kk: String) -> {T.buf.str(rev.onto(kk, [])) == kk : String}:
+  Equal.trans(String, T.buf.str.go(rev.onto(kk, []), ""), String.append(kk, ""), kk, ml.rev(kk, [], ""),
+    Eq.append_nil(kk))
+
+# the closing quote of a quoted key and " = ": the key's characters are its
+# one part, and the scanner waits for the value
+def cv.kq.close(
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +kk: String,
+  +yy: String
+) -> {T.doc.read(SCon{'"', SCon{' ', SCon{'=', SCon{' ', yy}}}}, T.MScan{qu(rw, hs, he, [], sk, ab, bk, un, lf,
+  rev.onto(kk, []))}) == T.doc.read(yy, T.MScan{cv.vp(rw, hs, he, [kk], bk, T.QBasic{}, sk, un, lf, ab)}) : T.Doc}:
+  Equal.cong(String, T.Doc, nm => T.doc.read(yy, T.MScan{cv.vp(rw, hs, he, [nm], bk, T.QBasic{}, sk, un, lf, ab)}),
+    T.buf.str(rev.onto(kk, [])), kk, cv.bufk(kk))
+
+# a quoted key, as key.basic writes it, then " = "
+def cv.kq(
+  +kk: String,
+  +yy: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  -PP: T.Doc -> Type,
+  ih: cv.KThen(kk, yy, rw, hs, he, sk, ab, PP)
+) -> PP(T.doc.read(String.append(T.key.basic(kk), SCon{' ', SCon{'=', SCon{' ', yy}}}), T.MScan{cv.ks(rw, hs, he,
+  bk, qk, sk, un, lf, ab)})):
+  +zz = {SCon{' ', SCon{'=', SCon{' ', yy}}} : String}
+  %Equal.sym(String, T.key.basic(kk), "\"" ++ Laws.escs(kk) ++ "\"", Laws.basic_escs(kk)) :
+    PP(T.doc.read(String.append(_, zz), T.MScan{cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab)}))
+  %Equal.sym(String, String.append(String.append(Laws.escs(kk), "\""), zz), String.append(Laws.escs(kk), SCon{'"',
+    zz}), Eq.append_assoc(Laws.escs(kk), "\"", zz)) :
+    PP(T.doc.read(SCon{'"', _}, T.MScan{cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab)}))
+  qu.escs(kk, rw, hs, he, [], sk, ab, bk, un, lf, [], SCon{'"', zz}, PP,
+    +b2 => +u2 => +l2 => pp.step(PP, T.doc.read(SCon{'"', zz}, T.MScan{qu(rw, hs, he, [], sk, ab, b2, u2, l2,
+      rev.onto(kk, []))}), T.doc.read(yy, T.MScan{cv.vp(rw, hs, he, [kk], b2, T.QBasic{}, sk, u2, l2, ab)}),
+      cv.kq.close(rw, hs, he, sk, ab, b2, u2, l2, kk, yy), ih(b2, T.QBasic{}, u2, l2)))
+
+# a code point that is a blank or a newline is no bare-key character
+def cv.nsp(
+  bb: Bool,
+  +xx: U32,
+  +k1: U32,
+  +k2: U32,
+  ee: {Bool.or(U32.is_eq(xx, k1), U32.is_eq(xx, k2)) == bb : Bool},
+  yes: {T.bare.at(Chr{xx}) == True{} : Bool},
+  n1: {T.bare.at(Chr{k1}) == False{} : Bool},
+  n2: {T.bare.at(Chr{k2}) == False{} : Bool}
+) -> {bb == False{} : Bool}:
+  match bb:
+    case True{}:
+      Eq.bit.gone(&2, {True{} == False{} : Bool}, or2.no(xx, k1, k2, U32.is_eq(xx, k1), U32.is_eq(xx, k2), {==}, {==},
+        ee, ch => T.bare.at(ch), yes, n1, n2))
+    case False{}:
+      {==}
+
+# a character another bare-key test refuses is not a bare-key character
+def cv.nch(
+  bb: Bool,
+  +cc: Char,
+  +kk: Char,
+  ee: {Char.is_eq(cc, kk) == bb : Bool},
+  yes: {T.bare.at(cc) == True{} : Bool},
+  no: {T.bare.at(kk) == False{} : Bool}
+) -> {bb == False{} : Bool}:
+  match bb:
+    case True{}:
+      Eq.bit.gone(&2, {True{} == False{} : Bool}, Eq.refute_char(cc, kk, ch => T.bare.at(ch), ee, yes, no))
+    case False{}:
+      {==}
+
+# the key dispatch pushes a bare-key character once it is no quote
+def cv.kb.b(
+  ok: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +cc: Char,
+  fb: {ok == True{} : Bool}
+) -> {T.read.once2(T.lex.key.bare(ok, cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, []), cc))
+  == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      Eq.bit.absurd(&2, {T.read.once2(T.lex.key.bare(False{}, cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, []), cc))
+        == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}, fb)
+
+# and once it is no apostrophe
+def cv.kb.l(
+  lit: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +cc: Char,
+  fl: {lit == False{} : Bool},
+  fb: {T.bare.at(cc) == True{} : Bool}
+) -> {T.read.once2(T.lex.key.lit(lit, cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, []), cc))
+  == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}:
+  match lit:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.key.lit(True{}, cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, []), cc))
+        == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}, fl)
+    case False{}:
+      cv.kb.b(T.bare.at(cc), rw, hs, he, bk, qk, sk, un, lf, ab, cc, fb)
+
+# and once it is no quotation mark
+def cv.kb.q(
+  qq: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +cc: Char,
+  fq: {qq == False{} : Bool},
+  fl: {Char.is_eq(cc, '\'') == False{} : Bool},
+  fb: {T.bare.at(cc) == True{} : Bool}
+) -> {T.read.once2(T.lex.key.q(qq, cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, []), cc))
+  == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}:
+  match qq:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.key.q(True{}, cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, []), cc))
+        == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}, fq)
+    case False{}:
+      cv.kb.l(Char.is_eq(cc, '\''), rw, hs, he, bk, qk, sk, un, lf, ab, cc, fl, fb)
+
+# LInlK passes a character that is no blank, `#` or newline to the key
+def cv.kb.ik(
+  sp: Bool,
+  hash: Bool,
+  nl: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +cc: Char,
+  fsp: {sp == False{} : Bool},
+  fhs: {hash == False{} : Bool},
+  fnl: {nl == False{} : Bool},
+  fq: {Char.is_eq(cc, '"') == False{} : Bool},
+  fl: {Char.is_eq(cc, '\'') == False{} : Bool},
+  fb: {T.bare.at(cc) == True{} : Bool}
+) -> {T.read.once2(T.lex.inlk.go(sp, hash, nl, cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), cc))
+  == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}:
+  match sp:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.inlk.go(True{}, hash, nl, cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), cc))
+        == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}, fsp)
+    case False{}:
+      match hash:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.read.once2(T.lex.inlk.go(False{}, True{}, nl, cv.ks(rw, hs, he, bk, qk, sk, un, lf,
+            ab), cc)) == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}, fhs)
+        case False{}:
+          match nl:
+            case True{}:
+              Eq.bit.absurd2(&2, {T.read.once2(T.lex.inlk.go(False{}, False{}, True{}, cv.ks(rw, hs, he, bk, qk, sk,
+                un, lf, ab), cc)) == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}, fnl)
+            case False{}:
+              cv.kb.q(Char.is_eq(cc, '"'), rw, hs, he, bk, qk, sk, un, lf, ab, cc, fq, fl, fb)
+
+# the fast step of LInlK on such a character
+def cv.kb.ws(
+  sp: Bool,
+  nl: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +cc: Char,
+  hsp: {sp == False{} : Bool},
+  hnl: {nl == False{} : Bool},
+  fsp: {T.ch.sp(cc) == False{} : Bool},
+  fhs: {Char.is_eq(cc, '#') == False{} : Bool},
+  fnl: {T.ch.nl(cc) == False{} : Bool},
+  fq: {Char.is_eq(cc, '"') == False{} : Bool},
+  fl: {Char.is_eq(cc, '\'') == False{} : Bool},
+  fb: {T.bare.at(cc) == True{} : Bool}
+) -> {T.read.fast.ws(sp, nl, False{}, "", rw, hs, he, [], [], T.LInlK{}, bk, qk, sk, un, lf, ab, cc)
+  == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}:
+  match sp:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.fast.ws(True{}, nl, False{}, "", rw, hs, he, [], [], T.LInlK{}, bk, qk, sk, un, lf, ab,
+        cc) == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}, hsp)
+    case False{}:
+      match nl:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.read.fast.ws(False{}, True{}, False{}, "", rw, hs, he, [], [], T.LInlK{}, bk, qk, sk,
+            un, lf, ab, cc) == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [cc]) : T.St}, hnl)
+        case False{}:
+          cv.kb.ik(T.ch.sp(cc), Char.is_eq(cc, '#'), T.ch.nl(cc), rw, hs, he, bk, qk, sk, un, lf, ab, cc, fsp, fhs, fnl,
+            fq, fl, fb)
+
+# the first character of a bare key starts the key
+def cv.kb.first(
+  +xx: U32,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +fb: {T.bare.at(Chr{xx}) == True{} : Bool}
+) -> {T.doc.scan(cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), Chr{xx}) == T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf,
+  ab, [Chr{xx}])} : T.Mode}:
+  +fsp = {cv.nsp(T.ch.sp(Chr{xx}), xx, 32, 9, {==}, fb, {==}, {==}) : {T.ch.sp(Chr{xx}) == False{} : Bool}}
+  +fnl = {cv.nsp(T.ch.nl(Chr{xx}), xx, 10, 13, {==}, fb, {==}, {==}) : {T.ch.nl(Chr{xx}) == False{} : Bool}}
+  Equal.trans(T.Mode,
+    T.doc.scan(cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), Chr{xx}),
+    T.MScan{T.read.fast(cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), Chr{xx})},
+    T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [Chr{xx}])},
+    scan.other(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), U32.is_eq(xx, 13),
+      cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), Chr{xx}, {==}, {==}, {==}, ch => T.bare.at(ch), fb, {==}, {==}, {==}),
+    Equal.cong(T.St, T.Mode, st => T.MScan{st},
+      T.read.fast(cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), Chr{xx}),
+      cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [Chr{xx}]),
+      cv.kb.ws(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), rw, hs, he, bk, qk, sk, un, lf, ab, Chr{xx}, fsp, fnl, fsp,
+        cv.nch(Char.is_eq(Chr{xx}, '#'), Chr{xx}, '#', {==}, fb, {==}), fnl,
+        cv.nch(Char.is_eq(Chr{xx}, '"'), Chr{xx}, '"', {==}, fb, {==}),
+        cv.nch(Char.is_eq(Chr{xx}, '\''), Chr{xx}, '\'', {==}, fb, {==}), fb)))
+
+# a later bare-key character stays on the key's fast path
+def cv.kb.fast(
+  ok: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +buf: List<&2, Char>,
+  +cc: Char,
+  fb: {ok == True{} : Bool}
+) -> {T.read.fast.key(ok, "", rw, hs, he, [], buf, bk, qk, sk, un, lf, ab, cc)
+  == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, cc <> buf) : T.St}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      Eq.bit.absurd(&2, {T.read.fast.key(False{}, "", rw, hs, he, [], buf, bk, qk, sk, un, lf, ab, cc)
+        == cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, cc <> buf) : T.St}, fb)
+
+# one later character of the key, from the scan mode
+def cv.kb.step(
+  +xx: U32,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +buf: List<&2, Char>,
+  +fb: {T.bare.at(Chr{xx}) == True{} : Bool}
+) -> {T.doc.scan(cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, buf), Chr{xx}) == T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un,
+  lf, ab, Chr{xx} <> buf)} : T.Mode}:
+  Equal.trans(T.Mode,
+    T.doc.scan(cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, buf), Chr{xx}),
+    T.MScan{T.read.fast(cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, buf), Chr{xx})},
+    T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, Chr{xx} <> buf)},
+    scan.other(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), U32.is_eq(xx, 13),
+      cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, buf), Chr{xx}, {==}, {==}, {==}, ch => T.bare.at(ch), fb, {==}, {==},
+      {==}),
+    Equal.cong(T.St, T.Mode, st => T.MScan{st},
+      T.read.fast(cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, buf), Chr{xx}),
+      cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, Chr{xx} <> buf),
+      cv.kb.fast(T.bare.at(Chr{xx}), rw, hs, he, bk, qk, sk, un, lf, ab, buf, Chr{xx}, fb)))
+
+# a text of bare-key characters is pushed onto the key's buffer
+def cv.kb.body(
+  ks: String,
+  +rr: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +buf: List<&2, Char>,
+  +ee: {T.bare.all(String.to_list(ks)) == True{} : Bool}
+) -> {T.doc.read(String.append(ks, rr), T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, buf)})
+  == T.doc.read(rr, T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, rev.onto(ks, buf))}) : T.Doc}:
+  match ks:
+    case SNil{}:
+      {==}
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          Equal.trans(T.Doc,
+            T.doc.read(String.append(tt, rr), T.doc.scan(cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, buf), Chr{xx})),
+            T.doc.read(String.append(tt, rr), T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, Chr{xx} <> buf)}),
+            T.doc.read(rr, T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, rev.onto(tt, Chr{xx} <> buf))}),
+            Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, rr), md),
+              T.doc.scan(cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, buf), Chr{xx}),
+              T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, Chr{xx} <> buf)},
+              cv.kb.step(xx, rw, hs, he, bk, qk, sk, un, lf, ab, buf, ball.head(T.bare.at(Chr{xx}),
+                String.to_list(tt), ee))),
+            cv.kb.body(tt, rr, rw, hs, he, bk, qk, sk, un, lf, ab, Chr{xx} <> buf,
+              ball.tail(T.bare.at(Chr{xx}), String.to_list(tt), ee)))
+
+# a space ends a nonempty bare key, and " = " leaves the scanner waiting for
+# the value, the key its one part
+def cv.kb.eq(
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +bb: List<&2, Char>,
+  full: {List.is_empty(&2, Char, bb) == False{} : Bool},
+  +yy: String
+) -> {T.doc.read(SCon{' ', SCon{'=', SCon{' ', yy}}}, T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, bb)})
+  == T.doc.read(yy, T.MScan{cv.vp(rw, hs, he, [T.buf.str(bb)], bk, qk, sk, un, lf, ab)}) : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(SCon{'=', SCon{' ', yy}}, T.MScan{T.read.once2(T.lex.key.end.go(List.is_empty(&2, Char, bb),
+      cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, bb), T.LAfter{}))}),
+    T.doc.read(SCon{'=', SCon{' ', yy}}, T.MScan{T.read.once2(T.lex.key.end.go(False{},
+      cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, bb), T.LAfter{}))}),
+    T.doc.read(yy, T.MScan{cv.vp(rw, hs, he, [T.buf.str(bb)], bk, qk, sk, un, lf, ab)}),
+    Equal.cong(Bool, T.Doc, bt => T.doc.read(SCon{'=', SCon{' ', yy}}, T.MScan{T.read.once2(T.lex.key.end.go(bt,
+      cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, bb), T.LAfter{}))}), List.is_empty(&2, Char, bb), False{}, full),
+    {==})
+
+# a bare key then " = "
+def cv.kb(
+  +xx: U32,
+  +tt: String,
+  +yy: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  -PP: T.Doc -> Type,
+  +ee: {T.bare.all.step(T.bare.at(Chr{xx}), _u => T.bare.all(String.to_list(tt))) == True{} : Bool},
+  ih: cv.KThen(SCon{Chr{xx}, tt}, yy, rw, hs, he, sk, ab, PP)
+) -> PP(T.doc.read(String.append(SCon{Chr{xx}, tt}, SCon{' ', SCon{'=', SCon{' ', yy}}}), T.MScan{cv.ks(rw, hs, he, bk,
+  qk, sk, un, lf, ab)})):
+  +zz = {SCon{' ', SCon{'=', SCon{' ', yy}}} : String}
+  +b1 = {rev.onto(tt, [Chr{xx}]) : List<&2, Char>}
+  pp.step(PP, T.doc.read(String.append(tt, zz), T.doc.scan(cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), Chr{xx})),
+    T.doc.read(yy, T.MScan{cv.vp(rw, hs, he, [SCon{Chr{xx}, tt}], bk, qk, sk, un, lf, ab)}),
+    Equal.trans(T.Doc,
+      T.doc.read(String.append(tt, zz), T.doc.scan(cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), Chr{xx})),
+      T.doc.read(String.append(tt, zz), T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [Chr{xx}])}),
+      T.doc.read(yy, T.MScan{cv.vp(rw, hs, he, [SCon{Chr{xx}, tt}], bk, qk, sk, un, lf, ab)}),
+      Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, zz), md),
+        T.doc.scan(cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), Chr{xx}),
+        T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [Chr{xx}])},
+        cv.kb.first(xx, rw, hs, he, bk, qk, sk, un, lf, ab, ball.head(T.bare.at(Chr{xx}), String.to_list(tt), ee))),
+      Equal.trans(T.Doc,
+        T.doc.read(String.append(tt, zz), T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, [Chr{xx}])}),
+        T.doc.read(zz, T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, b1)}),
+        T.doc.read(yy, T.MScan{cv.vp(rw, hs, he, [SCon{Chr{xx}, tt}], bk, qk, sk, un, lf, ab)}),
+        cv.kb.body(tt, zz, rw, hs, he, bk, qk, sk, un, lf, ab, [Chr{xx}], ball.tail(T.bare.at(Chr{xx}),
+          String.to_list(tt), ee)),
+        Equal.trans(T.Doc,
+          T.doc.read(zz, T.MScan{cv.kbs(rw, hs, he, bk, qk, sk, un, lf, ab, b1)}),
+          T.doc.read(yy, T.MScan{cv.vp(rw, hs, he, [T.buf.str(b1)], bk, qk, sk, un, lf, ab)}),
+          T.doc.read(yy, T.MScan{cv.vp(rw, hs, he, [SCon{Chr{xx}, tt}], bk, qk, sk, un, lf, ab)}),
+          cv.kb.eq(rw, hs, he, bk, qk, sk, un, lf, ab, b1, rev.full(tt, Chr{xx}, []), yy),
+          Equal.cong(String, T.Doc, nm => T.doc.read(yy, T.MScan{cv.vp(rw, hs, he, [nm], bk, qk, sk, un, lf, ab)}),
+            T.buf.str(b1), SCon{Chr{xx}, tt},
+            Equal.trans(String, T.buf.str.go(b1, ""), SCon{Chr{xx}, String.append(tt, "")}, SCon{Chr{xx}, tt},
+              ml.rev(tt, [Chr{xx}], ""),
+              Equal.cong(String, String, ss => SCon{Chr{xx}, ss}, String.append(tt, ""), tt, Eq.append_nil(tt))))))),
+    ih(bk, qk, un, lf))
+
+# a key as key writes it, bare or quoted, then " = "
+def cv.key.go(
+  bb: Bool,
+  +kk: String,
+  eb: {T.bare(kk) == bb : Bool},
+  +yy: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  -PP: T.Doc -> Type,
+  ih: cv.KThen(kk, yy, rw, hs, he, sk, ab, PP)
+) -> PP(T.doc.read(String.append(T.key.go(bb, kk), SCon{' ', SCon{'=', SCon{' ', yy}}}), T.MScan{cv.ks(rw, hs, he, bk,
+  qk, sk, un, lf, ab)})):
+  match bb:
+    case False{}:
+      cv.kq(kk, yy, rw, hs, he, bk, qk, sk, un, lf, ab, PP, ih)
+    case True{}:
+      match kk:
+        case SNil{}:
+          Eq.bit.absurd(&1, PP(T.doc.read(String.append(SNil{}, SCon{' ', SCon{'=', SCon{' ', yy}}}),
+            T.MScan{cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab)})), eb)
+        case SCon{hh, +tt}:
+          match hh:
+            case Chr{+xx}:
+              cv.kb(xx, tt, yy, rw, hs, he, bk, qk, sk, un, lf, ab, PP, eb, ih)
+
+# a key as key writes it, then " = "
+def cv.key(
+  +kk: String,
+  +yy: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  -PP: T.Doc -> Type,
+  ih: cv.KThen(kk, yy, rw, hs, he, sk, ab, PP)
+) -> PP(T.doc.read(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', yy}}}), T.MScan{cv.ks(rw, hs, he, bk, qk,
+  sk, un, lf, ab)})):
+  cv.key.go(T.bare(kk), kk, {==}, yy, rw, hs, he, bk, qk, sk, un, lf, ab, PP, ih)
+
+# LInl, right after `{`, reads the first key as LInlK does after ", ": both
+# pass a character that is no blank, newline, `#` or `}` to the key.
+
+# a character LInl keeps for itself or LInlK refuses
+def cv.kbad(+cc: Char) -> Bool:
+  Bool.or(T.ch.sp(cc), Bool.or(T.ch.nl(cc), Bool.or(Char.is_eq(cc, '#'), Char.is_eq(cc, '}'))))
+
+# the first character of a text is no such character
+def cv.xkbad(xs: String) -> Bool:
+  match xs:
+    case SNil{}:
+      True{}
+    case SCon{+cc, _tt}:
+      cv.kbad(cc)
+
+# the two dispatches agree on such a character
+def cv.l2k.go(
+  sp: Bool,
+  hash: Bool,
+  end: Bool,
+  nl: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +cc: Char,
+  fsp: {sp == False{} : Bool},
+  fhs: {hash == False{} : Bool},
+  fen: {end == False{} : Bool},
+  fnl: {nl == False{} : Bool}
+) -> {T.read.once2(T.lex.inl.go(sp, hash, end, nl, T.St{"", rw, hs, he, [], [], T.LInl{}, bk, qk, sk, T.HNone{}, un,
+  lf, ab, False{}}, cc)) == T.read.once2(T.lex.inlk.go(sp, hash, nl, cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), cc))
+  : T.St}:
+  match sp:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.inl.go(True{}, hash, end, nl, T.St{"", rw, hs, he, [], [], T.LInl{}, bk,
+        qk, sk, T.HNone{}, un, lf, ab, False{}}, cc)) == T.read.once2(T.lex.inlk.go(True{}, hash, nl, cv.ks(rw, hs, he,
+        bk, qk, sk, un, lf, ab), cc)) : T.St}, fsp)
+    case False{}:
+      match hash:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.read.once2(T.lex.inl.go(False{}, True{}, end, nl, T.St{"", rw, hs, he, [], [],
+            T.LInl{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}, cc)) == T.read.once2(T.lex.inlk.go(False{}, True{},
+            nl, cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), cc)) : T.St}, fhs)
+        case False{}:
+          match end:
+            case True{}:
+              Eq.bit.absurd2(&2, {T.read.once2(T.lex.inl.go(False{}, False{}, True{}, nl, T.St{"", rw, hs, he, [], [],
+                T.LInl{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}, cc)) == T.read.once2(T.lex.inlk.go(False{},
+                False{}, nl, cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), cc)) : T.St}, fen)
+            case False{}:
+              match nl:
+                case True{}:
+                  Eq.bit.absurd2(&2, {T.read.once2(T.lex.inl.go(False{}, False{}, False{}, True{}, T.St{"", rw, hs,
+                    he, [], [], T.LInl{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}, cc)) == T.read.once2(
+                    T.lex.inlk.go(False{}, False{}, True{}, cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), cc)) : T.St},
+                    fnl)
+                case False{}:
+                  {==}
+
+# and so do the two fast steps
+def cv.l2k.ws(
+  sp: Bool,
+  nl: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +cc: Char,
+  hsp: {sp == False{} : Bool},
+  hnl: {nl == False{} : Bool},
+  fsp: {T.ch.sp(cc) == False{} : Bool},
+  fhs: {Char.is_eq(cc, '#') == False{} : Bool},
+  fen: {Char.is_eq(cc, '}') == False{} : Bool},
+  fnl: {T.ch.nl(cc) == False{} : Bool}
+) -> {T.read.fast.ws(sp, nl, False{}, "", rw, hs, he, [], [], T.LInl{}, bk, qk, sk, un, lf, ab, cc)
+  == T.read.fast.ws(sp, nl, False{}, "", rw, hs, he, [], [], T.LInlK{}, bk, qk, sk, un, lf, ab, cc) : T.St}:
+  match sp:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.fast.ws(True{}, nl, False{}, "", rw, hs, he, [], [], T.LInl{}, bk, qk, sk, un, lf, ab,
+        cc) == T.read.fast.ws(True{}, nl, False{}, "", rw, hs, he, [], [], T.LInlK{}, bk, qk, sk, un, lf, ab, cc)
+        : T.St}, hsp)
+    case False{}:
+      match nl:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.read.fast.ws(False{}, True{}, False{}, "", rw, hs, he, [], [], T.LInl{}, bk, qk, sk,
+            un, lf, ab, cc) == T.read.fast.ws(False{}, True{}, False{}, "", rw, hs, he, [], [], T.LInlK{}, bk, qk, sk,
+            un, lf, ab, cc) : T.St}, hnl)
+        case False{}:
+          cv.l2k.go(T.ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '}'), T.ch.nl(cc), rw, hs, he, bk, qk, sk, un,
+            lf, ab, cc, fsp, fhs, fen, fnl)
+
+# a text whose first character both pass on reads from LInl as from LInlK
+def cv.l2k(
+  xs: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hb: {cv.xkbad(xs) == False{} : Bool}
+) -> {T.doc.read(xs, T.MScan{T.St{"", rw, hs, he, [], [], T.LInl{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}})
+  == T.doc.read(xs, T.MScan{cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab)}) : T.Doc}:
+  match xs:
+    case SNil{}:
+      Eq.bit.absurd2(&2, {T.doc.read(SNil{}, T.MScan{T.St{"", rw, hs, he, [], [], T.LInl{}, bk, qk, sk, T.HNone{}, un,
+        lf, ab, False{}}}) == T.doc.read(SNil{}, T.MScan{cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab)}) : T.Doc}, hb)
+    case SCon{+cc, +tt}:
+      +r1 = {Eq.or.right_false(T.ch.sp(cc), Bool.or(T.ch.nl(cc), Bool.or(Char.is_eq(cc, '#'), Char.is_eq(cc, '}'))),
+        hb) : {Bool.or(T.ch.nl(cc), Bool.or(Char.is_eq(cc, '#'), Char.is_eq(cc, '}'))) == False{} : Bool}}
+      +r2 = {Eq.or.right_false(T.ch.nl(cc), Bool.or(Char.is_eq(cc, '#'), Char.is_eq(cc, '}')), r1)
+        : {Bool.or(Char.is_eq(cc, '#'), Char.is_eq(cc, '}')) == False{} : Bool}}
+      +fsp = {Eq.or.left_false(T.ch.sp(cc), Bool.or(T.ch.nl(cc), Bool.or(Char.is_eq(cc, '#'), Char.is_eq(cc, '}'))),
+        hb) : {T.ch.sp(cc) == False{} : Bool}}
+      +fnl = {Eq.or.left_false(T.ch.nl(cc), Bool.or(Char.is_eq(cc, '#'), Char.is_eq(cc, '}')), r1)
+        : {T.ch.nl(cc) == False{} : Bool}}
+      Equal.cong(T.Mode, T.Doc, md => T.doc.read(tt, md),
+        T.doc.scan(T.St{"", rw, hs, he, [], [], T.LInl{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}, cc),
+        T.doc.scan(cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), cc),
+        scan.fast(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13),
+          T.St{"", rw, hs, he, [], [], T.LInl{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}},
+          cv.ks(rw, hs, he, bk, qk, sk, un, lf, ab), cc,
+          cv.l2k.ws(T.ch.sp(cc), T.ch.nl(cc), rw, hs, he, bk, qk, sk, un, lf, ab, cc, fsp, fnl, fsp,
+            Eq.or.left_false(Char.is_eq(cc, '#'), Char.is_eq(cc, '}'), r2),
+            Eq.or.right_false(Char.is_eq(cc, '#'), Char.is_eq(cc, '}'), r2), fnl)))
+
+# a bare-key character is no such character
+def cv.kbad.of(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  end: Bool,
+  hsp: {sp == False{} : Bool},
+  hnl: {nl == False{} : Bool},
+  hhs: {hash == False{} : Bool},
+  hen: {end == False{} : Bool}
+) -> {Bool.or(sp, Bool.or(nl, Bool.or(hash, end))) == False{} : Bool}:
+  match sp:
+    case True{}:
+      hsp
+    case False{}:
+      match nl:
+        case True{}:
+          hnl
+        case False{}:
+          match hash:
+            case True{}:
+              hhs
+            case False{}:
+              hen
+
+# a key as key writes it starts with such a character
+def cv.kx.go(
+  bb: Bool,
+  kk: String,
+  eb: {T.bare(kk) == bb : Bool},
+  +zz: String
+) -> {cv.xkbad(String.append(T.key.go(bb, kk), zz)) == False{} : Bool}:
+  match bb:
+    case False{}:
+      {==}
+    case True{}:
+      match kk:
+        case SNil{}:
+          Eq.bit.absurd(&2, {cv.xkbad(String.append(SNil{}, zz)) == False{} : Bool}, eb)
+        case SCon{hh, +tt}:
+          match hh:
+            case Chr{+xx}:
+              +fb = {ball.head(T.bare.at(Chr{xx}), String.to_list(tt), eb) : {T.bare.at(Chr{xx}) == True{} : Bool}}
+              cv.kbad.of(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'), Char.is_eq(Chr{xx}, '}'),
+                cv.nsp(T.ch.sp(Chr{xx}), xx, 32, 9, {==}, fb, {==}, {==}),
+                cv.nsp(T.ch.nl(Chr{xx}), xx, 10, 13, {==}, fb, {==}, {==}),
+                cv.nch(Char.is_eq(Chr{xx}, '#'), Chr{xx}, '#', {==}, fb, {==}),
+                cv.nch(Char.is_eq(Chr{xx}, '}'), Chr{xx}, '}', {==}, fb, {==}))
+
+# the text of a pair render writes starts with such a character
+def cv.kx(+kk: String, +zz: String) -> {cv.xkbad(String.append(T.key(kk), zz)) == False{} : Bool}:
+  cv.kx.go(T.bare(kk), kk, {==}, zz)
+
+# The pairs of an inline table: the text render writes for one, what
+# well-formedness says of it, and the names read so far.
+
+# a pair of a scalar, then the separator, the rest and the closer
+def cv.pat(
+  +kk: String,
+  +aa: String,
+  +vs: List<&2, T.Val>,
+  +close: Char,
+  +xx: String
+) -> {String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', String.append(aa, cv.S(vs))}}}), SCon{close,
+  xx}) == String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', String.append(aa, cv.tl(vs, close, xx))}}}) : String}:
+  Equal.trans(String,
+    String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', String.append(aa, cv.S(vs))}}}), SCon{close,
+      xx}),
+    String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', String.append(String.append(aa, cv.S(vs)), SCon{close,
+      xx})}}}),
+    String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', String.append(aa, cv.tl(vs, close, xx))}}}),
+    Eq.append_assoc(T.key(kk), SCon{' ', SCon{'=', SCon{' ', String.append(aa, cv.S(vs))}}}, SCon{close, xx}),
+    Equal.cong(String, String, zz => String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', zz}}}),
+      String.append(String.append(aa, cv.S(vs)), SCon{close, xx}), String.append(aa, cv.tl(vs, close, xx)),
+      cv.at(aa, vs, close, xx)))
+
+# a pair of an array or an inline table, then the separator, the rest and
+# the closer
+def cv.pcl(
+  +kk: String,
+  +c1: Char,
+  +rr: String,
+  +c2: Char,
+  +vs: List<&2, T.Val>,
+  +close: Char,
+  +xx: String
+) -> {String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, String.append(rr, SCon{c2,
+  cv.S(vs)})}}}}), SCon{close, xx}) == String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, String.append(rr,
+  SCon{c2, cv.tl(vs, close, xx)})}}}}) : String}:
+  Equal.trans(String,
+    String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, String.append(rr, SCon{c2,
+      cv.S(vs)})}}}}), SCon{close, xx}),
+    String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, String.append(String.append(rr, SCon{c2,
+      cv.S(vs)}), SCon{close, xx})}}}}),
+    String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, String.append(rr, SCon{c2, cv.tl(vs, close,
+      xx)})}}}}),
+    Eq.append_assoc(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, String.append(rr, SCon{c2, cv.S(vs)})}}}},
+      SCon{close, xx}),
+    Equal.cong(String, String, zz => String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, zz}}}}),
+      String.append(String.append(rr, SCon{c2, cv.S(vs)}), SCon{close, xx}),
+      String.append(rr, SCon{c2, cv.tl(vs, close, xx)}), cv.cl(rr, c2, vs, close, xx)))
+
+# a pair and the rest of the pairs, then the closer: the key, " = ", the
+# value's text, then what follows it
+def cv.ptx(
+  +kk: String,
+  vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +close: Char,
+  +xx: String,
+  hw: {Laws.cv.wf(vv) == True{} : Bool}
+) -> {String.append(T.render.go(T.VPair{kk, vv} <> tt, ", ", False{}), SCon{close, xx}) == String.append(T.key(kk),
+  SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(vv, cv.tl(tt, close, xx))}}}) : String}:
+  match vv:
+    case T.VArr{+items}:
+      cv.pcl(kk, '[', T.render.go(items, ", ", False{}), ']', tt, close, xx)
+    case T.VInl{+rows}:
+      cv.pcl(kk, '{', T.render.go(rows, ", ", False{}), '}', tt, close, xx)
+    case T.VStr{+aa}:
+      cv.pat(kk, T.render.atom(T.VStr{aa}), tt, close, xx)
+    case T.VSpan{+aa, +bb}:
+      cv.pat(kk, T.render.atom(T.VSpan{aa, bb}), tt, close, xx)
+    case T.VInt{+aa, +bb}:
+      cv.pat(kk, T.render.atom(T.VInt{aa, bb}), tt, close, xx)
+    case T.VFlo{+aa, +bb}:
+      cv.pat(kk, T.render.atom(T.VFlo{aa, bb}), tt, close, xx)
+    case T.VBool{+aa}:
+      cv.pat(kk, T.render.atom(T.VBool{aa}), tt, close, xx)
+    case T.VWhen{+aa}:
+      cv.pat(kk, T.render.atom(T.VWhen{aa}), tt, close, xx)
+    case T.VHead{aa, bb}:
+      Eq.bit.absurd(&2, {String.append(T.render.go(T.VPair{kk, T.VHead{aa, bb}} <> tt, ", ", False{}), SCon{close, xx})
+        == String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VHead{aa, bb}, cv.tl(tt, close,
+        xx))}}}) : String}, hw)
+    case T.VAot{aa, bb}:
+      Eq.bit.absurd(&2, {String.append(T.render.go(T.VPair{kk, T.VAot{aa, bb}} <> tt, ", ", False{}), SCon{close, xx})
+        == String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VAot{aa, bb}, cv.tl(tt, close,
+        xx))}}}) : String}, hw)
+    case T.VAots{aa, bb}:
+      Eq.bit.absurd(&2, {String.append(T.render.go(T.VPair{kk, T.VAots{aa, bb}} <> tt, ", ", False{}), SCon{close,
+        xx}) == String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VAots{aa, bb}, cv.tl(tt, close,
+        xx))}}}) : String}, hw)
+    case T.VPair{aa, bb}:
+      Eq.bit.absurd(&2, {String.append(T.render.go(T.VPair{kk, T.VPair{aa, bb}} <> tt, ", ", False{}), SCon{close,
+        xx}) == String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VPair{aa, bb}, cv.tl(tt, close,
+        xx))}}}) : String}, hw)
+
+# the part of a check that held
+def cv.thl(
+  ok: Bool,
+  -more: Unit -> Bool,
+  hh: {T.wf.then(ok, more) == True{} : Bool}
+) -> {ok == True{} : Bool}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      hh
+
+# and the rest of it
+def cv.thr(
+  ok: Bool,
+  -more: Unit -> Bool,
+  hh: {T.wf.then(ok, more) == True{} : Bool}
+) -> {more(Unit{}) == True{} : Bool}:
+  match ok:
+    case True{}:
+      hh
+    case False{}:
+      Eq.bit.absurd(&2, {more(Unit{}) == True{} : Bool}, hh)
+
+# what wf.go says of an array's first item: it may sit in a value position
+def cv.wfi.hd(
+  ii: T.Val,
+  +tt: List<&2, T.Val>,
+  hw: {T.wf.go(ii <> tt, T.WfItems{}) == True{} : Bool}
+) -> {Laws.cv.wf(ii) == True{} : Bool}:
+  match ii:
+    case T.VArr{+items}:
+      cv.thl(T.wf.go(items, T.WfItems{}), _v => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VInl{+rows}:
+      cv.thl(T.wf.go(rows, T.WfInl{}), _v => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VStr{+aa}:
+      cv.thl(T.wf.atom(T.VStr{aa}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VSpan{+aa, +bb}:
+      cv.thl(T.wf.atom(T.VSpan{aa, bb}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VInt{+aa, +bb}:
+      cv.thl(T.wf.atom(T.VInt{aa, bb}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VFlo{+aa, +bb}:
+      cv.thl(T.wf.atom(T.VFlo{aa, bb}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VBool{+aa}:
+      cv.thl(T.wf.atom(T.VBool{aa}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VWhen{+aa}:
+      cv.thl(T.wf.atom(T.VWhen{aa}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VHead{+aa, +bb}:
+      cv.thl(T.wf.atom(T.VHead{aa, bb}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VAot{aa, bb}:
+      Eq.bit.absurd(&2, {Laws.cv.wf(T.VAot{aa, bb}) == True{} : Bool}, hw)
+    case T.VAots{+aa, +bb}:
+      cv.thl(T.wf.atom(T.VAots{aa, bb}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VPair{aa, bb}:
+      match bb:
+        case T.VHead{_c, _d}:
+          Eq.bit.absurd(&2, {Laws.cv.wf(T.VPair{aa, T.VHead{_c, _d}}) == True{} : Bool}, hw)
+        case T.VAots{_c, _d}:
+          Eq.bit.absurd(&2, {Laws.cv.wf(T.VPair{aa, T.VAots{_c, _d}}) == True{} : Bool}, hw)
+        case T.VArr{_c}:
+          Eq.bit.absurd(&2, {Laws.cv.wf(T.VPair{aa, T.VArr{_c}}) == True{} : Bool}, hw)
+        case T.VInl{_c}:
+          Eq.bit.absurd(&2, {Laws.cv.wf(T.VPair{aa, T.VInl{_c}}) == True{} : Bool}, hw)
+        case T.VStr{_c}:
+          Eq.bit.absurd(&2, {Laws.cv.wf(T.VPair{aa, T.VStr{_c}}) == True{} : Bool}, hw)
+        case T.VSpan{_c, _d}:
+          Eq.bit.absurd(&2, {Laws.cv.wf(T.VPair{aa, T.VSpan{_c, _d}}) == True{} : Bool}, hw)
+        case T.VInt{_c, _d}:
+          Eq.bit.absurd(&2, {Laws.cv.wf(T.VPair{aa, T.VInt{_c, _d}}) == True{} : Bool}, hw)
+        case T.VFlo{_c, _d}:
+          Eq.bit.absurd(&2, {Laws.cv.wf(T.VPair{aa, T.VFlo{_c, _d}}) == True{} : Bool}, hw)
+        case T.VBool{_c}:
+          Eq.bit.absurd(&2, {Laws.cv.wf(T.VPair{aa, T.VBool{_c}}) == True{} : Bool}, hw)
+        case T.VWhen{_c}:
+          Eq.bit.absurd(&2, {Laws.cv.wf(T.VPair{aa, T.VWhen{_c}}) == True{} : Bool}, hw)
+        case T.VAot{_c, _d}:
+          Eq.bit.absurd(&2, {Laws.cv.wf(T.VPair{aa, T.VAot{_c, _d}}) == True{} : Bool}, hw)
+        case T.VPair{_c, _d}:
+          Eq.bit.absurd(&2, {Laws.cv.wf(T.VPair{aa, T.VPair{_c, _d}}) == True{} : Bool}, hw)
+
+# and of the items after it
+def cv.wfi.tl(
+  ii: T.Val,
+  +tt: List<&2, T.Val>,
+  hw: {T.wf.go(ii <> tt, T.WfItems{}) == True{} : Bool}
+) -> {T.wf.go(tt, T.WfItems{}) == True{} : Bool}:
+  match ii:
+    case T.VArr{+items}:
+      cv.thr(T.wf.go(items, T.WfItems{}), _v => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VInl{+rows}:
+      cv.thr(T.wf.go(rows, T.WfInl{}), _v => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VStr{+aa}:
+      cv.thr(T.wf.atom(T.VStr{aa}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VSpan{+aa, +bb}:
+      cv.thr(T.wf.atom(T.VSpan{aa, bb}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VInt{+aa, +bb}:
+      cv.thr(T.wf.atom(T.VInt{aa, bb}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VFlo{+aa, +bb}:
+      cv.thr(T.wf.atom(T.VFlo{aa, bb}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VBool{+aa}:
+      cv.thr(T.wf.atom(T.VBool{aa}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VWhen{+aa}:
+      cv.thr(T.wf.atom(T.VWhen{aa}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VHead{+aa, +bb}:
+      cv.thr(T.wf.atom(T.VHead{aa, bb}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VAot{_aa, _bb}:
+      Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+    case T.VAots{+aa, +bb}:
+      cv.thr(T.wf.atom(T.VAots{aa, bb}), _u => T.wf.go(tt, T.WfItems{}), hw)
+    case T.VPair{_aa, bb}:
+      match bb:
+        case T.VHead{_c, _d}:
+          Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+        case T.VAots{_c, _d}:
+          Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+        case T.VArr{_c}:
+          Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+        case T.VInl{_c}:
+          Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+        case T.VStr{_c}:
+          Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+        case T.VSpan{_c, _d}:
+          Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+        case T.VInt{_c, _d}:
+          Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+        case T.VFlo{_c, _d}:
+          Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+        case T.VBool{_c}:
+          Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+        case T.VWhen{_c}:
+          Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+        case T.VAot{_c, _d}:
+          Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+        case T.VPair{_c, _d}:
+          Eq.bit.absurd(&2, {T.wf.go(tt, T.WfItems{}) == True{} : Bool}, hw)
+
+# what wf.go says of an inline table's first pair: its value may sit in a
+# value position
+def cv.wfp.v(
+  +kk: String,
+  vv: T.Val,
+  +tt: List<&2, T.Val>,
+  hw: {T.wf.go(T.VPair{kk, vv} <> tt, T.WfInl{}) == True{} : Bool}
+) -> {Laws.cv.wf(vv) == True{} : Bool}:
+  match vv:
+    case T.VArr{+items}:
+      cv.thl(T.wf.go(items, T.WfItems{}), _v => T.wf.go(tt, T.WfInl{}), cv.thr(T.wf.key(kk, tt),
+        _u => T.wf.then(T.wf.go(items, T.WfItems{}), _v => T.wf.go(tt, T.WfInl{})), hw))
+    case T.VInl{+rows}:
+      cv.thl(T.wf.go(rows, T.WfInl{}), _v => T.wf.go(tt, T.WfInl{}), cv.thr(T.wf.key(kk, tt),
+        _u => T.wf.then(T.wf.go(rows, T.WfInl{}), _v => T.wf.go(tt, T.WfInl{})), hw))
+    case T.VStr{+aa}:
+      Eq.and.left(T.wf.atom(T.VStr{aa}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VStr{aa}), T.wf.key(kk, tt)),
+        _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VSpan{+aa, +bb}:
+      Eq.and.left(T.wf.atom(T.VSpan{aa, bb}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VSpan{aa, bb}),
+        T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VInt{+aa, +bb}:
+      Eq.and.left(T.wf.atom(T.VInt{aa, bb}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VInt{aa, bb}),
+        T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VFlo{+aa, +bb}:
+      Eq.and.left(T.wf.atom(T.VFlo{aa, bb}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VFlo{aa, bb}),
+        T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VBool{+aa}:
+      Eq.and.left(T.wf.atom(T.VBool{aa}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VBool{aa}), T.wf.key(kk, tt)),
+        _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VWhen{+aa}:
+      Eq.and.left(T.wf.atom(T.VWhen{aa}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VWhen{aa}), T.wf.key(kk, tt)),
+        _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VHead{aa, bb}:
+      Eq.bit.absurd(&2, {Laws.cv.wf(T.VHead{aa, bb}) == True{} : Bool}, hw)
+    case T.VAot{+aa, +bb}:
+      Eq.and.left(T.wf.atom(T.VAot{aa, bb}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VAot{aa, bb}),
+        T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VAots{aa, bb}:
+      Eq.bit.absurd(&2, {Laws.cv.wf(T.VAots{aa, bb}) == True{} : Bool}, hw)
+    case T.VPair{+aa, +bb}:
+      Eq.and.left(T.wf.atom(T.VPair{aa, bb}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VPair{aa, bb}),
+        T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw))
+
+# its name is none of the later pairs'
+def cv.wfp.k(
+  +kk: String,
+  vv: T.Val,
+  +tt: List<&2, T.Val>,
+  hw: {T.wf.go(T.VPair{kk, vv} <> tt, T.WfInl{}) == True{} : Bool}
+) -> {T.wf.key(kk, tt) == True{} : Bool}:
+  match vv:
+    case T.VArr{+items}:
+      cv.thl(T.wf.key(kk, tt), _u => T.wf.then(T.wf.go(items, T.WfItems{}), _v => T.wf.go(tt, T.WfInl{})), hw)
+    case T.VInl{+rows}:
+      cv.thl(T.wf.key(kk, tt), _u => T.wf.then(T.wf.go(rows, T.WfInl{}), _v => T.wf.go(tt, T.WfInl{})), hw)
+    case T.VStr{+aa}:
+      Eq.and.right(T.wf.atom(T.VStr{aa}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VStr{aa}), T.wf.key(kk, tt)),
+        _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VSpan{+aa, +bb}:
+      Eq.and.right(T.wf.atom(T.VSpan{aa, bb}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VSpan{aa, bb}),
+        T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VInt{+aa, +bb}:
+      Eq.and.right(T.wf.atom(T.VInt{aa, bb}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VInt{aa, bb}),
+        T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VFlo{+aa, +bb}:
+      Eq.and.right(T.wf.atom(T.VFlo{aa, bb}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VFlo{aa, bb}),
+        T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VBool{+aa}:
+      Eq.and.right(T.wf.atom(T.VBool{aa}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VBool{aa}),
+        T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VWhen{+aa}:
+      Eq.and.right(T.wf.atom(T.VWhen{aa}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VWhen{aa}),
+        T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VHead{_aa, _bb}:
+      Eq.bit.absurd(&2, {T.wf.key(kk, tt) == True{} : Bool}, hw)
+    case T.VAot{+aa, +bb}:
+      Eq.and.right(T.wf.atom(T.VAot{aa, bb}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VAot{aa, bb}),
+        T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw))
+    case T.VAots{_aa, _bb}:
+      Eq.bit.absurd(&2, {T.wf.key(kk, tt) == True{} : Bool}, hw)
+    case T.VPair{+aa, +bb}:
+      Eq.and.right(T.wf.atom(T.VPair{aa, bb}), T.wf.key(kk, tt), cv.thl(Bool.and(T.wf.atom(T.VPair{aa, bb}),
+        T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw))
+
+# and the later pairs are well-formed
+def cv.wfp.t(
+  +kk: String,
+  vv: T.Val,
+  +tt: List<&2, T.Val>,
+  hw: {T.wf.go(T.VPair{kk, vv} <> tt, T.WfInl{}) == True{} : Bool}
+) -> {T.wf.go(tt, T.WfInl{}) == True{} : Bool}:
+  match vv:
+    case T.VArr{+items}:
+      cv.thr(T.wf.go(items, T.WfItems{}), _v => T.wf.go(tt, T.WfInl{}), cv.thr(T.wf.key(kk, tt),
+        _u => T.wf.then(T.wf.go(items, T.WfItems{}), _v => T.wf.go(tt, T.WfInl{})), hw))
+    case T.VInl{+rows}:
+      cv.thr(T.wf.go(rows, T.WfInl{}), _v => T.wf.go(tt, T.WfInl{}), cv.thr(T.wf.key(kk, tt),
+        _u => T.wf.then(T.wf.go(rows, T.WfInl{}), _v => T.wf.go(tt, T.WfInl{})), hw))
+    case T.VStr{+aa}:
+      cv.thr(Bool.and(T.wf.atom(T.VStr{aa}), T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw)
+    case T.VSpan{+aa, +bb}:
+      cv.thr(Bool.and(T.wf.atom(T.VSpan{aa, bb}), T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw)
+    case T.VInt{+aa, +bb}:
+      cv.thr(Bool.and(T.wf.atom(T.VInt{aa, bb}), T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw)
+    case T.VFlo{+aa, +bb}:
+      cv.thr(Bool.and(T.wf.atom(T.VFlo{aa, bb}), T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw)
+    case T.VBool{+aa}:
+      cv.thr(Bool.and(T.wf.atom(T.VBool{aa}), T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw)
+    case T.VWhen{+aa}:
+      cv.thr(Bool.and(T.wf.atom(T.VWhen{aa}), T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw)
+    case T.VHead{_aa, _bb}:
+      Eq.bit.absurd(&2, {T.wf.go(tt, T.WfInl{}) == True{} : Bool}, hw)
+    case T.VAot{+aa, +bb}:
+      cv.thr(Bool.and(T.wf.atom(T.VAot{aa, bb}), T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw)
+    case T.VAots{_aa, _bb}:
+      Eq.bit.absurd(&2, {T.wf.go(tt, T.WfInl{}) == True{} : Bool}, hw)
+    case T.VPair{+aa, +bb}:
+      cv.thr(Bool.and(T.wf.atom(T.VPair{aa, bb}), T.wf.key(kk, tt)), _u => T.wf.go(tt, T.WfInl{}), hw)
+
+# the strings of an item and of the items after it
+def cv.sh.item(
+  ii: T.Val,
+  +tt: List<&2, T.Val>,
+  hw: {Laws.cv.wf(ii) == True{} : Bool}
+) -> {Laws.cv.shorts(ii <> tt) == Bool.and(Laws.cv.short1(ii), Laws.cv.shorts(tt)) : Bool}:
+  match ii:
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+    case T.VPair{aa, bb}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{aa, bb} <> tt) == Bool.and(Laws.cv.short1(T.VPair{aa, bb}),
+        Laws.cv.shorts(tt)) : Bool}, hw)
+
+# the strings of a pair's value and of the pairs after it
+def cv.sh.pair(
+  +kk: String,
+  vv: T.Val,
+  +tt: List<&2, T.Val>
+) -> {Laws.cv.shorts(T.VPair{kk, vv} <> tt) == Bool.and(Laws.cv.short1(vv), Laws.cv.shorts(tt)) : Bool}:
+  match vv:
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+    case T.VPair{_a, _b}:
+      {==}
+
+# Names. The pairs read so far are the inline table's rows, newest first; a
+# pair's name must be none of theirs for the walk to put it, and wf says it is
+# none of the later pairs'. str.eq is symmetric, so that is the same thing.
+
+# a lookup that missed is a miss
+def cv.miss(
+  hh: T.Hit,
+  ee: {Laws.is_miss(hh) == True{} : Bool}
+) -> {hh == T.Miss{} : T.Hit}:
+  match hh:
+    case T.Miss{}:
+      {==}
+    case T.Found{vv}:
+      Eq.bit.absurd(&2, {T.Found{vv} == T.Miss{} : T.Hit}, ee)
+
+# no name is in an empty table
+def cv.fr.nil(rows: List<&2, T.Val>) -> {cv.fr([], rows) == True{} : Bool}:
+  match rows:
+    case []:
+      {==}
+    case T.VPair{_kk, _vv} <> tt:
+      cv.fr.nil(tt)
+    case T.VStr{_a} <> tt:
+      cv.fr.nil(tt)
+    case T.VSpan{_a, _b} <> tt:
+      cv.fr.nil(tt)
+    case T.VInt{_a, _b} <> tt:
+      cv.fr.nil(tt)
+    case T.VFlo{_a, _b} <> tt:
+      cv.fr.nil(tt)
+    case T.VBool{_a} <> tt:
+      cv.fr.nil(tt)
+    case T.VWhen{_a} <> tt:
+      cv.fr.nil(tt)
+    case T.VArr{_a} <> tt:
+      cv.fr.nil(tt)
+    case T.VInl{_a} <> tt:
+      cv.fr.nil(tt)
+    case T.VHead{_a, _b} <> tt:
+      cv.fr.nil(tt)
+    case T.VAot{_a, _b} <> tt:
+      cv.fr.nil(tt)
+    case T.VAots{_a, _b} <> tt:
+      cv.fr.nil(tt)
+
+# two chars compare alike either way round
+def cv.ceq.go(
+  b1: Bool,
+  b2: Bool,
+  +xx: Char,
+  +yy: Char,
+  +e1: {Char.is_eq(xx, yy) == b1 : Bool},
+  +e2: {Char.is_eq(yy, xx) == b2 : Bool}
+) -> {b1 == b2 : Bool}:
+  match b1:
+    case True{}:
+      match b2:
+        case True{}:
+          {==}
+        case False{}:
+          Equal.trans(Bool, True{}, Char.is_eq(yy, xx), False{},
+            Equal.trans(Bool, True{}, Char.is_eq(yy, yy), Char.is_eq(yy, xx),
+              Equal.sym(Bool, Char.is_eq(yy, yy), True{}, Eq.char_eq_self(yy)),
+              Equal.cong(Char, Bool, cc => Char.is_eq(yy, cc), yy, xx,
+                Equal.sym(Char, xx, yy, Eq.char_eq_true(xx, yy, e1)))), e2)
+    case False{}:
+      match b2:
+        case True{}:
+          Equal.trans(Bool, False{}, Char.is_eq(xx, yy), True{}, Equal.sym(Bool, Char.is_eq(xx, yy), False{}, e1),
+            Equal.trans(Bool, Char.is_eq(xx, yy), Char.is_eq(xx, xx), True{},
+              Equal.cong(Char, Bool, cc => Char.is_eq(xx, cc), yy, xx, Eq.char_eq_true(yy, xx, e2)),
+              Eq.char_eq_self(xx)))
+        case False{}:
+          {==}
+
+# two chars compare alike either way round
+def cv.ceq.sym(+xx: Char, +yy: Char) -> {Char.is_eq(xx, yy) == Char.is_eq(yy, xx) : Bool}:
+  cv.ceq.go(Char.is_eq(xx, yy), Char.is_eq(yy, xx), xx, yy, {==}, {==})
+
+# and so do two strings, from any start
+def cv.seqs(
+  aa: String,
+  bb: String,
+  ss: Bool
+) -> {T.str.eq.step(aa, bb, ss) == T.str.eq.step(bb, aa, ss) : Bool}:
+  match aa:
+    case SNil{}:
+      match bb:
+        case SNil{}:
+          match ss:
+            case True{}:
+              {==}
+            case False{}:
+              {==}
+        case SCon{_y, _yt}:
+          match ss:
+            case True{}:
+              {==}
+            case False{}:
+              {==}
+    case SCon{+xx, +xt}:
+      match bb:
+        case SNil{}:
+          match ss:
+            case True{}:
+              {==}
+            case False{}:
+              {==}
+        case SCon{+yy, +yt}:
+          match ss:
+            case True{}:
+              Equal.trans(Bool, T.str.eq.step(xt, yt, Char.is_eq(xx, yy)), T.str.eq.step(yt, xt, Char.is_eq(xx, yy)),
+                T.str.eq.step(yt, xt, Char.is_eq(yy, xx)), cv.seqs(xt, yt, Char.is_eq(xx, yy)),
+                Equal.cong(Bool, Bool, bt => T.str.eq.step(yt, xt, bt), Char.is_eq(xx, yy), Char.is_eq(yy, xx),
+                  cv.ceq.sym(xx, yy)))
+            case False{}:
+              {==}
+
+# a lookup that passes a pair tells its name was not the one looked for
+def cv.fs.l(
+  bb: Bool,
+  +xx: T.Val,
+  -more: Unit -> T.Hit,
+  hh: {T.wf.fresh(T.find.step(bb, xx, more)) == True{} : Bool}
+) -> {bb == False{} : Bool}:
+  match bb:
+    case True{}:
+      Eq.bit.absurd(&2, {True{} == False{} : Bool}, hh)
+    case False{}:
+      {==}
+
+# and goes on to the rest
+def cv.fs.r(
+  bb: Bool,
+  +xx: T.Val,
+  -more: Unit -> T.Hit,
+  hh: {T.wf.fresh(T.find.step(bb, xx, more)) == True{} : Bool}
+) -> {T.wf.fresh(more(Unit{})) == True{} : Bool}:
+  match bb:
+    case True{}:
+      Eq.bit.absurd(&2, {T.wf.fresh(more(Unit{})) == True{} : Bool}, hh)
+    case False{}:
+      hh
+
+# both halves of an and
+def cv.and2(
+  aa: Bool,
+  bb: Bool,
+  ha: {aa == True{} : Bool},
+  hb: {bb == True{} : Bool}
+) -> {Bool.and(aa, bb) == True{} : Bool}:
+  match aa:
+    case True{}:
+      hb
+    case False{}:
+      Eq.bit.absurd(&2, {Bool.and(False{}, bb) == True{} : Bool}, ha)
+
+# a pair put in front keeps every later name missing, once its own name is
+# none of theirs
+def cv.fr.step(
+  tt: List<&2, T.Val>,
+  +kk: String,
+  +v2: T.Val,
+  +inl: List<&2, T.Val>,
+  +h1: {cv.fr(inl, tt) == True{} : Bool},
+  +h2: {T.wf.fresh(T.get(tt, kk)) == True{} : Bool}
+) -> {cv.fr(T.VPair{kk, v2} <> inl, tt) == True{} : Bool}:
+  match tt:
+    case []:
+      {==}
+    case T.VPair{+k2, +xx} <> +t2:
+      +e1 = {cv.fs.l(T.str.eq(k2, kk), xx, _u => T.rows.find(t2, kk), h2) : {T.str.eq(k2, kk) == False{} : Bool}}
+      +e3 = {Equal.trans(Bool, T.str.eq(kk, k2), T.str.eq(k2, kk), False{}, cv.seqs(kk, k2, True{}), e1)
+        : {T.str.eq(kk, k2) == False{} : Bool}}
+      %Equal.sym(Bool, T.str.eq(kk, k2), False{}, e3) : {Bool.and(Laws.is_miss(T.find.step(_, v2,
+        _u => T.rows.find(inl, k2))), cv.fr(T.VPair{kk, v2} <> inl, t2)) == True{} : Bool}
+      cv.and2(Laws.is_miss(T.rows.find(inl, k2)), cv.fr(T.VPair{kk, v2} <> inl, t2),
+        Eq.and.left(Laws.is_miss(T.get(inl, k2)), cv.fr(inl, t2), h1),
+        cv.fr.step(t2, kk, v2, inl, Eq.and.right(Laws.is_miss(T.get(inl, k2)), cv.fr(inl, t2), h1),
+          cv.fs.r(T.str.eq(k2, kk), xx, _u => T.rows.find(t2, kk), h2)))
+    case T.VStr{_a} <> +t2:
+      cv.fr.step(t2, kk, v2, inl, h1, h2)
+    case T.VSpan{_a, _b} <> +t2:
+      cv.fr.step(t2, kk, v2, inl, h1, h2)
+    case T.VInt{_a, _b} <> +t2:
+      cv.fr.step(t2, kk, v2, inl, h1, h2)
+    case T.VFlo{_a, _b} <> +t2:
+      cv.fr.step(t2, kk, v2, inl, h1, h2)
+    case T.VBool{_a} <> +t2:
+      cv.fr.step(t2, kk, v2, inl, h1, h2)
+    case T.VWhen{_a} <> +t2:
+      cv.fr.step(t2, kk, v2, inl, h1, h2)
+    case T.VArr{_a} <> +t2:
+      cv.fr.step(t2, kk, v2, inl, h1, h2)
+    case T.VInl{_a} <> +t2:
+      cv.fr.step(t2, kk, v2, inl, h1, h2)
+    case T.VHead{_a, _b} <> +t2:
+      cv.fr.step(t2, kk, v2, inl, h1, h2)
+    case T.VAot{_a, _b} <> +t2:
+      cv.fr.step(t2, kk, v2, inl, h1, h2)
+    case T.VAots{_a, _b} <> +t2:
+      cv.fr.step(t2, kk, v2, inl, h1, h2)
+
+# Values put. A value own reads as the scanner's form of a well-formed value
+# is no pair and no table, so a pair of it reads as the pair of that form,
+# and sealing an inline table leaves it where it is.
+
+# no pair and no table
+def cv.plain(vv: T.Val) -> Bool:
+  match vv:
+    case T.VPair{_nn, _yy}:
+      False{}
+    case T.VHead{_pp, _rr}:
+      False{}
+    case _:
+      True{}
+
+# own keeps a value a pair or a table, or neither
+def cv.plain.own(xx: T.Val) -> {cv.plain(Laws.cv.own1(xx)) == cv.plain(xx) : Bool}:
+  match xx:
+    case T.VPair{_nn, yy}:
+      match yy:
+        case T.VStr{_a}:
+          {==}
+        case T.VSpan{_a, _b}:
+          {==}
+        case T.VInt{_a, _b}:
+          {==}
+        case T.VFlo{_a, _b}:
+          {==}
+        case T.VBool{_a}:
+          {==}
+        case T.VWhen{_a}:
+          {==}
+        case T.VArr{_a}:
+          {==}
+        case T.VInl{_a}:
+          {==}
+        case T.VHead{_a, _b}:
+          {==}
+        case T.VAot{_a, _b}:
+          {==}
+        case T.VAots{_a, _b}:
+          {==}
+        case T.VPair{_a, _b}:
+          {==}
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+
+# the scanner's form of a well-formed value is no pair and no table
+def cv.plain.raw(
+  vv: T.Val,
+  hw: {Laws.cv.wf(vv) == True{} : Bool}
+) -> {cv.plain(Laws.cv.raw1(vv)) == True{} : Bool}:
+  match vv:
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{aa, bb}:
+      Eq.bit.absurd(&2, {cv.plain(Laws.cv.raw1(T.VHead{aa, bb})) == True{} : Bool}, hw)
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+    case T.VPair{aa, bb}:
+      Eq.bit.absurd(&2, {cv.plain(Laws.cv.raw1(T.VPair{aa, bb})) == True{} : Bool}, hw)
+
+# so a value put for it is no pair and no table
+def cv.plain.of(
+  +vv: T.Val,
+  +ww: T.Val,
+  hh: {Laws.cv.own1(vv) == Laws.cv.raw1(ww) : T.Val},
+  hw: {Laws.cv.wf(ww) == True{} : Bool}
+) -> {cv.plain(vv) == True{} : Bool}:
+  Equal.trans(Bool, cv.plain(vv), cv.plain(Laws.cv.own1(vv)), True{},
+    Equal.sym(Bool, cv.plain(Laws.cv.own1(vv)), cv.plain(vv), cv.plain.own(vv)),
+    Equal.trans(Bool, cv.plain(Laws.cv.own1(vv)), cv.plain(Laws.cv.raw1(ww)), True{},
+      Equal.cong(T.Val, Bool, xx => cv.plain(xx), Laws.cv.own1(vv), Laws.cv.raw1(ww), hh),
+      cv.plain.raw(ww, hw)))
+
+# own reads a pair of a value that is no pair as the pair of what it reads
+def cv.own.pair(
+  +kk: String,
+  vv: T.Val,
+  hp: {cv.plain(vv) == True{} : Bool}
+) -> {Laws.cv.own1(T.VPair{kk, vv}) == T.VPair{kk, Laws.cv.own1(vv)} : T.Val}:
+  match vv:
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+    case T.VPair{aa, bb}:
+      Eq.bit.absurd(&2, {Laws.cv.own1(T.VPair{kk, T.VPair{aa, bb}}) == T.VPair{kk, Laws.cv.own1(T.VPair{aa, bb})}
+        : T.Val}, hp)
+
+# and so does the scanner's form
+def cv.raw.pair(
+  +kk: String,
+  vv: T.Val,
+  hw: {Laws.cv.wf(vv) == True{} : Bool}
+) -> {Laws.cv.raw1(T.VPair{kk, vv}) == T.VPair{kk, Laws.cv.raw1(vv)} : T.Val}:
+  match vv:
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+    case T.VPair{aa, bb}:
+      Eq.bit.absurd(&2, {Laws.cv.raw1(T.VPair{kk, T.VPair{aa, bb}}) == T.VPair{kk, Laws.cv.raw1(T.VPair{aa, bb})}
+        : T.Val}, hw)
+
+# a pair of a value put reads as the pair of the value render wrote
+def cv.lift(
+  +kk: String,
+  +vv: T.Val,
+  +ww: T.Val,
+  +hh: {Laws.cv.own1(vv) == Laws.cv.raw1(ww) : T.Val},
+  +hw: {Laws.cv.wf(ww) == True{} : Bool}
+) -> {Laws.cv.own1(T.VPair{kk, vv}) == Laws.cv.raw1(T.VPair{kk, ww}) : T.Val}:
+  Equal.trans(T.Val, Laws.cv.own1(T.VPair{kk, vv}), T.VPair{kk, Laws.cv.own1(vv)}, Laws.cv.raw1(T.VPair{kk, ww}),
+    cv.own.pair(kk, vv, cv.plain.of(vv, ww, hh, hw)),
+    Equal.trans(T.Val, T.VPair{kk, Laws.cv.own1(vv)}, T.VPair{kk, Laws.cv.raw1(ww)}, Laws.cv.raw1(T.VPair{kk, ww}),
+      Equal.cong(T.Val, T.Val, yy => T.VPair{kk, yy}, Laws.cv.own1(vv), Laws.cv.raw1(ww), hh),
+      Equal.sym(T.Val, Laws.cv.raw1(T.VPair{kk, ww}), T.VPair{kk, Laws.cv.raw1(ww)}, cv.raw.pair(kk, ww, hw))))
+
+# sealing passes over a pair of a value that is no table
+def cv.seal.cons(
+  +kk: String,
+  vv: T.Val,
+  +xs: List<&2, T.Val>,
+  hp: {cv.plain(vv) == True{} : Bool}
+) -> {T.inl.seal(T.VPair{kk, vv} <> xs) == T.VPair{kk, vv} <> T.inl.seal(xs) : List<&2, T.Val>}:
+  match vv:
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{aa, bb}:
+      Eq.bit.absurd(&2, {T.inl.seal(T.VPair{kk, T.VHead{aa, bb}} <> xs) == T.VPair{kk, T.VHead{aa, bb}} <>
+        T.inl.seal(xs) : List<&2, T.Val>}, hp)
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+    case T.VPair{_a, _b}:
+      {==}
+
+# An inline table's pair. The key is read to the value position with the key
+# as the one part; the value is read and put by a walk of that one part into
+# the frame's rows (WP-W's put contract, with the rows so far as the table,
+# no heads and the inline flag), so it goes in front; the scanner waits in
+# LInlC, where ", " goes on to the next key and `}` closes the table.
+
+# the scanner after a pair of an inline table, waiting for ", " or `}`
+def cv.ic(
+  inl: List<&2, T.Val>,
+  ps0: List<&2, String>,
+  +he0: List<&2, String>,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  bk: T.Lex,
+  qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  ab: Bool
+) -> T.St:
+  T.St{"", rw, hs, he0, [], [], T.LInlC{}, bk, qk, T.CInl{inl, ps0, he0} <> sk, T.HNone{}, un, lf, ab, False{}}
+
+# the claim for the pairs after one, from the frame with any pair of the
+# name put in front and any fields that value leaves
+def cv.IhI(
+  +tt: List<&2, T.Val>,
+  +kk: String,
+  +inl: List<&2, T.Val>,
+  +ps0: List<&2, String>,
+  +he0: List<&2, String>,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  @v2: T.Val -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
+    cv.G(tt, True{}, T.VPair{kk, v2} <> inl, ps0, he0, rw, hs, he0, [], b2, q2, sk, u2, l2, ab, rest, PP)
+
+# the reader of a pair's value, from wherever the key left the fields
+def cv.RdP(
+  +vv: T.Val,
+  +kk: String,
+  +inl: List<&2, T.Val>,
+  +ps0: List<&2, String>,
+  +he0: List<&2, String>,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +zz: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 -> {Laws.cv.wf(vv) == True{} : Bool} ->
+    {Laws.cv.short1(vv) == True{} : Bool} ->
+    cv.Rd(vv, rw, hs, he0, [kk], b2, q2, T.CInl{inl, ps0, he0} <> sk, u2, l2, ab, zz, PP)
+
+# the frame's rows once a pair is put in front: sealing still leaves them
+def cv.seal.put(
+  +kk: String,
+  +v2: T.Val,
+  +vv: T.Val,
+  +inl: List<&2, T.Val>,
+  hh: {Laws.cv.own1(v2) == Laws.cv.raw1(vv) : T.Val},
+  hwv: {Laws.cv.wf(vv) == True{} : Bool},
+  hsl: {T.inl.seal(inl) == inl : List<&2, T.Val>}
+) -> {T.inl.seal(T.VPair{kk, v2} <> inl) == T.VPair{kk, v2} <> inl : List<&2, T.Val>}:
+  Equal.trans(List<&2, T.Val>, T.inl.seal(T.VPair{kk, v2} <> inl), T.VPair{kk, v2} <> T.inl.seal(inl),
+    T.VPair{kk, v2} <> inl, cv.seal.cons(kk, v2, inl, cv.plain.of(v2, vv, hh, hwv)),
+    Equal.cong(List<&2, T.Val>, List<&2, T.Val>, ys => T.VPair{kk, v2} <> ys, T.inl.seal(inl), inl, hsl))
+
+# after the pair is put: `}` closes, ", " goes on
+def cv.afteri.go(
+  tt: List<&2, T.Val>,
+  +kk: String,
+  +vv: T.Val,
+  +v2: T.Val,
+  +inl: List<&2, T.Val>,
+  +ps0: List<&2, String>,
+  +he0: List<&2, String>,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  +hh: {Laws.cv.own1(v2) == Laws.cv.raw1(vv) : T.Val},
+  ih_t: cv.IhI(tt, kk, inl, ps0, he0, rw, hs, sk, ab, rest, PP),
+  hwt: {T.wf.go(tt, T.WfInl{}) == True{} : Bool},
+  hst: {Laws.cv.shorts(tt) == True{} : Bool},
+  hn: {Laws.cv.end(rest) == True{} : Bool},
+  hfr: {T.wf.fresh(T.get(tt, kk)) == True{} : Bool},
+  hft: {cv.fr(inl, tt) == True{} : Bool},
+  hsl: {T.inl.seal(inl) == inl : List<&2, T.Val>},
+  +hwv: {Laws.cv.wf(vv) == True{} : Bool},
+  then: cv.ThenI(T.VPair{kk, vv} <> tt, inl, ps0, he0, rw, hs, sk, ab, rest, PP)
+) -> PP(T.doc.read(cv.tl(tt, '}', rest), T.MScan{cv.ic(T.VPair{kk, v2} <> inl, ps0, he0, rw, hs, bk, qk, sk, un, lf,
+  ab)})):
+  match tt:
+    case []:
+      pp.step(PP, T.doc.read(SCon{'}', rest}, T.MScan{cv.ic(T.VPair{kk, v2} <> inl, ps0, he0, rw, hs, bk, qk, sk, un,
+        lf, ab)}),
+        T.doc.read(rest, T.MScan{cv.put(sk, T.VInl{T.inl.seal(T.VPair{kk, v2} <> inl)}, rw, hs, he0, ps0, bk, qk, un,
+          lf, ab)}),
+        Equal.cong(T.St, T.Doc, st => T.doc.read(rest, T.MScan{st}),
+          T.read.once2(cv.put(sk, T.VInl{T.inl.seal(T.VPair{kk, v2} <> inl)}, rw, hs, he0, ps0, bk, qk, un, lf, ab)),
+          cv.put(sk, T.VInl{T.inl.seal(T.VPair{kk, v2} <> inl)}, rw, hs, he0, ps0, bk, qk, un, lf, ab),
+          Equal.sym(T.St, cv.put(sk, T.VInl{T.inl.seal(T.VPair{kk, v2} <> inl)}, rw, hs, he0, ps0, bk, qk, un, lf, ab),
+            T.read.once2(cv.put(sk, T.VInl{T.inl.seal(T.VPair{kk, v2} <> inl)}, rw, hs, he0, ps0, bk, qk, un, lf,
+            ab)), tk.once(sk, T.VInl{T.inl.seal(T.VPair{kk, v2} <> inl)}, "", rw, hs, he0, ps0, bk, qk, un, lf, ab,
+            False{}))),
+        then(T.VPair{kk, v2} <> inl, bk, qk, un, lf, cv.grew(T.VPair{kk, vv}, [], T.VPair{kk, v2}, inl,
+          T.VPair{kk, v2} <> inl, cv.lift(kk, v2, vv, hh, hwv), {==}), cv.seal.put(kk, v2, vv, inl, hh, hwv, hsl)))
+    case +h2 <> +t2:
+      ih_t(v2, bk, qk, un, lf)({==}, hwt, hst, hn, cv.fr.step(h2 <> t2, kk, v2, inl, hft, hfr),
+        cv.seal.put(kk, v2, vv, inl, hh, hwv, hsl),
+        +in2 => b4 => q4 => u4 => l4 => hg => hs4 => then(in2, b4, q4, u4, l4, cv.grew(T.VPair{kk, vv}, h2 <> t2,
+          T.VPair{kk, v2}, inl, in2, cv.lift(kk, v2, vv, hh, hwv), hg), hs4))
+
+# after a pair's value: the walk puts the pair in front, then `}` closes the
+# table and ", " waits for the next key
+def cv.afteri(
+  +tt: List<&2, T.Val>,
+  +kk: String,
+  +vv: T.Val,
+  +v2: T.Val,
+  +inl: List<&2, T.Val>,
+  +ps0: List<&2, String>,
+  +he0: List<&2, String>,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  +hh: {Laws.cv.own1(v2) == Laws.cv.raw1(vv) : T.Val},
+  ih_t: cv.IhI(tt, kk, inl, ps0, he0, rw, hs, sk, ab, rest, PP),
+  hwt: {T.wf.go(tt, T.WfInl{}) == True{} : Bool},
+  hst: {Laws.cv.shorts(tt) == True{} : Bool},
+  hn: {Laws.cv.end(rest) == True{} : Bool},
+  hfr: {T.wf.fresh(T.get(tt, kk)) == True{} : Bool},
+  hft: {cv.fr(inl, tt) == True{} : Bool},
+  hsl: {T.inl.seal(inl) == inl : List<&2, T.Val>},
+  +hwv: {Laws.cv.wf(vv) == True{} : Bool},
+  em: {T.get(inl, kk) == T.Miss{} : T.Hit},
+  then: cv.ThenI(T.VPair{kk, vv} <> tt, inl, ps0, he0, rw, hs, sk, ab, rest, PP)
+) -> PP(T.doc.read(cv.tl(tt, '}', rest), T.MScan{cv.put(T.CInl{inl, ps0, he0} <> sk, v2, rw, hs, he0, [kk], bk, qk,
+  un, lf, ab)})):
+  pp.step(PP, T.doc.read(cv.tl(tt, '}', rest), T.MScan{cv.put(T.CInl{inl, ps0, he0} <> sk, v2, rw, hs, he0, [kk], bk,
+    qk, un, lf, ab)}),
+    T.doc.read(cv.tl(tt, '}', rest), T.MScan{cv.ic(T.VPair{kk, v2} <> inl, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)}),
+    Equal.cong(T.End, T.Doc, en => T.doc.read(cv.tl(tt, '}', rest), T.MScan{T.take.inl(en, rw, hs, he0, ps0, sk, bk,
+      qk, un, lf, ab, False{})}),
+      T.tree.walk(List.append(&2, String, [], [kk]), T.Tw{inl, T.JPut{v2}, [], "", "", [], True{}}, 0),
+      T.End{Laws.tb.set([], "", inl, T.VPair{kk, v2} <> Laws.tb.rows([], inl)), "", []},
+      Laws.walk_put_at_head([], kk, v2, inl, [], 0, True{}, {==}, {==}, em)),
+    cv.afteri.go(tt, kk, vv, v2, inl, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab, rest, PP, hh, ih_t, hwt, hst, hn, hfr,
+      hft, hsl, hwv, then))
+
+# a pair, then what follows it: the key, " = ", the value, put in front of
+# the frame's rows
+def cv.pair(
+  +kk: String,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +inl: List<&2, T.Val>,
+  +ps0: List<&2, String>,
+  +he0: List<&2, String>,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  rd: cv.RdP(vv, kk, inl, ps0, he0, rw, hs, sk, ab, cv.tl(tt, '}', rest), PP),
+  ih_t: cv.IhI(tt, kk, inl, ps0, he0, rw, hs, sk, ab, rest, PP),
+  +hw: {T.wf.go(T.VPair{kk, vv} <> tt, T.WfInl{}) == True{} : Bool},
+  +hs2: {Laws.cv.shorts(T.VPair{kk, vv} <> tt) == True{} : Bool},
+  hn: {Laws.cv.end(rest) == True{} : Bool},
+  +hfi: {cv.fr(inl, T.VPair{kk, vv} <> tt) == True{} : Bool},
+  hsl: {T.inl.seal(inl) == inl : List<&2, T.Val>},
+  then: cv.ThenI(T.VPair{kk, vv} <> tt, inl, ps0, he0, rw, hs, sk, ab, rest, PP)
+) -> PP(T.doc.read(String.append(T.render.go(T.VPair{kk, vv} <> tt, ", ", False{}), SCon{'}', rest}),
+  T.MScan{cv.ik(inl, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)})):
+  +hwv = {cv.wfp.v(kk, vv, tt, hw) : {Laws.cv.wf(vv) == True{} : Bool}}
+  +hsp = {Equal.trans(Bool, Bool.and(Laws.cv.short1(vv), Laws.cv.shorts(tt)), Laws.cv.shorts(T.VPair{kk, vv} <> tt),
+    True{}, Equal.sym(Bool, Laws.cv.shorts(T.VPair{kk, vv} <> tt), Bool.and(Laws.cv.short1(vv), Laws.cv.shorts(tt)),
+    cv.sh.pair(kk, vv, tt)), hs2) : {Bool.and(Laws.cv.short1(vv), Laws.cv.shorts(tt)) == True{} : Bool}}
+  +zz = {cv.tl(tt, '}', rest) : String}
+  pp.step(PP, T.doc.read(String.append(T.render.go(T.VPair{kk, vv} <> tt, ", ", False{}), SCon{'}', rest}),
+    T.MScan{cv.ik(inl, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)}),
+    T.doc.read(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(vv, zz)}}}),
+      T.MScan{cv.ik(inl, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)}),
+    Equal.cong(String, T.Doc, xs => T.doc.read(xs, T.MScan{cv.ik(inl, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)}),
+      String.append(T.render.go(T.VPair{kk, vv} <> tt, ", ", False{}), SCon{'}', rest}),
+      String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(vv, zz)}}}),
+      cv.ptx(kk, vv, tt, '}', rest, hwv)),
+    cv.key(kk, Laws.cv.tx(vv, zz), rw, hs, he0, bk, qk, T.CInl{inl, ps0, he0} <> sk, un, lf, ab, PP,
+      b2 => q2 => u2 => l2 => rd(b2, q2, u2, l2, hwv, Eq.and.left(Laws.cv.short1(vv), Laws.cv.shorts(tt), hsp))(
+        cv.tl.endi(tt, rest), +v2 => b3 => q3 => u3 => l3 => hh => cv.afteri(tt, kk, vv, v2, inl, ps0, he0, rw, hs, b3,
+        q3, sk, u3, l3, ab, rest, PP, hh, ih_t, cv.wfp.t(kk, vv, tt, hw), Eq.and.right(Laws.cv.short1(vv),
+        Laws.cv.shorts(tt), hsp), hn, Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(tt, kk)), cv.wfp.k(kk, vv, tt, hw)),
+        Eq.and.right(Laws.is_miss(T.get(inl, kk)), cv.fr(inl, tt), hfi), hsl, hwv,
+        cv.miss(T.get(inl, kk), Eq.and.left(Laws.is_miss(T.get(inl, kk)), cv.fr(inl, tt), hfi)), then))))
+
+# the array put: own reads its items, reversed from what the frame held, as
+# the scanner's form of the items
+def cv.arr.is(
+  +items: List<&2, T.Val>,
+  +ac2: List<&2, T.Val>,
+  hh: {Laws.own.rows(ac2) == List.reverse.go(&2, T.Val, Laws.cv.raw(items), Laws.own.rows([])) : List<&2, T.Val>}
+) -> {Laws.cv.own1(T.VArr{List.reverse(&2, T.Val, ac2)}) == Laws.cv.raw1(T.VArr{items}) : T.Val}:
+  Equal.cong(List<&2, T.Val>, T.Val, xs => T.VArr{xs}, Laws.own.rows(List.reverse(&2, T.Val, ac2)), Laws.cv.raw(items),
+    Equal.trans(List<&2, T.Val>, Laws.own.rows(List.reverse.go(&2, T.Val, ac2, [])),
+      List.reverse.go(&2, T.Val, Laws.own.rows(ac2), []), Laws.cv.raw(items), cv.own.rev(ac2, []),
+      Equal.trans(List<&2, T.Val>, List.reverse.go(&2, T.Val, Laws.own.rows(ac2), []),
+        List.reverse(&2, T.Val, List.reverse(&2, T.Val, Laws.cv.raw(items))), Laws.cv.raw(items),
+        Equal.cong(List<&2, T.Val>, List<&2, T.Val>, ys => List.reverse.go(&2, T.Val, ys, []), Laws.own.rows(ac2),
+          List.reverse.go(&2, T.Val, Laws.cv.raw(items), []), hh),
+        cv.rev2(Laws.cv.raw(items)))))
+
+# the inline table put: own reads its pairs, sealed, as the scanner's form
+def cv.inl.is(
+  +rows: List<&2, T.Val>,
+  +in2: List<&2, T.Val>,
+  hh: {Laws.own.rows(in2) == List.reverse.go(&2, T.Val, Laws.cv.raw(rows), Laws.own.rows([])) : List<&2, T.Val>},
+  hsl: {T.inl.seal(in2) == in2 : List<&2, T.Val>}
+) -> {Laws.cv.own1(T.VInl{T.inl.seal(in2)}) == Laws.cv.raw1(T.VInl{rows}) : T.Val}:
+  Equal.cong(List<&2, T.Val>, T.Val, xs => T.VInl{xs}, Laws.own.rows(T.inl.seal(in2)),
+    List.reverse(&2, T.Val, Laws.cv.raw(rows)),
+    Equal.trans(List<&2, T.Val>, Laws.own.rows(T.inl.seal(in2)), Laws.own.rows(in2),
+      List.reverse(&2, T.Val, Laws.cv.raw(rows)),
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, ys => Laws.own.rows(ys), T.inl.seal(in2), in2, hsl), hh))
+
+# what the induction proves of a value's list: an array's items, an inline
+# table's pairs, or nothing for a scalar
+def cv.Sub(
+  +vv: T.Val,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  match vv:
+    case T.VArr{items}:
+      cv.G(items, False{}, [], ps, he, rw, hs, he, [], bk, qk, sk, un, lf, ab, rest, PP)
+    case T.VInl{rows}:
+      cv.G(rows, True{}, [], ps, he, rw, hs, he, [], bk, qk, sk, un, lf, ab, rest, PP)
+    case _:
+      Unit
