@@ -3258,3 +3258,24 @@ law gd_key_steps:
   for +cc: Char
   for ec: {T.wf.char(cc) == True{} : Bool}
   {good(T.read.on(lex, st, cc)) == True{} : Bool}
+
+# LAW: sealing keeps rows well-formed wherever they sit: rows well-formed
+# newest first, as the scanner builds them, are well-formed once rows.seal
+# has put every table back in the order it was written. A table's names are
+# fresh against the pairs before them exactly when they are against the pairs
+# after, so the reversal keeps them apart
+# TOML-RT-3
+law gd_seal:
+  for +rows: List<&2, T.Val>
+  for +at: T.WfAt
+  for ew: {T.wf.go(rows, at) == True{} : Bool}
+  {T.wf.go(T.rows.seal(rows), at) == True{} : Bool}
+
+# LAW: a good state that ends the text gives a well-formed document whenever
+# it gives no error: the document's rows are the state's, sealed
+# TOML-RT-3
+law gd_fin:
+  for +st: T.St
+  for eg: {good(st) == True{} : Bool}
+  for eo: {String.is_empty(T.bad(T.read.fin.doc(st))) == True{} : Bool}
+  {T.wf(T.read.fin.doc(st)) == True{} : Bool}
