@@ -3459,3 +3459,21 @@ law render_parse:
   for +w: {T.wf(d) == True{} : Bool}
   for h_s: {short(T.render(d)) == True{} : Bool}
   {Bool.and(String.is_empty(T.bad(T.parse(T.render(d)))), same(T.parse(T.render(d)), d)) == True{} : Bool}
+
+# a bare word's value, when it has one, is one a key may hold
+def gd.gok(gg: T.Got) -> Bool:
+  match gg:
+    case T.GotVal{vv}:
+      gd.vok(vv)
+    case T.GotBad{_why}:
+      True{}
+
+# LAW: every value a bare word reads as is well-formed where a key or an array
+# holds it: for every list of characters, word.val gives a boolean, a float
+# spelled as wf.flo's grammar or inf or nan, an integer of decimal digits with
+# no leading zero within signed 64 bits, or a datetime whose fields are in
+# range, or no value at all
+# TOML-RT-3
+law gd_word:
+  for +cs: List<&2, Char>
+  {gd.gok(T.word.val(cs)) == True{} : Bool}
