@@ -4424,13 +4424,13 @@ def cls.plain(
   e92: {U32.is_eq(uu, 92) == False{} : Bool},
   ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
 ) -> {T.basic.cls(uu) == T.BKCh{} : T.BK}:
-  %Equal.sym(Bool, U32.is_eq(uu, 8), False{}, e8) : {T.basic.cls.8(_, uu) == T.BKCh{} : T.BK}
-  %Equal.sym(Bool, U32.is_eq(uu, 9), False{}, e9) : {T.basic.cls.9(_, uu) == T.BKCh{} : T.BK}
-  %Equal.sym(Bool, U32.is_eq(uu, 10), False{}, e10) : {T.basic.cls.10(_, uu) == T.BKCh{} : T.BK}
-  %Equal.sym(Bool, U32.is_eq(uu, 12), False{}, e12) : {T.basic.cls.12(_, uu) == T.BKCh{} : T.BK}
-  %Equal.sym(Bool, U32.is_eq(uu, 13), False{}, e13) : {T.basic.cls.13(_, uu) == T.BKCh{} : T.BK}
-  %Equal.sym(Bool, U32.is_eq(uu, 34), False{}, e34) : {T.basic.cls.34(_, uu) == T.BKCh{} : T.BK}
-  %Equal.sym(Bool, U32.is_eq(uu, 92), False{}, e92) : {T.basic.cls.92(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 8), False{}, e8) : {T.basic.cls.bs(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 9), False{}, e9) : {T.basic.cls.tab(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 10), False{}, e10) : {T.basic.cls.lf(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 12), False{}, e12) : {T.basic.cls.ff(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 13), False{}, e13) : {T.basic.cls.cr(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 34), False{}, e34) : {T.basic.cls.quote(_, uu) == T.BKCh{} : T.BK}
+  %Equal.sym(Bool, U32.is_eq(uu, 92), False{}, e92) : {T.basic.cls.bslash(_, uu) == T.BKCh{} : T.BK}
   %Equal.sym(Bool, Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), False{},
     ec) : {T.basic.cls.hex(_) == T.BKCh{} : T.BK}
   {==}
@@ -15807,7 +15807,7 @@ def wc.fr(
   Eq.and.right(U32.is_le(ss, 60), T.wf.digits(fr), wc.r2(hh, mi, ss, fr, hw))
 
 # a well-formed zone's fields are below one hundred
-def wz.100(
+def wz.lt100(
   zz: T.Zone,
   +hw: {T.wf.zone(zz) == True{} : Bool}
 ) -> {Bool.and(U32.is_lt(zh(zz), 100), U32.is_lt(zm(zz), 100)) == True{} : Bool}:
@@ -15861,7 +15861,7 @@ def when.eq(
         T.zone.text(zz), T.date.text(T.Date{yy, mo, dd}) ++ "T" ++ T.clock.text(T.Clock{hh, mi, ss, fr}) ++
         tstr(tzone(zz)), tstr(tks(T.WOff{T.Date{yy, mo, dd}, T.Clock{hh, mi, ss, fr}, zz})),
         Equal.cong(String, String, xx => T.date.text(T.Date{yy, mo, dd}) ++ "T" ++ T.clock.text(T.Clock{hh, mi, ss,
-          fr}) ++ xx, T.zone.text(zz), tstr(tzone(zz)), zone.eq(zz, wz.100(zz, Eq.and.right(T.wf.clock(T.Clock{hh, mi,
+          fr}) ++ xx, T.zone.text(zz), tstr(tzone(zz)), zone.eq(zz, wz.lt100(zz, Eq.and.right(T.wf.clock(T.Clock{hh, mi,
           ss, fr}), T.wf.zone(zz), hr)))),
         Equal.trans(String, T.date.text(T.Date{yy, mo, dd}) ++ "T" ++ T.clock.text(T.Clock{hh, mi, ss, fr}) ++
           tstr(tzone(zz)), String.append(tstr(tdate(yy, mo, dd, TC{'T'} <> tclock(hh, mi, ss, []))),
