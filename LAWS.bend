@@ -2941,3 +2941,79 @@ def cv.short1(vv: T.Val) -> Bool:
       cv.shorts(rows)
     case _vv:
       True{}
+
+# the scanner waiting for a value, with no error and nothing buffered, the
+# fields a value does not decide left as parameters
+def vpos(
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  ps: List<&2, String>,
+  bk: T.Lex,
+  qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  ab: Bool
+) -> T.St:
+  T.St{"", rw, hs, he, ps, [], T.LVal{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}
+
+# the rest of the walk once a value ww is read: from the state with a value
+# put where the stack puts values, one that own reads as the scanner's form
+# of ww, and whatever back, qkind, uni and left the value leaves, the rest of
+# the text gives a document PP holds of
+def vrest(
+  +ww: T.Val,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  @vv: T.Val -> @bk: T.Lex -> @qk: T.QKind -> @un: U32 -> @lf: U32 ->
+    {cv.own1(vv) == cv.raw1(ww) : T.Val} ->
+    PP(T.doc.read(rest, T.MScan{T.take.top(sk, vv, "", rw, hs, he, ps, bk, qk, un, lf, ab, False{})}))
+
+# LAW: a value render writes in a value position reads back: from every
+# state that waits for a value, the text of a well-formed value whose strings
+# are short (a scalar, a string, or an array or an inline table nested to any
+# depth), then a character that ends a value and any rest, reads on as the
+# rest from the state with the value put, in the scanner's form, whatever the
+# value leaves in back, qkind, uni and left. PP is what the caller proves of
+# the document
+law value_reads_back:
+  for +v: T.Val
+  for hw: {cv.wf(v) == True{} : Bool}
+  for hl: {cv.short1(v) == True{} : Bool}
+  for +rw: List<&2, T.Val>
+  for +hs: List<&2, String>
+  for +he: List<&2, String>
+  for +ps: List<&2, String>
+  for +bk: T.Lex
+  for +qk: T.QKind
+  for +sk: List<&2, T.Ctx>
+  for +un: U32
+  for +lf: U32
+  for +ab: Bool
+  for +rest: String
+  for hn: {cv.end(rest) == True{} : Bool}
+  for -PP: T.Doc -> Type
+  for ih: vrest(v, rw, hs, he, ps, sk, ab, rest, PP)
+  PP(T.doc.read(cv.tx(v, rest), T.MScan{vpos(rw, hs, he, ps, bk, qk, sk, un, lf, ab)}))
+
+# LAW: in any table, the pass that writes keys writes a pair of a value that
+# may sit in a value position as its key, " = " and the value's text, then
+# the separator and the rest
+law pass_value:
+  for +k: String
+  for +v: T.Val
+  for hw: {cv.wf(v) == True{} : Bool}
+  for +rest: List<&2, T.Val>
+  for +gap: String
+  for +trail: Bool
+  {T.render.pass(T.VPair{k, v} <> rest, gap, trail, False{}) == String.append(T.key(k), SCon{' ', SCon{'=',
+    SCon{' ', cv.tx(v, String.append(T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)),
+    T.render.pass(rest, gap, trail, False{})))}}}) : String}

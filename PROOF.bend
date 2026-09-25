@@ -22997,3 +22997,587 @@ def cv.Sub(
       cv.G(rows, True{}, [], ps, he, rw, hs, he, [], bk, qk, sk, un, lf, ab, rest, PP)
     case _:
       Unit
+
+# The induction. A value's reader (cv.one) reads `[`, `{` or a scalar; an
+# array's items and an inline table's pairs are read by the claim the
+# induction proves of the list (cv.Sub), which cv.go proves of every list,
+# value and shape together, as ezjson's pv: an item's or a pair's value by
+# its reader, with the claim for its own list from the induction, and the
+# items or pairs after it by the induction.
+
+# the rows of an inline table read from LInl, as they are from LInlK
+def cv.l2k.rows(
+  +kk: String,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +ps: List<&2, String>,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +hwv: {Laws.cv.wf(vv) == True{} : Bool}
+) -> {T.doc.read(String.append(T.render.go(T.VPair{kk, vv} <> tt, ", ", False{}), SCon{'}', rest}), T.MScan{T.St{"",
+  rw, hs, he, [], [], T.LInl{}, bk, qk, T.CInl{[], ps, he} <> sk, T.HNone{}, un, lf, ab, False{}}})
+  == T.doc.read(String.append(T.render.go(T.VPair{kk, vv} <> tt, ", ", False{}), SCon{'}', rest}),
+  T.MScan{cv.ik([], ps, he, rw, hs, bk, qk, sk, un, lf, ab)}) : T.Doc}:
+  +xs = {String.append(T.render.go(T.VPair{kk, vv} <> tt, ", ", False{}), SCon{'}', rest}) : String}
+  +ys = {String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(vv, cv.tl(tt, '}', rest))}}}) : String}
+  +exy = {cv.ptx(kk, vv, tt, '}', rest, hwv) : {xs == ys : String}}
+  %Equal.sym(String, xs, ys, exy) : {T.doc.read(_, T.MScan{T.St{"", rw, hs, he, [], [], T.LInl{}, bk, qk, T.CInl{[], ps,
+    he} <> sk, T.HNone{}, un,
+    lf, ab, False{}}}) == T.doc.read(_, T.MScan{cv.ik([], ps, he, rw, hs, bk, qk, sk, un, lf, ab)}) : T.Doc}
+  cv.l2k(ys, rw, hs, he, bk, qk, T.CInl{[], ps, he} <> sk, un, lf, ab, cv.kx(kk, SCon{' ', SCon{'=', SCon{' ',
+    Laws.cv.tx(vv, cv.tl(tt, '}', rest))}}}))
+
+# a value in a value position, once the claim for its list is in hand
+def cv.one(
+  vv: T.Val,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  sub: cv.Sub(vv, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP),
+  +hw: {Laws.cv.wf(vv) == True{} : Bool},
+  hs1: {Laws.cv.short1(vv) == True{} : Bool}
+) -> cv.Rd(vv, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP):
+  match vv:
+    case T.VArr{+items}:
+      hn => ih => pp.step(PP, T.doc.read(Laws.cv.tx(T.VArr{items}, rest), T.MScan{cv.vp(rw, hs, he, ps, bk, qk, sk, un,
+        lf, ab)}), T.doc.read(String.append(T.render.go(items, ", ", False{}), SCon{']', rest}), T.MScan{cv.ar([], ps,
+        he, rw, hs, he, [], bk, qk, sk, un, lf, ab)}), {==},
+        sub(hw, hs1, hn, +ac2 => b2 => q2 => u2 => l2 => hh => ih(T.VArr{List.reverse(&2, T.Val, ac2)}, b2, q2, u2, l2,
+          cv.arr.is(items, ac2, hh))))
+    case T.VInl{rows}:
+      match rows:
+        case []:
+          _hn => ih => pp.step(PP, T.doc.read(Laws.cv.tx(T.VInl{[]}, rest), T.MScan{cv.vp(rw, hs, he, ps, bk, qk, sk,
+            un, lf, ab)}), T.doc.read(rest, T.MScan{cv.put(sk, T.VInl{T.inl.seal([])}, rw, hs, he, ps, bk, qk, un,
+            lf, ab)}),
+            Equal.cong(T.St, T.Doc, st => T.doc.read(rest, T.MScan{st}),
+              T.read.once2(cv.put(sk, T.VInl{T.inl.seal([])}, rw, hs, he, ps, bk, qk, un, lf, ab)),
+              cv.put(sk, T.VInl{T.inl.seal([])}, rw, hs, he, ps, bk, qk, un, lf, ab),
+              Equal.sym(T.St, cv.put(sk, T.VInl{T.inl.seal([])}, rw, hs, he, ps, bk, qk, un, lf, ab),
+                T.read.once2(cv.put(sk, T.VInl{T.inl.seal([])}, rw, hs, he, ps, bk, qk, un, lf, ab)),
+                tk.once(sk, T.VInl{T.inl.seal([])}, "", rw, hs, he, ps, bk, qk, un, lf, ab, False{}))),
+            ih(T.VInl{T.inl.seal([])}, bk, qk, un, lf, {==}))
+        case T.VStr{raa} <> rt:
+          Eq.bit.absurd(&1, cv.Rd(T.VInl{T.VStr{raa} <> rt}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP), hw)
+        case T.VSpan{raa, rbb} <> rt:
+          Eq.bit.absurd(&1, cv.Rd(T.VInl{T.VSpan{raa, rbb} <> rt}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP),
+            hw)
+        case T.VInt{raa, rbb} <> rt:
+          Eq.bit.absurd(&1, cv.Rd(T.VInl{T.VInt{raa, rbb} <> rt}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP), hw)
+        case T.VFlo{raa, rbb} <> rt:
+          Eq.bit.absurd(&1, cv.Rd(T.VInl{T.VFlo{raa, rbb} <> rt}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP), hw)
+        case T.VBool{raa} <> rt:
+          Eq.bit.absurd(&1, cv.Rd(T.VInl{T.VBool{raa} <> rt}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP), hw)
+        case T.VWhen{raa} <> rt:
+          Eq.bit.absurd(&1, cv.Rd(T.VInl{T.VWhen{raa} <> rt}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP), hw)
+        case T.VArr{raa} <> rt:
+          Eq.bit.absurd(&1, cv.Rd(T.VInl{T.VArr{raa} <> rt}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP), hw)
+        case T.VInl{raa} <> rt:
+          Eq.bit.absurd(&1, cv.Rd(T.VInl{T.VInl{raa} <> rt}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP), hw)
+        case T.VHead{raa, rbb} <> rt:
+          Eq.bit.absurd(&1, cv.Rd(T.VInl{T.VHead{raa, rbb} <> rt}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP),
+            hw)
+        case T.VAot{raa, rbb} <> rt:
+          Eq.bit.absurd(&1, cv.Rd(T.VInl{T.VAot{raa, rbb} <> rt}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP), hw)
+        case T.VAots{raa, rbb} <> rt:
+          Eq.bit.absurd(&1, cv.Rd(T.VInl{T.VAots{raa, rbb} <> rt}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP),
+            hw)
+        case T.VPair{+kk, +v1} <> +rt:
+          +hwv = {cv.wfp.v(kk, v1, rt, hw) : {Laws.cv.wf(v1) == True{} : Bool}}
+          hn => ih => pp.step(PP, T.doc.read(Laws.cv.tx(T.VInl{T.VPair{kk, v1} <> rt}, rest), T.MScan{cv.vp(rw, hs,
+            he, ps, bk, qk, sk, un, lf, ab)}), T.doc.read(String.append(T.render.go(T.VPair{kk, v1} <> rt, ", ",
+            False{}), SCon{'}', rest}), T.MScan{cv.ik([], ps, he, rw, hs, bk, qk, sk, un, lf, ab)}),
+            cv.l2k.rows(kk, v1, rt, ps, rw, hs, he, bk, qk, sk, un, lf, ab, rest, hwv),
+            sub({==}, hw, hs1, hn, cv.fr.nil(T.VPair{kk, v1} <> rt), {==},
+              +in2 => b2 => q2 => u2 => l2 => hh => hsl => ih(T.VInl{T.inl.seal(in2)}, b2, q2, u2, l2,
+                cv.inl.is(T.VPair{kk, v1} <> rt, in2, hh, hsl))))
+    case T.VStr{+aa}:
+      hn => ih => cv.atom(T.VStr{aa}, hw, hs1, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, hn, ih)
+    case T.VSpan{+aa, +bb}:
+      hn => ih => cv.atom(T.VSpan{aa, bb}, hw, hs1, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, hn, ih)
+    case T.VInt{+aa, +bb}:
+      hn => ih => cv.atom(T.VInt{aa, bb}, hw, hs1, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, hn, ih)
+    case T.VFlo{+aa, +bb}:
+      hn => ih => cv.atom(T.VFlo{aa, bb}, hw, hs1, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, hn, ih)
+    case T.VBool{+aa}:
+      hn => ih => cv.atom(T.VBool{aa}, hw, hs1, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, hn, ih)
+    case T.VWhen{+aa}:
+      hn => ih => cv.atom(T.VWhen{aa}, hw, hs1, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, hn, ih)
+    case T.VHead{aa, bb}:
+      Eq.bit.absurd(&1, cv.Rd(T.VHead{aa, bb}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP), hw)
+    case T.VAot{aa, bb}:
+      Eq.bit.absurd(&1, cv.Rd(T.VAot{aa, bb}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP), hw)
+    case T.VAots{aa, bb}:
+      Eq.bit.absurd(&1, cv.Rd(T.VAots{aa, bb}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP), hw)
+    case T.VPair{aa, bb}:
+      Eq.bit.absurd(&1, cv.Rd(T.VPair{aa, bb}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP), hw)
+
+# an array's item and what follows it, from what wf.go and the lengths say
+# of the whole list
+def cv.itm(
+  +ii: T.Val,
+  +tt: List<&2, T.Val>,
+  +acc: List<&2, T.Val>,
+  +ps0: List<&2, String>,
+  +he0: List<&2, String>,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  sub: cv.Sub(ii, rw, hs, he, ps, T.LVal{}, qk, T.CArr{acc, ps0, he0} <> sk, un, lf, ab, cv.tl(tt, ']', rest), PP),
+  ih_t: cv.IhA(tt, acc, ps0, he0, rw, hs, sk, ab, rest, PP),
+  +hw: {T.wf.go(ii <> tt, T.WfItems{}) == True{} : Bool},
+  +hs2: {Laws.cv.shorts(ii <> tt) == True{} : Bool},
+  hn: {Laws.cv.end(rest) == True{} : Bool},
+  then: cv.ThenA(ii <> tt, acc, ps0, he0, rw, hs, sk, ab, rest, PP)
+) -> PP(T.doc.read(String.append(T.render.go(ii <> tt, ", ", False{}), SCon{']', rest}), T.MScan{cv.ar(acc, ps0, he0,
+  rw, hs, he, ps, bk, qk, sk, un, lf, ab)})):
+  +hwi = {cv.wfi.hd(ii, tt, hw) : {Laws.cv.wf(ii) == True{} : Bool}}
+  +hsp = {Equal.trans(Bool, Bool.and(Laws.cv.short1(ii), Laws.cv.shorts(tt)), Laws.cv.shorts(ii <> tt), True{},
+    Equal.sym(Bool, Laws.cv.shorts(ii <> tt), Bool.and(Laws.cv.short1(ii), Laws.cv.shorts(tt)), cv.sh.item(ii, tt,
+    hwi)), hs2) : {Bool.and(Laws.cv.short1(ii), Laws.cv.shorts(tt)) == True{} : Bool}}
+  cv.item(ii, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP,
+    cv.one(ii, rw, hs, he, ps, T.LVal{}, qk, T.CArr{acc, ps0, he0} <> sk, un, lf, ab, cv.tl(tt, ']', rest), PP, sub,
+      hwi,
+      Eq.and.left(Laws.cv.short1(ii), Laws.cv.shorts(tt), hsp)),
+    ih_t, hwi, cv.wfi.tl(ii, tt, hw), Eq.and.right(Laws.cv.short1(ii), Laws.cv.shorts(tt), hsp), hn, then)
+
+# every list, as an array's items (rows false) or an inline table's pairs
+# (rows true)
+def cv.go(
+  vs: List<&2, T.Val>,
+  rows: Bool,
+  +acc: List<&2, T.Val>,
+  +ps0: List<&2, String>,
+  +he0: List<&2, String>,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> cv.G(vs, rows, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP):
+  match vs:
+    case []:
+      match rows:
+        case False{}:
+          _hw => _hs => _hn => then => cv.close0(acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, then)
+        case True{}:
+          hne => _hw => _hs => _hn => _hfi => _hsl => _then => Eq.bit.absurd2(&1, PP(T.doc.read(String.append(
+            T.render.go([], ", ", False{}), SCon{'}', rest}), T.MScan{cv.ik(acc, ps0, he0, rw, hs, bk, qk, sk, un, lf,
+            ab)})), hne)
+    case T.VStr{+aa} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VStr{aa}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf, ab,
+            rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs, he0, ps0,
+            b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => hw => _hs => _hn => _hfi => _hsl => _then => Eq.bit.absurd(&1,
+            PP(T.doc.read(String.append(T.render.go(T.VStr{aa} <> tt, ", ", False{}), SCon{'}', rest}),
+            T.MScan{cv.ik(acc, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)})), hw)
+    case T.VSpan{+aa, +bb} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VSpan{aa, bb}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf,
+            ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs, he0,
+            ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => hw => _hs => _hn => _hfi => _hsl => _then => Eq.bit.absurd(&1,
+            PP(T.doc.read(String.append(T.render.go(T.VSpan{aa, bb} <> tt, ", ", False{}), SCon{'}', rest}),
+            T.MScan{cv.ik(acc, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)})), hw)
+    case T.VInt{+aa, +bb} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VInt{aa, bb}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf, ab,
+            rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs, he0, ps0,
+            b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => hw => _hs => _hn => _hfi => _hsl => _then => Eq.bit.absurd(&1,
+            PP(T.doc.read(String.append(T.render.go(T.VInt{aa, bb} <> tt, ", ", False{}), SCon{'}', rest}),
+            T.MScan{cv.ik(acc, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)})), hw)
+    case T.VFlo{+aa, +bb} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VFlo{aa, bb}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf, ab,
+            rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs, he0, ps0,
+            b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => hw => _hs => _hn => _hfi => _hsl => _then => Eq.bit.absurd(&1,
+            PP(T.doc.read(String.append(T.render.go(T.VFlo{aa, bb} <> tt, ", ", False{}), SCon{'}', rest}),
+            T.MScan{cv.ik(acc, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)})), hw)
+    case T.VBool{+aa} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VBool{aa}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf, ab,
+            rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs, he0, ps0,
+            b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => hw => _hs => _hn => _hfi => _hsl => _then => Eq.bit.absurd(&1,
+            PP(T.doc.read(String.append(T.render.go(T.VBool{aa} <> tt, ", ", False{}), SCon{'}', rest}),
+            T.MScan{cv.ik(acc, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)})), hw)
+    case T.VWhen{+aa} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VWhen{aa}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf, ab,
+            rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs, he0, ps0,
+            b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => hw => _hs => _hn => _hfi => _hsl => _then => Eq.bit.absurd(&1,
+            PP(T.doc.read(String.append(T.render.go(T.VWhen{aa} <> tt, ", ", False{}), SCon{'}', rest}),
+            T.MScan{cv.ik(acc, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)})), hw)
+    case T.VArr{+aa} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VArr{aa}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf, ab,
+            rest, PP, cv.go(aa, False{}, [], ps, he, rw, hs, he, [], T.LVal{}, qk, T.CArr{acc, ps0, he0} <> sk, un, lf,
+            ab, cv.tl(tt, ']', rest), PP), +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw,
+            hs, he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => hw => _hs => _hn => _hfi => _hsl => _then => Eq.bit.absurd(&1,
+            PP(T.doc.read(String.append(T.render.go(T.VArr{aa} <> tt, ", ", False{}), SCon{'}', rest}),
+            T.MScan{cv.ik(acc, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)})), hw)
+    case T.VInl{+aa} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VInl{aa}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf, ab,
+            rest, PP, cv.go(aa, True{}, [], ps, he, rw, hs, he, [], T.LVal{}, qk, T.CArr{acc, ps0, he0} <> sk, un, lf,
+            ab, cv.tl(tt, ']', rest), PP), +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw,
+            hs, he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => hw => _hs => _hn => _hfi => _hsl => _then => Eq.bit.absurd(&1,
+            PP(T.doc.read(String.append(T.render.go(T.VInl{aa} <> tt, ", ", False{}), SCon{'}', rest}),
+            T.MScan{cv.ik(acc, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)})), hw)
+    case T.VHead{+aa, +bb} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VHead{aa, bb}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf,
+            ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs, he0,
+            ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => hw => _hs => _hn => _hfi => _hsl => _then => Eq.bit.absurd(&1,
+            PP(T.doc.read(String.append(T.render.go(T.VHead{aa, bb} <> tt, ", ", False{}), SCon{'}', rest}),
+            T.MScan{cv.ik(acc, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)})), hw)
+    case T.VAot{+aa, +bb} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VAot{aa, bb}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf, ab,
+            rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs, he0, ps0,
+            b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => hw => _hs => _hn => _hfi => _hsl => _then => Eq.bit.absurd(&1,
+            PP(T.doc.read(String.append(T.render.go(T.VAot{aa, bb} <> tt, ", ", False{}), SCon{'}', rest}),
+            T.MScan{cv.ik(acc, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)})), hw)
+    case T.VAots{+aa, +bb} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VAots{aa, bb}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk, un, lf,
+            ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs, he0,
+            ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => hw => _hs => _hn => _hfi => _hsl => _then => Eq.bit.absurd(&1,
+            PP(T.doc.read(String.append(T.render.go(T.VAots{aa, bb} <> tt, ", ", False{}), SCon{'}', rest}),
+            T.MScan{cv.ik(acc, ps0, he0, rw, hs, bk, qk, sk, un, lf, ab)})), hw)
+    case T.VPair{+kk, T.VStr{+aa}} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VPair{kk, T.VStr{aa}}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk,
+            un, lf, ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs,
+            he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => +hw => +hs2 => hn => hfi => hsl => then => cv.pair(kk, T.VStr{aa}, tt, acc, ps0, he0, rw, hs, bk, qk,
+            sk, un, lf, ab, rest, PP, +b2 => +q2 => +u2 => +l2 => hwv => hsv => cv.one(T.VStr{aa}, rw, hs, he0, [kk],
+            b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP, Unit{}, hwv, hsv),
+            +v2 => b2 => q2 => u2 => l2 => cv.go(tt, True{}, T.VPair{kk, v2} <> acc, ps0, he0, rw, hs, he0, [], b2, q2,
+            sk, u2, l2, ab, rest, PP), hw, hs2, hn, hfi, hsl, then)
+    case T.VPair{+kk, T.VSpan{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VPair{kk, T.VSpan{aa, bb}}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk,
+            sk, un, lf, ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw,
+            hs, he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => +hw => +hs2 => hn => hfi => hsl => then => cv.pair(kk, T.VSpan{aa, bb}, tt, acc, ps0, he0, rw, hs, bk,
+            qk, sk, un, lf, ab, rest, PP, +b2 => +q2 => +u2 => +l2 => hwv => hsv => cv.one(T.VSpan{aa, bb}, rw, hs, he0,
+            [kk], b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP, Unit{}, hwv, hsv),
+            +v2 => b2 => q2 => u2 => l2 => cv.go(tt, True{}, T.VPair{kk, v2} <> acc, ps0, he0, rw, hs, he0, [], b2, q2,
+            sk, u2, l2, ab, rest, PP), hw, hs2, hn, hfi, hsl, then)
+    case T.VPair{+kk, T.VInt{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VPair{kk, T.VInt{aa, bb}}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk,
+            sk, un, lf, ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw,
+            hs, he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => +hw => +hs2 => hn => hfi => hsl => then => cv.pair(kk, T.VInt{aa, bb}, tt, acc, ps0, he0, rw, hs, bk,
+            qk, sk, un, lf, ab, rest, PP, +b2 => +q2 => +u2 => +l2 => hwv => hsv => cv.one(T.VInt{aa, bb}, rw, hs, he0,
+            [kk], b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP, Unit{}, hwv, hsv),
+            +v2 => b2 => q2 => u2 => l2 => cv.go(tt, True{}, T.VPair{kk, v2} <> acc, ps0, he0, rw, hs, he0, [], b2, q2,
+            sk, u2, l2, ab, rest, PP), hw, hs2, hn, hfi, hsl, then)
+    case T.VPair{+kk, T.VFlo{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VPair{kk, T.VFlo{aa, bb}}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk,
+            sk, un, lf, ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw,
+            hs, he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => +hw => +hs2 => hn => hfi => hsl => then => cv.pair(kk, T.VFlo{aa, bb}, tt, acc, ps0, he0, rw, hs, bk,
+            qk, sk, un, lf, ab, rest, PP, +b2 => +q2 => +u2 => +l2 => hwv => hsv => cv.one(T.VFlo{aa, bb}, rw, hs, he0,
+            [kk], b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP, Unit{}, hwv, hsv),
+            +v2 => b2 => q2 => u2 => l2 => cv.go(tt, True{}, T.VPair{kk, v2} <> acc, ps0, he0, rw, hs, he0, [], b2, q2,
+            sk, u2, l2, ab, rest, PP), hw, hs2, hn, hfi, hsl, then)
+    case T.VPair{+kk, T.VBool{+aa}} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VPair{kk, T.VBool{aa}}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk,
+            un, lf, ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs,
+            he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => +hw => +hs2 => hn => hfi => hsl => then => cv.pair(kk, T.VBool{aa}, tt, acc, ps0, he0, rw, hs, bk, qk,
+            sk, un, lf, ab, rest, PP, +b2 => +q2 => +u2 => +l2 => hwv => hsv => cv.one(T.VBool{aa}, rw, hs, he0, [kk],
+            b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP, Unit{}, hwv, hsv),
+            +v2 => b2 => q2 => u2 => l2 => cv.go(tt, True{}, T.VPair{kk, v2} <> acc, ps0, he0, rw, hs, he0, [], b2, q2,
+            sk, u2, l2, ab, rest, PP), hw, hs2, hn, hfi, hsl, then)
+    case T.VPair{+kk, T.VWhen{+aa}} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VPair{kk, T.VWhen{aa}}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk,
+            un, lf, ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs,
+            he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => +hw => +hs2 => hn => hfi => hsl => then => cv.pair(kk, T.VWhen{aa}, tt, acc, ps0, he0, rw, hs, bk, qk,
+            sk, un, lf, ab, rest, PP, +b2 => +q2 => +u2 => +l2 => hwv => hsv => cv.one(T.VWhen{aa}, rw, hs, he0, [kk],
+            b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP, Unit{}, hwv, hsv),
+            +v2 => b2 => q2 => u2 => l2 => cv.go(tt, True{}, T.VPair{kk, v2} <> acc, ps0, he0, rw, hs, he0, [], b2, q2,
+            sk, u2, l2, ab, rest, PP), hw, hs2, hn, hfi, hsl, then)
+    case T.VPair{+kk, T.VArr{+aa}} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VPair{kk, T.VArr{aa}}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk,
+            un, lf, ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs,
+            he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => +hw => +hs2 => hn => hfi => hsl => then => cv.pair(kk, T.VArr{aa}, tt, acc, ps0, he0, rw, hs, bk, qk,
+            sk, un, lf, ab, rest, PP, +b2 => +q2 => +u2 => +l2 => hwv => hsv => cv.one(T.VArr{aa}, rw, hs, he0, [kk],
+            b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP, cv.go(aa, False{}, [], [kk], he0,
+            rw, hs, he0, [], b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP), hwv, hsv),
+            +v2 => b2 => q2 => u2 => l2 => cv.go(tt, True{}, T.VPair{kk, v2} <> acc, ps0, he0, rw, hs, he0, [], b2, q2,
+            sk, u2, l2, ab, rest, PP), hw, hs2, hn, hfi, hsl, then)
+    case T.VPair{+kk, T.VInl{+aa}} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VPair{kk, T.VInl{aa}}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk, sk,
+            un, lf, ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw, hs,
+            he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => +hw => +hs2 => hn => hfi => hsl => then => cv.pair(kk, T.VInl{aa}, tt, acc, ps0, he0, rw, hs, bk, qk,
+            sk, un, lf, ab, rest, PP, +b2 => +q2 => +u2 => +l2 => hwv => hsv => cv.one(T.VInl{aa}, rw, hs, he0, [kk],
+            b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP, cv.go(aa, True{}, [], [kk], he0,
+            rw, hs, he0, [], b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP), hwv, hsv),
+            +v2 => b2 => q2 => u2 => l2 => cv.go(tt, True{}, T.VPair{kk, v2} <> acc, ps0, he0, rw, hs, he0, [], b2, q2,
+            sk, u2, l2, ab, rest, PP), hw, hs2, hn, hfi, hsl, then)
+    case T.VPair{+kk, T.VHead{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VPair{kk, T.VHead{aa, bb}}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk,
+            sk, un, lf, ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw,
+            hs, he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => +hw => +hs2 => hn => hfi => hsl => then => cv.pair(kk, T.VHead{aa, bb}, tt, acc, ps0, he0, rw, hs, bk,
+            qk, sk, un, lf, ab, rest, PP, +b2 => +q2 => +u2 => +l2 => hwv => hsv => cv.one(T.VHead{aa, bb}, rw, hs, he0,
+            [kk], b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP, Unit{}, hwv, hsv),
+            +v2 => b2 => q2 => u2 => l2 => cv.go(tt, True{}, T.VPair{kk, v2} <> acc, ps0, he0, rw, hs, he0, [], b2, q2,
+            sk, u2, l2, ab, rest, PP), hw, hs2, hn, hfi, hsl, then)
+    case T.VPair{+kk, T.VAot{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VPair{kk, T.VAot{aa, bb}}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk,
+            sk, un, lf, ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw,
+            hs, he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => +hw => +hs2 => hn => hfi => hsl => then => cv.pair(kk, T.VAot{aa, bb}, tt, acc, ps0, he0, rw, hs, bk,
+            qk, sk, un, lf, ab, rest, PP, +b2 => +q2 => +u2 => +l2 => hwv => hsv => cv.one(T.VAot{aa, bb}, rw, hs, he0,
+            [kk], b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP, Unit{}, hwv, hsv),
+            +v2 => b2 => q2 => u2 => l2 => cv.go(tt, True{}, T.VPair{kk, v2} <> acc, ps0, he0, rw, hs, he0, [], b2, q2,
+            sk, u2, l2, ab, rest, PP), hw, hs2, hn, hfi, hsl, then)
+    case T.VPair{+kk, T.VAots{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VPair{kk, T.VAots{aa, bb}}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk,
+            sk, un, lf, ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw,
+            hs, he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => +hw => +hs2 => hn => hfi => hsl => then => cv.pair(kk, T.VAots{aa, bb}, tt, acc, ps0, he0, rw, hs, bk,
+            qk, sk, un, lf, ab, rest, PP, +b2 => +q2 => +u2 => +l2 => hwv => hsv => cv.one(T.VAots{aa, bb}, rw, hs, he0,
+            [kk], b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP, Unit{}, hwv, hsv),
+            +v2 => b2 => q2 => u2 => l2 => cv.go(tt, True{}, T.VPair{kk, v2} <> acc, ps0, he0, rw, hs, he0, [], b2, q2,
+            sk, u2, l2, ab, rest, PP), hw, hs2, hn, hfi, hsl, then)
+    case T.VPair{+kk, T.VPair{+aa, +bb}} <> +tt:
+      match rows:
+        case False{}:
+          +hw => +hs2 => hn => then => cv.itm(T.VPair{kk, T.VPair{aa, bb}}, tt, acc, ps0, he0, rw, hs, he, ps, bk, qk,
+            sk, un, lf, ab, rest, PP, Unit{}, +v2 => b2 => q2 => u2 => l2 => cv.go(tt, False{}, v2 <> acc, ps0, he0, rw,
+            hs, he0, ps0, b2, q2, sk, u2, l2, ab, rest, PP), hw, hs2, hn, then)
+        case True{}:
+          _hne => +hw => +hs2 => hn => hfi => hsl => then => cv.pair(kk, T.VPair{aa, bb}, tt, acc, ps0, he0, rw, hs, bk,
+            qk, sk, un, lf, ab, rest, PP, +b2 => +q2 => +u2 => +l2 => hwv => hsv => cv.one(T.VPair{aa, bb}, rw, hs, he0,
+            [kk], b2, q2, T.CInl{acc, ps0, he0} <> sk, u2, l2, ab, cv.tl(tt, '}', rest), PP, Unit{}, hwv, hsv),
+            +v2 => b2 => q2 => u2 => l2 => cv.go(tt, True{}, T.VPair{kk, v2} <> acc, ps0, he0, rw, hs, he0, [], b2, q2,
+            sk, u2, l2, ab, rest, PP), hw, hs2, hn, hfi, hsl, then)
+
+# a value in a value position: its reader, with the claim for its list
+def cv.val(
+  vv: T.Val,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type,
+  hw: {Laws.cv.wf(vv) == True{} : Bool},
+  hs1: {Laws.cv.short1(vv) == True{} : Bool}
+) -> cv.Rd(vv, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP):
+  match vv:
+    case T.VStr{+aa}:
+      cv.one(T.VStr{aa}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, Unit{}, hw, hs1)
+    case T.VSpan{+aa, +bb}:
+      cv.one(T.VSpan{aa, bb}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, Unit{}, hw, hs1)
+    case T.VInt{+aa, +bb}:
+      cv.one(T.VInt{aa, bb}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, Unit{}, hw, hs1)
+    case T.VFlo{+aa, +bb}:
+      cv.one(T.VFlo{aa, bb}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, Unit{}, hw, hs1)
+    case T.VBool{+aa}:
+      cv.one(T.VBool{aa}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, Unit{}, hw, hs1)
+    case T.VWhen{+aa}:
+      cv.one(T.VWhen{aa}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, Unit{}, hw, hs1)
+    case T.VArr{+aa}:
+      cv.one(T.VArr{aa}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, cv.go(aa, False{}, [], ps, he, rw, hs, he,
+        [], bk, qk, sk, un, lf, ab, rest, PP), hw, hs1)
+    case T.VInl{+aa}:
+      cv.one(T.VInl{aa}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, cv.go(aa, True{}, [], ps, he, rw, hs, he, [],
+        bk, qk, sk, un, lf, ab, rest, PP), hw, hs1)
+    case T.VHead{+aa, +bb}:
+      cv.one(T.VHead{aa, bb}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, Unit{}, hw, hs1)
+    case T.VAot{+aa, +bb}:
+      cv.one(T.VAot{aa, bb}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, Unit{}, hw, hs1)
+    case T.VAots{+aa, +bb}:
+      cv.one(T.VAots{aa, bb}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, Unit{}, hw, hs1)
+    case T.VPair{+aa, +bb}:
+      cv.one(T.VPair{aa, bb}, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, Unit{}, hw, hs1)
+
+def Laws.value_reads_back(v, hw, hl, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, hn, PP, ih):
+  cv.val(v, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, PP, hw, hl)(hn, ih)
+
+# the key pass: a pair of an array or an inline table
+def pv.cl(
+  +kk: String,
+  +c1: Char,
+  +rr: String,
+  +c2: Char,
+  +yy: String
+) -> {String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, String.append(rr, SCon{c2,
+  SNil{}})}}}}), yy) == String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, String.append(rr, SCon{c2,
+  yy})}}}}) : String}:
+  Equal.trans(String,
+    String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, String.append(rr, SCon{c2,
+      SNil{}})}}}}), yy),
+    String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, String.append(String.append(rr, SCon{c2, SNil{}}),
+      yy)}}}}),
+    String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, String.append(rr, SCon{c2, yy})}}}}),
+    Eq.append_assoc(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, String.append(rr, SCon{c2, SNil{}})}}}}, yy),
+    Equal.cong(String, String, zz => String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', SCon{c1, zz}}}}),
+      String.append(String.append(rr, SCon{c2, SNil{}}), yy), String.append(rr, SCon{c2, yy}),
+      Eq.append_assoc(rr, SCon{c2, SNil{}}, yy)))
+
+# the key pass: a pair of a scalar
+def pv.at(
+  +kk: String,
+  +aa: String,
+  +yy: String
+) -> {String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', aa}}}), yy) == String.append(T.key(kk),
+  SCon{' ', SCon{'=', SCon{' ', String.append(aa, yy)}}}) : String}:
+  Eq.append_assoc(T.key(kk), SCon{' ', SCon{'=', SCon{' ', aa}}}, yy)
+
+def Laws.pass_value(k, v, hw, rest, gap, trail):
+  match v:
+    case T.VArr{+items}:
+      pv.cl(k, '[', T.render.go(items, ", ", False{}), ']', String.append(T.render.suf(gap, trail, List.is_empty(&2,
+        T.Val, rest)), T.render.pass(rest, gap, trail, False{})))
+    case T.VInl{+rows}:
+      pv.cl(k, '{', T.render.go(rows, ", ", False{}), '}', String.append(T.render.suf(gap, trail, List.is_empty(&2,
+        T.Val, rest)), T.render.pass(rest, gap, trail, False{})))
+    case T.VStr{+aa}:
+      pv.at(k, T.render.atom(T.VStr{aa}), String.append(T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)),
+        T.render.pass(rest, gap, trail, False{})))
+    case T.VSpan{+aa, +bb}:
+      pv.at(k, T.render.atom(T.VSpan{aa, bb}), String.append(T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)),
+        T.render.pass(rest, gap, trail, False{})))
+    case T.VInt{+aa, +bb}:
+      pv.at(k, T.render.atom(T.VInt{aa, bb}), String.append(T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)),
+        T.render.pass(rest, gap, trail, False{})))
+    case T.VFlo{+aa, +bb}:
+      pv.at(k, T.render.atom(T.VFlo{aa, bb}), String.append(T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)),
+        T.render.pass(rest, gap, trail, False{})))
+    case T.VBool{+aa}:
+      pv.at(k, T.render.atom(T.VBool{aa}), String.append(T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)),
+        T.render.pass(rest, gap, trail, False{})))
+    case T.VWhen{+aa}:
+      pv.at(k, T.render.atom(T.VWhen{aa}), String.append(T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)),
+        T.render.pass(rest, gap, trail, False{})))
+    case T.VHead{aa, bb}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{k, T.VHead{aa, bb}} <> rest, gap, trail, False{})
+        == String.append(T.key(k), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VHead{aa, bb}, String.append(
+        T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)), T.render.pass(rest, gap, trail, False{})))}}})
+        : String}, hw)
+    case T.VAot{aa, bb}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{k, T.VAot{aa, bb}} <> rest, gap, trail, False{})
+        == String.append(T.key(k), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VAot{aa, bb}, String.append(
+        T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)), T.render.pass(rest, gap, trail, False{})))}}})
+        : String}, hw)
+    case T.VAots{aa, bb}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{k, T.VAots{aa, bb}} <> rest, gap, trail, False{})
+        == String.append(T.key(k), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VAots{aa, bb}, String.append(
+        T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)), T.render.pass(rest, gap, trail, False{})))}}})
+        : String}, hw)
+    case T.VPair{aa, bb}:
+      Eq.bit.absurd(&2, {T.render.pass(T.VPair{k, T.VPair{aa, bb}} <> rest, gap, trail, False{})
+        == String.append(T.key(k), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VPair{aa, bb}, String.append(
+        T.render.suf(gap, trail, List.is_empty(&2, T.Val, rest)), T.render.pass(rest, gap, trail, False{})))}}})
+        : String}, hw)
