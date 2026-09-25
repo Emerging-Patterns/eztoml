@@ -3190,3 +3190,21 @@ law gd_start:
   for eh: {gd.segs(here) == True{} : Bool}
   {good(T.St{"", rows, heads, here, [], [], lex, back, qkind, [], T.HNone{}, uni, left, arrtab,
     lead}) == True{} : Bool}
+
+# LAW: a walk from the root keeps the rows well-formed: along any path of
+# scalar-value segments, with any job that puts no table and a value
+# well-formed where a pair holds it, from rows that are well-formed newest
+# first, the root it returns is well-formed unless the walk failed
+# TOML-RT-3
+law gd_walk:
+  for path: List<&2, String>
+  for +rows: List<&2, T.Val>
+  for +job: T.Job
+  for +bad: String
+  for +heads: List<&2, String>
+  for +inl: Bool
+  for +skip: U32
+  for ew: {gd.ifok(String.is_empty(bad), T.wf.go(rows, T.WfRows{""})) == True{} : Bool}
+  for ep: {gd.segs(path) == True{} : Bool}
+  for ej: {gd.job(job) == True{} : Bool}
+  {gd.end(T.tree.walk(path, T.Tw{rows, job, [], bad, "", heads, inl}, skip)) == True{} : Bool}

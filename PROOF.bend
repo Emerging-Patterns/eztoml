@@ -24266,3 +24266,1097 @@ def Laws.gd_start(rows, heads, here, lex, back, qkind, uni, left, arrtab, lead, 
     gd.tt(T.wf.go(rows, T.WfRows{""}), True{}, ew, {==}),
     gd.tt(Laws.gd.segs(here), True{}, eh, {==}))
 
+
+# WP-R3: the walk's lemmas: the rows a walk reads and rebuilds stay
+# well-formed, one frame at a time.
+
+# wf.go on a table's rows, a pair at their head: what the pair's value needs
+# where it sits, its key, and the rest
+def gd.pv(+pre: String, +nn: String, vv: T.Val) -> Bool:
+  match vv:
+    case T.VHead{+p, rows}:
+      Bool.and(T.str.eq(p, T.tree.pre(pre, nn)), T.wf.go(rows, T.WfRows{p}))
+    case T.VAots{+p, +el}:
+      Bool.and(Bool.not(List.is_empty(&2, T.Val, el)),
+        Bool.and(T.str.eq(p, T.tree.pre(pre, nn)), T.wf.go(el, T.WfElems{p})))
+    case T.VArr{items}:
+      T.wf.go(items, T.WfItems{})
+    case T.VInl{rows}:
+      T.wf.go(rows, T.WfInl{})
+    case other:
+      T.wf.atom(other)
+
+# the four shapes wf.go gives a pair, as one and
+def gd.sh.head(kk: Bool, ee: Bool, gg: Bool, dd: Bool)
+  -> {T.wf.then(Bool.and(kk, ee), _u => T.wf.then(gg, _v => dd))
+    == Bool.and(Bool.and(kk, Bool.and(ee, gg)), dd) : Bool}:
+  match kk ee gg:
+    case False{} _e _g:
+      {==}
+    case True{} False{} _g:
+      {==}
+    case True{} True{} False{}:
+      {==}
+    case True{} True{} True{}:
+      {==}
+
+def gd.sh.aots(ss: Bool, kk: Bool, ee: Bool, gg: Bool, dd: Bool)
+  -> {T.wf.then(Bool.and(ss, Bool.and(kk, ee)), _u => T.wf.then(gg, _v => dd))
+    == Bool.and(Bool.and(kk, Bool.and(ss, Bool.and(ee, gg))), dd) : Bool}:
+  match ss kk ee gg:
+    case False{} False{} _e _g:
+      {==}
+    case False{} True{} _e _g:
+      {==}
+    case True{} False{} _e _g:
+      {==}
+    case True{} True{} False{} _g:
+      {==}
+    case True{} True{} True{} False{}:
+      {==}
+    case True{} True{} True{} True{}:
+      {==}
+
+def gd.sh.arr(kk: Bool, gg: Bool, dd: Bool)
+  -> {T.wf.then(kk, _u => T.wf.then(gg, _v => dd)) == Bool.and(Bool.and(kk, gg), dd) : Bool}:
+  match kk gg:
+    case False{} _g:
+      {==}
+    case True{} False{}:
+      {==}
+    case True{} True{}:
+      {==}
+
+def gd.sh.atom(aa: Bool, kk: Bool, dd: Bool)
+  -> {T.wf.then(Bool.and(aa, kk), _u => dd) == Bool.and(Bool.and(kk, aa), dd) : Bool}:
+  match aa kk:
+    case False{} False{}:
+      {==}
+    case False{} True{}:
+      {==}
+    case True{} False{}:
+      {==}
+    case True{} True{}:
+      {==}
+
+# a pair at the head of a table's rows is well-formed exactly when its key
+# is, its value is where it sits, and the rest are
+def gd.pair.eq(+pre: String, +nn: String, vv: T.Val, +tt: List<&2, T.Val>)
+  -> {T.wf.go(T.VPair{nn, vv} <> tt, T.WfRows{pre})
+    == Bool.and(Bool.and(T.wf.key(nn, tt), gd.pv(pre, nn, vv)), T.wf.go(tt, T.WfRows{pre})) : Bool}:
+  match vv:
+    case T.VHead{+p, +rows}:
+      gd.sh.head(T.wf.key(nn, tt), T.str.eq(p, T.tree.pre(pre, nn)), T.wf.go(rows, T.WfRows{p}),
+        T.wf.go(tt, T.WfRows{pre}))
+    case T.VAots{+p, +el}:
+      gd.sh.aots(Bool.not(List.is_empty(&2, T.Val, el)), T.wf.key(nn, tt),
+        T.str.eq(p, T.tree.pre(pre, nn)), T.wf.go(el, T.WfElems{p}), T.wf.go(tt, T.WfRows{pre}))
+    case T.VArr{+items}:
+      gd.sh.arr(T.wf.key(nn, tt), T.wf.go(items, T.WfItems{}), T.wf.go(tt, T.WfRows{pre}))
+    case T.VInl{+rows}:
+      gd.sh.arr(T.wf.key(nn, tt), T.wf.go(rows, T.WfInl{}), T.wf.go(tt, T.WfRows{pre}))
+    case T.VStr{+a}:
+      gd.sh.atom(T.wf.atom(T.VStr{a}), T.wf.key(nn, tt), T.wf.go(tt, T.WfRows{pre}))
+    case T.VSpan{+a, +b}:
+      gd.sh.atom(T.wf.atom(T.VSpan{a, b}), T.wf.key(nn, tt), T.wf.go(tt, T.WfRows{pre}))
+    case T.VInt{+a, +b}:
+      gd.sh.atom(T.wf.atom(T.VInt{a, b}), T.wf.key(nn, tt), T.wf.go(tt, T.WfRows{pre}))
+    case T.VFlo{+a, +b}:
+      gd.sh.atom(T.wf.atom(T.VFlo{a, b}), T.wf.key(nn, tt), T.wf.go(tt, T.WfRows{pre}))
+    case T.VBool{+a}:
+      gd.sh.atom(T.wf.atom(T.VBool{a}), T.wf.key(nn, tt), T.wf.go(tt, T.WfRows{pre}))
+    case T.VWhen{+a}:
+      gd.sh.atom(T.wf.atom(T.VWhen{a}), T.wf.key(nn, tt), T.wf.go(tt, T.WfRows{pre}))
+    case T.VAot{+a, +b}:
+      gd.sh.atom(T.wf.atom(T.VAot{a, b}), T.wf.key(nn, tt), T.wf.go(tt, T.WfRows{pre}))
+    case T.VPair{+a, +b}:
+      gd.sh.atom(T.wf.atom(T.VPair{a, b}), T.wf.key(nn, tt), T.wf.go(tt, T.WfRows{pre}))
+
+# the pair's parts, read off a well-formed head
+def gd.pr.un(+pre: String, +nn: String, +vv: T.Val, +tt: List<&2, T.Val>,
+  +ew: {T.wf.go(T.VPair{nn, vv} <> tt, T.WfRows{pre}) == True{} : Bool})
+  -> {Bool.and(Bool.and(T.wf.key(nn, tt), gd.pv(pre, nn, vv)), T.wf.go(tt, T.WfRows{pre})) == True{} : Bool}:
+  Equal.trans(Bool, Bool.and(Bool.and(T.wf.key(nn, tt), gd.pv(pre, nn, vv)), T.wf.go(tt, T.WfRows{pre})),
+    T.wf.go(T.VPair{nn, vv} <> tt, T.WfRows{pre}), True{},
+    Equal.sym(Bool, T.wf.go(T.VPair{nn, vv} <> tt, T.WfRows{pre}),
+      Bool.and(Bool.and(T.wf.key(nn, tt), gd.pv(pre, nn, vv)), T.wf.go(tt, T.WfRows{pre})),
+      gd.pair.eq(pre, nn, vv, tt)),
+    ew)
+
+# the rest of the rows
+def gd.pr.d(+pre: String, +nn: String, +vv: T.Val, +tt: List<&2, T.Val>,
+  +ew: {T.wf.go(T.VPair{nn, vv} <> tt, T.WfRows{pre}) == True{} : Bool})
+  -> {T.wf.go(tt, T.WfRows{pre}) == True{} : Bool}:
+  gd.r(Bool.and(T.wf.key(nn, tt), gd.pv(pre, nn, vv)), T.wf.go(tt, T.WfRows{pre}),
+    gd.pr.un(pre, nn, vv, tt, ew))
+
+# the key
+def gd.pr.k(+pre: String, +nn: String, +vv: T.Val, +tt: List<&2, T.Val>,
+  +ew: {T.wf.go(T.VPair{nn, vv} <> tt, T.WfRows{pre}) == True{} : Bool})
+  -> {T.wf.key(nn, tt) == True{} : Bool}:
+  gd.l(T.wf.key(nn, tt), gd.pv(pre, nn, vv),
+    gd.l(Bool.and(T.wf.key(nn, tt), gd.pv(pre, nn, vv)), T.wf.go(tt, T.WfRows{pre}),
+      gd.pr.un(pre, nn, vv, tt, ew)))
+
+# the value
+def gd.pr.v(+pre: String, +nn: String, +vv: T.Val, +tt: List<&2, T.Val>,
+  +ew: {T.wf.go(T.VPair{nn, vv} <> tt, T.WfRows{pre}) == True{} : Bool})
+  -> {gd.pv(pre, nn, vv) == True{} : Bool}:
+  gd.r(T.wf.key(nn, tt), gd.pv(pre, nn, vv),
+    gd.l(Bool.and(T.wf.key(nn, tt), gd.pv(pre, nn, vv)), T.wf.go(tt, T.WfRows{pre}),
+      gd.pr.un(pre, nn, vv, tt, ew)))
+
+# and a pair is put together from its parts
+def gd.pr.mk(+pre: String, +nn: String, +vv: T.Val, +tt: List<&2, T.Val>,
+  +ek: {T.wf.key(nn, tt) == True{} : Bool},
+  +ev: {gd.pv(pre, nn, vv) == True{} : Bool},
+  +ed: {T.wf.go(tt, T.WfRows{pre}) == True{} : Bool})
+  -> {T.wf.go(T.VPair{nn, vv} <> tt, T.WfRows{pre}) == True{} : Bool}:
+  Equal.trans(Bool, T.wf.go(T.VPair{nn, vv} <> tt, T.WfRows{pre}),
+    Bool.and(Bool.and(T.wf.key(nn, tt), gd.pv(pre, nn, vv)), T.wf.go(tt, T.WfRows{pre})), True{},
+    gd.pair.eq(pre, nn, vv, tt),
+    gd.tt(Bool.and(T.wf.key(nn, tt), gd.pv(pre, nn, vv)), T.wf.go(tt, T.WfRows{pre}),
+      gd.tt(T.wf.key(nn, tt), gd.pv(pre, nn, vv), ek, ev), ed))
+
+# a value's needs at one name are its needs at an equal name
+def gd.pv.name(+pre: String, +aa: String, +bb: String, +vv: T.Val,
+  +eq: {T.str.eq(aa, bb) == True{} : Bool},
+  +ev: {gd.pv(pre, bb, vv) == True{} : Bool})
+  -> {gd.pv(pre, aa, vv) == True{} : Bool}:
+  Equal.trans(Bool, gd.pv(pre, aa, vv), gd.pv(pre, bb, vv), True{},
+    Equal.cong(String, Bool, xx => gd.pv(pre, xx, vv), aa, bb, str.eq.true(aa, bb, eq)), ev)
+
+# what a walk step learns from looking a name up in well-formed rows: a name
+# that is missing is fresh, a table or an array of tables sits at the path
+# the name gives and is well-formed there, and a refusal names its reason
+def gd.lk(hit: T.Hit, +pre: String, +name: String, look: T.Look) -> Bool:
+  match look:
+    case T.KMiss{}:
+      T.wf.fresh(hit)
+    case T.KHead{p, rows}:
+      gd.pv(pre, name, T.VHead{p, rows})
+    case T.KAots{p, el}:
+      gd.pv(pre, name, T.VAots{p, el})
+    case T.KInl{}:
+      True{}
+    case T.KNo{why}:
+      Bool.not(String.is_empty(why))
+
+# what look.of makes of a value well-formed at the name
+def gd.lk.of(hit: T.Hit, +pre: String, +name: String, vv: T.Val,
+  +ep: {gd.pv(pre, name, vv) == True{} : Bool})
+  -> {gd.lk(hit, pre, name, T.look.of(vv)) == True{} : Bool}:
+  match vv:
+    case T.VHead{_p, _r}:
+      ep
+    case T.VAots{_p, _e}:
+      ep
+    case T.VInl{_r}:
+      {==}
+    case T.VArr{_i}:
+      {==}
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VPair{_a, _b}:
+      {==}
+
+# one pair of the rows: the lookup stops at it or goes on
+def gd.lk.step(
+  bb: Bool,
+  +nn: String,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +pre: String,
+  +name: String,
+  +eb: {T.str.eq(nn, name) == bb : Bool},
+  +ew: {T.wf.go(T.VPair{nn, vv} <> tt, T.WfRows{pre}) == True{} : Bool},
+  ih: {gd.lk(T.get(tt, name), pre, name, T.rows.look(tt, name)) == True{} : Bool}
+) -> {gd.lk(T.find.step(bb, vv, _u => T.rows.find(tt, name)), pre, name,
+  T.look.step(bb, vv, _u => T.rows.look(tt, name))) == True{} : Bool}:
+  match bb:
+    case True{}:
+      gd.lk.of(T.Found{vv}, pre, name, vv,
+        Equal.trans(Bool, gd.pv(pre, name, vv), gd.pv(pre, nn, vv), True{},
+          Equal.cong(String, Bool, xx => gd.pv(pre, xx, vv), name, nn,
+            Equal.sym(String, nn, name, str.eq.true(nn, name, eb))),
+          gd.pr.v(pre, nn, vv, tt, ew)))
+    case False{}:
+      ih
+
+# rows with anything but a pair at their head are no table's
+def gd.lk.bad(+hh: T.Val, +tt: List<&2, T.Val>, +pre: String, +name: String,
+  +ee: {False{} == True{} : Bool})
+  -> {gd.lk(T.get(hh <> tt, name), pre, name, T.rows.look(hh <> tt, name)) == True{} : Bool}:
+  Eq.bit.absurd(&2, {gd.lk(T.get(hh <> tt, name), pre, name, T.rows.look(hh <> tt, name))
+    == True{} : Bool}, ee)
+
+# looking a name up in well-formed rows
+def gd.lk.ok(
+  vs: List<&2, T.Val>,
+  +pre: String,
+  +name: String,
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool}
+) -> {gd.lk(T.get(vs, name), pre, name, T.rows.look(vs, name)) == True{} : Bool}:
+  match vs:
+    case []:
+      {==}
+    case T.VPair{+nn, +vv} <> +tt:
+      gd.lk.step(T.str.eq(nn, name), nn, vv, tt, pre, name, {==}, ew,
+        gd.lk.ok(tt, pre, name, gd.pr.d(pre, nn, vv, tt, ew)))
+    case T.VStr{a} <> tt:
+      gd.lk.bad(T.VStr{a}, tt, pre, name, ew)
+    case T.VSpan{a, b} <> tt:
+      gd.lk.bad(T.VSpan{a, b}, tt, pre, name, ew)
+    case T.VInt{a, b} <> tt:
+      gd.lk.bad(T.VInt{a, b}, tt, pre, name, ew)
+    case T.VFlo{a, b} <> tt:
+      gd.lk.bad(T.VFlo{a, b}, tt, pre, name, ew)
+    case T.VBool{a} <> tt:
+      gd.lk.bad(T.VBool{a}, tt, pre, name, ew)
+    case T.VWhen{a} <> tt:
+      gd.lk.bad(T.VWhen{a}, tt, pre, name, ew)
+    case T.VArr{a} <> tt:
+      gd.lk.bad(T.VArr{a}, tt, pre, name, ew)
+    case T.VInl{a} <> tt:
+      gd.lk.bad(T.VInl{a}, tt, pre, name, ew)
+    case T.VHead{a, b} <> tt:
+      gd.lk.bad(T.VHead{a, b}, tt, pre, name, ew)
+    case T.VAot{a, b} <> tt:
+      gd.lk.bad(T.VAot{a, b}, tt, pre, name, ew)
+    case T.VAots{a, b} <> tt:
+      gd.lk.bad(T.VAots{a, b}, tt, pre, name, ew)
+
+# a lookup that stops at one pair or goes on, over two rows that agree after it
+def gd.fr.b2(
+  b2: Bool,
+  v1: T.Val,
+  v2: T.Val,
+  r1: List<&2, T.Val>,
+  r2: List<&2, T.Val>,
+  +xx: String,
+  ih: {T.wf.fresh(T.rows.find(r1, xx)) == T.wf.fresh(T.rows.find(r2, xx)) : Bool}
+) -> {T.wf.fresh(T.find.step(b2, v1, _u => T.rows.find(r1, xx)))
+  == T.wf.fresh(T.find.step(b2, v2, _u => T.rows.find(r2, xx))) : Bool}:
+  match b2:
+    case True{}:
+      {==}
+    case False{}:
+      ih
+
+# a pair rows.repl may replace keeps its name
+def gd.fr.rstep(
+  b1: Bool,
+  +nn: String,
+  +old: T.Val,
+  +vv: T.Val,
+  +t2: List<&2, T.Val>,
+  +name: String,
+  +xx: String,
+  ih: {T.wf.fresh(T.get(T.rows.repl(t2, name, vv), xx)) == T.wf.fresh(T.get(t2, xx)) : Bool}
+) -> {T.wf.fresh(T.rows.find(T.rows.repl.step(b1, nn, old, vv, _u => T.rows.repl(t2, name, vv)), xx))
+  == T.wf.fresh(T.find.step(T.str.eq(nn, xx), old, _u => T.rows.find(t2, xx))) : Bool}:
+  match b1:
+    case True{}:
+      gd.fr.b2(T.str.eq(nn, xx), vv, old, T.rows.repl(t2, name, vv), t2, xx, ih)
+    case False{}:
+      gd.fr.b2(T.str.eq(nn, xx), old, old, T.rows.repl(t2, name, vv), t2, xx, ih)
+
+# replacing a pair's value leaves every name where it was, so a name is fresh
+# in the rows after exactly when it was before
+def gd.fr.repl(
+  t: List<&2, T.Val>,
+  +name: String,
+  +vv: T.Val,
+  +xx: String
+) -> {T.wf.fresh(T.get(T.rows.repl(t, name, vv), xx)) == T.wf.fresh(T.get(t, xx)) : Bool}:
+  match t:
+    case []:
+      {==}
+    case T.VPair{+nn, +old} <> +t2:
+      gd.fr.rstep(T.str.eq(nn, name), nn, old, vv, t2, name, xx, gd.fr.repl(t2, name, vv, xx))
+    case T.VStr{a} <> t2:
+      gd.fr.repl(t2, name, vv, xx)
+    case T.VSpan{a, b} <> t2:
+      gd.fr.repl(t2, name, vv, xx)
+    case T.VInt{a, b} <> t2:
+      gd.fr.repl(t2, name, vv, xx)
+    case T.VFlo{a, b} <> t2:
+      gd.fr.repl(t2, name, vv, xx)
+    case T.VBool{a} <> t2:
+      gd.fr.repl(t2, name, vv, xx)
+    case T.VWhen{a} <> t2:
+      gd.fr.repl(t2, name, vv, xx)
+    case T.VArr{a} <> t2:
+      gd.fr.repl(t2, name, vv, xx)
+    case T.VInl{a} <> t2:
+      gd.fr.repl(t2, name, vv, xx)
+    case T.VHead{a, b} <> t2:
+      gd.fr.repl(t2, name, vv, xx)
+    case T.VAot{a, b} <> t2:
+      gd.fr.repl(t2, name, vv, xx)
+    case T.VAots{a, b} <> t2:
+      gd.fr.repl(t2, name, vv, xx)
+
+# the key of a pair whose rest rows.repl rewrote is as fresh as before
+def gd.rp.key(+nn: String, +tt: List<&2, T.Val>, +name: String, +vv: T.Val,
+  +ek: {T.wf.key(nn, tt) == True{} : Bool})
+  -> {T.wf.key(nn, T.rows.repl(tt, name, vv)) == True{} : Bool}:
+  Equal.trans(Bool, T.wf.key(nn, T.rows.repl(tt, name, vv)), T.wf.key(nn, tt), True{},
+    Equal.cong(Bool, Bool, xx => Bool.and(T.wf.text(nn), xx),
+      T.wf.fresh(T.get(T.rows.repl(tt, name, vv), nn)), T.wf.fresh(T.get(tt, nn)),
+      gd.fr.repl(tt, name, vv, nn)),
+    ek)
+
+# one pair: replaced by the new value when the name is its, else kept
+def gd.rp.step(
+  bb: Bool,
+  +nn: String,
+  +old: T.Val,
+  +tt: List<&2, T.Val>,
+  +pre: String,
+  +name: String,
+  +vv: T.Val,
+  +eb: {T.str.eq(nn, name) == bb : Bool},
+  +ew: {T.wf.go(T.VPair{nn, old} <> tt, T.WfRows{pre}) == True{} : Bool},
+  +ev: {gd.pv(pre, name, vv) == True{} : Bool},
+  +ih: {T.wf.go(T.rows.repl(tt, name, vv), T.WfRows{pre}) == True{} : Bool}
+) -> {T.wf.go(T.rows.repl.step(bb, nn, old, vv, _u => T.rows.repl(tt, name, vv)), T.WfRows{pre})
+  == True{} : Bool}:
+  match bb:
+    case True{}:
+      gd.pr.mk(pre, nn, vv, T.rows.repl(tt, name, vv),
+        gd.rp.key(nn, tt, name, vv, gd.pr.k(pre, nn, old, tt, ew)),
+        gd.pv.name(pre, nn, name, vv, eb, ev), ih)
+    case False{}:
+      gd.pr.mk(pre, nn, old, T.rows.repl(tt, name, vv),
+        gd.rp.key(nn, tt, name, vv, gd.pr.k(pre, nn, old, tt, ew)),
+        gd.pr.v(pre, nn, old, tt, ew), ih)
+
+# rows with anything but a pair at their head are no table's
+def gd.rp.bad(+hh: T.Val, +tt: List<&2, T.Val>, +pre: String, +name: String, +vv: T.Val,
+  +ee: {False{} == True{} : Bool})
+  -> {T.wf.go(T.rows.repl(hh <> tt, name, vv), T.WfRows{pre}) == True{} : Bool}:
+  Eq.bit.absurd(&2, {T.wf.go(T.rows.repl(hh <> tt, name, vv), T.WfRows{pre}) == True{} : Bool}, ee)
+
+# replacing the value of a name in well-formed rows by one well-formed at that
+# name keeps them well-formed
+def gd.repl.ok(
+  vs: List<&2, T.Val>,
+  +pre: String,
+  +name: String,
+  +vv: T.Val,
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
+  +ev: {gd.pv(pre, name, vv) == True{} : Bool}
+) -> {T.wf.go(T.rows.repl(vs, name, vv), T.WfRows{pre}) == True{} : Bool}:
+  match vs:
+    case []:
+      {==}
+    case T.VPair{+nn, +old} <> +tt:
+      gd.rp.step(T.str.eq(nn, name), nn, old, tt, pre, name, vv, {==}, ew, ev,
+        gd.repl.ok(tt, pre, name, vv, gd.pr.d(pre, nn, old, tt, ew), ev))
+    case T.VStr{a} <> tt:
+      gd.rp.bad(T.VStr{a}, tt, pre, name, vv, ew)
+    case T.VSpan{a, b} <> tt:
+      gd.rp.bad(T.VSpan{a, b}, tt, pre, name, vv, ew)
+    case T.VInt{a, b} <> tt:
+      gd.rp.bad(T.VInt{a, b}, tt, pre, name, vv, ew)
+    case T.VFlo{a, b} <> tt:
+      gd.rp.bad(T.VFlo{a, b}, tt, pre, name, vv, ew)
+    case T.VBool{a} <> tt:
+      gd.rp.bad(T.VBool{a}, tt, pre, name, vv, ew)
+    case T.VWhen{a} <> tt:
+      gd.rp.bad(T.VWhen{a}, tt, pre, name, vv, ew)
+    case T.VArr{a} <> tt:
+      gd.rp.bad(T.VArr{a}, tt, pre, name, vv, ew)
+    case T.VInl{a} <> tt:
+      gd.rp.bad(T.VInl{a}, tt, pre, name, vv, ew)
+    case T.VHead{a, b} <> tt:
+      gd.rp.bad(T.VHead{a, b}, tt, pre, name, vv, ew)
+    case T.VAot{a, b} <> tt:
+      gd.rp.bad(T.VAot{a, b}, tt, pre, name, vv, ew)
+    case T.VAots{a, b} <> tt:
+      gd.rp.bad(T.VAots{a, b}, tt, pre, name, vv, ew)
+
+# the newest element of a well-formed array of tables: the older elements
+# and the element's rows are well-formed at the array's path, and a refusal
+# names its reason
+def gd.ll(+pp: String, last: T.Last) -> Bool:
+  match last:
+    case T.LastSome{_q, older, rows}:
+      Bool.and(T.wf.go(older, T.WfElems{pp}), T.wf.go(rows, T.WfRows{pp}))
+    case T.LastNo{why}:
+      Bool.not(String.is_empty(why))
+
+# an element of an array of tables, read off a well-formed head
+def gd.el.un(+qq: String, +rows: List<&2, T.Val>, +tt: List<&2, T.Val>, +pp: String,
+  +ew: {T.wf.go(T.VAot{qq, rows} <> tt, T.WfElems{pp}) == True{} : Bool})
+  -> {Bool.and(Bool.and(T.str.eq(qq, pp), T.wf.go(rows, T.WfRows{qq})), T.wf.go(tt, T.WfElems{pp}))
+    == True{} : Bool}:
+  Equal.trans(Bool,
+    Bool.and(Bool.and(T.str.eq(qq, pp), T.wf.go(rows, T.WfRows{qq})), T.wf.go(tt, T.WfElems{pp})),
+    T.wf.go(T.VAot{qq, rows} <> tt, T.WfElems{pp}), True{},
+    Equal.sym(Bool, T.wf.go(T.VAot{qq, rows} <> tt, T.WfElems{pp}),
+      Bool.and(Bool.and(T.str.eq(qq, pp), T.wf.go(rows, T.WfRows{qq})), T.wf.go(tt, T.WfElems{pp})),
+      gd.sh.arr(T.str.eq(qq, pp), T.wf.go(rows, T.WfRows{qq}), T.wf.go(tt, T.WfElems{pp}))),
+    ew)
+
+# and an element is put together from its parts
+def gd.el.mk(+pp: String, +rows: List<&2, T.Val>, +tt: List<&2, T.Val>,
+  +er: {T.wf.go(rows, T.WfRows{pp}) == True{} : Bool},
+  +et: {T.wf.go(tt, T.WfElems{pp}) == True{} : Bool})
+  -> {T.wf.go(T.VAot{pp, rows} <> tt, T.WfElems{pp}) == True{} : Bool}:
+  Equal.trans(Bool, T.wf.go(T.VAot{pp, rows} <> tt, T.WfElems{pp}),
+    Bool.and(Bool.and(T.str.eq(pp, pp), T.wf.go(rows, T.WfRows{pp})), T.wf.go(tt, T.WfElems{pp})),
+    True{},
+    gd.sh.arr(T.str.eq(pp, pp), T.wf.go(rows, T.WfRows{pp}), T.wf.go(tt, T.WfElems{pp})),
+    gd.tt(Bool.and(T.str.eq(pp, pp), T.wf.go(rows, T.WfRows{pp})), T.wf.go(tt, T.WfElems{pp}),
+      gd.tt(T.str.eq(pp, pp), T.wf.go(rows, T.WfRows{pp}), str.eq.self(pp), er), et))
+
+# rows well-formed at one path are well-formed at an equal one
+def gd.at.path(+aa: String, +bb: String, +rows: List<&2, T.Val>,
+  +eq: {aa == bb : String},
+  +ew: {T.wf.go(rows, T.WfRows{aa}) == True{} : Bool})
+  -> {T.wf.go(rows, T.WfRows{bb}) == True{} : Bool}:
+  Equal.trans(Bool, T.wf.go(rows, T.WfRows{bb}), T.wf.go(rows, T.WfRows{aa}), True{},
+    Equal.cong(String, Bool, xx => T.wf.go(rows, T.WfRows{xx}), bb, aa, Equal.sym(String, aa, bb, eq)),
+    ew)
+
+# and elements too
+def gd.el.path(+aa: String, +bb: String, +el: List<&2, T.Val>,
+  +eq: {aa == bb : String},
+  +ew: {T.wf.go(el, T.WfElems{aa}) == True{} : Bool})
+  -> {T.wf.go(el, T.WfElems{bb}) == True{} : Bool}:
+  Equal.trans(Bool, T.wf.go(el, T.WfElems{bb}), T.wf.go(el, T.WfElems{aa}), True{},
+    Equal.cong(String, Bool, xx => T.wf.go(el, T.WfElems{xx}), bb, aa, Equal.sym(String, aa, bb, eq)),
+    ew)
+
+# the newest element of a well-formed array of tables
+def gd.ll.ok(
+  el: List<&2, T.Val>,
+  +pp: String,
+  +ew: {T.wf.go(el, T.WfElems{pp}) == True{} : Bool}
+) -> {gd.ll(pp, T.look.last(el, pp)) == True{} : Bool}:
+  match el:
+    case []:
+      {==}
+    case T.VAot{+qq, +rows} <> +tt:
+      gd.tt(T.wf.go(tt, T.WfElems{pp}), T.wf.go(rows, T.WfRows{pp}),
+        gd.r(Bool.and(T.str.eq(qq, pp), T.wf.go(rows, T.WfRows{qq})), T.wf.go(tt, T.WfElems{pp}),
+          gd.el.un(qq, rows, tt, pp, ew)),
+        gd.at.path(qq, pp, rows,
+          str.eq.true(qq, pp, gd.l(T.str.eq(qq, pp), T.wf.go(rows, T.WfRows{qq}),
+            gd.l(Bool.and(T.str.eq(qq, pp), T.wf.go(rows, T.WfRows{qq})), T.wf.go(tt, T.WfElems{pp}),
+              gd.el.un(qq, rows, tt, pp, ew)))),
+          gd.r(T.str.eq(qq, pp), T.wf.go(rows, T.WfRows{qq}),
+            gd.l(Bool.and(T.str.eq(qq, pp), T.wf.go(rows, T.WfRows{qq})), T.wf.go(tt, T.WfElems{pp}),
+              gd.el.un(qq, rows, tt, pp, ew)))))
+    case T.VStr{_a} <> _t:
+      {==}
+    case T.VSpan{_a, _b} <> _t:
+      {==}
+    case T.VInt{_a, _b} <> _t:
+      {==}
+    case T.VFlo{_a, _b} <> _t:
+      {==}
+    case T.VBool{_a} <> _t:
+      {==}
+    case T.VWhen{_a} <> _t:
+      {==}
+    case T.VArr{_a} <> _t:
+      {==}
+    case T.VInl{_a} <> _t:
+      {==}
+    case T.VHead{_a, _b} <> _t:
+      {==}
+    case T.VAots{_a, _b} <> _t:
+      {==}
+    case T.VPair{_a, _b} <> _t:
+      {==}
+
+# WP-R3: the walk. The frames above the table a walk is in are a promise:
+# rows well-formed at the table's path rebuild into a well-formed root. The
+# promise starts as the root itself and grows by one frame per step.
+def gd.K(stack: List<&2, T.Fr>, +pre: String) -> Type:
+  @vs: List<&2, T.Val> -> @bad: String -> @hs: List<&2, String> ->
+    {Laws.gd.ifok(String.is_empty(bad), T.wf.go(vs, T.WfRows{pre})) == True{} : Bool} ->
+    {Laws.gd.end(T.tree.rebuild(stack, vs, bad, hs)) == True{} : Bool}
+
+# at the root the rows are the root's
+def gd.k.root() -> gd.K([], ""):
+  vs => bad => hs => ee => ee
+
+# a frame's rows put back are well-formed where the frame sits
+def gd.k.lift(
+  bad: String,
+  +vs: List<&2, T.Val>,
+  +fr: T.Fr,
+  +pre: String,
+  +pre2: String,
+  +ee: {Laws.gd.ifok(String.is_empty(bad), T.wf.go(vs, T.WfRows{pre2})) == True{} : Bool},
+  ff: @ch: List<&2, T.Val> -> {T.wf.go(ch, T.WfRows{pre2}) == True{} : Bool} ->
+    {T.wf.go(T.tree.wrap(fr, ch), T.WfRows{pre}) == True{} : Bool}
+) -> {Laws.gd.ifok(String.is_empty(bad), T.wf.go(T.tree.wrap(fr, vs), T.WfRows{pre})) == True{} : Bool}:
+  match bad:
+    case SNil{}:
+      ff(vs, ee)
+    case SCon{_h, _t}:
+      {==}
+
+# one more frame, applied
+def gd.k.pushgo(
+  +fr: T.Fr,
+  stack: List<&2, T.Fr>,
+  +pre: String,
+  +pre2: String,
+  kk: gd.K(stack, pre),
+  ff: @ch: List<&2, T.Val> -> {T.wf.go(ch, T.WfRows{pre2}) == True{} : Bool} ->
+    {T.wf.go(T.tree.wrap(fr, ch), T.WfRows{pre}) == True{} : Bool},
+  +vs: List<&2, T.Val>,
+  +bad: String,
+  hs: List<&2, String>,
+  +ee: {Laws.gd.ifok(String.is_empty(bad), T.wf.go(vs, T.WfRows{pre2})) == True{} : Bool}
+) -> {Laws.gd.end(T.tree.rebuild(fr <> stack, vs, bad, hs)) == True{} : Bool}:
+  kk(T.tree.wrap(fr, vs), bad, hs, gd.k.lift(bad, vs, fr, pre, pre2, ee, ff))
+
+# one more frame
+def gd.k.push(
+  +fr: T.Fr,
+  stack: List<&2, T.Fr>,
+  +pre: String,
+  +pre2: String,
+  kk: gd.K(stack, pre),
+  ff: @ch: List<&2, T.Val> -> {T.wf.go(ch, T.WfRows{pre2}) == True{} : Bool} ->
+    {T.wf.go(T.tree.wrap(fr, ch), T.WfRows{pre}) == True{} : Bool}
+) -> gd.K(fr <> stack, pre2):
+  vs => bad => hs => ee => gd.k.pushgo(fr, stack, pre, pre2, kk, ff, vs, bad, hs, ee)
+
+# a table the walk makes on its way
+def gd.ff.new(
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +pre: String,
+  +et: {T.wf.text(name) == True{} : Bool},
+  +ef: {T.wf.fresh(T.get(vs, name)) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool}
+,
+  +ch: List<&2, T.Val>,
+  +ec: {T.wf.go(ch, T.WfRows{T.tree.pre(pre, name)}) == True{} : Bool}
+) -> {T.wf.go(T.tree.wrap(T.FrNew{name, vs, T.tree.pre(pre, name)}, ch), T.WfRows{pre}) == True{} : Bool}:
+  gd.pr.mk(pre, name, T.VHead{T.tree.pre(pre, name), ch}, vs,
+    gd.tt(T.wf.text(name), T.wf.fresh(T.get(vs, name)), et, ef),
+    gd.tt(T.str.eq(T.tree.pre(pre, name), T.tree.pre(pre, name)),
+      T.wf.go(ch, T.WfRows{T.tree.pre(pre, name)}), str.eq.self(T.tree.pre(pre, name)), ec),
+    ew)
+
+# a table the walk enters
+def gd.ff.rep(
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +pre: String,
+  +pp: String,
+  +es: {T.str.eq(pp, T.tree.pre(pre, name)) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool}
+,
+  +ch: List<&2, T.Val>,
+  +ec: {T.wf.go(ch, T.WfRows{T.tree.pre(pre, name)}) == True{} : Bool}
+) -> {T.wf.go(T.tree.wrap(T.FrRep{name, vs, pp}, ch), T.WfRows{pre}) == True{} : Bool}:
+  gd.repl.ok(vs, pre, name, T.VHead{pp, ch}, ew,
+    gd.tt(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(ch, T.WfRows{pp}), es,
+      gd.at.path(T.tree.pre(pre, name), pp, ch,
+        Equal.sym(String, pp, T.tree.pre(pre, name), str.eq.true(pp, T.tree.pre(pre, name), es)), ec)))
+
+# the newest element of an array of tables the walk enters
+def gd.ff.aot(
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +pre: String,
+  +pp: String,
+  +older: List<&2, T.Val>,
+  +es: {T.str.eq(pp, T.tree.pre(pre, name)) == True{} : Bool},
+  +eo: {T.wf.go(older, T.WfElems{pp}) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool}
+,
+  +ch: List<&2, T.Val>,
+  +ec: {T.wf.go(ch, T.WfRows{T.tree.pre(pre, name)}) == True{} : Bool}
+) -> {T.wf.go(T.tree.wrap(T.FrAot{name, vs, older, pp}, ch), T.WfRows{pre}) == True{} : Bool}:
+  gd.repl.ok(vs, pre, name, T.VAots{pp, T.VAot{pp, ch} <> older}, ew,
+    gd.tt(True{}, Bool.and(T.str.eq(pp, T.tree.pre(pre, name)),
+      T.wf.go(T.VAot{pp, ch} <> older, T.WfElems{pp})), {==},
+      gd.tt(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(T.VAot{pp, ch} <> older, T.WfElems{pp}), es,
+        gd.el.mk(pp, ch, older,
+          gd.at.path(T.tree.pre(pre, name), pp, ch,
+            Equal.sym(String, pp, T.tree.pre(pre, name), str.eq.true(pp, T.tree.pre(pre, name), es)),
+            ec),
+          eo))))
+
+# what the rest of a walk is owed: any table it goes on in, with a promise
+def gd.wk.IH(rest: List<&2, String>, +job: T.Job, +inl: Bool, +skip: U32) -> Type:
+  @vs: List<&2, T.Val> -> @stack: List<&2, T.Fr> -> @bad: String -> @pre: String ->
+    @hs: List<&2, String> ->
+    {Laws.gd.ifok(String.is_empty(bad), T.wf.go(vs, T.WfRows{pre})) == True{} : Bool} ->
+    gd.K(stack, pre) ->
+    {Laws.gd.end(T.tree.walk(rest, T.Tw{vs, job, stack, bad, pre, hs, inl}, skip)) == True{} : Bool}
+
+# a refusal's reason is no empty text, so the walk has failed
+def gd.why(+why: String, +vs: List<&2, T.Val>, +pre: String,
+  +ee: {Bool.not(String.is_empty(why)) == True{} : Bool})
+  -> {Laws.gd.ifok(String.is_empty(why), T.wf.go(vs, T.WfRows{pre})) == True{} : Bool}:
+  gd.off(String.is_empty(why), T.wf.go(vs, T.WfRows{pre}), Eq.not.true(String.is_empty(why), ee))
+
+# a step into a table that may be shut to a dotted key
+def gd.wk.hgo(
+  shut: Bool,
+  +pp: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  rest: List<&2, String>,
+  +skip: U32,
+  +eh: {gd.pv(pre, name, T.VHead{pp, rows}) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
+  kk: gd.K(stack, pre),
+  ih: gd.wk.IH(rest, job, inl, skip)
+) -> {Laws.gd.end(T.tree.walk(rest, T.tree.sub.head.go(shut, pp, rows, name, vs, job, stack, pre, heads,
+  inl, mark), skip)) == True{} : Bool}:
+  match shut:
+    case True{}:
+      ih(vs, stack, "duplicate table", pre, heads, {==}, kk)
+    case False{}:
+      ih(rows, T.FrRep{name, vs, pp} <> stack, "", T.tree.pre(pre, name),
+        T.heads.define(T.tree.sub.job(mark, job), T.tree.pre(pre, name), heads),
+        gd.at.path(pp, T.tree.pre(pre, name), rows,
+          str.eq.true(pp, T.tree.pre(pre, name),
+            gd.l(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(rows, T.WfRows{pp}), eh)),
+          gd.r(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(rows, T.WfRows{pp}), eh)),
+        gd.k.push(T.FrRep{name, vs, pp}, stack, pre, T.tree.pre(pre, name), kk,
+          ch => ec => gd.ff.rep(name, vs, pre, pp,
+            gd.l(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(rows, T.WfRows{pp}), eh), ew, ch, ec)))
+
+# a step into a table: a dotted key asks whether a header defined it
+def gd.wk.head(
+  dot: Bool,
+  +pp: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  rest: List<&2, String>,
+  +skip: U32,
+  +eh: {gd.pv(pre, name, T.VHead{pp, rows}) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
+  kk: gd.K(stack, pre),
+  ih: gd.wk.IH(rest, job, inl, skip)
+) -> {Laws.gd.end(T.tree.walk(rest, T.tree.sub.head(dot, pp, rows, name, vs, job, stack, pre, heads,
+  inl, mark), skip)) == True{} : Bool}:
+  match dot:
+    case True{}:
+      gd.wk.hgo(T.heads.head(heads, T.tree.pre(pre, name)), pp, rows, name, vs, job, stack, pre, heads,
+        inl, mark, rest, skip, eh, ew, kk, ih)
+    case False{}:
+      gd.wk.hgo(False{}, pp, rows, name, vs, job, stack, pre, heads, inl, mark, rest, skip, eh, ew, kk, ih)
+
+# a step into the newest element of an array of tables
+def gd.wk.last(
+  last: T.Last,
+  +pp: String,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  rest: List<&2, String>,
+  +skip: U32,
+  +el: {gd.ll(pp, last) == True{} : Bool},
+  +es: {T.str.eq(pp, T.tree.pre(pre, name)) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
+  kk: gd.K(stack, pre),
+  ih: gd.wk.IH(rest, job, inl, skip)
+) -> {Laws.gd.end(T.tree.walk(rest, T.tree.sub.aots(last, name, vs, job, stack, pre, heads, inl, pp),
+  skip)) == True{} : Bool}:
+  match last:
+    case T.LastSome{_q, +older, +rows}:
+      ih(rows, T.FrAot{name, vs, older, pp} <> stack, "", T.tree.pre(pre, name), heads,
+        gd.at.path(pp, T.tree.pre(pre, name), rows, str.eq.true(pp, T.tree.pre(pre, name), es),
+          gd.r(T.wf.go(older, T.WfElems{pp}), T.wf.go(rows, T.WfRows{pp}), el)),
+        gd.k.push(T.FrAot{name, vs, older, pp}, stack, pre, T.tree.pre(pre, name), kk,
+          ch => ec => gd.ff.aot(name, vs, pre, pp, older, es,
+            gd.l(T.wf.go(older, T.WfElems{pp}), T.wf.go(rows, T.WfRows{pp}), el), ew, ch, ec)))
+    case T.LastNo{+why}:
+      ih(vs, stack, why, pre, heads, gd.why(why, vs, pre, el), kk)
+
+# a step into an array of tables: a dotted key may not
+def gd.wk.arr(
+  dot: Bool,
+  +pp: String,
+  +es: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  rest: List<&2, String>,
+  +skip: U32,
+  +eh: {gd.pv(pre, name, T.VAots{pp, es}) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
+  kk: gd.K(stack, pre),
+  ih: gd.wk.IH(rest, job, inl, skip)
+) -> {Laws.gd.end(T.tree.walk(rest, T.tree.sub.arr(dot, pp, es, name, vs, job, stack, pre, heads, inl),
+  skip)) == True{} : Bool}:
+  match dot:
+    case True{}:
+      ih(vs, stack, "duplicate table", pre, heads, {==}, kk)
+    case False{}:
+      gd.wk.last(T.look.last(es, pp), pp, name, vs, job, stack, pre, heads, inl, rest, skip,
+        gd.ll.ok(es, pp, gd.r(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(es, T.WfElems{pp}),
+          gd.r(Bool.not(List.is_empty(&2, T.Val, es)),
+            Bool.and(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(es, T.WfElems{pp})), eh))),
+        gd.l(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(es, T.WfElems{pp}),
+          gd.r(Bool.not(List.is_empty(&2, T.Val, es)),
+            Bool.and(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(es, T.WfElems{pp})), eh)),
+        ew, kk, ih)
+
+# a navigation step, by what the name refers to
+def gd.wk.sub(
+  hit: T.Look,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  rest: List<&2, String>,
+  +skip: U32,
+  +eh: {gd.lk(T.get(vs, name), pre, name, hit) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
+  +et: {T.wf.text(name) == True{} : Bool},
+  kk: gd.K(stack, pre),
+  ih: gd.wk.IH(rest, job, inl, skip)
+) -> {Laws.gd.end(T.tree.walk(rest, T.tree.sub.look(hit, name, vs, job, stack, pre, heads, inl, mark),
+  skip)) == True{} : Bool}:
+  match hit:
+    case T.KMiss{}:
+      ih([], T.FrNew{name, vs, T.tree.pre(pre, name)} <> stack, "", T.tree.pre(pre, name),
+        T.heads.define(T.tree.sub.job(mark, job), T.tree.pre(pre, name), heads), {==},
+        gd.k.push(T.FrNew{name, vs, T.tree.pre(pre, name)}, stack, pre, T.tree.pre(pre, name), kk,
+          ch => ec => gd.ff.new(name, vs, pre, et, eh, ew, ch, ec)))
+    case T.KHead{+pp, +rows}:
+      gd.wk.head(T.tree.sub.dot(T.tree.sub.job(mark, job)), pp, rows, name, vs, job, stack, pre, heads,
+        inl, mark, rest, skip, eh, ew, kk, ih)
+    case T.KInl{}:
+      ih(vs, stack, "inline table is closed", pre, heads, {==}, kk)
+    case T.KAots{+pp, +es}:
+      gd.wk.arr(T.tree.sub.dot(T.tree.sub.job(mark, job)), pp, es, name, vs, job, stack, pre, heads,
+        inl, rest, skip, eh, ew, kk, ih)
+    case T.KNo{+why}:
+      ih(vs, stack, why, pre, heads, gd.why(why, vs, pre, eh), kk)
+
+# a navigation step, unless the walk has failed
+def gd.wk.step(
+  +bad: String,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  rest: List<&2, String>,
+  +skip: U32,
+  +ew: {Laws.gd.ifok(String.is_empty(bad), T.wf.go(vs, T.WfRows{pre})) == True{} : Bool},
+  +et: {T.wf.text(name) == True{} : Bool},
+  kk: gd.K(stack, pre),
+  ih: gd.wk.IH(rest, job, inl, skip)
+) -> {Laws.gd.end(T.tree.walk(rest, T.tree.sub(name, T.Tw{vs, job, stack, bad, pre, heads, inl}, mark),
+  skip)) == True{} : Bool}:
+  match bad:
+    case SNil{}:
+      gd.wk.sub(T.rows.look(vs, name), name, vs, job, stack, pre, heads, inl, mark, rest, skip,
+        gd.lk.ok(vs, pre, name, ew), ew, et, kk, ih)
+    case SCon{+hh, +tt}:
+      ih(vs, stack, SCon{hh, tt}, pre, heads, {==}, kk)
+
+# a value a key may hold is well-formed as a pair's value under any name
+def gd.vok.pv(vv: T.Val, +pre: String, +name: String,
+  +ej: {Laws.gd.vok(vv) == True{} : Bool})
+  -> {gd.pv(pre, name, vv) == True{} : Bool}:
+  match vv:
+    case T.VHead{pp, rr}:
+      Eq.bit.absurd(&2, {gd.pv(pre, name, T.VHead{pp, rr}) == True{} : Bool}, ej)
+    case T.VAots{pp, rr}:
+      Eq.bit.absurd(&2, {gd.pv(pre, name, T.VAots{pp, rr}) == True{} : Bool}, ej)
+    case T.VArr{_i}:
+      ej
+    case T.VInl{_r}:
+      ej
+    case T.VStr{_a}:
+      ej
+    case T.VSpan{_a, _b}:
+      ej
+    case T.VInt{_a, _b}:
+      ej
+    case T.VFlo{_a, _b}:
+      ej
+    case T.VBool{_a}:
+      ej
+    case T.VWhen{_a}:
+      ej
+    case T.VAot{_a, _b}:
+      ej
+    case T.VPair{_a, _b}:
+      ej
+
+# a value put: a duplicate key fails, a fresh one goes in front
+def gd.wk.put(
+  hit: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +eg: {T.get(vs, name) == hit : T.Hit},
+  +ev: {gd.pv(pre, name, val) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
+  +et: {T.wf.text(name) == True{} : Bool},
+  kk: gd.K(stack, pre)
+) -> {Laws.gd.end(T.tree.leaf.put(hit, name, vs, val, stack, "", heads)) == True{} : Bool}:
+  match hit:
+    case T.Found{_v}:
+      kk(vs, "duplicate key", heads, {==})
+    case T.Miss{}:
+      kk(T.VPair{name, val} <> vs, "", heads,
+        gd.pr.mk(pre, name, val, vs,
+          gd.tt(T.wf.text(name), T.wf.fresh(T.get(vs, name)), et,
+            Equal.cong(T.Hit, Bool, hh => T.wf.fresh(hh), T.get(vs, name), T.Miss{}, eg)),
+          ev, ew))
+
+# a [table] header on a table only made on the way: defined unless defined
+def gd.wk.dh(
+  seen: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +rows: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +er: {T.wf.go(rows, T.WfRows{T.tree.pre(pre, name)}) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
+  kk: gd.K(stack, pre)
+) -> {Laws.gd.end(T.tree.leaf.def.head(seen, name, vs, rows, stack, "", T.tree.pre(pre, name), heads))
+  == True{} : Bool}:
+  match seen:
+    case True{}:
+      kk(vs, "duplicate table", heads, {==})
+    case False{}:
+      kk(T.rows.repl(vs, name, T.VHead{T.tree.pre(pre, name), rows}), "",
+        T.heads.by.head(T.tree.pre(pre, name)) <> heads,
+        gd.repl.ok(vs, pre, name, T.VHead{T.tree.pre(pre, name), rows}, ew,
+          gd.tt(T.str.eq(T.tree.pre(pre, name), T.tree.pre(pre, name)),
+            T.wf.go(rows, T.WfRows{T.tree.pre(pre, name)}), str.eq.self(T.tree.pre(pre, name)), er)))
+
+# a [table] header's last segment
+def gd.wk.def(
+  hit: T.Look,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +eh: {gd.lk(T.get(vs, name), pre, name, hit) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
+  +et: {T.wf.text(name) == True{} : Bool},
+  kk: gd.K(stack, pre)
+) -> {Laws.gd.end(T.tree.leaf.def.hit(hit, name, vs, stack, "", T.tree.pre(pre, name), heads))
+  == True{} : Bool}:
+  match hit:
+    case T.KMiss{}:
+      kk(T.VPair{name, T.VHead{T.tree.pre(pre, name), []}} <> vs, "",
+        T.heads.by.head(T.tree.pre(pre, name)) <> heads,
+        gd.pr.mk(pre, name, T.VHead{T.tree.pre(pre, name), []}, vs,
+          gd.tt(T.wf.text(name), T.wf.fresh(T.get(vs, name)), et, eh),
+          gd.tt(T.str.eq(T.tree.pre(pre, name), T.tree.pre(pre, name)), True{},
+            str.eq.self(T.tree.pre(pre, name)), {==}),
+          ew))
+    case T.KHead{+pp, +rows}:
+      gd.wk.dh(T.heads.has(heads, T.tree.pre(pre, name)), name, vs, rows, stack, pre, heads,
+        gd.at.path(pp, T.tree.pre(pre, name), rows,
+          str.eq.true(pp, T.tree.pre(pre, name),
+            gd.l(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(rows, T.WfRows{pp}), eh)),
+          gd.r(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(rows, T.WfRows{pp}), eh)),
+        ew, kk)
+    case T.KInl{}:
+      kk(vs, "inline table is closed", heads, {==})
+    case T.KAots{_p, _e}:
+      kk(vs, "not a table", heads, {==})
+    case T.KNo{+why}:
+      kk(vs, why, heads, gd.why(why, vs, pre, eh))
+
+# an [[array]] header's last segment
+def gd.wk.aot(
+  hit: T.Look,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +eh: {gd.lk(T.get(vs, name), pre, name, hit) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
+  +et: {T.wf.text(name) == True{} : Bool},
+  kk: gd.K(stack, pre)
+) -> {Laws.gd.end(T.tree.leaf.aot.hit(hit, name, vs, stack, "", T.tree.pre(pre, name), heads))
+  == True{} : Bool}:
+  match hit:
+    case T.KMiss{}:
+      kk(T.VPair{name, T.VAots{T.tree.pre(pre, name), [T.VAot{T.tree.pre(pre, name), []}]}} <> vs, "",
+        heads,
+        gd.pr.mk(pre, name, T.VAots{T.tree.pre(pre, name), [T.VAot{T.tree.pre(pre, name), []}]}, vs,
+          gd.tt(T.wf.text(name), T.wf.fresh(T.get(vs, name)), et, eh),
+          gd.tt(True{}, Bool.and(T.str.eq(T.tree.pre(pre, name), T.tree.pre(pre, name)),
+            T.wf.go([T.VAot{T.tree.pre(pre, name), []}], T.WfElems{T.tree.pre(pre, name)})), {==},
+            gd.tt(T.str.eq(T.tree.pre(pre, name), T.tree.pre(pre, name)),
+              T.wf.go([T.VAot{T.tree.pre(pre, name), []}], T.WfElems{T.tree.pre(pre, name)}),
+              str.eq.self(T.tree.pre(pre, name)),
+              gd.el.mk(T.tree.pre(pre, name), [], [], {==}, {==}))),
+          ew))
+    case T.KAots{+pp, +es}:
+      kk(T.rows.repl(vs, name, T.VAots{T.tree.pre(pre, name), T.VAot{T.tree.pre(pre, name), []} <> es}),
+        "", T.heads.drop(heads, String.append(T.tree.pre(pre, name), ".")),
+        gd.repl.ok(vs, pre, name, T.VAots{T.tree.pre(pre, name), T.VAot{T.tree.pre(pre, name), []} <> es},
+          ew,
+          gd.tt(True{}, Bool.and(T.str.eq(T.tree.pre(pre, name), T.tree.pre(pre, name)),
+            T.wf.go(T.VAot{T.tree.pre(pre, name), []} <> es, T.WfElems{T.tree.pre(pre, name)})), {==},
+            gd.tt(T.str.eq(T.tree.pre(pre, name), T.tree.pre(pre, name)),
+              T.wf.go(T.VAot{T.tree.pre(pre, name), []} <> es, T.WfElems{T.tree.pre(pre, name)}),
+              str.eq.self(T.tree.pre(pre, name)),
+              gd.el.mk(T.tree.pre(pre, name), [], es, {==},
+                gd.el.path(pp, T.tree.pre(pre, name), es,
+                  str.eq.true(pp, T.tree.pre(pre, name),
+                    gd.l(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(es, T.WfElems{pp}),
+                      gd.r(Bool.not(List.is_empty(&2, T.Val, es)),
+                        Bool.and(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(es, T.WfElems{pp})), eh))),
+                  gd.r(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(es, T.WfElems{pp}),
+                    gd.r(Bool.not(List.is_empty(&2, T.Val, es)),
+                      Bool.and(T.str.eq(pp, T.tree.pre(pre, name)), T.wf.go(es, T.WfElems{pp})),
+                      eh))))))))
+    case T.KHead{_p, _r}:
+      kk(vs, "not a table", heads, {==})
+    case T.KInl{}:
+      kk(vs, "inline table is closed", heads, {==})
+    case T.KNo{+why}:
+      kk(vs, why, heads, gd.why(why, vs, pre, eh))
+
+# the job at the end of the path
+def gd.wk.job(
+  job: T.Job,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +ej: {Laws.gd.job(job) == True{} : Bool},
+  +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
+  +et: {T.wf.text(name) == True{} : Bool},
+  kk: gd.K(stack, pre)
+) -> {Laws.gd.end(T.tree.leaf.job(job, name, vs, stack, "", pre, heads)) == True{} : Bool}:
+  match job:
+    case T.JPut{+val}:
+      gd.wk.put(T.get(vs, name), name, vs, val, stack, pre, heads, {==}, gd.vok.pv(val, pre, name, ej), ew,
+        et, kk)
+    case T.JDef{}:
+      gd.wk.def(T.rows.look(vs, name), name, vs, stack, pre, heads, gd.lk.ok(vs, pre, name, ew), ew, et, kk)
+    case T.JAot{}:
+      gd.wk.aot(T.rows.look(vs, name), name, vs, stack, pre, heads, gd.lk.ok(vs, pre, name, ew), ew, et, kk)
+
+# the last segment, unless the walk has failed
+def gd.wk.leaf(
+  +bad: String,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +ej: {Laws.gd.job(job) == True{} : Bool},
+  +ew: {Laws.gd.ifok(String.is_empty(bad), T.wf.go(vs, T.WfRows{pre})) == True{} : Bool},
+  +et: {T.wf.text(name) == True{} : Bool},
+  kk: gd.K(stack, pre)
+) -> {Laws.gd.end(T.tree.leaf(name, T.Tw{vs, job, stack, bad, pre, heads, inl})) == True{} : Bool}:
+  match bad:
+    case SNil{}:
+      gd.wk.job(job, name, vs, stack, pre, heads, ej, ew, et, kk)
+    case SCon{+hh, +tt}:
+      kk(vs, SCon{hh, tt}, heads, {==})
+
+# an error is never the empty text
+def gd.err.ne(+bad: String) -> {String.is_empty(T.err.first(bad, "empty key")) == False{} : Bool}:
+  match bad:
+    case SNil{}:
+      {==}
+    case SCon{_h, _t}:
+      {==}
+
+# the walk, by induction on the path
+def gd.wk(
+  path: List<&2, String>,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +skip: U32,
+  +ep: {Laws.gd.segs(path) == True{} : Bool},
+  +ej: {Laws.gd.job(job) == True{} : Bool},
+  +ew: {Laws.gd.ifok(String.is_empty(bad), T.wf.go(vs, T.WfRows{pre})) == True{} : Bool},
+  kk: gd.K(stack, pre)
+) -> {Laws.gd.end(T.tree.walk(path, T.Tw{vs, job, stack, bad, pre, heads, inl}, skip)) == True{} : Bool}:
+  match path:
+    case []:
+      kk(vs, T.err.first(bad, "empty key"), heads,
+        gd.off(String.is_empty(T.err.first(bad, "empty key")), T.wf.go(vs, T.WfRows{pre}), gd.err.ne(bad)))
+    case +name <> +rest:
+      match rest:
+        case []:
+          gd.wk.leaf(bad, name, vs, job, stack, pre, heads, inl, ej, ew,
+            gd.l(T.wf.text(name), Laws.gd.segs([]), ep), kk)
+        case +r1 <> +r2:
+          gd.wk.step(bad, name, vs, job, stack, pre, heads, inl, U32.is_zero(skip), r1 <> r2, T.path.dec(skip),
+            ew, gd.l(T.wf.text(name), Laws.gd.segs(r1 <> r2), ep), kk,
+            v2 => s2 => b2 => p2 => h2 => e2 => k2 => gd.wk(r1 <> r2, v2, job, s2, b2, p2, h2, inl, T.path.dec(skip),
+              gd.r(T.wf.text(name), Laws.gd.segs(r1 <> r2), ep), ej, e2, k2))
+
+def Laws.gd_walk(path, rows, job, bad, heads, inl, skip, ew, ep, ej):
+  gd.wk(path, rows, job, [], bad, "", heads, inl, skip, ep, ej, ew, gd.k.root())
+
