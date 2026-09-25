@@ -6716,3 +6716,667 @@ def Laws.render_parse_plain_pair(e, k, ek, s, ep, es):
       [T.VPair{k, T.VStr{s}}]})), T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})),
       T.Doc{"", [T.VPair{k, rp.val(s)}]}, rp.parse(e, k, ek, s, ep)),
     rp.same(e, k, rp.val(s), s, rp.own(s, k, es)))
+
+# WP-W: contracts of the walk. A walk along a path is one navigation step per
+# segment before the last (nav.walk), then the job at the last (tree.leaf),
+# then the frames rebuilt back to the root (nav.rebuild). A step goes through
+# what rows.look finds, and the laws' premises are what get finds, so the two
+# lookups are shown to agree first.
+
+# what the walk asks a table for a name, read off what get finds
+def tb.look(hh: T.Hit) -> T.Look:
+  match hh:
+    case T.Found{vv}:
+      T.look.of(vv)
+    case T.Miss{}:
+      T.KMiss{}
+
+# one pair of the rows: both lookups stop at it or both pass it
+def look.get.step(
+  bb: Bool,
+  vv: T.Val,
+  tt: List<&2, T.Val>,
+  +kk: String,
+  ih: {T.rows.look(tt, kk) == tb.look(T.rows.find(tt, kk)) : T.Look}
+) -> {T.look.step(bb, vv, _u => T.rows.look(tt, kk))
+  == tb.look(T.find.step(bb, vv, _u => T.rows.find(tt, kk))) : T.Look}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      ih
+
+# rows.look finds what get finds, by induction on the rows
+def look.get(
+  rows: List<&2, T.Val>,
+  +kk: String
+) -> {T.rows.look(rows, kk) == tb.look(T.get(rows, kk)) : T.Look}:
+  match rows:
+    case []:
+      {==}
+    case T.VPair{nn, vv} <> +tt:
+      look.get.step(T.str.eq(nn, kk), vv, tt, kk, look.get(tt, kk))
+    case T.VStr{_a} <> tt:
+      look.get(tt, kk)
+    case T.VSpan{_a, _b} <> tt:
+      look.get(tt, kk)
+    case T.VInt{_a, _b} <> tt:
+      look.get(tt, kk)
+    case T.VFlo{_a, _b} <> tt:
+      look.get(tt, kk)
+    case T.VBool{_a} <> tt:
+      look.get(tt, kk)
+    case T.VWhen{_a} <> tt:
+      look.get(tt, kk)
+    case T.VArr{_a} <> tt:
+      look.get(tt, kk)
+    case T.VInl{_a} <> tt:
+      look.get(tt, kk)
+    case T.VHead{_a, _b} <> tt:
+      look.get(tt, kk)
+    case T.VAot{_a, _b} <> tt:
+      look.get(tt, kk)
+    case T.VAots{_a, _b} <> tt:
+      look.get(tt, kk)
+
+# so a premise about get is one about rows.look
+def look.via(
+  +rows: List<&2, T.Val>,
+  +kk: String,
+  hh: T.Hit,
+  ee: {T.get(rows, kk) == hh : T.Hit}
+) -> {T.rows.look(rows, kk) == tb.look(hh) : T.Look}:
+  Equal.trans(T.Look, T.rows.look(rows, kk), tb.look(T.get(rows, kk)), tb.look(hh),
+    look.get(rows, kk), Equal.cong(T.Hit, T.Look, xx => tb.look(xx), T.get(rows, kk), hh, ee))
+
+# rebuilding the tables above a walk leaves its error alone
+def rebuild.bad(
+  stack: List<&2, T.Fr>,
+  vs: List<&2, T.Val>,
+  bad: String,
+  heads: List<&2, String>
+) -> {Laws.end_bad(T.tree.rebuild(stack, vs, bad, heads)) == bad : String}:
+  match stack:
+    case []:
+      {==}
+    case fr <> tt:
+      rebuild.bad(tt, T.tree.wrap(fr, vs), bad, heads)
+
+# and whether it has one
+def rebuild.empty(
+  stack: List<&2, T.Fr>,
+  vs: List<&2, T.Val>,
+  bad: String,
+  heads: List<&2, String>
+) -> {String.is_empty(Laws.end_bad(T.tree.rebuild(stack, vs, bad, heads)))
+  == String.is_empty(bad) : Bool}:
+  Equal.cong(String, Bool, ss => String.is_empty(ss),
+    Laws.end_bad(T.tree.rebuild(stack, vs, bad, heads)), bad, rebuild.bad(stack, vs, bad, heads))
+
+# a navigation step's job records no definition
+def define.quiet(
+  sj: T.Job,
+  pp: String,
+  hs: List<&2, String>,
+  ee: {T.tree.sub.dot(sj) == False{} : Bool}
+) -> {T.heads.define(sj, pp, hs) == hs : List<&2, String>}:
+  match sj:
+    case T.JPut{vv}:
+      Eq.bit.absurd2(&2, {T.heads.define(T.JPut{vv}, pp, hs) == hs : List<&2, String>}, ee)
+    case T.JDef{}:
+      {==}
+    case T.JAot{}:
+      {==}
+
+# the frame a navigation step pushes for what the name refers to
+def tb.last.fr(last: T.Last, name: String, vs: List<&2, T.Val>, pp: String) -> T.Fr:
+  match last:
+    case T.LastSome{_q, older, _r}:
+      T.FrAot{name, vs, older, pp}
+    case T.LastNo{_why}:
+      T.FrRep{name, vs, pp}
+
+# the frame a navigation step pushes for what the name refers to
+def tb.fr(look: T.Look, +name: String, vs: List<&2, T.Val>, +pre: String) -> T.Fr:
+  match look:
+    case T.KMiss{}:
+      T.FrNew{name, vs, T.tree.pre(pre, name)}
+    case T.KHead{p, _r}:
+      T.FrRep{name, vs, p}
+    case T.KAots{+p, elems}:
+      tb.last.fr(T.look.last(elems, p), name, vs, p)
+    case _:
+      T.FrRep{name, vs, pre}
+
+# the frames a walk along the path pushes, the innermost first
+def nav.frs(
+  path: List<&2, String>,
+  +pre: String,
+  +rows: List<&2, T.Val>,
+  stack: List<&2, T.Fr>
+) -> List<&2, T.Fr>:
+  match path:
+    case []:
+      stack
+    case +seg <> rest:
+      nav.frs(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(rows, seg)),
+        tb.fr(T.rows.look(rows, seg), seg, rows, pre) <> stack)
+
+# whether every segment of the path is navigation for the job: no step asks
+# who defined a table or records one
+def nav.quiet(path: List<&2, String>, +job: T.Job, +skip: U32) -> Bool:
+  match path:
+    case []:
+      True{}
+    case _seg <> rest:
+      Bool.and(Bool.not(T.tree.sub.dot(T.tree.sub.job(U32.is_zero(skip), job))),
+        nav.quiet(rest, job, T.path.dec(skip)))
+
+# where one navigation step leaves the walk
+def sub.Goal(
+  +look: T.Look,
+  +seg: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool
+) -> Type:
+  {T.tree.sub.look(look, seg, vs, job, stack, pre, heads, inl, mark)
+    == T.Tw{Laws.tb.into(look), job, tb.fr(look, seg, vs, pre) <> stack, "", T.tree.pre(pre, seg),
+      heads, inl} : T.Tw}
+
+# a step into an array of tables enters its newest element
+def sub.step.last(
+  last: T.Last,
+  +pp: String,
+  +seg: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  ec: {Laws.tb.last.can(last) == True{} : Bool}
+) -> {T.tree.sub.aots(last, seg, vs, job, stack, pre, heads, inl, pp)
+  == T.Tw{Laws.tb.last.rows(last), job, tb.last.fr(last, seg, vs, pp) <> stack, "",
+    T.tree.pre(pre, seg), heads, inl} : T.Tw}:
+  match last:
+    case T.LastSome{_q, _older, _r}:
+      {==}
+    case T.LastNo{why}:
+      Eq.bit.absurd(&2, {T.tree.sub.aots(T.LastNo{why}, seg, vs, job, stack, pre, heads, inl, pp)
+        == T.Tw{Laws.tb.last.rows(T.LastNo{why}), job, tb.last.fr(T.LastNo{why}, seg, vs, pp)
+          <> stack, "", T.tree.pre(pre, seg), heads, inl} : T.Tw}, ec)
+
+# a navigation step enters the table the name refers to, pushes its frame, and
+# leaves the error and the recorded definitions alone
+def sub.step(
+  +look: T.Look,
+  +seg: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  ec: {Laws.tb.can(look) == True{} : Bool},
+  +eq: {T.tree.sub.dot(T.tree.sub.job(mark, job)) == False{} : Bool}
+) -> sub.Goal(look, seg, vs, job, stack, pre, heads, inl, mark):
+  match look:
+    case T.KMiss{}:
+      Equal.cong(List<&2, String>, T.Tw,
+        hh => T.Tw{[], job, T.FrNew{seg, vs, T.tree.pre(pre, seg)} <> stack, "", T.tree.pre(pre, seg),
+          hh, inl},
+        T.heads.define(T.tree.sub.job(mark, job), T.tree.pre(pre, seg), heads), heads,
+        define.quiet(T.tree.sub.job(mark, job), T.tree.pre(pre, seg), heads, eq))
+    case T.KHead{+p, +rr}:
+      Equal.trans(T.Tw,
+        T.tree.sub.head(T.tree.sub.dot(T.tree.sub.job(mark, job)), p, rr, seg, vs, job, stack, pre,
+          heads, inl, mark),
+        T.tree.sub.head(False{}, p, rr, seg, vs, job, stack, pre, heads, inl, mark),
+        T.Tw{rr, job, T.FrRep{seg, vs, p} <> stack, "", T.tree.pre(pre, seg), heads, inl},
+        Equal.cong(Bool, T.Tw,
+          bb => T.tree.sub.head(bb, p, rr, seg, vs, job, stack, pre, heads, inl, mark),
+          T.tree.sub.dot(T.tree.sub.job(mark, job)), False{}, eq),
+        Equal.cong(List<&2, String>, T.Tw,
+          hh => T.Tw{rr, job, T.FrRep{seg, vs, p} <> stack, "", T.tree.pre(pre, seg), hh, inl},
+          T.heads.define(T.tree.sub.job(mark, job), T.tree.pre(pre, seg), heads), heads,
+          define.quiet(T.tree.sub.job(mark, job), T.tree.pre(pre, seg), heads, eq)))
+    case T.KAots{+p, +es}:
+      Equal.trans(T.Tw,
+        T.tree.sub.arr(T.tree.sub.dot(T.tree.sub.job(mark, job)), p, es, seg, vs, job, stack, pre,
+          heads, inl),
+        T.tree.sub.aots(T.look.last(es, p), seg, vs, job, stack, pre, heads, inl, p),
+        T.Tw{Laws.tb.last.rows(T.look.last(es, p)), job, tb.last.fr(T.look.last(es, p), seg, vs, p)
+          <> stack, "", T.tree.pre(pre, seg), heads, inl},
+        Equal.cong(Bool, T.Tw,
+          bb => T.tree.sub.arr(bb, p, es, seg, vs, job, stack, pre, heads, inl),
+          T.tree.sub.dot(T.tree.sub.job(mark, job)), False{}, eq),
+        sub.step.last(T.look.last(es, p), p, seg, vs, job, stack, pre, heads, inl, ec))
+    case T.KInl{}:
+      Eq.bit.absurd(&2, {T.tree.sub.look(T.KInl{}, seg, vs, job, stack, pre, heads, inl, mark)
+        == T.Tw{Laws.tb.into(T.KInl{}), job, tb.fr(T.KInl{}, seg, vs, pre) <> stack, "",
+          T.tree.pre(pre, seg), heads, inl} : T.Tw}, ec)
+    case T.KNo{why}:
+      Eq.bit.absurd(&2, {T.tree.sub.look(T.KNo{why}, seg, vs, job, stack, pre, heads, inl, mark)
+        == T.Tw{Laws.tb.into(T.KNo{why}), job, tb.fr(T.KNo{why}, seg, vs, pre) <> stack, "",
+          T.tree.pre(pre, seg), heads, inl} : T.Tw}, ec)
+
+# the walk goes on past a segment with the rest of the path
+def walk.cons(
+  +seg: String,
+  rest: List<&2, String>,
+  +kk: String,
+  +tw: T.Tw,
+  +skip: U32
+) -> {T.tree.walk(seg <> List.append(&2, String, rest, [kk]), tw, skip)
+  == T.tree.walk(List.append(&2, String, rest, [kk]), T.tree.sub(seg, tw, U32.is_zero(skip)),
+    T.path.dec(skip)) : T.End}:
+  match rest:
+    case []:
+      {==}
+    case _r <> _rr:
+      {==}
+
+# where a walk along the path to one more name comes to that name
+def nav.Goal(
+  path: List<&2, String>,
+  +kk: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +skip: U32
+) -> Type:
+  {T.tree.walk(List.append(&2, String, path, [kk]), T.Tw{vs, job, stack, "", pre, heads, inl}, skip)
+    == T.tree.leaf(kk, T.Tw{Laws.tb.rows(path, vs), job, nav.frs(path, pre, vs, stack), "",
+      Laws.tb.join(path, pre), heads, inl}) : T.End}
+
+# by induction on the path: each segment is one navigation step
+def nav.walk(
+  path: List<&2, String>,
+  +kk: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +skip: U32,
+  +eo: {Laws.tb.open(path, vs) == True{} : Bool},
+  +eq: {nav.quiet(path, job, skip) == True{} : Bool}
+) -> nav.Goal(path, kk, vs, job, stack, pre, heads, inl, skip):
+  match path:
+    case []:
+      {==}
+    case +seg <> +rest:
+      Equal.trans(T.End,
+        T.tree.walk(seg <> List.append(&2, String, rest, [kk]), T.Tw{vs, job, stack, "", pre, heads,
+          inl}, skip),
+        T.tree.walk(List.append(&2, String, rest, [kk]), T.Tw{Laws.tb.into(T.rows.look(vs, seg)), job,
+          tb.fr(T.rows.look(vs, seg), seg, vs, pre) <> stack, "", T.tree.pre(pre, seg), heads, inl},
+          T.path.dec(skip)),
+        T.tree.leaf(kk, T.Tw{Laws.tb.rows(rest, Laws.tb.into(T.rows.look(vs, seg))), job,
+          nav.frs(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(vs, seg)),
+            tb.fr(T.rows.look(vs, seg), seg, vs, pre) <> stack), "",
+          Laws.tb.join(rest, T.tree.pre(pre, seg)), heads, inl}),
+        Equal.trans(T.End,
+          T.tree.walk(seg <> List.append(&2, String, rest, [kk]), T.Tw{vs, job, stack, "", pre, heads,
+            inl}, skip),
+          T.tree.walk(List.append(&2, String, rest, [kk]), T.tree.sub(seg, T.Tw{vs, job, stack, "",
+            pre, heads, inl}, U32.is_zero(skip)), T.path.dec(skip)),
+          T.tree.walk(List.append(&2, String, rest, [kk]), T.Tw{Laws.tb.into(T.rows.look(vs, seg)),
+            job, tb.fr(T.rows.look(vs, seg), seg, vs, pre) <> stack, "", T.tree.pre(pre, seg), heads,
+            inl}, T.path.dec(skip)),
+          walk.cons(seg, rest, kk, T.Tw{vs, job, stack, "", pre, heads, inl}, skip),
+          Equal.cong(T.Tw, T.End,
+            tw => T.tree.walk(List.append(&2, String, rest, [kk]), tw, T.path.dec(skip)),
+            T.tree.sub(seg, T.Tw{vs, job, stack, "", pre, heads, inl}, U32.is_zero(skip)),
+            T.Tw{Laws.tb.into(T.rows.look(vs, seg)), job, tb.fr(T.rows.look(vs, seg), seg, vs, pre)
+              <> stack, "", T.tree.pre(pre, seg), heads, inl},
+            sub.step(T.rows.look(vs, seg), seg, vs, job, stack, pre, heads, inl, U32.is_zero(skip),
+              Eq.and.left(Laws.tb.can(T.rows.look(vs, seg)),
+                Laws.tb.open(rest, Laws.tb.into(T.rows.look(vs, seg))), eo),
+              Eq.not.true(T.tree.sub.dot(T.tree.sub.job(U32.is_zero(skip), job)),
+                Eq.and.left(Bool.not(T.tree.sub.dot(T.tree.sub.job(U32.is_zero(skip), job))),
+                  nav.quiet(rest, job, T.path.dec(skip)), eq))))),
+        nav.walk(rest, kk, Laws.tb.into(T.rows.look(vs, seg)), job,
+          tb.fr(T.rows.look(vs, seg), seg, vs, pre) <> stack, T.tree.pre(pre, seg), heads, inl,
+          T.path.dec(skip),
+          Eq.and.right(Laws.tb.can(T.rows.look(vs, seg)),
+            Laws.tb.open(rest, Laws.tb.into(T.rows.look(vs, seg))), eo),
+          Eq.and.right(Bool.not(T.tree.sub.dot(T.tree.sub.job(U32.is_zero(skip), job))),
+            nav.quiet(rest, job, T.path.dec(skip)), eq)))
+
+# rebuilding the frame of an array of tables' element puts the element back
+def wrap.last(
+  last: T.Last,
+  +pp: String,
+  +seg: String,
+  +vs: List<&2, T.Val>,
+  +child: List<&2, T.Val>,
+  ec: {Laws.tb.last.can(last) == True{} : Bool}
+) -> {T.tree.wrap(tb.last.fr(last, seg, vs, pp), child)
+  == Laws.tb.last.put(last, seg, vs, pp, child) : List<&2, T.Val>}:
+  match last:
+    case T.LastSome{_q, _older, _r}:
+      {==}
+    case T.LastNo{why}:
+      Eq.bit.absurd(&2, {T.tree.wrap(tb.last.fr(T.LastNo{why}, seg, vs, pp), child)
+        == Laws.tb.last.put(T.LastNo{why}, seg, vs, pp, child) : List<&2, T.Val>}, ec)
+
+# rebuilding a navigation step's frame puts the table back where it was
+def wrap.step(
+  +look: T.Look,
+  +seg: String,
+  +vs: List<&2, T.Val>,
+  +pre: String,
+  +child: List<&2, T.Val>,
+  ec: {Laws.tb.can(look) == True{} : Bool}
+) -> {T.tree.wrap(tb.fr(look, seg, vs, pre), child)
+  == Laws.tb.put.in(look, seg, vs, pre, child) : List<&2, T.Val>}:
+  match look:
+    case T.KMiss{}:
+      {==}
+    case T.KHead{_p, _r}:
+      {==}
+    case T.KAots{+p, +es}:
+      wrap.last(T.look.last(es, p), p, seg, vs, child, ec)
+    case T.KInl{}:
+      Eq.bit.absurd(&2, {T.tree.wrap(tb.fr(T.KInl{}, seg, vs, pre), child)
+        == Laws.tb.put.in(T.KInl{}, seg, vs, pre, child) : List<&2, T.Val>}, ec)
+    case T.KNo{why}:
+      Eq.bit.absurd(&2, {T.tree.wrap(tb.fr(T.KNo{why}, seg, vs, pre), child)
+        == Laws.tb.put.in(T.KNo{why}, seg, vs, pre, child) : List<&2, T.Val>}, ec)
+
+# by induction on the path: rebuilding the frames a walk pushed sets the table
+# at the path's end to what the leaf left, and puts every table above it back
+def nav.rebuild(
+  path: List<&2, String>,
+  +pre: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +child: List<&2, T.Val>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +eo: {Laws.tb.open(path, vs) == True{} : Bool}
+) -> {T.tree.rebuild(nav.frs(path, pre, vs, stack), child, bad, heads)
+  == T.tree.rebuild(stack, Laws.tb.set(path, pre, vs, child), bad, heads) : T.End}:
+  match path:
+    case []:
+      {==}
+    case +seg <> +rest:
+      Equal.trans(T.End,
+        T.tree.rebuild(nav.frs(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(vs, seg)),
+          tb.fr(T.rows.look(vs, seg), seg, vs, pre) <> stack), child, bad, heads),
+        T.tree.rebuild(tb.fr(T.rows.look(vs, seg), seg, vs, pre) <> stack,
+          Laws.tb.set(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(vs, seg)), child), bad,
+          heads),
+        T.tree.rebuild(stack, Laws.tb.put.in(T.rows.look(vs, seg), seg, vs, pre,
+          Laws.tb.set(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(vs, seg)), child)), bad,
+          heads),
+        nav.rebuild(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(vs, seg)),
+          tb.fr(T.rows.look(vs, seg), seg, vs, pre) <> stack, child, bad, heads,
+          Eq.and.right(Laws.tb.can(T.rows.look(vs, seg)),
+            Laws.tb.open(rest, Laws.tb.into(T.rows.look(vs, seg))), eo)),
+        Equal.cong(List<&2, T.Val>, T.End, xx => T.tree.rebuild(stack, xx, bad, heads),
+          T.tree.wrap(tb.fr(T.rows.look(vs, seg), seg, vs, pre),
+            Laws.tb.set(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(vs, seg)), child)),
+          Laws.tb.put.in(T.rows.look(vs, seg), seg, vs, pre,
+            Laws.tb.set(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(vs, seg)), child)),
+          wrap.step(T.rows.look(vs, seg), seg, vs, pre,
+            Laws.tb.set(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(vs, seg)), child),
+            Eq.and.left(Laws.tb.can(T.rows.look(vs, seg)),
+              Laws.tb.open(rest, Laws.tb.into(T.rows.look(vs, seg))), eo))))
+
+# a segment the walk counts down past is navigation for a put
+def quiet.put.step(
+  zz: Bool,
+  vv: T.Val,
+  qq: Bool,
+  ez: {Bool.not(zz) == True{} : Bool},
+  eq: {qq == True{} : Bool}
+) -> {Bool.and(Bool.not(T.tree.sub.dot(T.tree.sub.job(zz, T.JPut{vv}))), qq) == True{} : Bool}:
+  match zz:
+    case True{}:
+      Eq.bit.absurd(&2, {Bool.and(Bool.not(T.tree.sub.dot(T.tree.sub.job(True{}, T.JPut{vv}))), qq)
+        == True{} : Bool}, ez)
+    case False{}:
+      eq
+
+# every segment the walk counts down past is navigation for a put
+def quiet.put(
+  path: List<&2, String>,
+  +vv: T.Val,
+  +skip: U32,
+  +ec: {Laws.counts.down(path, skip) == True{} : Bool}
+) -> {nav.quiet(path, T.JPut{vv}, skip) == True{} : Bool}:
+  match path:
+    case []:
+      {==}
+    case _seg <> +rest:
+      quiet.put.step(U32.is_zero(skip), vv, nav.quiet(rest, T.JPut{vv}, T.path.dec(skip)),
+        Eq.and.left(Bool.not(U32.is_zero(skip)), Laws.counts.down(rest, T.path.dec(skip)), ec),
+        quiet.put(rest, vv, T.path.dec(skip),
+          Eq.and.right(Bool.not(U32.is_zero(skip)), Laws.counts.down(rest, T.path.dec(skip)), ec)))
+
+# every segment of a header is navigation
+def quiet.def(path: List<&2, String>) -> {nav.quiet(path, T.JDef{}, 0) == True{} : Bool}:
+  match path:
+    case []:
+      {==}
+    case _seg <> rest:
+      quiet.def(rest)
+
+# a put's job at the last name: a new pair, or an error for a name held
+def put.exact(
+  hh: T.Hit,
+  kk: String,
+  vs: List<&2, T.Val>,
+  vv: T.Val,
+  stack: List<&2, T.Fr>,
+  heads: List<&2, String>
+) -> {String.is_empty(Laws.end_bad(T.tree.leaf.put(hh, kk, vs, vv, stack, "", heads)))
+  == Laws.is_miss(hh) : Bool}:
+  match hh:
+    case T.Found{_x}:
+      rebuild.empty(stack, vs, T.err.first("", "duplicate key"), heads)
+    case T.Miss{}:
+      rebuild.empty(stack, T.VPair{kk, vv} <> vs, "", heads)
+
+def Laws.walk_put_at_head(here, k, v, rows, heads, skip, inl, eo, ec, em):
+  Equal.trans(T.End,
+    T.tree.walk(List.append(&2, String, here, [k]), T.Tw{rows, T.JPut{v}, [], "", "", heads, inl},
+      skip),
+    T.tree.leaf(k, T.Tw{Laws.tb.rows(here, rows), T.JPut{v}, nav.frs(here, "", rows, []), "",
+      Laws.tb.join(here, ""), heads, inl}),
+    T.End{Laws.tb.set(here, "", rows, T.VPair{k, v} <> Laws.tb.rows(here, rows)), "", heads},
+    nav.walk(here, k, rows, T.JPut{v}, [], "", heads, inl, skip, eo, quiet.put(here, v, skip, ec)),
+    Equal.trans(T.End,
+      T.tree.leaf(k, T.Tw{Laws.tb.rows(here, rows), T.JPut{v}, nav.frs(here, "", rows, []), "",
+        Laws.tb.join(here, ""), heads, inl}),
+      T.tree.rebuild(nav.frs(here, "", rows, []), T.VPair{k, v} <> Laws.tb.rows(here, rows), "",
+        heads),
+      T.End{Laws.tb.set(here, "", rows, T.VPair{k, v} <> Laws.tb.rows(here, rows)), "", heads},
+      Equal.cong(T.Hit, T.End,
+        hh => T.tree.leaf.put(hh, k, Laws.tb.rows(here, rows), v, nav.frs(here, "", rows, []), "",
+          heads),
+        T.get(Laws.tb.rows(here, rows), k), T.Miss{}, em),
+      nav.rebuild(here, "", rows, [], T.VPair{k, v} <> Laws.tb.rows(here, rows), "", heads, eo)))
+
+def Laws.walk_put_refused_exactly(here, k, v, rows, heads, skip, inl, eo, ec):
+  Equal.trans(Bool,
+    String.is_empty(Laws.end_bad(T.tree.walk(List.append(&2, String, here, [k]),
+      T.Tw{rows, T.JPut{v}, [], "", "", heads, inl}, skip))),
+    String.is_empty(Laws.end_bad(T.tree.leaf(k, T.Tw{Laws.tb.rows(here, rows), T.JPut{v},
+      nav.frs(here, "", rows, []), "", Laws.tb.join(here, ""), heads, inl}))),
+    Laws.is_miss(T.get(Laws.tb.rows(here, rows), k)),
+    Equal.cong(T.End, Bool, ee => String.is_empty(Laws.end_bad(ee)),
+      T.tree.walk(List.append(&2, String, here, [k]), T.Tw{rows, T.JPut{v}, [], "", "", heads, inl},
+        skip),
+      T.tree.leaf(k, T.Tw{Laws.tb.rows(here, rows), T.JPut{v}, nav.frs(here, "", rows, []), "",
+        Laws.tb.join(here, ""), heads, inl}),
+      nav.walk(here, k, rows, T.JPut{v}, [], "", heads, inl, skip, eo, quiet.put(here, v, skip, ec))),
+    put.exact(T.get(Laws.tb.rows(here, rows), k), k, Laws.tb.rows(here, rows), v,
+      nav.frs(here, "", rows, []), heads))
+
+def Laws.header_defines_new_table(segs, k, rows, heads, eo, em):
+  Equal.trans(T.End,
+    T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JDef{}, [], "", "", heads, False{}},
+      0),
+    T.tree.leaf(k, T.Tw{Laws.tb.rows(segs, rows), T.JDef{}, nav.frs(segs, "", rows, []), "",
+      Laws.tb.join(segs, ""), heads, False{}}),
+    T.End{Laws.tb.set(segs, "", rows, T.VPair{k, T.VHead{T.tree.pre(Laws.tb.join(segs, ""), k), []}}
+      <> Laws.tb.rows(segs, rows)), "", T.heads.by.head(T.tree.pre(Laws.tb.join(segs, ""), k))
+      <> heads},
+    nav.walk(segs, k, rows, T.JDef{}, [], "", heads, False{}, 0, eo, quiet.def(segs)),
+    Equal.trans(T.End,
+      T.tree.leaf(k, T.Tw{Laws.tb.rows(segs, rows), T.JDef{}, nav.frs(segs, "", rows, []), "",
+        Laws.tb.join(segs, ""), heads, False{}}),
+      T.tree.rebuild(nav.frs(segs, "", rows, []), T.VPair{k, T.VHead{T.tree.pre(Laws.tb.join(segs,
+        ""), k), []}} <> Laws.tb.rows(segs, rows), "",
+        T.heads.by.head(T.tree.pre(Laws.tb.join(segs, ""), k)) <> heads),
+      T.End{Laws.tb.set(segs, "", rows, T.VPair{k, T.VHead{T.tree.pre(Laws.tb.join(segs, ""), k),
+        []}} <> Laws.tb.rows(segs, rows)), "",
+        T.heads.by.head(T.tree.pre(Laws.tb.join(segs, ""), k)) <> heads},
+      Equal.cong(T.Look, T.End,
+        ll => T.tree.leaf.def.hit(ll, k, Laws.tb.rows(segs, rows), nav.frs(segs, "", rows, []), "",
+          T.tree.pre(Laws.tb.join(segs, ""), k), heads),
+        T.rows.look(Laws.tb.rows(segs, rows), k), T.KMiss{},
+        look.via(Laws.tb.rows(segs, rows), k, T.Miss{}, em)),
+      nav.rebuild(segs, "", rows, [], T.VPair{k, T.VHead{T.tree.pre(Laws.tb.join(segs, ""), k), []}}
+        <> Laws.tb.rows(segs, rows), "", T.heads.by.head(T.tree.pre(Laws.tb.join(segs, ""), k))
+        <> heads, eo)))
+
+def Laws.header_defines_implicit_table(segs, k, rows, heads, p, sub, eo, ef, eh):
+  Equal.trans(T.End,
+    T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JDef{}, [], "", "", heads, False{}},
+      0),
+    T.tree.leaf(k, T.Tw{Laws.tb.rows(segs, rows), T.JDef{}, nav.frs(segs, "", rows, []), "",
+      Laws.tb.join(segs, ""), heads, False{}}),
+    T.End{Laws.tb.set(segs, "", rows, T.rows.repl(Laws.tb.rows(segs, rows), k,
+      T.VHead{T.tree.pre(Laws.tb.join(segs, ""), k), sub})), "",
+      T.heads.by.head(T.tree.pre(Laws.tb.join(segs, ""), k)) <> heads},
+    nav.walk(segs, k, rows, T.JDef{}, [], "", heads, False{}, 0, eo, quiet.def(segs)),
+    Equal.trans(T.End,
+      T.tree.leaf(k, T.Tw{Laws.tb.rows(segs, rows), T.JDef{}, nav.frs(segs, "", rows, []), "",
+        Laws.tb.join(segs, ""), heads, False{}}),
+      T.tree.leaf.def.head(T.heads.has(heads, T.tree.pre(Laws.tb.join(segs, ""), k)), k,
+        Laws.tb.rows(segs, rows), sub, nav.frs(segs, "", rows, []), "",
+        T.tree.pre(Laws.tb.join(segs, ""), k), heads),
+      T.End{Laws.tb.set(segs, "", rows, T.rows.repl(Laws.tb.rows(segs, rows), k,
+        T.VHead{T.tree.pre(Laws.tb.join(segs, ""), k), sub})), "",
+        T.heads.by.head(T.tree.pre(Laws.tb.join(segs, ""), k)) <> heads},
+      Equal.cong(T.Look, T.End,
+        ll => T.tree.leaf.def.hit(ll, k, Laws.tb.rows(segs, rows), nav.frs(segs, "", rows, []), "",
+          T.tree.pre(Laws.tb.join(segs, ""), k), heads),
+        T.rows.look(Laws.tb.rows(segs, rows), k), T.KHead{p, sub},
+        look.via(Laws.tb.rows(segs, rows), k, T.Found{T.VHead{p, sub}}, ef)),
+      Equal.trans(T.End,
+        T.tree.leaf.def.head(T.heads.has(heads, T.tree.pre(Laws.tb.join(segs, ""), k)), k,
+          Laws.tb.rows(segs, rows), sub, nav.frs(segs, "", rows, []), "",
+          T.tree.pre(Laws.tb.join(segs, ""), k), heads),
+        T.tree.rebuild(nav.frs(segs, "", rows, []), T.rows.repl(Laws.tb.rows(segs, rows), k,
+          T.VHead{T.tree.pre(Laws.tb.join(segs, ""), k), sub}), "",
+          T.heads.by.head(T.tree.pre(Laws.tb.join(segs, ""), k)) <> heads),
+        T.End{Laws.tb.set(segs, "", rows, T.rows.repl(Laws.tb.rows(segs, rows), k,
+          T.VHead{T.tree.pre(Laws.tb.join(segs, ""), k), sub})), "",
+          T.heads.by.head(T.tree.pre(Laws.tb.join(segs, ""), k)) <> heads},
+        Equal.cong(Bool, T.End,
+          bb => T.tree.leaf.def.head(bb, k, Laws.tb.rows(segs, rows), sub,
+            nav.frs(segs, "", rows, []), "", T.tree.pre(Laws.tb.join(segs, ""), k), heads),
+          T.heads.has(heads, T.tree.pre(Laws.tb.join(segs, ""), k)), False{}, eh),
+        nav.rebuild(segs, "", rows, [], T.rows.repl(Laws.tb.rows(segs, rows), k,
+          T.VHead{T.tree.pre(Laws.tb.join(segs, ""), k), sub}), "",
+          T.heads.by.head(T.tree.pre(Laws.tb.join(segs, ""), k)) <> heads, eo))))
+
+# a header of a table that exists: refused when a header or dotted keys
+# defined it
+def hdr.seen(
+  seen: Bool,
+  kk: String,
+  vs: List<&2, T.Val>,
+  rr: List<&2, T.Val>,
+  stack: List<&2, T.Fr>,
+  +pp: String,
+  heads: List<&2, String>
+) -> {String.is_empty(Laws.end_bad(T.tree.leaf.def.head(seen, kk, vs, rr, stack, "", pp, heads)))
+  == Bool.not(seen) : Bool}:
+  match seen:
+    case True{}:
+      rebuild.empty(stack, vs, T.err.first("", "duplicate table"), heads)
+    case False{}:
+      rebuild.empty(stack, T.rows.repl(vs, kk, T.VHead{pp, rr}), "", T.heads.by.head(pp) <> heads)
+
+# a [table] header's job at the last name, for each thing get can find there
+def hdr.exact(
+  hh: T.Hit,
+  +kk: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +pp: String,
+  +heads: List<&2, String>
+) -> {String.is_empty(Laws.end_bad(T.tree.leaf.def.hit(tb.look(hh), kk, vs, stack, "", pp, heads)))
+  == Laws.hdr.ok(hh, heads, pp) : Bool}:
+  match hh:
+    case T.Miss{}:
+      rebuild.empty(stack, T.VPair{kk, T.VHead{pp, []}} <> vs, "", T.heads.by.head(pp) <> heads)
+    case T.Found{T.VHead{_p, rr}}:
+      hdr.seen(T.heads.has(heads, pp), kk, vs, rr, stack, pp, heads)
+    case T.Found{T.VInl{_a}}:
+      rebuild.empty(stack, vs, T.err.first("", "inline table is closed"), heads)
+    case T.Found{T.VAots{_a, _b}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VStr{_a}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VSpan{_a, _b}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VInt{_a, _b}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VFlo{_a, _b}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VBool{_a}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VWhen{_a}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VArr{_a}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VAot{_a, _b}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+    case T.Found{T.VPair{_a, _b}}:
+      rebuild.empty(stack, vs, T.err.first("", "not a table"), heads)
+
+def Laws.header_refused_exactly(segs, k, rows, heads, eo):
+  Equal.trans(Bool,
+    String.is_empty(Laws.end_bad(T.tree.walk(List.append(&2, String, segs, [k]),
+      T.Tw{rows, T.JDef{}, [], "", "", heads, False{}}, 0))),
+    String.is_empty(Laws.end_bad(T.tree.leaf(k, T.Tw{Laws.tb.rows(segs, rows), T.JDef{},
+      nav.frs(segs, "", rows, []), "", Laws.tb.join(segs, ""), heads, False{}}))),
+    Laws.hdr.ok(T.get(Laws.tb.rows(segs, rows), k), heads, T.tree.pre(Laws.tb.join(segs, ""), k)),
+    Equal.cong(T.End, Bool, ee => String.is_empty(Laws.end_bad(ee)),
+      T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JDef{}, [], "", "", heads,
+        False{}}, 0),
+      T.tree.leaf(k, T.Tw{Laws.tb.rows(segs, rows), T.JDef{}, nav.frs(segs, "", rows, []), "",
+        Laws.tb.join(segs, ""), heads, False{}}),
+      nav.walk(segs, k, rows, T.JDef{}, [], "", heads, False{}, 0, eo, quiet.def(segs))),
+    Equal.trans(Bool,
+      String.is_empty(Laws.end_bad(T.tree.leaf.def.hit(T.rows.look(Laws.tb.rows(segs, rows), k), k,
+        Laws.tb.rows(segs, rows), nav.frs(segs, "", rows, []), "",
+        T.tree.pre(Laws.tb.join(segs, ""), k), heads))),
+      String.is_empty(Laws.end_bad(T.tree.leaf.def.hit(tb.look(T.get(Laws.tb.rows(segs, rows), k)),
+        k, Laws.tb.rows(segs, rows), nav.frs(segs, "", rows, []), "",
+        T.tree.pre(Laws.tb.join(segs, ""), k), heads))),
+      Laws.hdr.ok(T.get(Laws.tb.rows(segs, rows), k), heads, T.tree.pre(Laws.tb.join(segs, ""), k)),
+      Equal.cong(T.Look, Bool,
+        ll => String.is_empty(Laws.end_bad(T.tree.leaf.def.hit(ll, k, Laws.tb.rows(segs, rows),
+          nav.frs(segs, "", rows, []), "", T.tree.pre(Laws.tb.join(segs, ""), k), heads))),
+        T.rows.look(Laws.tb.rows(segs, rows), k), tb.look(T.get(Laws.tb.rows(segs, rows), k)),
+        look.get(Laws.tb.rows(segs, rows), k)),
+      hdr.exact(T.get(Laws.tb.rows(segs, rows), k), k, Laws.tb.rows(segs, rows),
+        nav.frs(segs, "", rows, []), T.tree.pre(Laws.tb.join(segs, ""), k), heads)))
