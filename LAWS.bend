@@ -2283,3 +2283,25 @@ law bool_reads_back:
   for +rest: String
   {from_val(fx, String.append(T.render.atom(T.VBool{b}), SCon{'\n', rest}))
     == after_val(fx, T.VBool{b}, rest) : T.Doc}
+
+# LAW: a well-formed integer's text is classified as its sign and its digits:
+# render writes the sign (a minus only) and the digits, and the scan reads
+# them back, a lone 0 and -0 as well as digits with no leading zero, up to the
+# signed 64-bit bounds
+# TOML-NUM-1
+law int_word:
+  for +sg: T.Sign
+  for +ds: String
+  for +w: {T.wf.int(sg, ds) == True{} : Bool}
+  {T.word.val(String.to_list(T.render.atom(T.VInt{sg, ds}))) == T.GotVal{T.VInt{sg, ds}} : T.Got}
+
+# LAW: a well-formed integer's text then a newline is read from every value
+# state as the integer
+law int_reads_back:
+  for +sg: T.Sign
+  for +ds: String
+  for +w: {T.wf.int(sg, ds) == True{} : Bool}
+  for +fx: Vf
+  for +rest: String
+  {from_val(fx, String.append(T.render.atom(T.VInt{sg, ds}), SCon{'\n', rest}))
+    == after_val(fx, T.VInt{sg, ds}, rest) : T.Doc}

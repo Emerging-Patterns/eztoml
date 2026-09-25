@@ -12671,3 +12671,731 @@ def Laws.bool_reads_back(b, fx, rest):
       Laws.word_reads_back(T.VBool{True{}}, "true", {==}, {==}, fx, rest)
     case False{}:
       Laws.word_reads_back(T.VBool{False{}}, "false", {==}, {==}, fx, rest)
+
+# Integers. render writes the sign (a minus only) and the digits. The scan
+# reads a first digit that is not 0 into a one-digit numeral, and each later
+# digit multiplies the numeral by ten and adds it, least-significant digit
+# first; dec.text writes the numeral back as the digits. A lone 0 and -0
+# are fixed texts.
+
+# the digit values of characters, in the same order
+def vals(cs: List<&2, Char>) -> List<&2, U32>:
+  match cs:
+    case []:
+      []
+    case cc <> tt:
+      T.dig.val(cc) <> vals(tt)
+
+# a numeral's digits, least-significant first: all digits, and the last one,
+# the most significant, is not 0
+def nzl(xs: List<&2, Char>) -> Bool:
+  match xs:
+    case []:
+      False{}
+    case +xx <> +tt:
+      Bool.and(Char.is_digit(xx), Bool.or(nzl(tt), Bool.and(List.is_empty(&2, Char, tt),
+        Bool.not(Char.is_eq(xx, '0')))))
+
+# the scan inside the digits of an integer
+def ndig(+sg: T.Sign, ds: List<&2, U32>) -> T.Num:
+  T.Num{T.NDig{}, sg, 10, ds, False{}, True{}, ""}
+
+# the head of an all-digits walk that answered True is a digit
+def then.l(
+  ok: Bool,
+  tt: String,
+  ee: {T.wf.then(ok, _u => T.wf.digits(tt)) == True{} : Bool}
+) -> {ok == True{} : Bool}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      ee
+
+# and the rest of it is all digits
+def then.r(
+  ok: Bool,
+  tt: String,
+  ee: {T.wf.then(ok, _u => T.wf.digits(tt)) == True{} : Bool}
+) -> {T.wf.digits(tt) == True{} : Bool}:
+  match ok:
+    case True{}:
+      ee
+    case False{}:
+      Eq.bit.absurd(&2, {T.wf.digits(tt) == True{} : Bool}, ee)
+
+# an `or` whose right half answered False answered its left half
+def or.fl(aa: Bool, ee: {Bool.or(aa, False{}) == True{} : Bool}) -> {aa == True{} : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      ee
+
+# ten times a digit plus a digit, over ten and modulo ten, is the two digits:
+# one decimal step of the numeral, for each of the hundred pairs
+def dgo.step(
+  xx: Char,
+  +cc: Char,
+  +rest: List<&2, U32>,
+  hx: {Char.is_digit(xx) == True{} : Bool},
+  +hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {T.dec.go(T.dig.val(xx) <> rest, 10, T.dig.val(cc)) == T.dig.val(cc) <> T.dec.go(rest, 10, T.dig.val(xx))
+  : List<&2, U32>}:
+  dg.elim(zz => {T.dec.go(T.dig.val(zz) <> rest, 10, T.dig.val(cc))
+    == T.dig.val(cc) <> T.dec.go(rest, 10, T.dig.val(zz)) : List<&2, U32>}, xx, hx,
+    dg.elim(yy => {T.dec.go(T.dig.val('0') <> rest, 10, T.dig.val(yy))
+      == T.dig.val(yy) <> T.dec.go(rest, 10, T.dig.val('0')) : List<&2, U32>}, cc, hc,
+      {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}),
+    dg.elim(yy => {T.dec.go(T.dig.val('1') <> rest, 10, T.dig.val(yy))
+      == T.dig.val(yy) <> T.dec.go(rest, 10, T.dig.val('1')) : List<&2, U32>}, cc, hc,
+      {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}),
+    dg.elim(yy => {T.dec.go(T.dig.val('2') <> rest, 10, T.dig.val(yy))
+      == T.dig.val(yy) <> T.dec.go(rest, 10, T.dig.val('2')) : List<&2, U32>}, cc, hc,
+      {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}),
+    dg.elim(yy => {T.dec.go(T.dig.val('3') <> rest, 10, T.dig.val(yy))
+      == T.dig.val(yy) <> T.dec.go(rest, 10, T.dig.val('3')) : List<&2, U32>}, cc, hc,
+      {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}),
+    dg.elim(yy => {T.dec.go(T.dig.val('4') <> rest, 10, T.dig.val(yy))
+      == T.dig.val(yy) <> T.dec.go(rest, 10, T.dig.val('4')) : List<&2, U32>}, cc, hc,
+      {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}),
+    dg.elim(yy => {T.dec.go(T.dig.val('5') <> rest, 10, T.dig.val(yy))
+      == T.dig.val(yy) <> T.dec.go(rest, 10, T.dig.val('5')) : List<&2, U32>}, cc, hc,
+      {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}),
+    dg.elim(yy => {T.dec.go(T.dig.val('6') <> rest, 10, T.dig.val(yy))
+      == T.dig.val(yy) <> T.dec.go(rest, 10, T.dig.val('6')) : List<&2, U32>}, cc, hc,
+      {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}),
+    dg.elim(yy => {T.dec.go(T.dig.val('7') <> rest, 10, T.dig.val(yy))
+      == T.dig.val(yy) <> T.dec.go(rest, 10, T.dig.val('7')) : List<&2, U32>}, cc, hc,
+      {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}),
+    dg.elim(yy => {T.dec.go(T.dig.val('8') <> rest, 10, T.dig.val(yy))
+      == T.dig.val(yy) <> T.dec.go(rest, 10, T.dig.val('8')) : List<&2, U32>}, cc, hc,
+      {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}),
+    dg.elim(yy => {T.dec.go(T.dig.val('9') <> rest, 10, T.dig.val(yy))
+      == T.dig.val(yy) <> T.dec.go(rest, 10, T.dig.val('9')) : List<&2, U32>}, cc, hc,
+      {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}))
+
+# the carry left once the numeral runs out is its last digit, when that is
+# not 0
+def dgo.last(
+  xx: Char,
+  hx: {Char.is_digit(xx) == True{} : Bool},
+  hz: {Char.is_eq(xx, '0') == False{} : Bool}
+) -> {T.dec.go([], 10, T.dig.val(xx)) == [T.dig.val(xx)] : List<&2, U32>}:
+  dg.elim(zz => {Char.is_eq(zz, '0') == False{} : Bool} -> {T.dec.go([], 10, T.dig.val(zz)) == [T.dig.val(zz)]
+    : List<&2, U32>}, xx, hx,
+    ee => Eq.bit.absurd2(&2, {T.dec.go([], 10, T.dig.val('0')) == [T.dig.val('0')] : List<&2, U32>}, ee),
+    _e => {==}, _e => {==}, _e => {==}, _e => {==}, _e => {==}, _e => {==}, _e => {==}, _e => {==},
+    _e => {==})(hz)
+
+# a numeral's digits whose last is not 0: the carry reaches the end as that
+# digit, so one more digit only goes in front
+def dgo.rest(
+  +xx: Char,
+  tt: List<&2, Char>,
+  +hx: {Char.is_digit(xx) == True{} : Bool},
+  +hn: {Bool.or(nzl(tt), Bool.and(List.is_empty(&2, Char, tt), Bool.not(Char.is_eq(xx, '0')))) == True{} : Bool},
+  ih: {nzl(tt) == True{} : Bool} -> {T.dec.go(vals(tt), 10, T.dig.val(xx)) == vals(xx <> tt) : List<&2, U32>}
+) -> {T.dec.go(vals(tt), 10, T.dig.val(xx)) == vals(xx <> tt) : List<&2, U32>}:
+  match tt:
+    case []:
+      dgo.last(xx, hx, Eq.not.true(Char.is_eq(xx, '0'), hn))
+    case yy <> ys:
+      ih(or.fl(nzl(yy <> ys), hn))
+
+# one more digit in front of a numeral's digits is the numeral times ten plus
+# the digit
+def dgo(
+  acc: List<&2, Char>,
+  +cc: Char,
+  +hc: {Char.is_digit(cc) == True{} : Bool},
+  +hn: {nzl(acc) == True{} : Bool}
+) -> {T.dec.go(vals(acc), 10, T.dig.val(cc)) == vals(cc <> acc) : List<&2, U32>}:
+  match acc:
+    case []:
+      Eq.bit.absurd(&2, {T.dec.go([], 10, T.dig.val(cc)) == [T.dig.val(cc)] : List<&2, U32>}, hn)
+    case +xx <> +tt:
+      +hx = {Eq.and.left(Char.is_digit(xx), Bool.or(nzl(tt), Bool.and(List.is_empty(&2, Char, tt),
+        Bool.not(Char.is_eq(xx, '0')))), hn) : {Char.is_digit(xx) == True{} : Bool}}
+      Equal.trans(List<&2, U32>, T.dec.go(T.dig.val(xx) <> vals(tt), 10, T.dig.val(cc)),
+        T.dig.val(cc) <> T.dec.go(vals(tt), 10, T.dig.val(xx)), T.dig.val(cc) <> vals(xx <> tt),
+        dgo.step(xx, cc, vals(tt), hx, hc),
+        Equal.cong(List<&2, U32>, List<&2, U32>, ys => T.dig.val(cc) <> ys, T.dec.go(vals(tt), 10, T.dig.val(xx)),
+          vals(xx <> tt), dgo.rest(xx, tt, hx, Eq.and.right(Char.is_digit(xx), Bool.or(nzl(tt),
+          Bool.and(List.is_empty(&2, Char, tt), Bool.not(Char.is_eq(xx, '0')))), hn),
+          ht => dgo(tt, xx, hx, ht))))
+
+# a digit in front of such digits keeps them such digits
+def nzl.cons(
+  +cc: Char,
+  +acc: List<&2, Char>,
+  hc: {Char.is_digit(cc) == True{} : Bool},
+  hn: {nzl(acc) == True{} : Bool}
+) -> {nzl(cc <> acc) == True{} : Bool}:
+  and.tt(Char.is_digit(cc), Bool.or(nzl(acc), Bool.and(List.is_empty(&2, Char, acc),
+    Bool.not(Char.is_eq(cc, '0')))), hc,
+    Equal.cong(Bool, Bool, bb => Bool.or(bb, Bool.and(List.is_empty(&2, Char, acc), Bool.not(Char.is_eq(cc, '0')))),
+      nzl(acc), True{}, hn))
+
+# a later digit in the digits of an integer joins the numeral
+def nw.step(
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {T.num.step(ndig(sg, ds), cc) == ndig(sg, T.dec.go(ds, 10, T.dig.val(cc))) : T.Num}:
+  dg.elim(zz => {T.num.step(ndig(sg, ds), zz) == ndig(sg, T.dec.go(ds, 10, T.dig.val(zz))) : T.Num}, cc, hc,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# the digits after the first, one at a time
+def nw(
+  tt: String,
+  +acc: List<&2, Char>,
+  +sg: T.Sign,
+  +ht: {T.wf.digits(tt) == True{} : Bool},
+  +hn: {nzl(acc) == True{} : Bool}
+) -> {T.num.go(String.to_list(tt), ndig(sg, vals(acc))) == ndig(sg, vals(rev.onto(tt, acc))) : T.Num}:
+  match tt:
+    case SNil{}:
+      {==}
+    case SCon{+cc, +ts}:
+      +hc = {then.l(Char.is_digit(cc), ts, ht) : {Char.is_digit(cc) == True{} : Bool}}
+      Equal.trans(T.Num, T.num.go(String.to_list(ts), T.num.step(ndig(sg, vals(acc)), cc)),
+        T.num.go(String.to_list(ts), ndig(sg, vals(cc <> acc))), ndig(sg, vals(rev.onto(ts, cc <> acc))),
+        Equal.cong(T.Num, T.Num, nn => T.num.go(String.to_list(ts), nn), T.num.step(ndig(sg, vals(acc)), cc),
+          ndig(sg, vals(cc <> acc)),
+          Equal.trans(T.Num, T.num.step(ndig(sg, vals(acc)), cc), ndig(sg, T.dec.go(vals(acc), 10, T.dig.val(cc))),
+            ndig(sg, vals(cc <> acc)), nw.step(sg, vals(acc), cc, hc),
+            Equal.cong(List<&2, U32>, T.Num, ds => ndig(sg, ds), T.dec.go(vals(acc), 10, T.dig.val(cc)),
+              vals(cc <> acc), dgo(acc, cc, hc, hn)))),
+        nw(ts, cc <> acc, sg, then.r(Char.is_digit(cc), ts, ht), nzl.cons(cc, acc, hc, hn)))
+
+# the first digit, not 0, after no sign
+def nw.lead(
+  +sg: T.Sign,
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool},
+  hz: {Char.is_eq(cc, '0') == False{} : Bool}
+) -> {T.num.step(T.Num{T.NLead{}, sg, 10, [], False{}, False{}, ""}, cc) == ndig(sg, vals([cc])) : T.Num}:
+  dg.elim(zz => {Char.is_eq(zz, '0') == False{} : Bool} -> {T.num.step(T.Num{T.NLead{}, sg, 10, [], False{},
+    False{}, ""}, zz) == ndig(sg, vals([zz])) : T.Num}, cc, hc,
+    ee => Eq.bit.absurd2(&2, {T.num.step(T.Num{T.NLead{}, sg, 10, [], False{}, False{}, ""}, '0')
+      == ndig(sg, vals(['0'])) : T.Num}, ee),
+    _e => {==}, _e => {==}, _e => {==}, _e => {==}, _e => {==}, _e => {==}, _e => {==}, _e => {==},
+    _e => {==})(hz)
+
+# and after a sign
+def nw.sign(
+  +sg: T.Sign,
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool},
+  hz: {Char.is_eq(cc, '0') == False{} : Bool}
+) -> {T.num.step(T.Num{T.NSign{}, sg, 10, [], False{}, False{}, ""}, cc) == ndig(sg, vals([cc])) : T.Num}:
+  dg.elim(zz => {Char.is_eq(zz, '0') == False{} : Bool} -> {T.num.step(T.Num{T.NSign{}, sg, 10, [], False{},
+    False{}, ""}, zz) == ndig(sg, vals([zz])) : T.Num}, cc, hc,
+    ee => Eq.bit.absurd2(&2, {T.num.step(T.Num{T.NSign{}, sg, 10, [], False{}, False{}, ""}, '0')
+      == ndig(sg, vals(['0'])) : T.Num}, ee),
+    _e => {==}, _e => {==}, _e => {==}, _e => {==}, _e => {==}, _e => {==}, _e => {==}, _e => {==},
+    _e => {==})(hz)
+
+# reversing digit values is reversing the digits
+def vals.rev(
+  xs: List<&2, Char>,
+  ys: List<&2, Char>
+) -> {List.reverse.go(&2, U32, vals(xs), vals(ys)) == vals(List.reverse.go(&2, Char, xs, ys)) : List<&2, U32>}:
+  match xs:
+    case []:
+      {==}
+    case xx <> xt:
+      vals.rev(xt, xx <> ys)
+
+# a digit's value written as a digit is the digit
+def dg.back(
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {T.dec.ch(T.dig.val(cc)) == cc : Char}:
+  dg.elim(zz => {T.dec.ch(T.dig.val(zz)) == zz : Char}, cc, hc,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# digits' values written as digits are the digits
+def dg.backs(
+  tt: String,
+  +ht: {T.wf.digits(tt) == True{} : Bool}
+) -> {T.dec.chars(vals(String.to_list(tt))) == String.to_list(tt) : List<&2, Char>}:
+  match tt:
+    case SNil{}:
+      {==}
+    case SCon{+cc, +ts}:
+      Equal.trans(List<&2, Char>, T.dec.ch(T.dig.val(cc)) <> T.dec.chars(vals(String.to_list(ts))),
+        cc <> T.dec.chars(vals(String.to_list(ts))), cc <> String.to_list(ts),
+        Equal.cong(Char, List<&2, Char>, zz => zz <> T.dec.chars(vals(String.to_list(ts))),
+          T.dec.ch(T.dig.val(cc)), cc, dg.back(cc, then.l(Char.is_digit(cc), ts, ht))),
+        Equal.cong(List<&2, Char>, List<&2, Char>, zs => cc <> zs, T.dec.chars(vals(String.to_list(ts))),
+          String.to_list(ts), dg.backs(ts, then.r(Char.is_digit(cc), ts, ht))))
+
+# once no zero is being skipped, the digits are kept in order
+def dd.kept(
+  cs: List<&2, Char>,
+  out: List<&2, Char>
+) -> {T.dec.drop(cs, False{}, out) == String.from_list(List.reverse.go(&2, Char, out, cs)) : String}:
+  match cs:
+    case []:
+      {==}
+    case hh <> tt:
+      dd.kept(tt, hh <> out)
+
+# a text's characters make the text again
+def ftl(ss: String) -> {String.from_list(String.to_list(ss)) == ss : String}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{+hh, tt}:
+      Equal.cong(String, String, zs => SCon{hh, zs}, String.from_list(String.to_list(tt)), tt, ftl(tt))
+
+# dec.text of the numeral read from digits whose first is not 0 is the digits
+def dtext(
+  +hh: Char,
+  +tt: String,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  +hz: {Char.is_eq(hh, '0') == False{} : Bool},
+  +ht: {T.wf.digits(tt) == True{} : Bool}
+) -> {T.dec.text(vals(rev.onto(tt, [hh]))) == SCon{hh, tt} : String}:
+  +ro = {wd.order(hh, tt) : {List.reverse(&2, Char, rev.onto(tt, [hh])) == hh <> String.to_list(tt)
+    : List<&2, Char>}}
+  +hd = {Equal.trans(Bool, T.wf.then(Char.is_digit(hh), _u => T.wf.digits(tt)),
+    T.wf.then(True{}, _u => T.wf.digits(tt)), True{},
+    Equal.cong(Bool, Bool, bb => T.wf.then(bb, _u => T.wf.digits(tt)), Char.is_digit(hh), True{}, hx), ht)
+    : {T.wf.digits(SCon{hh, tt}) == True{} : Bool}}
+  Equal.trans(String, T.dec.drop(T.dec.chars(List.reverse.go(&2, U32, vals(rev.onto(tt, [hh])), [])), True{}, []),
+    T.dec.drop(T.dec.chars(vals(hh <> String.to_list(tt))), True{}, []), SCon{hh, tt},
+    Equal.cong(List<&2, U32>, String, ds => T.dec.drop(T.dec.chars(ds), True{}, []),
+      List.reverse.go(&2, U32, vals(rev.onto(tt, [hh])), []), vals(hh <> String.to_list(tt)),
+      Equal.trans(List<&2, U32>, List.reverse.go(&2, U32, vals(rev.onto(tt, [hh])), []),
+        vals(List.reverse(&2, Char, rev.onto(tt, [hh]))), vals(hh <> String.to_list(tt)),
+        vals.rev(rev.onto(tt, [hh]), []),
+        Equal.cong(List<&2, Char>, List<&2, U32>, xs => vals(xs), List.reverse(&2, Char, rev.onto(tt, [hh])),
+          hh <> String.to_list(tt), ro))),
+    Equal.trans(String, T.dec.drop(T.dec.chars(vals(hh <> String.to_list(tt))), True{}, []),
+      T.dec.drop(hh <> String.to_list(tt), True{}, []), SCon{hh, tt},
+      Equal.cong(List<&2, Char>, String, cs => T.dec.drop(cs, True{}, []),
+        T.dec.chars(vals(hh <> String.to_list(tt))), hh <> String.to_list(tt), dg.backs(SCon{hh, tt}, hd)),
+      Equal.trans(String, T.dec.drop(String.to_list(tt), Char.is_eq(hh, '0'),
+        T.dec.drop.outz(Char.is_eq(hh, '0'), hh, [])),
+        T.dec.drop(String.to_list(tt), False{}, [hh]), SCon{hh, tt},
+        Equal.cong(Bool, String, bb => T.dec.drop(String.to_list(tt), bb, T.dec.drop.outz(bb, hh, [])),
+          Char.is_eq(hh, '0'), False{}, hz),
+        Equal.trans(String, T.dec.drop(String.to_list(tt), False{}, [hh]),
+          String.from_list(hh <> String.to_list(tt)), SCon{hh, tt},
+          dd.kept(String.to_list(tt), [hh]), ftl(SCon{hh, tt})))))
+
+# a digit is no character that starts or ends a word differently
+def dg.first(
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {Laws.word.first(cc) == True{} : Bool}:
+  dg.elim(zz => {Laws.word.first(zz) == True{} : Bool}, cc, hc,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# a digit is a character a bare value keeps
+def dg.char(
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {Laws.word.char(cc) == True{} : Bool}:
+  dg.elim(zz => {Laws.word.char(zz) == True{} : Bool}, cc, hc,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# digits are characters a bare value keeps
+def dg.rest(
+  tt: String,
+  +ht: {T.wf.digits(tt) == True{} : Bool}
+) -> {Laws.word.rest(tt) == True{} : Bool}:
+  match tt:
+    case SNil{}:
+      {==}
+    case SCon{+cc, +ts}:
+      and.tt(Laws.word.char(cc), Laws.word.rest(ts), dg.char(cc, then.l(Char.is_digit(cc), ts, ht)),
+        dg.rest(ts, then.r(Char.is_digit(cc), ts, ht)))
+
+# a digit starts no special word
+def dg.nospec(
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {T.word.special(cc) == False{} : Bool}:
+  dg.elim(zz => {T.word.special(zz) == False{} : Bool}, cc, hc,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# a digit is no colon
+def dg.nocolon(
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {Char.is_eq(cc, ':') == False{} : Bool}:
+  dg.elim(zz => {Char.is_eq(zz, ':') == False{} : Bool}, cc, hc,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# a digit is no dash
+def dg.nodash(
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {Char.is_eq(cc, '-') == False{} : Bool}:
+  dg.elim(zz => {Char.is_eq(zz, '-') == False{} : Bool}, cc, hc,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# a digit is no i
+def dg.noi(
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {False{} == Char.is_eq(cc, 'i') : Bool}:
+  dg.elim(zz => {False{} == Char.is_eq(zz, 'i') : Bool}, cc, hc,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# a digit is no n
+def dg.non(
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {False{} == Char.is_eq(cc, 'n') : Bool}:
+  dg.elim(zz => {False{} == Char.is_eq(zz, 'n') : Bool}, cc, hc,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# a digit after the first character is no dash, and the first is never
+# counted
+def dash.hit.f(
+  ff: Bool,
+  cc: Char,
+  hc: {Char.is_digit(cc) == True{} : Bool}
+) -> {T.word.dash.hit(ff, cc) == False{} : Bool}:
+  match ff:
+    case True{}:
+      {==}
+    case False{}:
+      dg.nodash(cc, hc)
+
+# digits hold no colon
+def dg.colon(
+  tt: String,
+  +ht: {T.wf.digits(tt) == True{} : Bool}
+) -> {T.word.colon(String.to_list(tt)) == False{} : Bool}:
+  match tt:
+    case SNil{}:
+      {==}
+    case SCon{+cc, +ts}:
+      Equal.trans(Bool, T.word.or(Char.is_eq(cc, ':'), T.word.colon(String.to_list(ts))),
+        T.word.or(False{}, T.word.colon(String.to_list(ts))), False{},
+        Equal.cong(Bool, Bool, bb => T.word.or(bb, T.word.colon(String.to_list(ts))), Char.is_eq(cc, ':'), False{},
+          dg.nocolon(cc, then.l(Char.is_digit(cc), ts, ht))),
+        dg.colon(ts, then.r(Char.is_digit(cc), ts, ht)))
+
+# digits hold no dash after the first character
+def dg.dash(
+  tt: String,
+  +ff: Bool,
+  +ht: {T.wf.digits(tt) == True{} : Bool}
+) -> {T.word.dash(String.to_list(tt), ff) == False{} : Bool}:
+  match tt:
+    case SNil{}:
+      {==}
+    case SCon{+cc, +ts}:
+      Equal.trans(Bool, T.word.or(T.word.dash.hit(ff, cc), T.word.dash(String.to_list(ts), False{})),
+        T.word.or(False{}, T.word.dash(String.to_list(ts), False{})), False{},
+        Equal.cong(Bool, Bool, bb => T.word.or(bb, T.word.dash(String.to_list(ts), False{})),
+          T.word.dash.hit(ff, cc), False{}, dash.hit.f(ff, cc, then.l(Char.is_digit(cc), ts, ht))),
+        dg.dash(ts, False{}, then.r(Char.is_digit(cc), ts, ht)))
+
+# a word that is neither a datetime by its colons and dashes nor an exponent
+# numeral goes to the numeral scan
+def asd.f(ee: Bool) -> {T.word.as_date(False{}, ee) == False{} : Bool}:
+  match ee:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a word with no colon and no dash after its first character, special or
+# not, is a numeral
+def route.num(
+  +cs: List<&2, Char>,
+  hc: {T.word.colon(cs) == False{} : Bool},
+  hd: {T.word.dash(cs, True{}) == False{} : Bool}
+) -> {T.word.route(T.GotBad{""}, T.word.or(T.word.colon(cs), T.word.dash(cs, True{})), cs) == T.word.num(cs)
+  : T.Got}:
+  %Equal.sym(Bool, T.word.colon(cs), False{}, hc) :
+    {T.word.route(T.GotBad{""}, T.word.or(_, T.word.dash(cs, True{})), cs) == T.word.num(cs) : T.Got}
+  %Equal.sym(Bool, T.word.dash(cs, True{}), False{}, hd) :
+    {T.word.route(T.GotBad{""}, T.word.or(False{}, _), cs) == T.word.num(cs) : T.Got}
+  %Equal.sym(Bool, T.word.as_date(False{}, T.word.ee(cs)), False{}, asd.f(T.word.ee(cs))) :
+    {T.word.route.date(_, cs) == T.word.num(cs) : T.Got}
+  {==}
+
+
+# a word that starts with a minus and a digit is no special: it differs from
+# -inf and -nan at the digit, and from the others at the minus
+def spec.m(
+  +hh: Char,
+  +rest: List<&2, Char>,
+  ei: {False{} == Char.is_eq(hh, 'i') : Bool},
+  en: {False{} == Char.is_eq(hh, 'n') : Bool}
+) -> {T.word.spec(String.from_list('-' <> hh <> rest)) == T.GotBad{""} : T.Got}:
+  Equal.trans(T.Got,
+    T.word.spec.inf3(T.str.eq.step(String.from_list(rest), "nf", Char.is_eq(hh, 'i')),
+      String.from_list('-' <> hh <> rest)),
+    T.word.spec.inf3(False{}, String.from_list('-' <> hh <> rest)),
+    T.GotBad{""},
+    Equal.cong(Bool, T.Got, bb => T.word.spec.inf3(bb, String.from_list('-' <> hh <> rest)),
+      T.str.eq.step(String.from_list(rest), "nf", Char.is_eq(hh, 'i')), False{},
+      str.eq.off2(String.from_list(rest), "nf", Char.is_eq(hh, 'i'), ei)),
+    Equal.cong(Bool, T.Got, bb => T.word.spec.nan3(bb),
+      T.str.eq.step(String.from_list(rest), "an", Char.is_eq(hh, 'n')), False{},
+      str.eq.off2(String.from_list(rest), "an", Char.is_eq(hh, 'n'), en)))
+
+# a digit and digits are digits
+def dgs.cons(
+  +hh: Char,
+  +tt: String,
+  hx: {Char.is_digit(hh) == True{} : Bool},
+  ht: {T.wf.digits(tt) == True{} : Bool}
+) -> {T.wf.digits(SCon{hh, tt}) == True{} : Bool}:
+  Equal.trans(Bool, T.wf.then(Char.is_digit(hh), _u => T.wf.digits(tt)),
+    T.wf.then(True{}, _u => T.wf.digits(tt)), True{},
+    Equal.cong(Bool, Bool, bb => T.wf.then(bb, _u => T.wf.digits(tt)), Char.is_digit(hh), True{}, hx), ht)
+
+# a first digit that is not 0 starts such digits
+def nzl.one(
+  +hh: Char,
+  hx: {Char.is_digit(hh) == True{} : Bool},
+  hz: {Char.is_eq(hh, '0') == False{} : Bool}
+) -> {nzl([hh]) == True{} : Bool}:
+  and.tt(Char.is_digit(hh), Bool.or(False{}, Bool.and(True{}, Bool.not(Char.is_eq(hh, '0')))), hx,
+    Equal.cong(Bool, Bool, bb => Bool.or(False{}, Bool.and(True{}, Bool.not(bb))), Char.is_eq(hh, '0'), False{},
+      hz))
+
+# the numeral scan over the digits of an integer, from the first one on
+def int.scan(
+  +sg: T.Sign,
+  st0: T.Num,
+  +hh: Char,
+  +tt: String,
+  e0: {T.num.step(st0, hh) == ndig(sg, vals([hh])) : T.Num},
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  +hz: {Char.is_eq(hh, '0') == False{} : Bool},
+  +ht: {T.wf.digits(tt) == True{} : Bool}
+) -> {T.num.go(String.to_list(tt), T.num.step(st0, hh)) == ndig(sg, vals(rev.onto(tt, [hh]))) : T.Num}:
+  Equal.trans(T.Num, T.num.go(String.to_list(tt), T.num.step(st0, hh)),
+    T.num.go(String.to_list(tt), ndig(sg, vals([hh]))), ndig(sg, vals(rev.onto(tt, [hh]))),
+    Equal.cong(T.Num, T.Num, nn => T.num.go(String.to_list(tt), nn), T.num.step(st0, hh), ndig(sg, vals([hh])), e0),
+    nw(tt, [hh], sg, ht, nzl.one(hh, hx, hz)))
+
+# the finished numeral is the integer, in range
+def int.fin(
+  +sg: T.Sign,
+  +hh: Char,
+  +tt: String,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  +hz: {Char.is_eq(hh, '0') == False{} : Bool},
+  +ht: {T.wf.digits(tt) == True{} : Bool},
+  hf: {T.i64.fits(sg, SCon{hh, tt}) == True{} : Bool},
+  cs: List<&2, Char>
+) -> {T.num.fin(ndig(sg, vals(rev.onto(tt, [hh]))), cs) == T.GotVal{T.VInt{sg, SCon{hh, tt}}} : T.Got}:
+  Equal.trans(T.Got,
+    T.num.fin.range(T.i64.fits(sg, T.dec.text(vals(rev.onto(tt, [hh])))), sg, T.dec.text(vals(rev.onto(tt, [hh])))),
+    T.num.fin.range(T.i64.fits(sg, SCon{hh, tt}), sg, SCon{hh, tt}),
+    T.GotVal{T.VInt{sg, SCon{hh, tt}}},
+    Equal.cong(String, T.Got, ss => T.num.fin.range(T.i64.fits(sg, ss), sg, ss),
+      T.dec.text(vals(rev.onto(tt, [hh]))), SCon{hh, tt}, dtext(hh, tt, hx, hz, ht)),
+    Equal.cong(Bool, T.Got, bb => T.num.fin.range(bb, sg, SCon{hh, tt}), T.i64.fits(sg, SCon{hh, tt}), True{},
+      hf))
+
+# what int_word claims
+def int.Goal(+sg: T.Sign, +ds: String) -> Type:
+  {T.word.val(String.to_list(T.render.atom(T.VInt{sg, ds}))) == T.GotVal{T.VInt{sg, ds}} : T.Got}
+
+# a positive integer whose first digit is not 0: no special, no datetime, and
+# the numeral scan reads its digits
+def int.plus(
+  +hh: Char,
+  +tt: String,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  +hz: {Char.is_eq(hh, '0') == False{} : Bool},
+  +ht: {T.wf.digits(tt) == True{} : Bool},
+  +hf: {T.i64.fits(T.Plus{}, SCon{hh, tt}) == True{} : Bool}
+) -> int.Goal(T.Plus{}, SCon{hh, tt}):
+  +hd = {dgs.cons(hh, tt, hx, ht) : {T.wf.digits(SCon{hh, tt}) == True{} : Bool}}
+  Equal.trans(T.Got, T.word.val.pick(T.word.special(hh), hh <> String.to_list(tt)),
+    T.word.val.pick(False{}, hh <> String.to_list(tt)), T.GotVal{T.VInt{T.Plus{}, SCon{hh, tt}}},
+    Equal.cong(Bool, T.Got, bb => T.word.val.pick(bb, hh <> String.to_list(tt)), T.word.special(hh), False{},
+      dg.nospec(hh, hx)),
+    Equal.trans(T.Got, T.word.route(T.GotBad{""}, T.word.or(T.word.colon(hh <> String.to_list(tt)),
+      T.word.dash(hh <> String.to_list(tt), True{})), hh <> String.to_list(tt)),
+      T.word.num(hh <> String.to_list(tt)), T.GotVal{T.VInt{T.Plus{}, SCon{hh, tt}}},
+      route.num(hh <> String.to_list(tt), dg.colon(SCon{hh, tt}, hd), dg.dash(SCon{hh, tt}, True{}, hd)),
+      Equal.trans(T.Got, T.num.fin(T.num.go(String.to_list(tt), T.num.step(T.num.start(), hh)),
+        hh <> String.to_list(tt)),
+        T.num.fin(ndig(T.Plus{}, vals(rev.onto(tt, [hh]))), hh <> String.to_list(tt)),
+        T.GotVal{T.VInt{T.Plus{}, SCon{hh, tt}}},
+        Equal.cong(T.Num, T.Got, nn => T.num.fin(nn, hh <> String.to_list(tt)),
+          T.num.go(String.to_list(tt), T.num.step(T.num.start(), hh)), ndig(T.Plus{}, vals(rev.onto(tt, [hh]))),
+          int.scan(T.Plus{}, T.num.start(), hh, tt, nw.lead(T.Plus{}, hh, hx, hz), hx, hz, ht)),
+        int.fin(T.Plus{}, hh, tt, hx, hz, ht, hf, hh <> String.to_list(tt)))))
+
+# a negative integer whose first digit is not 0: the minus makes it a
+# special candidate, which it is not, and then it reads as a positive one
+# does, from the state after the sign
+def int.minus(
+  +hh: Char,
+  +tt: String,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  +hz: {Char.is_eq(hh, '0') == False{} : Bool},
+  +ht: {T.wf.digits(tt) == True{} : Bool},
+  +hf: {T.i64.fits(T.Minus{}, SCon{hh, tt}) == True{} : Bool}
+) -> int.Goal(T.Minus{}, SCon{hh, tt}):
+  +hd = {dgs.cons(hh, tt, hx, ht) : {T.wf.digits(SCon{hh, tt}) == True{} : Bool}}
+  Equal.trans(T.Got, T.word.route(T.word.spec(String.from_list('-' <> hh <> String.to_list(tt))),
+    T.word.or(T.word.colon('-' <> hh <> String.to_list(tt)), T.word.dash('-' <> hh <> String.to_list(tt),
+    True{})), '-' <> hh <> String.to_list(tt)),
+    T.word.route(T.GotBad{""}, T.word.or(T.word.colon('-' <> hh <> String.to_list(tt)),
+      T.word.dash('-' <> hh <> String.to_list(tt), True{})), '-' <> hh <> String.to_list(tt)),
+    T.GotVal{T.VInt{T.Minus{}, SCon{hh, tt}}},
+    Equal.cong(T.Got, T.Got, gg => T.word.route(gg, T.word.or(T.word.colon('-' <> hh <> String.to_list(tt)),
+      T.word.dash('-' <> hh <> String.to_list(tt), True{})), '-' <> hh <> String.to_list(tt)),
+      T.word.spec(String.from_list('-' <> hh <> String.to_list(tt))), T.GotBad{""},
+      spec.m(hh, String.to_list(tt), dg.noi(hh, hx), dg.non(hh, hx))),
+    Equal.trans(T.Got, T.word.route(T.GotBad{""}, T.word.or(T.word.colon('-' <> hh <> String.to_list(tt)),
+      T.word.dash('-' <> hh <> String.to_list(tt), True{})), '-' <> hh <> String.to_list(tt)),
+      T.word.num('-' <> hh <> String.to_list(tt)), T.GotVal{T.VInt{T.Minus{}, SCon{hh, tt}}},
+      route.num('-' <> hh <> String.to_list(tt), dg.colon(SCon{hh, tt}, hd), dg.dash(SCon{hh, tt}, False{}, hd)),
+      Equal.trans(T.Got, T.num.fin(T.num.go(String.to_list(tt), T.num.step(T.Num{T.NSign{}, T.Minus{}, 10, [],
+        False{}, False{}, ""}, hh)), '-' <> hh <> String.to_list(tt)),
+        T.num.fin(ndig(T.Minus{}, vals(rev.onto(tt, [hh]))), '-' <> hh <> String.to_list(tt)),
+        T.GotVal{T.VInt{T.Minus{}, SCon{hh, tt}}},
+        Equal.cong(T.Num, T.Got, nn => T.num.fin(nn, '-' <> hh <> String.to_list(tt)),
+          T.num.go(String.to_list(tt), T.num.step(T.Num{T.NSign{}, T.Minus{}, 10, [], False{}, False{}, ""}, hh)),
+          ndig(T.Minus{}, vals(rev.onto(tt, [hh]))),
+          int.scan(T.Minus{}, T.Num{T.NSign{}, T.Minus{}, 10, [], False{}, False{}, ""}, hh, tt,
+            nw.sign(T.Minus{}, hh, hx, hz), hx, hz, ht)),
+        int.fin(T.Minus{}, hh, tt, hx, hz, ht, hf, '-' <> hh <> String.to_list(tt)))))
+
+# a first digit that is not 0, by the sign
+def int.nz(
+  +sg: T.Sign,
+  +hh: Char,
+  +tt: String,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  +hz: {Char.is_eq(hh, '0') == False{} : Bool},
+  +ht: {T.wf.digits(tt) == True{} : Bool},
+  +hf: {T.i64.fits(sg, SCon{hh, tt}) == True{} : Bool}
+) -> int.Goal(sg, SCon{hh, tt}):
+  match sg:
+    case T.Plus{}:
+      int.plus(hh, tt, hx, hz, ht, hf)
+    case T.Minus{}:
+      int.minus(hh, tt, hx, hz, ht, hf)
+
+# a lone 0, with either sign
+def int.zero(
+  tt: String,
+  +sg: T.Sign,
+  hd: {String.is_empty(tt) == True{} : Bool}
+) -> int.Goal(sg, SCon{'0', tt}):
+  match tt:
+    case SNil{}:
+      match sg:
+        case T.Plus{}:
+          {==}
+        case T.Minus{}:
+          {==}
+    case SCon{ch, ct}:
+      Eq.bit.absurd(&1, int.Goal(sg, SCon{'0', SCon{ch, ct}}), hd)
+
+# a well-formed integer, by its first digit: a lone 0, with either sign, is a
+# fixed text; any other first digit starts the numeral
+def int.lead(
+  +hh: Char,
+  zz: Bool,
+  ez: {Char.is_eq(hh, '0') == zz : Bool},
+  +tt: String,
+  +sg: T.Sign,
+  +hd: {T.wf.dec.lead(zz, hh, tt) == True{} : Bool},
+  +hf: {T.i64.fits(sg, SCon{hh, tt}) == True{} : Bool}
+) -> int.Goal(sg, SCon{hh, tt}):
+  match zz:
+    case True{}:
+      %Equal.sym(Char, hh, '0', Eq.char_eq_true(hh, '0', ez)) : int.Goal(sg, SCon{_, tt})
+      int.zero(tt, sg, hd)
+    case False{}:
+      int.nz(sg, hh, tt, Eq.and.left(Char.is_digit(hh), T.wf.digits(tt), hd), ez,
+        Eq.and.right(Char.is_digit(hh), T.wf.digits(tt), hd), hf)
+
+def Laws.int_word(sg, ds, w):
+  match ds:
+    case SNil{}:
+      Eq.bit.absurd(&1, int.Goal(sg, SNil{}), w)
+    case SCon{+hh, +tt}:
+      int.lead(hh, Char.is_eq(hh, '0'), {==}, tt, sg, Eq.and.left(T.wf.dec(SCon{hh, tt}),
+        T.i64.fits(sg, SCon{hh, tt}), w), Eq.and.right(T.wf.dec(SCon{hh, tt}), T.i64.fits(sg, SCon{hh, tt}), w))
+
+# what int.chars claims
+def int.Chars(+sg: T.Sign, +ds: String) -> Type:
+  {Laws.word.chars(T.render.atom(T.VInt{sg, ds})) == True{} : Bool}
+
+# the digits of an integer whose first digit is not 0 are a bare value, by
+# the sign
+def int.chars.nz(
+  +sg: T.Sign,
+  +hh: Char,
+  +tt: String,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  +ht: {T.wf.digits(tt) == True{} : Bool}
+) -> int.Chars(sg, SCon{hh, tt}):
+  match sg:
+    case T.Plus{}:
+      and.tt(Laws.word.first(hh), Laws.word.rest(tt), dg.first(hh, hx), dg.rest(tt, ht))
+    case T.Minus{}:
+      and.tt(Laws.word.first('-'), Laws.word.rest(SCon{hh, tt}), {==},
+        dg.rest(SCon{hh, tt}, dgs.cons(hh, tt, hx, ht)))
+
+# a lone 0 is a bare value, with either sign
+def int.chars.zero(
+  tt: String,
+  +sg: T.Sign,
+  hd: {String.is_empty(tt) == True{} : Bool}
+) -> int.Chars(sg, SCon{'0', tt}):
+  match tt:
+    case SNil{}:
+      match sg:
+        case T.Plus{}:
+          {==}
+        case T.Minus{}:
+          {==}
+    case SCon{ch, ct}:
+      Eq.bit.absurd(&1, int.Chars(sg, SCon{'0', SCon{ch, ct}}), hd)
+
+# a well-formed integer's text is a bare value, by its first digit
+def int.chars.lead(
+  +hh: Char,
+  zz: Bool,
+  ez: {Char.is_eq(hh, '0') == zz : Bool},
+  +tt: String,
+  +sg: T.Sign,
+  +hd: {T.wf.dec.lead(zz, hh, tt) == True{} : Bool}
+) -> int.Chars(sg, SCon{hh, tt}):
+  match zz:
+    case True{}:
+      %Equal.sym(Char, hh, '0', Eq.char_eq_true(hh, '0', ez)) : int.Chars(sg, SCon{_, tt})
+      int.chars.zero(tt, sg, hd)
+    case False{}:
+      int.chars.nz(sg, hh, tt, Eq.and.left(Char.is_digit(hh), T.wf.digits(tt), hd),
+        Eq.and.right(Char.is_digit(hh), T.wf.digits(tt), hd))
+
+# a well-formed integer's text is a bare value
+def int.chars(
+  +sg: T.Sign,
+  ds: String,
+  hd: {T.wf.dec(ds) == True{} : Bool}
+) -> int.Chars(sg, ds):
+  match ds:
+    case SNil{}:
+      Eq.bit.absurd(&1, int.Chars(sg, SNil{}), hd)
+    case SCon{+hh, +tt}:
+      int.chars.lead(hh, Char.is_eq(hh, '0'), {==}, tt, sg, hd)
+
+def Laws.int_reads_back(sg, ds, w, fx, rest):
+  Laws.word_reads_back(T.VInt{sg, ds}, T.render.atom(T.VInt{sg, ds}),
+    int.chars(sg, ds, Eq.and.left(T.wf.dec(ds), T.i64.fits(sg, ds), w)), Laws.int_word(sg, ds, w), fx, rest)
