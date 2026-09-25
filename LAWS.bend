@@ -1975,3 +1975,48 @@ law tb_open_after_set:
   for +new: List<&2, T.Val>
   for +eo: {tb.open(path, rows) == True{} : Bool}
   {tb.open(path, tb.set(path, pre, rows, new)) == True{} : Bool}
+
+# WP-H: headers read back. A header as render writes it, `[`, its path, `]`
+# and a newline, read from the start of a line, is the rest of the text read
+# from the start of the next line, with the rows and definitions the header's
+# walk returns (WP-W's contracts say what those are) and the header's
+# segments as the current table. A quoted segment leaves back and qkind
+# where its last escape and its quote put them, so each law takes the rest of
+# the text as read from every back and qkind.
+
+# the scanner at the start of a line in the table here: nothing buffered, no
+# array or inline table open, and back, qkind and arrtab as the lines before
+# left them
+def hb.line(
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  back: T.Lex,
+  qkind: T.QKind,
+  arrtab: Bool
+) -> T.St:
+  T.St{"", rows, heads, here, [], [], T.LTop{}, back, qkind, [], T.HNone{}, 0, 0, arrtab,
+    False{}}
+
+# LAW: a header of one bare segment k, then a newline, read from the start of
+# a line, is the rest read from the start of the next line in the table [k],
+# with the rows and definitions its walk returns
+law bare_header_reads_back:
+  for +k: String
+  for +ek: {T.bare(k) == True{} : Bool}
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for arrtab: Bool
+  for +rows2: List<&2, T.Val>
+  for +heads2: List<&2, String>
+  for ew: {T.tree.walk([k], T.Tw{rows, T.JDef{}, [], "", "", heads, False{}}, 0)
+    == T.End{rows2, "", heads2} : T.End}
+  for +rest: String
+  for +goal: T.Doc
+  for ih: @bk: T.Lex -> @qk: T.QKind ->
+    {T.doc.read(rest, T.MScan{hb.line(rows2, heads2, [k], bk, qk, False{})}) == goal : T.Doc}
+  {T.doc.read("[" ++ T.key(k) ++ "]\n" ++ rest, T.MScan{hb.line(rows, heads, here, back, qkind,
+    arrtab)}) == goal : T.Doc}
