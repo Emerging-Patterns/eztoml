@@ -5611,3 +5611,1181 @@ def Laws.header_blank_waits_for_segment(
       {==}
     case False{}:
       {==}
+
+# TOML-KEY-2's read-back. A quoted key is read in LKeyQ, one character of
+# escs at a time: a plain character on the fast path, an escape through
+# LKeyE, and a \u escape through LKeyU. After each character's escape the
+# scanner is back in LKeyQ with that character pushed onto its buffer; only
+# where an escape last returned it (back) differs, and nothing after the key
+# reads that. A per-character step takes the rest of the walk as a function
+# of back, so no lemma has to name it.
+
+# a scanner inside the first quoted key of a document, its characters so far
+# reversed in buf
+def kq(back: T.Lex, buf: List<&2, Char>) -> T.St:
+  T.St{"", [], [], [], [], buf, T.LKeyQ{}, back, T.QBasic{}, [], T.HNone{}, 0, 0,
+    False{}, False{}}
+
+# the document of one pair named by a buffer, holding the integer 1
+def kq.doc(buf: List<&2, Char>) -> T.Doc:
+  T.Doc{"", [T.VPair{T.buf.str.go(buf, ""), T.VInt{T.Plus{}, "1"}}]}
+
+# one character's escape read from a quoted key, then the rest of the text: the
+# rest is read with the character pushed, from wherever the escape left back
+def kq.Goal(
+  +uu: U32,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc
+) -> Type:
+  (@bk: T.Lex -> {T.doc.read(rest, T.MScan{kq(bk, Chr{uu} <> buf)}) == goal : T.Doc}) ->
+    {T.doc.read(String.append(Laws.esc(Chr{uu}), rest), T.MScan{kq(back, buf)}) == goal
+      : T.Doc}
+
+# an `or` of two bits that each answered False
+def or.ff(
+  aa: Bool,
+  bb: Bool,
+  ea: {aa == False{} : Bool},
+  eb: {bb == False{} : Bool}
+) -> {Bool.or(aa, bb) == False{} : Bool}:
+  match aa:
+    case True{}:
+      Eq.bit.absurd2(&2, {Bool.or(True{}, bb) == False{} : Bool}, ea)
+    case False{}:
+      eb
+
+# a character that is no control is pushed: str.bad passes it
+def kq.char(
+  ctl: Bool,
+  +uu: U32,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  hc: {ctl == False{} : Bool}
+) -> {T.read.once2(T.lex.kq.char.go(T.str.bad.go(ctl, U32.is_eq(uu, 9),
+  Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), False{}), kq(back, buf), Chr{uu},
+  T.LKeyQ{})) == kq(back, Chr{uu} <> buf) : T.St}:
+  match ctl:
+    case False{}:
+      {==}
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.char.go(T.str.bad.go(True{},
+        U32.is_eq(uu, 9), Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), False{}),
+        kq(back, buf), Chr{uu}, T.LKeyQ{})) == kq(back, Chr{uu} <> buf) : T.St}, hc)
+
+# a character that is no quote, no backslash and no newline is no closer and
+# no escape
+def kq.go(
+  quote: Bool,
+  bs: Bool,
+  nl: Bool,
+  +uu: U32,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  hq: {quote == False{} : Bool},
+  hb: {bs == False{} : Bool},
+  hn: {nl == False{} : Bool},
+  hc: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
+) -> {T.read.once2(T.lex.kq.go(quote, bs, True{}, nl, kq(back, buf), Chr{uu}, T.LAfter{},
+  T.LKeyQ{})) == kq(back, Chr{uu} <> buf) : T.St}:
+  match quote:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(True{}, bs, True{}, nl, kq(back, buf),
+        Chr{uu}, T.LAfter{}, T.LKeyQ{})) == kq(back, Chr{uu} <> buf) : T.St}, hq)
+    case False{}:
+      match bs:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(False{}, True{}, True{}, nl,
+            kq(back, buf), Chr{uu}, T.LAfter{}, T.LKeyQ{})) == kq(back, Chr{uu} <> buf)
+            : T.St}, hb)
+        case False{}:
+          match nl:
+            case True{}:
+              Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(False{}, False{}, True{}, True{},
+                kq(back, buf), Chr{uu}, T.LAfter{}, T.LKeyQ{})) == kq(back, Chr{uu} <> buf)
+                : T.St}, hn)
+            case False{}:
+              kq.char(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), uu, back, buf, hc)
+
+# the doc.scan dispatch sends such a character to the fast step, and an
+# apostrophe comes back from doc.wrap in LKeyQ
+def kq.q(
+  dq: Bool,
+  sq: Bool,
+  cr: Bool,
+  +uu: U32,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  hq: {dq == False{} : Bool},
+  hr: {cr == False{} : Bool},
+  fast: {T.read.fast(kq(back, buf), Chr{uu}) == kq(back, Chr{uu} <> buf) : T.St}
+) -> {T.doc.scan.q(dq, sq, cr, kq(back, buf), Chr{uu}) == T.MScan{kq(back, Chr{uu} <> buf)}
+  : T.Mode}:
+  match dq:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.doc.scan.q(True{}, sq, cr, kq(back, buf), Chr{uu})
+        == T.MScan{kq(back, Chr{uu} <> buf)} : T.Mode}, hq)
+    case False{}:
+      match sq:
+        case True{}:
+          Equal.cong(T.St, T.Mode, st => T.doc.wrap(st), T.read.fast(kq(back, buf), Chr{uu}),
+            kq(back, Chr{uu} <> buf), fast)
+        case False{}:
+          match cr:
+            case True{}:
+              Eq.bit.absurd2(&2, {T.doc.scan.q(False{}, False{}, True{}, kq(back, buf), Chr{uu})
+                == T.MScan{kq(back, Chr{uu} <> buf)} : T.Mode}, hr)
+            case False{}:
+              Equal.cong(T.St, T.Mode, st => T.MScan{st}, T.read.fast(kq(back, buf), Chr{uu}),
+                kq(back, Chr{uu} <> buf), fast)
+
+# a character written as itself is pushed, and back stays where it was
+def kq.plain(
+  +uu: U32,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc,
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool},
+  ih: @bk: T.Lex -> {T.doc.read(rest, T.MScan{kq(bk, Chr{uu} <> buf)}) == goal : T.Doc}
+) -> {T.doc.read(String.append(Laws.esc(Chr{uu}), rest), T.MScan{kq(back, buf)}) == goal
+  : T.Doc}:
+  +e10 = {ctl.off(uu, 10, ec, {==}) : {U32.is_eq(uu, 10) == False{} : Bool}}
+  +e13 = {ctl.off(uu, 13, ec, {==}) : {U32.is_eq(uu, 13) == False{} : Bool}}
+  ek = cls.plain(uu, ctl.off(uu, 8, ec, {==}), ctl.off(uu, 9, ec, {==}), e10,
+    ctl.off(uu, 12, ec, {==}), e13, e34, e92, ec)
+  %Equal.sym(T.BK, T.basic.cls(uu), T.BKCh{}, ek) : {T.doc.read(String.append(
+    String.from_list(List.reverse(&2, Char, T.basic.disp(_, Chr{uu}, uu, []))), rest),
+    T.MScan{kq(back, buf)}) == goal : T.Doc}
+  Equal.trans(T.Doc,
+    T.doc.read(rest, T.doc.scan(kq(back, buf), Chr{uu})),
+    T.doc.read(rest, T.MScan{kq(back, Chr{uu} <> buf)}),
+    goal,
+    Equal.cong(T.Mode, T.Doc, md => T.doc.read(rest, md), T.doc.scan(kq(back, buf), Chr{uu}),
+      T.MScan{kq(back, Chr{uu} <> buf)},
+      kq.q(U32.is_eq(uu, 34), U32.is_eq(uu, 39), U32.is_eq(uu, 13), uu, back, buf, e34, e13,
+        kq.go(U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_eq(uu, 10),
+          U32.is_eq(uu, 13)), uu, back, buf, e34, e92, or.ff(U32.is_eq(uu, 10),
+          U32.is_eq(uu, 13), e10, e13), ec))),
+    ih(back))
+
+# the controls below U+0020, one at a time: each escape reads back by
+# computation, and leaves back at LKeyQ
+def kq.c5(
+  b0: Bool,
+  b1: Bool,
+  b2: Bool,
+  b3: Bool,
+  b4: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc
+) -> kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{}, zw(26n)}}}}}}},
+  back, buf, rest, goal):
+  match b0 b1 b2 b3 b4:
+    case False{} False{} False{} False{} False{}:
+      ih => ih(T.LKeyQ{})
+    case True{} False{} False{} False{} False{}:
+      ih => ih(T.LKeyQ{})
+    case False{} True{} False{} False{} False{}:
+      ih => ih(T.LKeyQ{})
+    case True{} True{} False{} False{} False{}:
+      ih => ih(T.LKeyQ{})
+    case False{} False{} True{} False{} False{}:
+      ih => ih(T.LKeyQ{})
+    case True{} False{} True{} False{} False{}:
+      ih => ih(T.LKeyQ{})
+    case False{} True{} True{} False{} False{}:
+      ih => ih(T.LKeyQ{})
+    case True{} True{} True{} False{} False{}:
+      ih => ih(T.LKeyQ{})
+    case False{} False{} False{} True{} False{}:
+      ih => ih(T.LKeyQ{})
+    case True{} False{} False{} True{} False{}:
+      ih => ih(T.LKeyQ{})
+    case False{} True{} False{} True{} False{}:
+      ih => ih(T.LKeyQ{})
+    case True{} True{} False{} True{} False{}:
+      ih => ih(T.LKeyQ{})
+    case False{} False{} True{} True{} False{}:
+      ih => ih(T.LKeyQ{})
+    case True{} False{} True{} True{} False{}:
+      ih => ih(T.LKeyQ{})
+    case False{} True{} True{} True{} False{}:
+      ih => ih(T.LKeyQ{})
+    case True{} True{} True{} True{} False{}:
+      ih => ih(T.LKeyQ{})
+    case False{} False{} False{} False{} True{}:
+      ih => ih(T.LKeyQ{})
+    case True{} False{} False{} False{} True{}:
+      ih => ih(T.LKeyQ{})
+    case False{} True{} False{} False{} True{}:
+      ih => ih(T.LKeyQ{})
+    case True{} True{} False{} False{} True{}:
+      ih => ih(T.LKeyQ{})
+    case False{} False{} True{} False{} True{}:
+      ih => ih(T.LKeyQ{})
+    case True{} False{} True{} False{} True{}:
+      ih => ih(T.LKeyQ{})
+    case False{} True{} True{} False{} True{}:
+      ih => ih(T.LKeyQ{})
+    case True{} True{} True{} False{} True{}:
+      ih => ih(T.LKeyQ{})
+    case False{} False{} False{} True{} True{}:
+      ih => ih(T.LKeyQ{})
+    case True{} False{} False{} True{} True{}:
+      ih => ih(T.LKeyQ{})
+    case False{} True{} False{} True{} True{}:
+      ih => ih(T.LKeyQ{})
+    case True{} True{} False{} True{} True{}:
+      ih => ih(T.LKeyQ{})
+    case False{} False{} True{} True{} True{}:
+      ih => ih(T.LKeyQ{})
+    case True{} False{} True{} True{} True{}:
+      ih => ih(T.LKeyQ{})
+    case False{} True{} True{} True{} True{}:
+      ih => ih(T.LKeyQ{})
+    case True{} True{} True{} True{} True{}:
+      ih => ih(T.LKeyQ{})
+
+# the bits above the fifth are zero and the fifth is 0, else the code point
+# is not below 32 (as ctl.at)
+def kq.at(
+  cc: Cmp,
+  b5: Bool,
+  +b0: Bool,
+  +b1: Bool,
+  +b2: Bool,
+  +b3: Bool,
+  +b4: Bool,
+  +hi: Word(26n),
+  ec: {Word.cmp(26n, hi, zw(26n)) == cc : Cmp},
+  h_lt: {Cmp.is_lt(Word.cmp.fin(b5, True{}, cc)) == True{} : Bool},
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc
+) -> kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, hi}}}}}}}, back, buf,
+  rest, goal):
+  match cc:
+    case LT{}:
+      Eq.bit.gone(&1, kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5,
+        hi}}}}}}}, back, buf, rest, goal),
+        Eq.bit.clash2(Equal.trans(Bool, True{}, Cmp.is_lt(Word.cmp(26n, hi, zw(26n))), False{},
+          Equal.sym(Bool, Cmp.is_lt(Word.cmp(26n, hi, zw(26n))), True{},
+            Equal.cong(Cmp, Bool, xx => Cmp.is_lt(xx), Word.cmp(26n, hi, zw(26n)), LT{}, ec)),
+          zw_nlt(26n, hi))))
+    case GT{}:
+      match b5:
+        case False{}:
+          Eq.bit.absurd(&1, kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4,
+            WCon{False{}, hi}}}}}}}, back, buf, rest, goal), h_lt)
+        case True{}:
+          Eq.bit.absurd(&1, kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4,
+            WCon{True{}, hi}}}}}}}, back, buf, rest, goal), h_lt)
+    case EQ{}:
+      match b5:
+        case True{}:
+          Eq.bit.absurd(&1, kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4,
+            WCon{True{}, hi}}}}}}}, back, buf, rest, goal), h_lt)
+        case False{}:
+          er = Equal.sym(Word(26n), hi, zw(26n), Eq.word_eq(26n, hi, zw(26n), ec))
+          %er : kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{},
+            _}}}}}}}, back, buf, rest, goal)
+          kq.c5(b0, b1, b2, b3, b4, back, buf, rest, goal)
+
+# a control below U+0020
+def kq.lt(
+  uu: U32,
+  h_lt: {U32.is_lt(uu, 32) == True{} : Bool},
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc
+) -> kq.Goal(uu, back, buf, rest, goal):
+  match uu:
+    case U32{WCon{+b0, WCon{+b1, WCon{+b2, WCon{+b3, WCon{+b4, WCon{+b5, +hi}}}}}}}:
+      +c5 = Word.cmp.fin(b5, True{}, Word.cmp(26n, hi, zw(26n)))
+      +c4 = Word.cmp.fin(b4, False{}, c5)
+      +c3 = Word.cmp.fin(b3, False{}, c4)
+      +c2 = Word.cmp.fin(b2, False{}, c3)
+      +c1 = Word.cmp.fin(b1, False{}, c2)
+      h5 = lt_up(b4, c5, lt_up(b3, c4, lt_up(b2, c3, lt_up(b1, c2, lt_up(b0, c1, h_lt)))))
+      kq.at(Word.cmp(26n, hi, zw(26n)), b5, b0, b1, b2, b3, b4, hi, {==}, h5, back, buf, rest,
+        goal)
+
+# one code point k that the test found: the escape reads back by computation
+def kq.is(
+  +uu: U32,
+  +kk: U32,
+  ee: {U32.is_eq(uu, kk) == True{} : Bool},
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc,
+  at: kq.Goal(kk, back, buf, rest, goal)
+) -> kq.Goal(uu, back, buf, rest, goal):
+  eu = Equal.cong(Char, U32, cc => Char.to_u32(cc), Chr{uu}, Chr{kk}, Eq.u32_eq(uu, kk, ee))
+  %Equal.sym(U32, uu, kk, eu) : kq.Goal(_, back, buf, rest, goal)
+  at
+
+# a control is below U+0020 or is U+007F
+def kq.ctl(
+  +uu: U32,
+  lt: Bool,
+  eq: Bool,
+  elt: {U32.is_lt(uu, 32) == lt : Bool},
+  eeq: {U32.is_eq(uu, 127) == eq : Bool},
+  eo: {Bool.or(lt, eq) == True{} : Bool},
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc
+) -> kq.Goal(uu, back, buf, rest, goal):
+  match lt:
+    case True{}:
+      kq.lt(uu, elt, back, buf, rest, goal)
+    case False{}:
+      match eq:
+        case True{}:
+          kq.is(uu, 127, eeq, back, buf, rest, goal, ih => ih(T.LKeyQ{}))
+        case False{}:
+          Eq.bit.absurd(&1, kq.Goal(uu, back, buf, rest, goal), eo)
+
+# every character: a quote, a backslash, a control, or one written as itself
+def kq.split(
+  +uu: U32,
+  q34: Bool,
+  b92: Bool,
+  ctl: Bool,
+  +e34: {U32.is_eq(uu, 34) == q34 : Bool},
+  +e92: {U32.is_eq(uu, 92) == b92 : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == ctl : Bool},
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc
+) -> kq.Goal(uu, back, buf, rest, goal):
+  match q34:
+    case True{}:
+      kq.is(uu, 34, e34, back, buf, rest, goal, ih => ih(T.LKeyQ{}))
+    case False{}:
+      match b92:
+        case True{}:
+          kq.is(uu, 92, e92, back, buf, rest, goal, ih => ih(T.LKeyQ{}))
+        case False{}:
+          match ctl:
+            case True{}:
+              kq.ctl(uu, U32.is_lt(uu, 32), U32.is_eq(uu, 127), {==}, {==}, ec, back, buf,
+                rest, goal)
+            case False{}:
+              ih => kq.plain(uu, back, buf, rest, goal, e34, e92, ec, ih)
+
+# one character of a quoted key
+def kq.one(
+  +uu: U32,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc
+) -> kq.Goal(uu, back, buf, rest, goal):
+  kq.split(uu, U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_lt(uu, 32),
+    U32.is_eq(uu, 127)), {==}, {==}, {==}, back, buf, rest, goal)
+
+# every character of a name, as escs writes it, then the closing quote and
+# " = 1": the document is one pair named by the buffer
+def kq.body(
+  ss: String,
+  +back: T.Lex,
+  +buf: List<&2, Char>
+) -> {T.doc.read(String.append(Laws.escs(ss), "\" = 1"), T.MScan{kq(back, buf)})
+  == kq.doc(rev.onto(ss, buf)) : T.Doc}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+uu}:
+          Equal.trans(T.Doc,
+            T.doc.read(String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)),
+              "\" = 1"), T.MScan{kq(back, buf)}),
+            T.doc.read(String.append(Laws.esc(Chr{uu}), String.append(Laws.escs(tt),
+              "\" = 1")), T.MScan{kq(back, buf)}),
+            kq.doc(rev.onto(tt, Chr{uu} <> buf)),
+            Equal.cong(String, T.Doc, xs => T.doc.read(xs, T.MScan{kq(back, buf)}),
+              String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), "\" = 1"),
+              String.append(Laws.esc(Chr{uu}), String.append(Laws.escs(tt), "\" = 1")),
+              Eq.append_assoc(Laws.esc(Chr{uu}), Laws.escs(tt), "\" = 1")),
+            kq.one(uu, back, buf, String.append(Laws.escs(tt), "\" = 1"),
+              kq.doc(rev.onto(tt, Chr{uu} <> buf)))(bk => kq.body(tt, bk, Chr{uu} <> buf)))
+
+# a buffer of a name's characters names the pair by the name
+def kq.name(
+  +ss: String
+) -> {kq.doc(rev.onto(ss, [])) == T.Doc{"", [T.VPair{ss, T.VInt{T.Plus{}, "1"}}]} : T.Doc}:
+  Equal.cong(String, T.Doc, nm => T.Doc{"", [T.VPair{nm, T.VInt{T.Plus{}, "1"}}]},
+    T.buf.str.go(rev.onto(ss, []), ""), ss,
+    Equal.trans(String, T.buf.str.go(rev.onto(ss, []), ""), String.append(ss, ""), ss,
+      ml.rev(ss, [], ""), Eq.append_nil(ss)))
+
+# a quoted key: key.basic is quotes around escs, and the scanner reads them
+def kq.quoted(
+  +ss: String
+) -> {T.parse(String.append(T.key.basic(ss), " = 1"))
+  == T.Doc{"", [T.VPair{ss, T.VInt{T.Plus{}, "1"}}]} : T.Doc}:
+  Equal.trans(T.Doc,
+    T.parse(String.append(T.key.basic(ss), " = 1")),
+    T.parse(String.append("\"" ++ Laws.escs(ss) ++ "\"", " = 1")),
+    T.Doc{"", [T.VPair{ss, T.VInt{T.Plus{}, "1"}}]},
+    Equal.cong(String, T.Doc, xs => T.parse(String.append(xs, " = 1")), T.key.basic(ss),
+      "\"" ++ Laws.escs(ss) ++ "\"", Laws.basic_escs(ss)),
+    Equal.trans(T.Doc,
+      T.doc.read(String.append(String.append(Laws.escs(ss), "\""), " = 1"),
+        T.MScan{kq(T.LTop{}, [])}),
+      T.doc.read(String.append(Laws.escs(ss), "\" = 1"), T.MScan{kq(T.LTop{}, [])}),
+      T.Doc{"", [T.VPair{ss, T.VInt{T.Plus{}, "1"}}]},
+      Equal.cong(String, T.Doc, xs => T.doc.read(xs, T.MScan{kq(T.LTop{}, [])}),
+        String.append(String.append(Laws.escs(ss), "\""), " = 1"),
+        String.append(Laws.escs(ss), "\" = 1"),
+        Eq.append_assoc(Laws.escs(ss), "\"", " = 1")),
+      Equal.trans(T.Doc,
+        T.doc.read(String.append(Laws.escs(ss), "\" = 1"), T.MScan{kq(T.LTop{}, [])}),
+        kq.doc(rev.onto(ss, [])),
+        T.Doc{"", [T.VPair{ss, T.VInt{T.Plus{}, "1"}}]},
+        kq.body(ss, T.LTop{}, []),
+        kq.name(ss))))
+
+# a space ends a nonempty bare key, and " = 1" is read to the end
+def key.sp(
+  +bb: List<&2, Char>,
+  full: {List.is_empty(&2, Char, bb) == False{} : Bool}
+) -> {T.doc.read(" = 1", T.MScan{ky(bb)}) == kq.doc(bb) : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read("= 1", T.MScan{T.read.once2(T.lex.key.end.go(List.is_empty(&2, Char, bb),
+      ky(bb), T.LAfter{}))}),
+    T.doc.read("= 1", T.MScan{T.read.once2(T.lex.key.end.go(False{}, ky(bb), T.LAfter{}))}),
+    kq.doc(bb),
+    Equal.cong(Bool, T.Doc,
+      bt => T.doc.read("= 1", T.MScan{T.read.once2(T.lex.key.end.go(bt, ky(bb), T.LAfter{}))}),
+      List.is_empty(&2, Char, bb), False{}, full),
+    {==})
+
+# a bare key: its characters are read on the key's fast path, as for
+# empty_basic_at_end
+def kq.bare(
+  +xx: U32,
+  +tt: String,
+  +ee: {T.bare.all.step(T.bare.at(Chr{xx}), _u => T.bare.all(String.to_list(tt))) == True{} : Bool}
+) -> {T.parse(String.append(SCon{Chr{xx}, tt}, " = 1"))
+  == T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VInt{T.Plus{}, "1"}}]} : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(String.append(tt, " = 1"), T.doc.scan(T.st.start(), Chr{xx})),
+    T.doc.read(String.append(tt, " = 1"), T.MScan{ky([Chr{xx}])}),
+    T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VInt{T.Plus{}, "1"}}]},
+    Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, " = 1"), md),
+      T.doc.scan(T.st.start(), Chr{xx}), T.MScan{ky([Chr{xx}])},
+      key.first(xx, ball.head(T.bare.at(Chr{xx}), String.to_list(tt), ee))),
+    Equal.trans(T.Doc,
+      T.doc.read(String.append(tt, " = 1"), T.MScan{ky([Chr{xx}])}),
+      T.doc.read(" = 1", T.MScan{ky(rev.onto(tt, [Chr{xx}]))}),
+      T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VInt{T.Plus{}, "1"}}]},
+      key.body(tt, " = 1", [Chr{xx}], ball.tail(T.bare.at(Chr{xx}), String.to_list(tt), ee)),
+      Equal.trans(T.Doc,
+        T.doc.read(" = 1", T.MScan{ky(rev.onto(tt, [Chr{xx}]))}),
+        kq.doc(rev.onto(tt, [Chr{xx}])),
+        T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VInt{T.Plus{}, "1"}}]},
+        key.sp(rev.onto(tt, [Chr{xx}]), rev.full(tt, Chr{xx}, [])),
+        kq.name(SCon{Chr{xx}, tt}))))
+
+# bare or quoted, as key picks
+def kq.law(
+  bb: Bool,
+  +ss: String,
+  eb: {T.bare(ss) == bb : Bool}
+) -> {T.parse(String.append(T.key.go(bb, ss), " = 1"))
+  == T.Doc{"", [T.VPair{ss, T.VInt{T.Plus{}, "1"}}]} : T.Doc}:
+  match bb:
+    case False{}:
+      kq.quoted(ss)
+    case True{}:
+      match ss:
+        case SNil{}:
+          Eq.bit.absurd(&2, {T.parse(String.append(SNil{}, " = 1"))
+            == T.Doc{"", [T.VPair{SNil{}, T.VInt{T.Plus{}, "1"}}]} : T.Doc}, eb)
+        case SCon{hh, +tt}:
+          match hh:
+            case Chr{+xx}:
+              kq.bare(xx, tt, eb)
+
+def Laws.key_reads_back(s):
+  kq.law(T.bare(s), s, {==})
+
+# TOML-RT-1 for a document of one pair: a bare key and a string render writes
+# with no escape. The key is read as for key_reads_back; the string opens a
+# span on its first character, each later one adds one to the span's U32
+# count, and the closing quote stores the span. The span then reads as the
+# string because its count is the string's length, which needs the count not
+# to wrap.
+
+# U32 arithmetic. Adding a carry to a word and then taking one with the other
+# carry as the borrow leaves the word, bit by bit.
+def inc.dec(
+  nn: Nat,
+  ww: Word(nn),
+  cc: Bool
+) -> {Word.adc(nn, Word.adc(nn, ww, Word.zero(nn), False{}, cc), Word.zero(nn), True{},
+  Bool.not(cc)) == ww : Word(nn)}:
+  match nn:
+    case 0n:
+      match ww:
+        case WNil{}:
+          {==}
+    case 1n+pp:
+      match ww:
+        case WCon{bb, +tt}:
+          match bb cc:
+            case False{} False{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{False{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, False{}), Word.zero(pp),
+                  True{}, True{}), tt, inc.dec(pp, tt, False{}))
+            case False{} True{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{False{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, False{}), Word.zero(pp),
+                  True{}, True{}), tt, inc.dec(pp, tt, False{}))
+            case True{} False{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{True{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, False{}), Word.zero(pp),
+                  True{}, True{}), tt, inc.dec(pp, tt, False{}))
+            case True{} True{}:
+              Equal.cong(Word(pp), Word(1n+pp), yy => WCon{True{}, yy},
+                Word.adc(pp, Word.adc(pp, tt, Word.zero(pp), False{}, True{}), Word.zero(pp),
+                  True{}, False{}), tt, inc.dec(pp, tt, True{}))
+
+# one taken from one more than a U32 is the U32
+def sub.inc(xx: U32) -> {U32.sub(U32.add(xx, 1), 1) == xx : U32}:
+  match xx:
+    case U32{ww}:
+      match ww:
+        case WCon{bb, +tt}:
+          match bb:
+            case False{}:
+              Equal.cong(Word(31n), U32, yy => U32{WCon{False{}, yy}},
+                Word.adc(31n, Word.adc(31n, tt, Word.zero(31n), False{}, False{}),
+                  Word.zero(31n), True{}, True{}), tt, inc.dec(31n, tt, False{}))
+            case True{}:
+              Equal.cong(Word(31n), U32, yy => U32{WCon{True{}, yy}},
+                Word.adc(31n, Word.adc(31n, tt, Word.zero(31n), False{}, True{}),
+                  Word.zero(31n), True{}, False{}), tt, inc.dec(31n, tt, True{}))
+
+# one more than a U32, when that is not zero, counts one more
+def inc.nat(
+  +xx: U32,
+  ez: {U32.is_zero(U32.add(xx, 1)) == False{} : Bool}
+) -> {U32.to_nat(U32.add(xx, 1)) == 1n+U32.to_nat(xx) : Nat}:
+  Equal.trans(Nat, U32.to_nat(U32.add(xx, 1)), 1n+U32.to_nat(U32.sub(U32.add(xx, 1), 1)),
+    1n+U32.to_nat(xx),
+    Eq.u32_dec_nat(U32.add(xx, 1), ez),
+    Equal.cong(U32, Nat, uu => 1n+U32.to_nat(uu), U32.sub(U32.add(xx, 1), 1), xx, sub.inc(xx)))
+
+# the count a span holds after these characters, from n
+def addn(ss: String, nn: U32) -> U32:
+  match ss:
+    case SNil{}:
+      nn
+    case SCon{_hh, tt}:
+      addn(tt, U32.add(nn, 1))
+
+# a Nat count after these characters, from n
+def plus(ss: String, nn: Nat) -> Nat:
+  match ss:
+    case SNil{}:
+      nn
+    case SCon{_hh, tt}:
+      plus(tt, 1n+nn)
+
+# a count that does not wrap counts the characters
+def cnt(
+  ss: String,
+  +nn: U32,
+  +ee: {Laws.counts(ss, nn) == True{} : Bool}
+) -> {U32.to_nat(addn(ss, nn)) == plus(ss, U32.to_nat(nn)) : Nat}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{_hh, +tt}:
+      Equal.trans(Nat, U32.to_nat(addn(tt, U32.add(nn, 1))), plus(tt, U32.to_nat(U32.add(nn, 1))),
+        plus(tt, 1n+U32.to_nat(nn)),
+        cnt(tt, U32.add(nn, 1), Eq.and.right(Bool.not(U32.is_zero(U32.add(nn, 1))),
+          Laws.counts(tt, U32.add(nn, 1)), ee)),
+        Equal.cong(Nat, Nat, mm => plus(tt, mm), U32.to_nat(U32.add(nn, 1)), 1n+U32.to_nat(nn),
+          inc.nat(nn, Eq.not.true(U32.is_zero(U32.add(nn, 1)),
+            Eq.and.left(Bool.not(U32.is_zero(U32.add(nn, 1))), Laws.counts(tt, U32.add(nn, 1)),
+              ee)))))
+
+# the first n characters of a text
+def take(ss: String, nn: Nat) -> String:
+  match ss nn:
+    case SNil{} _nn:
+      SNil{}
+    case SCon{_hh, _tt} 0n:
+      SNil{}
+    case SCon{hh, tt} 1n+pp:
+      SCon{hh, take(tt, pp)}
+
+# span.str of no characters, whatever the count
+def sp.nil(nn: U32, bz: Bool) -> {T.span.str(SNil{}, nn, bz) == take(SNil{}, U32.to_nat(nn)) : String}:
+  match bz:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# span.str of a character and the rest, once the zero test's answer is named
+def sp.cons(
+  +hd: Char,
+  +tl: String,
+  +nn: U32,
+  bz: Bool,
+  ez: {U32.is_zero(nn) == bz : Bool},
+  ih: {T.span.str(tl, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1))) == take(tl, U32.to_nat(U32.sub(nn, 1))) : String}
+) -> {T.span.str(SCon{hd, tl}, nn, bz) == take(SCon{hd, tl}, U32.to_nat(nn)) : String}:
+  match bz:
+    case True{}:
+      e0 = Equal.cong(Char, U32, cc => Char.to_u32(cc), Chr{nn}, Chr{0}, Eq.u32_eq(nn, 0, ez))
+      %Equal.sym(U32, nn, 0, e0) : {T.span.str(SCon{hd, tl}, nn, True{}) == take(SCon{hd, tl},
+        U32.to_nat(_)) : String}
+      {==}
+    case False{}:
+      en = Equal.sym(Nat, U32.to_nat(nn), 1n+U32.to_nat(U32.sub(nn, 1)), Eq.u32_dec_nat(nn, ez))
+      %en : {SCon{hd, T.span.str(tl, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1)))}
+        == take(SCon{hd, tl}, _) : String}
+      Equal.cong(String, String, xs => SCon{hd, xs},
+        T.span.str(tl, U32.sub(nn, 1), U32.is_zero(U32.sub(nn, 1))),
+        take(tl, U32.to_nat(U32.sub(nn, 1))), ih)
+
+# a span's characters are the first n characters of its source
+def sp.take(
+  src: String,
+  +nn: U32
+) -> {T.span.str(src, nn, U32.is_zero(nn)) == take(src, U32.to_nat(nn)) : String}:
+  match src:
+    case SNil{}:
+      sp.nil(nn, U32.is_zero(nn))
+    case SCon{+hd, +tl}:
+      sp.cons(hd, tl, nn, U32.is_zero(nn), {==}, sp.take(tl, U32.sub(nn, 1)))
+
+# a count one further on
+def plus.succ(ss: String, nn: Nat) -> {plus(ss, 1n+nn) == 1n+plus(ss, nn) : Nat}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{_hh, tt}:
+      plus.succ(tt, 1n+nn)
+
+# taking a text's count of characters from the text and more takes the text
+def take.app(
+  ss: String,
+  +xs: String,
+  +kk: Nat
+) -> {take(String.append(ss, xs), plus(ss, kk)) == String.append(ss, take(xs, kk)) : String}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{+hh, +tt}:
+      %Equal.sym(Nat, plus(tt, 1n+kk), 1n+plus(tt, kk), plus.succ(tt, kk)) :
+        {take(SCon{hh, String.append(tt, xs)}, _) == SCon{hh, String.append(tt, take(xs, kk))}
+          : String}
+      Equal.cong(String, String, ys => SCon{hh, ys}, take(String.append(tt, xs), plus(tt, kk)),
+        String.append(tt, take(xs, kk)), take.app(tt, xs, kk))
+
+# the span parse stores for a string whose count does not wrap is the string
+def sp.whole(
+  +c0: Char,
+  +ps: String,
+  +es: {Laws.counts(ps, U32.add(0, 1)) == True{} : Bool}
+) -> {T.span.str(SCon{c0, String.append(ps, "\"\n")}, addn(ps, U32.add(0, 1)),
+  U32.is_zero(addn(ps, U32.add(0, 1)))) == SCon{c0, ps} : String}:
+  Equal.trans(String,
+    T.span.str(SCon{c0, String.append(ps, "\"\n")}, addn(ps, U32.add(0, 1)),
+      U32.is_zero(addn(ps, U32.add(0, 1)))),
+    take(SCon{c0, String.append(ps, "\"\n")}, U32.to_nat(addn(ps, U32.add(0, 1)))),
+    SCon{c0, ps},
+    sp.take(SCon{c0, String.append(ps, "\"\n")}, addn(ps, U32.add(0, 1))),
+    Equal.trans(String,
+      take(SCon{c0, String.append(ps, "\"\n")}, U32.to_nat(addn(ps, U32.add(0, 1)))),
+      take(String.append(SCon{c0, ps}, "\"\n"), plus(SCon{c0, ps}, 0n)),
+      SCon{c0, ps},
+      Equal.cong(Nat, String, mm => take(SCon{c0, String.append(ps, "\"\n")}, mm),
+        U32.to_nat(addn(ps, U32.add(0, 1))), plus(ps, 1n), cnt(ps, U32.add(0, 1), es)),
+      Equal.trans(String,
+        take(String.append(SCon{c0, ps}, "\"\n"), plus(SCon{c0, ps}, 0n)),
+        String.append(SCon{c0, ps}, ""),
+        SCon{c0, ps},
+        take.app(SCon{c0, ps}, "\"\n", 0n),
+        Eq.append_nil(SCon{c0, ps}))))
+
+# What a plain character is not.
+
+# no control
+def pc.ctl(
+  +uu: U32,
+  hp: {Laws.plain.char(Chr{uu}) == True{} : Bool}
+) -> {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}:
+  Eq.or.left_false(Laws.is_ctl(Chr{uu}), Bool.or(U32.is_eq(uu, 34), U32.is_eq(uu, 92)),
+    Eq.not.true(Bool.or(Laws.is_ctl(Chr{uu}), Bool.or(U32.is_eq(uu, 34), U32.is_eq(uu, 92))), hp))
+
+# no quotation mark or backslash
+def pc.qb(
+  +uu: U32,
+  hp: {Laws.plain.char(Chr{uu}) == True{} : Bool}
+) -> {Bool.or(U32.is_eq(uu, 34), U32.is_eq(uu, 92)) == False{} : Bool}:
+  Eq.or.right_false(Laws.is_ctl(Chr{uu}), Bool.or(U32.is_eq(uu, 34), U32.is_eq(uu, 92)),
+    Eq.not.true(Bool.or(Laws.is_ctl(Chr{uu}), Bool.or(U32.is_eq(uu, 34), U32.is_eq(uu, 92))), hp))
+
+# a plain character is written as itself
+def esc.pl(
+  +uu: U32,
+  +hp: {Laws.plain.char(Chr{uu}) == True{} : Bool}
+) -> {Laws.esc(Chr{uu}) == String.from_list([Chr{uu}]) : String}:
+  +ec = {pc.ctl(uu, hp) : {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}}
+  +eqb = {pc.qb(uu, hp) : {Bool.or(U32.is_eq(uu, 34), U32.is_eq(uu, 92)) == False{} : Bool}}
+  ek = cls.plain(uu, ctl.off(uu, 8, ec, {==}), ctl.off(uu, 9, ec, {==}), ctl.off(uu, 10, ec, {==}),
+    ctl.off(uu, 12, ec, {==}), ctl.off(uu, 13, ec, {==}),
+    Eq.or.left_false(U32.is_eq(uu, 34), U32.is_eq(uu, 92), eqb),
+    Eq.or.right_false(U32.is_eq(uu, 34), U32.is_eq(uu, 92), eqb), ec)
+  %Equal.sym(T.BK, T.basic.cls(uu), T.BKCh{}, ek) :
+    {String.from_list(List.reverse(&2, Char, T.basic.disp(_, Chr{uu}, uu, [])))
+      == String.from_list([Chr{uu}]) : String}
+  {==}
+
+# a plain text is written as itself
+def escs.pl(
+  ss: String,
+  +ee: {Laws.plain.text(ss) == True{} : Bool}
+) -> {Laws.escs(ss) == ss : String}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+uu}:
+          Equal.trans(String, String.append(Laws.esc(Chr{uu}), Laws.escs(tt)),
+            String.append(String.from_list([Chr{uu}]), Laws.escs(tt)), SCon{Chr{uu}, tt},
+            Equal.cong(String, String, xs => String.append(xs, Laws.escs(tt)), Laws.esc(Chr{uu}),
+              String.from_list([Chr{uu}]),
+              esc.pl(uu, Eq.and.left(Laws.plain.char(Chr{uu}), Laws.plain.text(tt), ee))),
+            Equal.cong(String, String, xs => SCon{Chr{uu}, xs}, Laws.escs(tt), tt,
+              escs.pl(tt, Eq.and.right(Laws.plain.char(Chr{uu}), Laws.plain.text(tt), ee))))
+
+# The span. vo is the scanner at the opening quote of the key's value; ve is
+# it inside the span, cut being the text from the string's first character.
+
+# the scanner just past the opening quote of a root key's string
+def vo(name: String) -> T.Mode:
+  T.MOpen{True{}, '"', T.QBasic{}, "", [], [], [], [name], [], T.LTop{}, [], 0, 0, False{}}
+
+# the scanner inside the span of a root key's string, n characters in
+def ve(cut: String, nn: U32, name: String) -> T.Mode:
+  T.MEat{True{}, '"', cut, nn, "", [], [], [], [name], T.QBasic{}, [], 0, 0, False{}}
+
+# the first character: no control, so the span starts
+def op.ok(
+  badc: Bool,
+  +uu: U32,
+  +tail: String,
+  +name: String,
+  hc: {badc == False{} : Bool}
+) -> {T.doc.open.ok(T.str.bad.go(badc, U32.is_eq(uu, 9), Bool.or(U32.is_eq(uu, 10),
+  U32.is_eq(uu, 13)), False{}), True{}, '"', T.QBasic{}, "", [], [], [], [name], [], T.LTop{},
+  [], 0, 0, False{}, Chr{uu}, tail) == ve(SCon{Chr{uu}, tail}, 1, name) : T.Mode}:
+  match badc:
+    case False{}:
+      {==}
+    case True{}:
+      Eq.bit.absurd2(&2, {T.doc.open.ok(T.str.bad.go(True{}, U32.is_eq(uu, 9),
+        Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), False{}), True{}, '"', T.QBasic{}, "", [],
+        [], [], [name], [], T.LTop{}, [], 0, 0, False{}, Chr{uu}, tail)
+        == ve(SCon{Chr{uu}, tail}, 1, name) : T.Mode}, hc)
+
+# no backslash
+def op.bs(
+  bs: Bool,
+  +uu: U32,
+  +tail: String,
+  +name: String,
+  hb: {bs == False{} : Bool},
+  hc: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
+) -> {T.doc.open.bs(bs, '"', T.QBasic{}, "", [], [], [], [name], [], T.LTop{}, [], 0, 0, False{},
+  Chr{uu}, tail) == ve(SCon{Chr{uu}, tail}, 1, name) : T.Mode}:
+  match bs:
+    case False{}:
+      op.ok(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), uu, tail, name, hc)
+    case True{}:
+      Eq.bit.absurd2(&2, {T.doc.open.bs(True{}, '"', T.QBasic{}, "", [], [], [], [name], [],
+        T.LTop{}, [], 0, 0, False{}, Chr{uu}, tail) == ve(SCon{Chr{uu}, tail}, 1, name) : T.Mode},
+        hb)
+
+# no quotation mark
+def op.q(
+  same: Bool,
+  +uu: U32,
+  +tail: String,
+  +name: String,
+  hq: {same == False{} : Bool},
+  hb: {U32.is_eq(uu, 92) == False{} : Bool},
+  hc: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
+) -> {T.doc.open.q(same, True{}, '"', T.QBasic{}, "", [], [], [], [name], [], T.LTop{}, [], 0, 0,
+  False{}, Chr{uu}, tail) == ve(SCon{Chr{uu}, tail}, 1, name) : T.Mode}:
+  match same:
+    case False{}:
+      op.bs(U32.is_eq(uu, 92), uu, tail, name, hb, hc)
+    case True{}:
+      Eq.bit.absurd2(&2, {T.doc.open.q(True{}, True{}, '"', T.QBasic{}, "", [], [], [], [name], [],
+        T.LTop{}, [], 0, 0, False{}, Chr{uu}, tail) == ve(SCon{Chr{uu}, tail}, 1, name) : T.Mode},
+        hq)
+
+# a plain first character opens the span
+def op.one(
+  +uu: U32,
+  +tail: String,
+  +name: String,
+  +hp: {Laws.plain.char(Chr{uu}) == True{} : Bool}
+) -> {T.doc.read(SCon{Chr{uu}, tail}, vo(name)) == T.doc.read(tail, ve(SCon{Chr{uu}, tail}, 1,
+  name)) : T.Doc}:
+  +eqb = {pc.qb(uu, hp) : {Bool.or(U32.is_eq(uu, 34), U32.is_eq(uu, 92)) == False{} : Bool}}
+  Equal.cong(T.Mode, T.Doc, md => T.doc.read(tail, md),
+    T.doc.open(True{}, '"', T.QBasic{}, "", [], [], [], [name], [], T.LTop{}, [], 0, 0, False{},
+      Chr{uu}, tail),
+    ve(SCon{Chr{uu}, tail}, 1, name),
+    op.q(U32.is_eq(uu, 34), uu, tail, name,
+      Eq.or.left_false(U32.is_eq(uu, 34), U32.is_eq(uu, 92), eqb),
+      Eq.or.right_false(U32.is_eq(uu, 34), U32.is_eq(uu, 92), eqb), pc.ctl(uu, hp)))
+
+# a later character: no control, so the span grows
+def ef.ctl(
+  ctl: Bool,
+  +uu: U32,
+  +cut: String,
+  +nn: U32,
+  +name: String,
+  hc: {ctl == False{} : Bool}
+) -> {T.eat.ctrl(T.str.bad.go(ctl, U32.is_eq(uu, 9), Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)),
+  False{}), True{}, '"', Chr{uu}, cut, nn, "", [], [], [], [name], T.QBasic{}, [], 0, 0, False{})
+  == ve(cut, U32.add(nn, 1), name) : T.Mode}:
+  match ctl:
+    case False{}:
+      {==}
+    case True{}:
+      Eq.bit.absurd2(&2, {T.eat.ctrl(T.str.bad.go(True{}, U32.is_eq(uu, 9),
+        Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), False{}), True{}, '"', Chr{uu}, cut, nn, "",
+        [], [], [], [name], T.QBasic{}, [], 0, 0, False{}) == ve(cut, U32.add(nn, 1), name)
+        : T.Mode}, hc)
+
+# no backslash
+def ef.bs(
+  bs: Bool,
+  +uu: U32,
+  +cut: String,
+  +nn: U32,
+  +name: String,
+  hb: {bs == False{} : Bool},
+  hc: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
+) -> {T.eat.bs(bs, True{}, '"', Chr{uu}, cut, nn, "", [], [], [], [name], T.QBasic{}, [], 0, 0,
+  False{}) == ve(cut, U32.add(nn, 1), name) : T.Mode}:
+  match bs:
+    case False{}:
+      ef.ctl(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), uu, cut, nn, name, hc)
+    case True{}:
+      Eq.bit.absurd2(&2, {T.eat.bs(True{}, True{}, '"', Chr{uu}, cut, nn, "", [], [], [], [name],
+        T.QBasic{}, [], 0, 0, False{}) == ve(cut, U32.add(nn, 1), name) : T.Mode}, hb)
+
+# no quotation mark
+def ef.q(
+  quote: Bool,
+  +uu: U32,
+  +cut: String,
+  +nn: U32,
+  +name: String,
+  hq: {quote == False{} : Bool},
+  hb: {U32.is_eq(uu, 92) == False{} : Bool},
+  hc: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
+) -> {T.eat.feed.q(quote, True{}, '"', Chr{uu}, cut, nn, "", [], [], [], [name], T.QBasic{}, [], 0,
+  0, False{}) == ve(cut, U32.add(nn, 1), name) : T.Mode}:
+  match quote:
+    case False{}:
+      ef.bs(U32.is_eq(uu, 92), uu, cut, nn, name, hb, hc)
+    case True{}:
+      Eq.bit.absurd2(&2, {T.eat.feed.q(True{}, True{}, '"', Chr{uu}, cut, nn, "", [], [], [],
+        [name], T.QBasic{}, [], 0, 0, False{}) == ve(cut, U32.add(nn, 1), name) : T.Mode}, hq)
+
+# the plain characters of a string grow the span by one each
+def ef.run(
+  ps: String,
+  +rest: String,
+  +cut: String,
+  +nn: U32,
+  +name: String,
+  +ee: {Laws.plain.text(ps) == True{} : Bool}
+) -> {T.doc.read(String.append(ps, rest), ve(cut, nn, name))
+  == T.doc.read(rest, ve(cut, addn(ps, nn), name)) : T.Doc}:
+  match ps:
+    case SNil{}:
+      {==}
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+uu}:
+          +hp = {Eq.and.left(Laws.plain.char(Chr{uu}), Laws.plain.text(tt), ee)
+            : {Laws.plain.char(Chr{uu}) == True{} : Bool}}
+          +eqb = {pc.qb(uu, hp) : {Bool.or(U32.is_eq(uu, 34), U32.is_eq(uu, 92)) == False{} : Bool}}
+          Equal.trans(T.Doc,
+            T.doc.read(String.append(tt, rest), T.eat.feed(True{}, '"', cut, nn, "", [], [], [],
+              [name], T.QBasic{}, [], 0, 0, False{}, Chr{uu})),
+            T.doc.read(String.append(tt, rest), ve(cut, U32.add(nn, 1), name)),
+            T.doc.read(rest, ve(cut, addn(tt, U32.add(nn, 1)), name)),
+            Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, rest), md),
+              T.eat.feed(True{}, '"', cut, nn, "", [], [], [], [name], T.QBasic{}, [], 0, 0,
+                False{}, Chr{uu}),
+              ve(cut, U32.add(nn, 1), name),
+              ef.q(U32.is_eq(uu, 34), uu, cut, nn, name,
+                Eq.or.left_false(U32.is_eq(uu, 34), U32.is_eq(uu, 92), eqb),
+                Eq.or.right_false(U32.is_eq(uu, 34), U32.is_eq(uu, 92), eqb), pc.ctl(uu, hp))),
+            ef.run(tt, rest, cut, U32.add(nn, 1), name,
+              Eq.and.right(Laws.plain.char(Chr{uu}), Laws.plain.text(tt), ee)))
+
+# The key. A space ends a nonempty bare key, and " = " and the opening quote
+# bring the scanner to vo
+def kv.eq(
+  +bb: List<&2, Char>,
+  full: {List.is_empty(&2, Char, bb) == False{} : Bool},
+  +vv: String
+) -> {T.doc.read(SCon{' ', SCon{'=', SCon{' ', SCon{'"', vv}}}}, T.MScan{ky(bb)})
+  == T.doc.read(vv, vo(T.buf.str.go(bb, ""))) : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(SCon{'=', SCon{' ', SCon{'"', vv}}}, T.MScan{T.read.once2(T.lex.key.end.go(
+      List.is_empty(&2, Char, bb), ky(bb), T.LAfter{}))}),
+    T.doc.read(SCon{'=', SCon{' ', SCon{'"', vv}}}, T.MScan{T.read.once2(T.lex.key.end.go(
+      False{}, ky(bb), T.LAfter{}))}),
+    T.doc.read(vv, vo(T.buf.str.go(bb, ""))),
+    Equal.cong(Bool, T.Doc,
+      bt => T.doc.read(SCon{'=', SCon{' ', SCon{'"', vv}}}, T.MScan{T.read.once2(
+        T.lex.key.end.go(bt, ky(bb), T.LAfter{}))}),
+      List.is_empty(&2, Char, bb), False{}, full),
+    {==})
+
+# a bare key, then " = " and a quote: the scanner at vo, named by the key
+def kv.key(
+  +xx: U32,
+  +tt: String,
+  +vv: String,
+  +ee: {T.bare.all.step(T.bare.at(Chr{xx}), _u => T.bare.all(String.to_list(tt))) == True{} : Bool}
+) -> {T.parse(String.append(SCon{Chr{xx}, tt}, SCon{' ', SCon{'=', SCon{' ', SCon{'"', vv}}}}))
+  == T.doc.read(vv, vo(SCon{Chr{xx}, tt})) : T.Doc}:
+  Equal.trans(T.Doc,
+    T.doc.read(String.append(tt, SCon{' ', SCon{'=', SCon{' ', SCon{'"', vv}}}}),
+      T.doc.scan(T.st.start(), Chr{xx})),
+    T.doc.read(String.append(tt, SCon{' ', SCon{'=', SCon{' ', SCon{'"', vv}}}}),
+      T.MScan{ky([Chr{xx}])}),
+    T.doc.read(vv, vo(SCon{Chr{xx}, tt})),
+    Equal.cong(T.Mode, T.Doc,
+      md => T.doc.read(String.append(tt, SCon{' ', SCon{'=', SCon{' ', SCon{'"', vv}}}}), md),
+      T.doc.scan(T.st.start(), Chr{xx}), T.MScan{ky([Chr{xx}])},
+      key.first(xx, ball.head(T.bare.at(Chr{xx}), String.to_list(tt), ee))),
+    Equal.trans(T.Doc,
+      T.doc.read(String.append(tt, SCon{' ', SCon{'=', SCon{' ', SCon{'"', vv}}}}),
+        T.MScan{ky([Chr{xx}])}),
+      T.doc.read(SCon{' ', SCon{'=', SCon{' ', SCon{'"', vv}}}},
+        T.MScan{ky(rev.onto(tt, [Chr{xx}]))}),
+      T.doc.read(vv, vo(SCon{Chr{xx}, tt})),
+      key.body(tt, SCon{' ', SCon{'=', SCon{' ', SCon{'"', vv}}}}, [Chr{xx}],
+        ball.tail(T.bare.at(Chr{xx}), String.to_list(tt), ee)),
+      Equal.trans(T.Doc,
+        T.doc.read(SCon{' ', SCon{'=', SCon{' ', SCon{'"', vv}}}},
+          T.MScan{ky(rev.onto(tt, [Chr{xx}]))}),
+        T.doc.read(vv, vo(T.buf.str.go(rev.onto(tt, [Chr{xx}]), ""))),
+        T.doc.read(vv, vo(SCon{Chr{xx}, tt})),
+        kv.eq(rev.onto(tt, [Chr{xx}]), rev.full(tt, Chr{xx}, []), vv),
+        Equal.cong(String, T.Doc, nm => T.doc.read(vv, vo(nm)),
+          T.buf.str.go(rev.onto(tt, [Chr{xx}]), ""), SCon{Chr{xx}, tt},
+          Equal.trans(String, T.buf.str.go(rev.onto(tt, [Chr{xx}]), ""),
+            SCon{Chr{xx}, String.append(tt, "")}, SCon{Chr{xx}, tt},
+            ml.rev(tt, [Chr{xx}], ""),
+            Equal.cong(String, String, ss => SCon{Chr{xx}, ss}, String.append(tt, ""), tt,
+              Eq.append_nil(tt)))))))
+
+# the rendered text of the pair: the key, " = ", the string in quotes, and a
+# newline
+def rp.text(
+  +e: String,
+  +k: String,
+  ek: {T.bare(k) == True{} : Bool},
+  +s: String,
+  ep: {Laws.plain.text(s) == True{} : Bool}
+) -> {T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})
+  == String.append(k, SCon{' ', SCon{'=', SCon{' ', SCon{'"', String.append(s, "\"\n")}}}})
+  : String}:
+  Equal.trans(String,
+    T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]}),
+    T.key(k) ++ " = " ++ T.key.basic(s) ++ "\n" ++ T.render(T.Doc{e, []}),
+    String.append(k, SCon{' ', SCon{'=', SCon{' ', SCon{'"', String.append(s, "\"\n")}}}}),
+    Laws.render_string(e, k, T.VStr{s}, [], {==}),
+    Equal.trans(String,
+      T.key(k) ++ " = " ++ T.key.basic(s) ++ "\n" ++ T.render(T.Doc{e, []}),
+      k ++ " = " ++ T.key.basic(s) ++ "\n",
+      String.append(k, SCon{' ', SCon{'=', SCon{' ', SCon{'"', String.append(s, "\"\n")}}}}),
+      Equal.cong(String, String, kk => kk ++ " = " ++ T.key.basic(s) ++ "\n", T.key(k), k,
+        Laws.key_is_bare_when_it_can(k, Equal.sym(Bool, T.bare(k), True{}, ek))),
+      Equal.trans(String,
+        k ++ " = " ++ T.key.basic(s) ++ "\n",
+        k ++ " = " ++ ("\"" ++ Laws.escs(s) ++ "\"") ++ "\n",
+        String.append(k, SCon{' ', SCon{'=', SCon{' ', SCon{'"', String.append(s, "\"\n")}}}}),
+        Equal.cong(String, String, bb => k ++ " = " ++ bb ++ "\n", T.key.basic(s),
+          "\"" ++ Laws.escs(s) ++ "\"", Laws.basic_escs(s)),
+        Equal.trans(String,
+          k ++ " = " ++ ("\"" ++ Laws.escs(s) ++ "\"") ++ "\n",
+          k ++ " = " ++ ("\"" ++ s ++ "\"") ++ "\n",
+          String.append(k, SCon{' ', SCon{'=', SCon{' ', SCon{'"', String.append(s, "\"\n")}}}}),
+          Equal.cong(String, String, bb => k ++ " = " ++ ("\"" ++ bb ++ "\"") ++ "\n",
+            Laws.escs(s), s, escs.pl(s, ep)),
+          Equal.cong(String, String,
+            bb => String.append(k, SCon{' ', SCon{'=', SCon{' ', SCon{'"', bb}}}}),
+            String.append(String.append(s, "\""), "\n"), String.append(s, "\"\n"),
+            Eq.append_assoc(s, "\"", "\n"))))))
+
+# a row whose owned form is a string pair is the same as that pair, both ways
+def rp.same(
+  +e: String,
+  +k: String,
+  +vv: T.Val,
+  +s: String,
+  +ho: {Laws.own.rows([T.VPair{k, vv}]) == [T.VPair{k, T.VStr{s}}] : List<&2, T.Val>}
+) -> {Laws.same(T.Doc{"", [T.VPair{k, vv}]}, T.Doc{e, [T.VPair{k, T.VStr{s}}]}) == True{} : Bool}:
+  +self = {pair.self.tt(k, T.VStr{s}, ww => Laws.same.atom(T.VStr{s}, ww), Eq.string_eq_self(s))
+    : {Laws.same.go([T.VPair{k, T.VStr{s}}], [T.VPair{k, T.VStr{s}}]) == True{} : Bool}}
+  and.tt(Laws.same.go([T.VPair{k, vv}], [T.VPair{k, T.VStr{s}}]),
+    Laws.same.go([T.VPair{k, T.VStr{s}}], [T.VPair{k, vv}]),
+    Equal.trans(Bool, Laws.same.go([T.VPair{k, vv}], [T.VPair{k, T.VStr{s}}]),
+      Laws.same.go(Laws.own.rows([T.VPair{k, vv}]), [T.VPair{k, T.VStr{s}}]), True{},
+      Equal.sym(Bool, Laws.same.go(Laws.own.rows([T.VPair{k, vv}]), [T.VPair{k, T.VStr{s}}]),
+        Laws.same.go([T.VPair{k, vv}], [T.VPair{k, T.VStr{s}}]),
+        own.l([T.VPair{k, vv}], [T.VPair{k, T.VStr{s}}])),
+      Equal.trans(Bool, Laws.same.go(Laws.own.rows([T.VPair{k, vv}]), [T.VPair{k, T.VStr{s}}]),
+        Laws.same.go([T.VPair{k, T.VStr{s}}], [T.VPair{k, T.VStr{s}}]), True{},
+        Equal.cong(List<&2, T.Val>, Bool, xs => Laws.same.go(xs, [T.VPair{k, T.VStr{s}}]),
+          Laws.own.rows([T.VPair{k, vv}]), [T.VPair{k, T.VStr{s}}], ho),
+        self)),
+    Equal.trans(Bool, Laws.same.go([T.VPair{k, T.VStr{s}}], [T.VPair{k, vv}]),
+      Laws.same.go([T.VPair{k, T.VStr{s}}], Laws.own.rows([T.VPair{k, vv}])), True{},
+      Equal.sym(Bool, Laws.same.go([T.VPair{k, T.VStr{s}}], Laws.own.rows([T.VPair{k, vv}])),
+        Laws.same.go([T.VPair{k, T.VStr{s}}], [T.VPair{k, vv}]),
+        own.r([T.VPair{k, T.VStr{s}}], [T.VPair{k, vv}])),
+      Equal.trans(Bool, Laws.same.go([T.VPair{k, T.VStr{s}}], Laws.own.rows([T.VPair{k, vv}])),
+        Laws.same.go([T.VPair{k, T.VStr{s}}], [T.VPair{k, T.VStr{s}}]), True{},
+        Equal.cong(List<&2, T.Val>, Bool, xs => Laws.same.go([T.VPair{k, T.VStr{s}}], xs),
+          Laws.own.rows([T.VPair{k, vv}]), [T.VPair{k, T.VStr{s}}], ho),
+        self)))
+
+# the parsed value: the empty string, or a span of the text from the string's
+# first character
+def rp.val(ss: String) -> T.Val:
+  match ss:
+    case SNil{}:
+      T.VStr{""}
+    case SCon{c0, +ps}:
+      T.VSpan{SCon{c0, String.append(ps, "\"\n")}, addn(ps, U32.add(0, 1))}
+
+# the string and the newline after the opening quote read to one pair
+def rp.read(
+  ss: String,
+  +name: String,
+  +ep: {Laws.plain.text(ss) == True{} : Bool}
+) -> {T.doc.read(String.append(ss, "\"\n"), vo(name)) == T.Doc{"", [T.VPair{name, rp.val(ss)}]}
+  : T.Doc}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{hh, +ps}:
+      match hh:
+        case Chr{+uu}:
+          Equal.trans(T.Doc,
+            T.doc.read(SCon{Chr{uu}, String.append(ps, "\"\n")}, vo(name)),
+            T.doc.read(String.append(ps, "\"\n"), ve(SCon{Chr{uu}, String.append(ps, "\"\n")}, 1,
+              name)),
+            T.Doc{"", [T.VPair{name, rp.val(SCon{Chr{uu}, ps})}]},
+            op.one(uu, String.append(ps, "\"\n"), name,
+              Eq.and.left(Laws.plain.char(Chr{uu}), Laws.plain.text(ps), ep)),
+            Equal.trans(T.Doc,
+              T.doc.read(String.append(ps, "\"\n"), ve(SCon{Chr{uu}, String.append(ps, "\"\n")}, 1,
+                name)),
+              T.doc.read("\"\n", ve(SCon{Chr{uu}, String.append(ps, "\"\n")}, addn(ps, 1), name)),
+              T.Doc{"", [T.VPair{name, rp.val(SCon{Chr{uu}, ps})}]},
+              ef.run(ps, "\"\n", SCon{Chr{uu}, String.append(ps, "\"\n")}, 1, name,
+                Eq.and.right(Laws.plain.char(Chr{uu}), Laws.plain.text(ps), ep)),
+              {==}))
+
+# the owned form of the parsed pair is the pair
+def rp.own(
+  ss: String,
+  +name: String,
+  es: {Laws.short(ss) == True{} : Bool}
+) -> {Laws.own.rows([T.VPair{name, rp.val(ss)}]) == [T.VPair{name, T.VStr{ss}}]
+  : List<&2, T.Val>}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{+c0, +ps}:
+      Equal.cong(String, List<&2, T.Val>, xs => [T.VPair{name, T.VStr{xs}}],
+        T.span.str(SCon{c0, String.append(ps, "\"\n")}, addn(ps, U32.add(0, 1)),
+          U32.is_zero(addn(ps, U32.add(0, 1)))),
+        SCon{c0, ps},
+        sp.whole(c0, ps, Eq.and.right(Bool.not(U32.is_zero(U32.add(0, 1))),
+          Laws.counts(ps, U32.add(0, 1)), es)))
+
+# parse of the rendered pair
+def rp.parse(
+  +e: String,
+  +k: String,
+  +ek: {T.bare(k) == True{} : Bool},
+  +s: String,
+  +ep: {Laws.plain.text(s) == True{} : Bool}
+) -> {T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})) == T.Doc{"", [T.VPair{k, rp.val(s)}]}
+  : T.Doc}:
+  match k:
+    case SNil{}:
+      Eq.bit.absurd(&2, {T.parse(T.render(T.Doc{e, [T.VPair{SNil{}, T.VStr{s}}]}))
+        == T.Doc{"", [T.VPair{SNil{}, rp.val(s)}]} : T.Doc}, ek)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          Equal.trans(T.Doc,
+            T.parse(T.render(T.Doc{e, [T.VPair{SCon{Chr{xx}, tt}, T.VStr{s}}]})),
+            T.parse(String.append(SCon{Chr{xx}, tt}, SCon{' ', SCon{'=', SCon{' ', SCon{'"',
+              String.append(s, "\"\n")}}}})),
+            T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, rp.val(s)}]},
+            Equal.cong(String, T.Doc, xs => T.parse(xs),
+              T.render(T.Doc{e, [T.VPair{SCon{Chr{xx}, tt}, T.VStr{s}}]}),
+              String.append(SCon{Chr{xx}, tt}, SCon{' ', SCon{'=', SCon{' ', SCon{'"',
+                String.append(s, "\"\n")}}}}),
+              rp.text(e, SCon{Chr{xx}, tt}, ek, s, ep)),
+            Equal.trans(T.Doc,
+              T.parse(String.append(SCon{Chr{xx}, tt}, SCon{' ', SCon{'=', SCon{' ', SCon{'"',
+                String.append(s, "\"\n")}}}})),
+              T.doc.read(String.append(s, "\"\n"), vo(SCon{Chr{xx}, tt})),
+              T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, rp.val(s)}]},
+              kv.key(xx, tt, String.append(s, "\"\n"), ek),
+              rp.read(s, SCon{Chr{xx}, tt}, ep)))
+
+def Laws.render_parse_plain_pair(e, k, ek, s, ep, es):
+  Equal.trans(Bool,
+    Bool.and(String.is_empty(T.bad(T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})))),
+      Laws.same(T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})), T.Doc{e, [T.VPair{k,
+        T.VStr{s}}]})),
+    Laws.same(T.Doc{"", [T.VPair{k, rp.val(s)}]}, T.Doc{e, [T.VPair{k, T.VStr{s}}]}),
+    True{},
+    Equal.cong(T.Doc, Bool, dd => Bool.and(String.is_empty(T.bad(dd)), Laws.same(dd, T.Doc{e,
+      [T.VPair{k, T.VStr{s}}]})), T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})),
+      T.Doc{"", [T.VPair{k, rp.val(s)}]}, rp.parse(e, k, ek, s, ep)),
+    rp.same(e, k, rp.val(s), s, rp.own(s, k, es)))
