@@ -3614,3 +3614,29 @@ law gd_next:
   for +hh: Char
   for +tt: String
   {T.doc.read(SCon{hh, tt}, mode) == T.doc.read(tt, gd.next(mode, hh, tt)) : T.Doc}
+
+# LAW: doc.read, from a mode good for a text of Unicode scalar values shorter
+# than 2^32 characters, gives a well-formed document whenever it gives no
+# error: each character keeps the mode good (gd_mode_step), and at the end a
+# token still open is closed, a held character read, and a good end state
+# sealed (gd_fin); a string still open is an error
+# TOML-RT-3
+law gd_read:
+  for +text: String
+  for +mode: T.Mode
+  for em: {gd.md(mode, text) == True{} : Bool}
+  for +ew: {T.wf.text(text) == True{} : Bool}
+  for +es: {short(text) == True{} : Bool}
+  for eo: {String.is_empty(T.bad(T.doc.read(text, mode))) == True{} : Bool}
+  {T.wf(T.doc.read(text, mode)) == True{} : Bool}
+
+# LAW: parse only accepts what it can give back well-formed: for every text
+# of Unicode scalar values shorter than 2^32 characters, a parse with no
+# error is a well-formed document
+# TOML-RT-3
+law parse_wf:
+  for +text: String
+  for ew: {T.wf.text(text) == True{} : Bool}
+  for es: {short(text) == True{} : Bool}
+  for eo: {String.is_empty(T.bad(T.parse(text))) == True{} : Bool}
+  {T.wf(T.parse(text)) == True{} : Bool}

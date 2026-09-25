@@ -44458,3 +44458,322 @@ def Laws.gd_mode_step(mode, hh, tt, em, eh, et, es) :
       gd.sdq(Char.is_eq(hh, '"'), Char.is_eq(hh, '\''), U32.is_eq(Char.to_u32(hh), 13), st, hh, tt, em, eh)
     case T.MCr{+st}:
       gd.dcr(Char.is_eq(hh, '\n'), st, hh, tt, em, eh)
+
+
+# WP-R3: the induction over the text. Each character keeps doc.read's mode
+# good (gd_mode_step); the text runs out in a scanning state, one after a
+# carriage return, or an opening quote's, whose token is closed and held
+# character read before gd_fin seals it, or in a string's span, which is an
+# error. Every end that is not an error is well-formed
+
+# counting from one more without wrapping counts from one less too
+def gd.cm(
+  ss: String,
+  +mm: U32,
+  +hz: {U32.is_zero(U32.add(mm, 1)) == False{} : Bool},
+  +hc: {Laws.counts(ss, U32.add(mm, 1)) == True{} : Bool}
+) -> {Laws.counts(ss, mm) == True{} : Bool}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{_h, +st}:
+      gd.tt(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(st, U32.add(mm, 1)),
+        Equal.cong(Bool, Bool, bb => Bool.not(bb), U32.is_zero(U32.add(mm, 1)), False{}, hz),
+        gd.cm(st, U32.add(mm, 1),
+          gd.not.f(U32.is_zero(U32.add(U32.add(mm, 1), 1)),
+            gd.l(Bool.not(U32.is_zero(U32.add(U32.add(mm, 1), 1))), Laws.counts(st, U32.add(U32.add(mm, 1), 1)), hc)),
+          gd.r(Bool.not(U32.is_zero(U32.add(U32.add(mm, 1), 1))), Laws.counts(st, U32.add(U32.add(mm, 1), 1)), hc)))
+
+# the rest of a short text is short
+def gd.short.tail(
+  +hh: Char,
+  +tt: String,
+  +es: {Laws.short(SCon{hh, tt}) == True{} : Bool}
+) -> {Laws.short(tt) == True{} : Bool}:
+  gd.cm(tt, 0, {==}, gd.r(Bool.not(U32.is_zero(1)), Laws.counts(tt, 1), es))
+
+# an unfinished document is an error, so a document with no error is not one
+def gd.unc(
+  +st: T.St,
+  +eo: {String.is_empty(T.bad(T.read.fin.unclosed(st))) == True{} : Bool}
+) -> {T.wf(T.read.fin.unclosed(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +hd, +un, +lf, +at, +ld}:
+      match bd:
+        case SNil{}:
+          Eq.bit.absurd(&2, {T.wf(T.read.fin.unclosed(T.St{"", rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at,
+            ld})) == True{} : Bool}, eo)
+        case SCon{+bh, +bt}:
+          Eq.bit.absurd(&2, {T.wf(T.read.fin.unclosed(T.St{SCon{bh, bt}, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un,
+            lf, at, ld})) == True{} : Bool}, eo)
+
+# a token still open at the end is closed: a bare word read as a value, an
+# empty string or a multiline string placed
+def gd.rlex(
+  lx: T.Lex,
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool}
+) -> {Laws.good(T.read.fin.lex(lx, st)) == True{} : Bool}:
+  match lx:
+    case T.LTop{}:
+      eg
+    case T.LLine{}:
+      eg
+    case T.LKey{}:
+      eg
+    case T.LKeyDot{}:
+      eg
+    case T.LAfter{}:
+      eg
+    case T.LKeyQ{}:
+      eg
+    case T.LKeyE{}:
+      eg
+    case T.LKeyU{}:
+      eg
+    case T.LVal{}:
+      eg
+    case T.LQ{}:
+      eg
+    case T.LQ2{}:
+      gd.g.take(st, T.VStr{""}, eg, gd.okv.of(st, T.VStr{""}, {==}))
+    case T.LStr{}:
+      eg
+    case T.LEsc{}:
+      eg
+    case T.LUni{}:
+      eg
+    case T.LFold{}:
+      eg
+    case T.LMq{}:
+      eg
+    case T.LMqEnd{}:
+      gd.g.strfin(st, eg)
+    case T.LTrim{}:
+      eg
+    case T.LTrim2{}:
+      eg
+    case T.LBare{}:
+      gd.g.bfin(st, ' ', False{}, eg, {==})
+    case T.LDate{}:
+      gd.g.bfin(st, ' ', False{}, eg, {==})
+    case T.LCom{}:
+      eg
+    case T.LHead{}:
+      eg
+    case T.LHeadGap{}:
+      eg
+    case T.LHeadDot{}:
+      eg
+    case T.LHeadQ{}:
+      eg
+    case T.LHeadE{}:
+      eg
+    case T.LHeadU{}:
+      eg
+    case T.LHeadR{}:
+      eg
+    case T.LArr{}:
+      eg
+    case T.LArrC{}:
+      eg
+    case T.LInl{}:
+      eg
+    case T.LInlK{}:
+      eg
+    case T.LInlC{}:
+      eg
+    case T.LSink{}:
+      eg
+
+# the end's token closed, read off the state
+def gd.rclose(+st: T.St, +eg: {Laws.good(st) == True{} : Bool}) -> {Laws.good(T.read.fin.close(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +hd, +un, +lf, +at, +ld}:
+      gd.rlex(lx, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, eg)
+
+# a comment at the end ends the document where the line could, and is an
+# error anywhere else
+def gd.rcom(
+  ok: Bool,
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +eo: {String.is_empty(T.bad(T.read.fin.com(ok, st))) == True{} : Bool}
+) -> {T.wf(T.read.fin.com(ok, st)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      Laws.gd_fin(st, eg, eo)
+    case False{}:
+      gd.unc(st, eo)
+
+# a comment at the end, read off the state
+def gd.rcomst(
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +eo: {String.is_empty(T.bad(T.read.fin.com.st(st))) == True{} : Bool}
+) -> {T.wf(T.read.fin.com.st(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +hd, +un, +lf, +at, +ld}:
+      gd.rcom(T.read.fin.end(bk), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, eg, eo)
+
+# the states that may end a document end it; any other is an error
+def gd.rok(
+  lx: T.Lex,
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +eo: {String.is_empty(T.bad(T.read.fin.ok(lx, st))) == True{} : Bool}
+) -> {T.wf(T.read.fin.ok(lx, st)) == True{} : Bool}:
+  match lx:
+    case T.LTop{}:
+      Laws.gd_fin(st, eg, eo)
+    case T.LLine{}:
+      Laws.gd_fin(st, eg, eo)
+    case T.LKey{}:
+      gd.unc(st, eo)
+    case T.LKeyDot{}:
+      gd.unc(st, eo)
+    case T.LAfter{}:
+      gd.unc(st, eo)
+    case T.LKeyQ{}:
+      gd.unc(st, eo)
+    case T.LKeyE{}:
+      gd.unc(st, eo)
+    case T.LKeyU{}:
+      gd.unc(st, eo)
+    case T.LVal{}:
+      gd.unc(st, eo)
+    case T.LQ{}:
+      gd.unc(st, eo)
+    case T.LQ2{}:
+      gd.unc(st, eo)
+    case T.LStr{}:
+      gd.unc(st, eo)
+    case T.LEsc{}:
+      gd.unc(st, eo)
+    case T.LUni{}:
+      gd.unc(st, eo)
+    case T.LFold{}:
+      gd.unc(st, eo)
+    case T.LMq{}:
+      gd.unc(st, eo)
+    case T.LMqEnd{}:
+      gd.unc(st, eo)
+    case T.LTrim{}:
+      gd.unc(st, eo)
+    case T.LTrim2{}:
+      gd.unc(st, eo)
+    case T.LBare{}:
+      gd.unc(st, eo)
+    case T.LDate{}:
+      gd.unc(st, eo)
+    case T.LCom{}:
+      gd.rcomst(st, eg, eo)
+    case T.LHead{}:
+      gd.unc(st, eo)
+    case T.LHeadGap{}:
+      gd.unc(st, eo)
+    case T.LHeadDot{}:
+      gd.unc(st, eo)
+    case T.LHeadQ{}:
+      gd.unc(st, eo)
+    case T.LHeadE{}:
+      gd.unc(st, eo)
+    case T.LHeadU{}:
+      gd.unc(st, eo)
+    case T.LHeadR{}:
+      gd.unc(st, eo)
+    case T.LArr{}:
+      gd.unc(st, eo)
+    case T.LArrC{}:
+      gd.unc(st, eo)
+    case T.LInl{}:
+      gd.unc(st, eo)
+    case T.LInlK{}:
+      gd.unc(st, eo)
+    case T.LInlC{}:
+      gd.unc(st, eo)
+    case T.LSink{}:
+      Laws.gd_fin(st, eg, eo)
+
+# the end, read off the closed state
+def gd.rfin2(
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +eo: {String.is_empty(T.bad(T.read.fin2(st))) == True{} : Bool}
+) -> {T.wf(T.read.fin2(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +hd, +un, +lf, +at, +ld}:
+      gd.rok(lx, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, eg, eo)
+
+# a good state at the end of the text gives a well-formed document, unless
+# it gives an error
+def gd.rfin(
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +eo: {String.is_empty(T.bad(T.read.fin(st))) == True{} : Bool}
+) -> {T.wf(T.read.fin(st)) == True{} : Bool}:
+  gd.rfin2(T.read.fin.close(st), gd.rclose(st, eg), eo)
+
+# the text runs out: in a scanning state, after a carriage return, after an
+# opening quote, or in a span, which is an error
+def gd.dend(
+  mode: T.Mode,
+  +em: {Laws.gd.md(mode, SNil{}) == True{} : Bool},
+  +eo: {String.is_empty(T.bad(T.doc.read(SNil{}, mode))) == True{} : Bool}
+) -> {T.wf(T.doc.read(SNil{}, mode)) == True{} : Bool}:
+  match mode:
+    case T.MScan{+st}:
+      gd.rfin(T.read.once2(st), gd.once2(st, em), eo)
+    case T.MCr{+st}:
+      gd.rfin(T.read.once2(T.st.err(st, "carriage return without line feed")),
+        gd.once2(T.st.err(st, "carriage return without line feed"),
+          gd.g.err2(st, "carriage return without line feed", em)), eo)
+    case T.MOpen{_ba, _qq, +qk, +bd, +rw, +hs, +he, +pt, +bf, +bk, +sk, +un, +lf, +at}:
+      gd.rfin(T.read.once2(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}),
+        gd.once2(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}, em), eo)
+    case T.MEat{_ba, _qq, _ct, _nn, +bd, +rw, +hs, +he, +pt, +qk, +sk, +un, +lf, +at}:
+      gd.unc(T.St{bd, rw, hs, he, pt, [], T.LStr{}, T.LStr{}, qk, sk, T.HNone{}, un, lf, at, False{}}, eo)
+
+# doc.read's error, one character on
+def gd.nexto(
+  +mode: T.Mode,
+  +hh: Char,
+  +tt: String,
+  +eo: {String.is_empty(T.bad(T.doc.read(SCon{hh, tt}, mode))) == True{} : Bool}
+) -> {String.is_empty(T.bad(T.doc.read(tt, Laws.gd.next(mode, hh, tt)))) == True{} : Bool}:
+  Equal.trans(Bool, String.is_empty(T.bad(T.doc.read(tt, Laws.gd.next(mode, hh, tt)))),
+    String.is_empty(T.bad(T.doc.read(SCon{hh, tt}, mode))), True{},
+    Equal.sym(Bool, String.is_empty(T.bad(T.doc.read(SCon{hh, tt}, mode))),
+      String.is_empty(T.bad(T.doc.read(tt, Laws.gd.next(mode, hh, tt)))),
+      Equal.cong(T.Doc, Bool, dd => String.is_empty(T.bad(dd)), T.doc.read(SCon{hh, tt}, mode),
+        T.doc.read(tt, Laws.gd.next(mode, hh, tt)), Laws.gd_next(mode, hh, tt))),
+    eo)
+
+# doc.read's document, one character on
+def gd.nextw(
+  +mode: T.Mode,
+  +hh: Char,
+  +tt: String,
+  +ew: {T.wf(T.doc.read(tt, Laws.gd.next(mode, hh, tt))) == True{} : Bool}
+) -> {T.wf(T.doc.read(SCon{hh, tt}, mode)) == True{} : Bool}:
+  Equal.trans(Bool, T.wf(T.doc.read(SCon{hh, tt}, mode)), T.wf(T.doc.read(tt, Laws.gd.next(mode, hh, tt))), True{},
+    Equal.cong(T.Doc, Bool, dd => T.wf(dd), T.doc.read(SCon{hh, tt}, mode),
+      T.doc.read(tt, Laws.gd.next(mode, hh, tt)), Laws.gd_next(mode, hh, tt)),
+    ew)
+
+def Laws.gd_read(text, mode, em, ew, es, eo) :
+  match text:
+    case SNil{}:
+      gd.dend(mode, em, eo)
+    case SCon{+hh, +tt}:
+      gd.nextw(mode, hh, tt,
+        Laws.gd_read(tt, Laws.gd.next(mode, hh, tt),
+          Laws.gd_mode_step(mode, hh, tt, em, gd.th.l(T.wf.char(hh), _u => T.wf.text(tt), ew),
+            gd.th.r(T.wf.char(hh), _u => T.wf.text(tt), ew), es),
+          gd.th.r(T.wf.char(hh), _u => T.wf.text(tt), ew),
+          gd.short.tail(hh, tt, es),
+          gd.nexto(mode, hh, tt, eo)))
+
+def Laws.parse_wf(text, ew, es, eo) :
+  Laws.gd_read(text, T.MScan{T.st.start()},
+    Laws.gd_start([], [], [], T.LTop{}, T.LTop{}, T.QBasic{}, 0, 0, False{}, True{}, {==}, {==}), ew, es, eo)
