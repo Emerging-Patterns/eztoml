@@ -24228,3 +24228,41 @@ def Laws.render_parse_value_pair(e, k, ek, v, w, hv, hl):
             cv.val(v, [], [], [], [kk], T.LTop{}, T.QBasic{}, [], 0, 0, False{}, "\n", dd => rv.Ok(dd, d0), hv,
               hl)({==},
               +vv => bk => qk => un => lf => ho => rv.fin(e, kk, vv, v, bk, qk, un, lf, ho, hv, w)))
+
+# WP-R3: TOML-RT-3's invariant (LAWS.bend's good) kept by the header states
+# and by tree.walk. Every name here starts with gd. The kit: the invariant's
+# facts are Bools that answered True, joined with gd.tt and split with gd.l
+# and gd.r; the one shape wf.go gives a pair at the head of a table's rows is
+# gd.pair.eq, so each lemma about rows splits Val's constructors once.
+
+# both halves answered True
+def gd.tt(aa: Bool, bb: Bool, +ea: {aa == True{} : Bool}, +eb: {bb == True{} : Bool})
+  -> {Bool.and(aa, bb) == True{} : Bool}:
+  match aa:
+    case True{}:
+      eb
+    case False{}:
+      Eq.bit.absurd(&2, {Bool.and(False{}, bb) == True{} : Bool}, ea)
+
+# the left half of an and that answered True
+def gd.l(aa: Bool, bb: Bool, +ee: {Bool.and(aa, bb) == True{} : Bool}) -> {aa == True{} : Bool}:
+  Eq.and.left(aa, bb, ee)
+
+# the right half of an and that answered True
+def gd.r(aa: Bool, bb: Bool, +ee: {Bool.and(aa, bb) == True{} : Bool}) -> {bb == True{} : Bool}:
+  Eq.and.right(aa, bb, ee)
+
+# a failed scanner is good whatever the rest says
+def gd.off(ok: Bool, rest: Bool, +ee: {ok == False{} : Bool})
+  -> {Laws.gd.ifok(ok, rest) == True{} : Bool}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      Eq.bit.absurd2(&2, {Laws.gd.ifok(True{}, rest) == True{} : Bool}, ee)
+
+def Laws.gd_start(rows, heads, here, lex, back, qkind, uni, left, arrtab, lead, ew, eh):
+  gd.tt(Bool.and(T.wf.go(rows, T.WfRows{""}), True{}), Bool.and(Laws.gd.segs(here), True{}),
+    gd.tt(T.wf.go(rows, T.WfRows{""}), True{}, ew, {==}),
+    gd.tt(Laws.gd.segs(here), True{}, eh, {==}))
+

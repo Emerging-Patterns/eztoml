@@ -3033,3 +3033,160 @@ law render_parse_value_pair:
   for hl: {cv.short1(v) == True{} : Bool}
   {Bool.and(String.is_empty(T.bad(T.parse(T.render(T.Doc{e, [T.VPair{k, v}]})))),
     same(T.parse(T.render(T.Doc{e, [T.VPair{k, v}]})), T.Doc{e, [T.VPair{k, v}]})) == True{} : Bool}
+
+# WP-R3: TOML-RT-3's invariant. parse keeps the root's rows newest first and
+# seals them at the end; wf.go read on those rows as they are, newest first,
+# is the invariant for the tables, because a pair the walk adds goes in front
+# of the pairs it must not repeat. A state is good when what it has built can
+# only seal into a well-formed document: its rows and open frames while it has
+# not failed, and always the key segments, the buffer and a held character,
+# which hold Unicode scalar values. A failed state is good whatever it holds:
+# parse then returns an error, and TOML-RT-3 says nothing of it.
+
+# the rest when the scanner has not failed, and True once it has
+def gd.ifok(ok: Bool, rest: Bool) -> Bool:
+  match ok:
+    case True{}:
+      rest
+    case False{}:
+      True{}
+
+# every character is a Unicode scalar value
+def gd.cs(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      True{}
+    case +h <> t:
+      Bool.and(T.wf.char(h), gd.cs(t))
+
+# every segment's characters are Unicode scalar values
+def gd.segs(xs: List<&2, String>) -> Bool:
+  match xs:
+    case []:
+      True{}
+    case h <> t:
+      Bool.and(T.wf.text(h), gd.segs(t))
+
+# a held character is a Unicode scalar value
+def gd.hold(hh: T.Hold) -> Bool:
+  match hh:
+    case T.HNone{}:
+      True{}
+    case T.HChar{+c}:
+      T.wf.char(c)
+
+# the rows of an open inline table: the tables its dotted keys made become
+# inline tables when it closes
+def gd.inl(rows: List<&2, T.Val>) -> Bool:
+  T.wf.go(T.inl.seal(rows), T.WfInl{})
+
+# what the open arrays and inline tables have built
+def gd.vals(stack: List<&2, T.Ctx>) -> Bool:
+  match stack:
+    case []:
+      True{}
+    case T.CArr{items, _p, _h} <> t:
+      Bool.and(T.wf.go(items, T.WfItems{}), gd.vals(t))
+    case T.CInl{rows, _p, _h} <> t:
+      Bool.and(gd.inl(rows), gd.vals(t))
+
+# the keys the open arrays and inline tables saved
+def gd.keys(stack: List<&2, T.Ctx>) -> Bool:
+  match stack:
+    case []:
+      True{}
+    case T.CArr{_i, parts, here} <> t:
+      Bool.and(gd.segs(parts), Bool.and(gd.segs(here), gd.keys(t)))
+    case T.CInl{_r, parts, here} <> t:
+      Bool.and(gd.segs(parts), Bool.and(gd.segs(here), gd.keys(t)))
+
+# the tables a state has built, while it has not failed
+def gd.tr(+bad: String, rows: List<&2, T.Val>, stack: List<&2, T.Ctx>) -> Bool:
+  gd.ifok(String.is_empty(bad), Bool.and(T.wf.go(rows, T.WfRows{""}), gd.vals(stack)))
+
+# the characters a state holds: the current table's path, the key's segments,
+# the buffer, the saved keys and a held character
+def gd.lx(
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  stack: List<&2, T.Ctx>,
+  hold: T.Hold
+) -> Bool:
+  Bool.and(gd.segs(here), Bool.and(gd.segs(parts), Bool.and(gd.cs(buf),
+    Bool.and(gd.keys(stack), gd.hold(hold)))))
+
+# TOML-RT-3's invariant over every scanner state
+def good(st: T.St) -> Bool:
+  match st:
+    case T.St{+bad, rows, _heads, here, parts, buf, _lex, _back, _q, +stack, hold, _uni,
+      _left, _arr, _lead}:
+      Bool.and(gd.tr(bad, rows, stack), gd.lx(here, parts, buf, stack, hold))
+
+# the root after a walk, while the walk has not failed
+def gd.end(end: T.End) -> Bool:
+  match end:
+    case T.End{vs, +bad, _h}:
+      gd.ifok(String.is_empty(bad), T.wf.go(vs, T.WfRows{""}))
+
+# a value a key's walk may put: no table, well-formed where a pair holds it
+def gd.vok(vv: T.Val) -> Bool:
+  match vv:
+    case T.VHead{_p, _r}:
+      False{}
+    case T.VAots{_p, _e}:
+      False{}
+    case T.VArr{items}:
+      T.wf.go(items, T.WfItems{})
+    case T.VInl{rows}:
+      T.wf.go(rows, T.WfInl{})
+    case other:
+      T.wf.atom(other)
+
+# what a walk is asked to do: put a value a key may hold, or open a table
+def gd.job(job: T.Job) -> Bool:
+  match job:
+    case T.JPut{vv}:
+      gd.vok(vv)
+    case _:
+      True{}
+
+# the scanner's states inside a header
+def gd.hd(lex: T.Lex) -> Bool:
+  match lex:
+    case T.LHead{}:
+      True{}
+    case T.LHeadGap{}:
+      True{}
+    case T.LHeadDot{}:
+      True{}
+    case T.LHeadQ{}:
+      True{}
+    case T.LHeadE{}:
+      True{}
+    case T.LHeadU{}:
+      True{}
+    case T.LHeadR{}:
+      True{}
+    case _:
+      False{}
+
+# LAW: a state that has read nothing of a key, a value or a header, with
+# well-formed rows and a current table named by scalar values, is good,
+# whatever its other fields; the scanner's start is one
+# TOML-RT-3
+law gd_start:
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +lex: T.Lex
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +uni: U32
+  for +left: U32
+  for +arrtab: Bool
+  for +lead: Bool
+  for ew: {T.wf.go(rows, T.WfRows{""}) == True{} : Bool}
+  for eh: {gd.segs(here) == True{} : Bool}
+  {good(T.St{"", rows, heads, here, [], [], lex, back, qkind, [], T.HNone{}, uni, left, arrtab,
+    lead}) == True{} : Bool}
