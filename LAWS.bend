@@ -3501,3 +3501,22 @@ law gd_bare_steps:
   for +cc: Char
   for ec: {T.wf.char(cc) == True{} : Bool}
   {good(T.read.on(lex, st, cc)) == True{} : Bool}
+
+# LAW: the step parse takes for each character keeps a state good: from every
+# good state, whatever its fields, one character that is a Unicode scalar
+# value read by the fast step, with a held character and a byte-order mark,
+# leaves a good state
+# TOML-RT-3
+law gd_fast_step:
+  for +st: T.St
+  for eg: {good(st) == True{} : Bool}
+  for +cc: Char
+  for ec: {T.wf.char(cc) == True{} : Bool}
+  {good(T.read.fast(st, cc)) == True{} : Bool}
+
+# LAW: reading a held character keeps a state good
+# TOML-RT-3
+law gd_held:
+  for +st: T.St
+  for eg: {good(st) == True{} : Bool}
+  {good(T.read.once2(st)) == True{} : Bool}

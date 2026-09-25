@@ -42894,3 +42894,746 @@ def Laws.gd_bare_steps(lex, hl, st, eg, cc, ec) :
       Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LInlC{}, st, cc)) == True{} : Bool}, hl)
     case T.LSink{}:
       Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LSink{}, st, cc)) == True{} : Bool}, hl)
+
+
+# WP-R3: the dispatch. read.fast keeps a plain character in the buffer or
+# ignores it, and gives every other character, and a held one, to read.on:
+# every state good (gd_header_steps, gd_key_steps, gd_value_steps,
+# gd_bare_steps). A byte-order mark is dropped.
+
+# a state good, as the fast step builds it: good reads no other field
+def gd.gf(
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +stack: List<&2, T.Ctx>
+) -> Bool:
+  Laws.good(T.St{bad, rows, [], here, parts, buf, T.LTop{}, T.LTop{}, T.QBasic{}, stack, T.HNone{}, 0, 0, False{},
+    False{}})
+
+# one character in any state
+def gd.on(
+  lex: T.Lex,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.on(lex, st, cc)) == True{} : Bool}:
+  match lex:
+    case T.LTop{}:
+      Laws.gd_key_steps(T.LTop{}, {==}, st, eg, cc, ec)
+    case T.LLine{}:
+      Laws.gd_key_steps(T.LLine{}, {==}, st, eg, cc, ec)
+    case T.LKey{}:
+      Laws.gd_key_steps(T.LKey{}, {==}, st, eg, cc, ec)
+    case T.LKeyDot{}:
+      Laws.gd_key_steps(T.LKeyDot{}, {==}, st, eg, cc, ec)
+    case T.LAfter{}:
+      Laws.gd_key_steps(T.LAfter{}, {==}, st, eg, cc, ec)
+    case T.LKeyQ{}:
+      Laws.gd_key_steps(T.LKeyQ{}, {==}, st, eg, cc, ec)
+    case T.LKeyE{}:
+      Laws.gd_key_steps(T.LKeyE{}, {==}, st, eg, cc, ec)
+    case T.LKeyU{}:
+      Laws.gd_key_steps(T.LKeyU{}, {==}, st, eg, cc, ec)
+    case T.LVal{}:
+      Laws.gd_value_steps(T.LVal{}, {==}, st, eg, cc, ec)
+    case T.LQ{}:
+      Laws.gd_value_steps(T.LQ{}, {==}, st, eg, cc, ec)
+    case T.LQ2{}:
+      Laws.gd_value_steps(T.LQ2{}, {==}, st, eg, cc, ec)
+    case T.LStr{}:
+      Laws.gd_value_steps(T.LStr{}, {==}, st, eg, cc, ec)
+    case T.LEsc{}:
+      Laws.gd_value_steps(T.LEsc{}, {==}, st, eg, cc, ec)
+    case T.LUni{}:
+      Laws.gd_value_steps(T.LUni{}, {==}, st, eg, cc, ec)
+    case T.LFold{}:
+      Laws.gd_value_steps(T.LFold{}, {==}, st, eg, cc, ec)
+    case T.LMq{}:
+      Laws.gd_value_steps(T.LMq{}, {==}, st, eg, cc, ec)
+    case T.LMqEnd{}:
+      Laws.gd_value_steps(T.LMqEnd{}, {==}, st, eg, cc, ec)
+    case T.LTrim{}:
+      Laws.gd_value_steps(T.LTrim{}, {==}, st, eg, cc, ec)
+    case T.LTrim2{}:
+      Laws.gd_value_steps(T.LTrim2{}, {==}, st, eg, cc, ec)
+    case T.LBare{}:
+      Laws.gd_bare_steps(T.LBare{}, {==}, st, eg, cc, ec)
+    case T.LDate{}:
+      Laws.gd_bare_steps(T.LDate{}, {==}, st, eg, cc, ec)
+    case T.LCom{}:
+      Laws.gd_value_steps(T.LCom{}, {==}, st, eg, cc, ec)
+    case T.LHead{}:
+      Laws.gd_header_steps(T.LHead{}, {==}, st, eg, cc, ec)
+    case T.LHeadGap{}:
+      Laws.gd_header_steps(T.LHeadGap{}, {==}, st, eg, cc, ec)
+    case T.LHeadDot{}:
+      Laws.gd_header_steps(T.LHeadDot{}, {==}, st, eg, cc, ec)
+    case T.LHeadQ{}:
+      Laws.gd_header_steps(T.LHeadQ{}, {==}, st, eg, cc, ec)
+    case T.LHeadE{}:
+      Laws.gd_header_steps(T.LHeadE{}, {==}, st, eg, cc, ec)
+    case T.LHeadU{}:
+      Laws.gd_header_steps(T.LHeadU{}, {==}, st, eg, cc, ec)
+    case T.LHeadR{}:
+      Laws.gd_header_steps(T.LHeadR{}, {==}, st, eg, cc, ec)
+    case T.LArr{}:
+      Laws.gd_value_steps(T.LArr{}, {==}, st, eg, cc, ec)
+    case T.LArrC{}:
+      Laws.gd_value_steps(T.LArrC{}, {==}, st, eg, cc, ec)
+    case T.LInl{}:
+      Laws.gd_value_steps(T.LInl{}, {==}, st, eg, cc, ec)
+    case T.LInlK{}:
+      Laws.gd_value_steps(T.LInlK{}, {==}, st, eg, cc, ec)
+    case T.LInlC{}:
+      Laws.gd_value_steps(T.LInlC{}, {==}, st, eg, cc, ec)
+    case T.LSink{}:
+      Laws.gd_value_steps(T.LSink{}, {==}, st, eg, cc, ec)
+
+# one character, the state read off
+def gd.onst(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.on.st(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.on(lex, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc,
+        eg, ec)
+
+# a byte-order mark is dropped
+def gd.sbom(
+  bom: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.step.bom(bom, st, cc)) == True{} : Bool}:
+  match bom:
+    case True{}:
+      eg
+    case False{}:
+      gd.onst(st, cc, eg, ec)
+
+# the first character may be a byte-order mark
+def gd.slead(
+  lead: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.step.lead(lead, st, cc)) == True{} : Bool}:
+  match lead:
+    case False{}:
+      gd.onst(st, cc, eg, ec)
+    case True{}:
+      gd.sbom(U32.is_eq(Char.to_u32(cc), 65279), st, cc, eg, ec)
+
+# one character of the document by the full step
+def gd.step(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.step(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.slead(lead, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+        False{}},
+        cc, eg, ec)
+
+# a held character is read once
+def gd.ohold(
+  hold: T.Hold,
+  +st: T.St,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +eh: {Laws.gd.hold(hold) == True{} : Bool}
+) -> {Laws.good(T.read.once.hold(hold, st)) == True{} : Bool}:
+  match hold:
+    case T.HNone{}:
+      eg
+    case T.HChar{+c0}:
+      gd.step(st, c0, eg, eh)
+
+# the held character, read off the state
+def gd.once2(+st: T.St, +eg: {Laws.good(st) == True{} : Bool}) -> {Laws.good(T.read.once2(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.ohold(hold, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, T.HNone{}, uni, left, arrtab,
+        lead},
+        gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HNone{}),
+          gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+          gd.lx.mk(here, parts, buf, stack, T.HNone{},
+            gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf,
+              stack,
+              hold), eg)),
+            gd.lx.p(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf,
+              stack,
+              hold), eg)),
+            gd.lx.b(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf,
+              stack,
+              hold), eg)),
+            gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf,
+              stack,
+              hold), eg)),
+            {==})),
+        gd.r(Laws.gd.keys(stack), Laws.gd.hold(hold), gd.lx.s1(here, parts, buf, stack, hold,
+          gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg))))
+
+# one character, then a held one
+def gd.once(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.once(st, cc)) == True{} : Bool}:
+  gd.once2(T.read.step(st, cc), gd.step(st, cc, eg, ec))
+
+
+# the full step, from the fast step's state
+def gd.fold(
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lex: T.Lex,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.old(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  gd.once2(T.read.on.st(T.read.fast.st(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
+    arrtab), cc), gd.onst(T.read.fast.st(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
+      arrtab), cc, eg, ec))
+
+# the character joins the buffer
+def gd.fcons(
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lex: T.Lex,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.cons(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, cc <> buf, stack, T.HNone{}),
+    gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HNone{}), eg),
+    gd.lx.mk(here, parts, cc <> buf, stack, T.HNone{},
+      gd.lx.h(here, parts, buf, stack, T.HNone{}, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack,
+        T.HNone{}), eg)),
+      gd.lx.p(here, parts, buf, stack, T.HNone{}, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack,
+        T.HNone{}), eg)),
+      gd.tt(T.wf.char(cc), Laws.gd.cs(buf), ec, gd.lx.b(here, parts, buf, stack, T.HNone{},
+        gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HNone{}), eg))),
+      gd.lx.s(here, parts, buf, stack, T.HNone{}, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack,
+        T.HNone{}), eg)),
+      {==}))
+
+
+# a control takes the full step; a plain character is kept
+def gd.fpush(
+  ctrl: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lex: T.Lex,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.push(ctrl, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match ctrl:
+    case False{}:
+      gd.fcons(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case True{}:
+      gd.fold(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# a backslash in a basic string takes the full step
+def gd.fbbs(
+  bs: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.basic.bs(bs, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match bs:
+    case True{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QBasic{}, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      gd.fpush(T.str.bad(Char.to_u32(cc), False{}), bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QBasic{},
+        stack, uni, left, arrtab, eg, cc, ec)
+
+
+# a quote in a basic string takes the full step
+def gd.fbasic(
+  quote: Bool,
+  +bs: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.basic(quote, bs, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match quote:
+    case True{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QBasic{}, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      gd.fbbs(bs, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# a quote in a literal string takes the full step
+def gd.flit(
+  quote: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.lit(quote, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match quote:
+    case True{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QLit{}, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      gd.fpush(T.str.bad(Char.to_u32(cc), False{}), bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QLit{},
+        stack, uni, left, arrtab, eg, cc, ec)
+
+
+# one character of a string on the fast step
+def gd.fstr(
+  qkind: T.QKind,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.str(qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match qkind:
+    case T.QBasic{}:
+      gd.fbasic(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), bad, rows, heads, here, parts, buf, back, stack, uni, left,
+        arrtab, eg, cc, ec)
+    case T.QLit{}:
+      gd.flit(Char.is_eq(cc, '\''), bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab, eg, cc, ec)
+    case T.QMulti{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QMulti{}, stack, uni, left, arrtab, eg, cc, ec)
+    case T.QMultiLit{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LStr{}, back, T.QMultiLit{}, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# one character of a bare key on the fast step
+def gd.fkey(
+  ok: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.key(ok, bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      gd.fcons(bad, rows, heads, here, parts, buf, T.LKey{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LKey{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# one character of a bare value on the fast step
+def gd.fbare(
+  delim: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.bare(delim, bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match delim:
+    case True{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LBare{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      gd.fcons(bad, rows, heads, here, parts, buf, T.LBare{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# one character of a comment on the fast step
+def gd.fcom(
+  ctl: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.com(ctl, bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match ctl:
+    case True{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LCom{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      eg
+
+
+# a newline this state ignores
+def gd.fkeep(
+  keep: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lex: T.Lex,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.ws.keep(keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
+  arrtab, cc)) == True{} : Bool}:
+  match keep:
+    case True{}:
+      eg
+    case False{}:
+      gd.fold(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# a newline, or the full step
+def gd.fwsnl(
+  nl: Bool,
+  +keep: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lex: T.Lex,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.ws.nl(nl, keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
+  arrtab, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      gd.fkeep(keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case False{}:
+      gd.fold(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# blank space this state ignores
+def gd.fws(
+  sp: Bool,
+  +nl: Bool,
+  +keep: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lex: T.Lex,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.ws(sp, nl, keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
+  arrtab, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      gd.fwsnl(nl, keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+
+# the fast step, by the state
+def gd.flex(
+  lex: T.Lex,
+  +qkind: T.QKind,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.lex(lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match lex:
+    case T.LTop{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), True{}, bad, rows, heads, here, parts, buf, T.LTop{}, back, qkind, stack, uni,
+        left, arrtab, eg, cc, ec)
+    case T.LLine{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, buf, T.LLine{}, back, qkind, stack,
+        uni, left, arrtab, eg, cc, ec)
+    case T.LKey{}:
+      gd.fkey(T.bare.at(cc), bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LKeyDot{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LKeyDot{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LAfter{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, buf, T.LAfter{}, back, qkind, stack,
+        uni, left, arrtab, eg, cc, ec)
+    case T.LKeyQ{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LKeyQ{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LKeyE{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LKeyE{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LKeyU{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LKeyU{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LVal{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, buf, T.LVal{}, back, qkind, stack, uni,
+        left, arrtab, eg, cc, ec)
+    case T.LQ{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LQ{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LQ2{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LQ2{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LStr{}:
+      gd.fstr(qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LEsc{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LEsc{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LUni{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LUni{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LFold{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LFold{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LMq{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LMq{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LMqEnd{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LMqEnd{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LTrim{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LTrim{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LTrim2{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LTrim2{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LBare{}:
+      gd.fbare(T.ch.delim(cc), bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LDate{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LDate{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LCom{}:
+      gd.fcom(T.ch.ctl(cc), bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHead{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHead{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHeadGap{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHeadGap{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHeadDot{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHeadDot{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHeadQ{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHeadQ{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHeadE{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHeadE{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHeadU{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHeadU{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LHeadR{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LHeadR{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+    case T.LArr{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), True{}, bad, rows, heads, here, parts, buf, T.LArr{}, back, qkind, stack, uni,
+        left, arrtab, eg, cc, ec)
+    case T.LArrC{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), True{}, bad, rows, heads, here, parts, buf, T.LArrC{}, back, qkind, stack, uni,
+        left, arrtab, eg, cc, ec)
+    case T.LInl{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, buf, T.LInl{}, back, qkind, stack, uni,
+        left, arrtab, eg, cc, ec)
+    case T.LInlK{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, buf, T.LInlK{}, back, qkind, stack,
+        uni, left, arrtab, eg, cc, ec)
+    case T.LInlC{}:
+      gd.fws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, buf, T.LInlC{}, back, qkind, stack,
+        uni, left, arrtab, eg, cc, ec)
+    case T.LSink{}:
+      gd.fold(bad, rows, heads, here, parts, buf, T.LSink{}, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
+
+# the first character takes the full step
+def gd.flead(
+  lead: Bool,
+  +lex: T.Lex,
+  +qkind: T.QKind,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +buf: List<&2, Char>,
+  +back: T.Lex,
+  +stack: List<&2, T.Ctx>,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast.lead(lead, lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+  cc)) == True{} : Bool}:
+  match lead:
+    case True{}:
+      gd.once(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, T.HNone{}, uni, left, arrtab, True{}},
+        cc, eg, ec)
+    case False{}:
+      gd.flex(lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab, eg, cc, ec)
+
+# a held character takes the full step first
+def gd.fhold(
+  hd: T.Hold,
+  +ld: Bool,
+  +lx: T.Lex,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +eg: {Laws.good(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}) == True{} : Bool}
+) -> {Laws.good(T.read.fast.hold(hd, ld, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+  match hd:
+    case T.HChar{+held}:
+      gd.once(T.read.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, ld}), cc,
+        gd.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, ld}, eg), ec)
+    case T.HNone{}:
+      gd.flead(ld, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc, ec)
+
+# one character by the fast step
+def gd.fast(
+  +st: T.St,
+  +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.good(T.read.fast(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.fhold(hold, lead, lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab, cc, ec, eg)
+
+def Laws.gd_fast_step(st, eg, cc, ec) :
+  gd.fast(st, cc, eg, ec)
+
+def Laws.gd_held(st, eg) :
+  gd.once2(st, eg)
