@@ -1615,3 +1615,363 @@ law render_parse_plain_pair:
   {Bool.and(String.is_empty(T.bad(T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})))),
     same(T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})), T.Doc{e, [T.VPair{k, T.VStr{s}}]}))
     == True{} : Bool}
+
+# WP-W: contracts of the walk. tree.walk follows a key path from the root and
+# applies a job at its end: a value put into a table (JPut), a [table] header
+# (JDef) or an [[array]] header (JAot). The laws below say what a walk returns
+# (the root's rows, the error and the recorded definitions) for a path whose
+# tables are premises read off the rows, so a proof about a document applies
+# them without replaying its text. Rows are newest first until rows.seal.
+
+# whether the newest element of an array of tables is one a walk can enter
+def tb.last.can(last: T.Last) -> Bool:
+  match last:
+    case T.LastSome{_p, _older, _rows}:
+      True{}
+    case T.LastNo{_why}:
+      False{}
+
+# whether a walk goes on through what a name refers to: a table, an array of
+# tables whose newest element is a table, or nothing yet, where the walk makes
+# an implicit table
+def tb.can(look: T.Look) -> Bool:
+  match look:
+    case T.KMiss{}:
+      True{}
+    case T.KHead{_p, _rows}:
+      True{}
+    case T.KAots{p, elems}:
+      tb.last.can(T.look.last(elems, p))
+    case _:
+      False{}
+
+# the rows of the newest element of an array of tables
+def tb.last.rows(last: T.Last) -> List<&2, T.Val>:
+  match last:
+    case T.LastSome{_p, _older, rows}:
+      rows
+    case T.LastNo{_why}:
+      []
+
+# the rows a walk goes on in: a table's, the newest element's of an array of
+# tables, or none for a table the walk makes
+def tb.into(look: T.Look) -> List<&2, T.Val>:
+  match look:
+    case T.KHead{_p, rows}:
+      rows
+    case T.KAots{p, elems}:
+      tb.last.rows(T.look.last(elems, p))
+    case _:
+      []
+
+# the newest element of an array of tables with its rows replaced
+def tb.last.put(
+  last: T.Last,
+  +name: String,
+  rows: List<&2, T.Val>,
+  +pp: String,
+  child: List<&2, T.Val>
+) -> List<&2, T.Val>:
+  match last:
+    case T.LastSome{_q, older, _r}:
+      T.rows.repl(rows, name, T.VAots{pp, T.VAot{pp, child} <> older})
+    case T.LastNo{_why}:
+      rows
+
+# the rows with the table a name refers to holding child: a table keeps its
+# path, the newest element of an array of tables takes the array's path, and a
+# name that is not there yet becomes an implicit table in front
+def tb.put.in(
+  look: T.Look,
+  +name: String,
+  rows: List<&2, T.Val>,
+  +pre: String,
+  child: List<&2, T.Val>
+) -> List<&2, T.Val>:
+  match look:
+    case T.KMiss{}:
+      T.VPair{name, T.VHead{T.tree.pre(pre, name), child}} <> rows
+    case T.KHead{p, _r}:
+      T.rows.repl(rows, name, T.VHead{p, child})
+    case T.KAots{+p, elems}:
+      tb.last.put(T.look.last(elems, p), name, rows, p, child)
+    case _:
+      rows
+
+# whether a walk goes on through every segment of the path
+def tb.open(path: List<&2, String>, +rows: List<&2, T.Val>) -> Bool:
+  match path:
+    case []:
+      True{}
+    case +seg <> rest:
+      Bool.and(tb.can(T.rows.look(rows, seg)), tb.open(rest, tb.into(T.rows.look(rows, seg))))
+
+# the rows of the table at the end of the path
+def tb.rows(path: List<&2, String>, rows: List<&2, T.Val>) -> List<&2, T.Val>:
+  match path:
+    case []:
+      rows
+    case seg <> rest:
+      tb.rows(rest, tb.into(T.rows.look(rows, seg)))
+
+# the rows with the table at the end of the path holding new. pre is the path
+# of the table the rows are, which names an implicit table made on the way
+def tb.set(
+  path: List<&2, String>,
+  +pre: String,
+  +rows: List<&2, T.Val>,
+  new: List<&2, T.Val>
+) -> List<&2, T.Val>:
+  match path:
+    case []:
+      new
+    case +seg <> rest:
+      tb.put.in(T.rows.look(rows, seg), seg, rows, pre,
+        tb.set(rest, T.tree.pre(pre, seg), tb.into(T.rows.look(rows, seg)), new))
+
+# the path a walk names a table by: each segment as key writes it, joined by
+# dots after pre
+def tb.join(path: List<&2, String>, pre: String) -> String:
+  match path:
+    case []:
+      pre
+    case seg <> rest:
+      tb.join(rest, T.tree.pre(pre, seg))
+
+# whether the walk counts skip down past every segment of the path before it
+# reaches zero: each segment is navigation into the current table
+def counts.down(path: List<&2, String>, +skip: U32) -> Bool:
+  match path:
+    case []:
+      True{}
+    case _seg <> rest:
+      Bool.and(Bool.not(U32.is_zero(skip)), counts.down(rest, T.path.dec(skip)))
+
+# whether a lookup missed
+def is_miss(hh: T.Hit) -> Bool:
+  match hh:
+    case T.Miss{}:
+      True{}
+    case T.Found{_v}:
+      False{}
+
+# whether a [table] header may define the table a name holds: a name not yet
+# there, or a table no header or dotted key defined (one made on the way to
+# another)
+def hdr.ok(hh: T.Hit, heads: List<&2, String>, +path: String) -> Bool:
+  match hh:
+    case T.Miss{}:
+      True{}
+    case T.Found{T.VHead{_p, _rows}}:
+      Bool.not(T.heads.has(heads, path))
+    case _:
+      False{}
+
+# whether an [[array]] header may add an element for a name: a name not yet
+# there, or an array of tables
+def aot.ok(hh: T.Hit) -> Bool:
+  match hh:
+    case T.Miss{}:
+      True{}
+    case T.Found{T.VAots{_p, _elems}}:
+      True{}
+    case _:
+      False{}
+
+# LAW: a value put along a path the walk goes on through, to a name the table
+# at its end does not hold, goes at the head of that table's rows (newest
+# first); the walk changes nothing else: every other table, the recorded
+# definitions and the error are as they were. skip counts the segments that
+# are navigation into the current table
+law walk_put_at_head:
+  for +here: List<&2, String>
+  for +k: String
+  for +v: T.Val
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +skip: U32
+  for +inl: Bool
+  for +eo: {tb.open(here, rows) == True{} : Bool}
+  for ec: {counts.down(here, skip) == True{} : Bool}
+  for em: {T.get(tb.rows(here, rows), k) == T.Miss{} : T.Hit}
+  {T.tree.walk(List.append(&2, String, here, [k]), T.Tw{rows, T.JPut{v}, [], "", "", heads, inl},
+    skip) == T.End{tb.set(here, "", rows, T.VPair{k, v} <> tb.rows(here, rows)), "", heads} : T.End}
+
+# LAW: a value put along a path the walk goes on through is refused exactly
+# when the table at its end already holds the name: a key is defined once
+# TOML-TEXT-2
+law walk_put_refused_exactly:
+  for +here: List<&2, String>
+  for +k: String
+  for +v: T.Val
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +skip: U32
+  for +inl: Bool
+  for eo: {tb.open(here, rows) == True{} : Bool}
+  for ec: {counts.down(here, skip) == True{} : Bool}
+  {String.is_empty(end_bad(T.tree.walk(List.append(&2, String, here, [k]),
+    T.Tw{rows, T.JPut{v}, [], "", "", heads, inl}, skip)))
+    == is_miss(T.get(tb.rows(here, rows), k)) : Bool}
+
+# LAW: a [table] header whose last segment names nothing yet defines a new,
+# empty table at the head of the rows it walks to, and records its path as
+# defined by a header; nothing else changes
+law header_defines_new_table:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +eo: {tb.open(segs, rows) == True{} : Bool}
+  for em: {T.get(tb.rows(segs, rows), k) == T.Miss{} : T.Hit}
+  {T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JDef{}, [], "", "", heads, False{}}, 0)
+    == T.End{tb.set(segs, "", rows, T.VPair{k, T.VHead{T.tree.pre(tb.join(segs, ""), k), []}}
+      <> tb.rows(segs, rows)), "", T.heads.by.head(T.tree.pre(tb.join(segs, ""), k)) <> heads}
+    : T.End}
+
+# LAW: a [table] header whose last segment names a table only made on the way
+# to another defines it where it is, under the header's path, and records the
+# path as defined by a header; nothing else changes
+law header_defines_implicit_table:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for p: String
+  for +sub: List<&2, T.Val>
+  for +eo: {tb.open(segs, rows) == True{} : Bool}
+  for ef: {T.get(tb.rows(segs, rows), k) == T.Found{T.VHead{p, sub}} : T.Hit}
+  for eh: {T.heads.has(heads, T.tree.pre(tb.join(segs, ""), k)) == False{} : Bool}
+  {T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JDef{}, [], "", "", heads, False{}}, 0)
+    == T.End{tb.set(segs, "", rows, T.rows.repl(tb.rows(segs, rows), k,
+      T.VHead{T.tree.pre(tb.join(segs, ""), k), sub})), "",
+      T.heads.by.head(T.tree.pre(tb.join(segs, ""), k)) <> heads} : T.End}
+
+# LAW: a [table] header is refused exactly when its last segment names
+# something other than a table, or a table a header or dotted keys defined
+# TOML-TEXT-2
+law header_refused_exactly:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for eo: {tb.open(segs, rows) == True{} : Bool}
+  {String.is_empty(end_bad(T.tree.walk(List.append(&2, String, segs, [k]),
+    T.Tw{rows, T.JDef{}, [], "", "", heads, False{}}, 0)))
+    == hdr.ok(T.get(tb.rows(segs, rows), k), heads, T.tree.pre(tb.join(segs, ""), k)) : Bool}
+
+# LAW: an [[array]] header whose last segment names nothing yet starts an
+# array of tables of one empty element at the head of the rows it walks to;
+# nothing else changes, and no definition is recorded
+law aot_header_starts_array:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +eo: {tb.open(segs, rows) == True{} : Bool}
+  for em: {T.get(tb.rows(segs, rows), k) == T.Miss{} : T.Hit}
+  {T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JAot{}, [], "", "", heads, False{}}, 0)
+    == T.End{tb.set(segs, "", rows, T.VPair{k, T.VAots{T.tree.pre(tb.join(segs, ""), k),
+      [T.VAot{T.tree.pre(tb.join(segs, ""), k), []}]}} <> tb.rows(segs, rows)), "", heads} : T.End}
+
+# LAW: an [[array]] header whose last segment names an array of tables adds
+# a new empty element in front of its elements (newest first), and forgets
+# every table under the array defined, so the element is its own scope;
+# nothing else changes
+law aot_header_extends_array:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for p: String
+  for +elems: List<&2, T.Val>
+  for +eo: {tb.open(segs, rows) == True{} : Bool}
+  for ef: {T.get(tb.rows(segs, rows), k) == T.Found{T.VAots{p, elems}} : T.Hit}
+  {T.tree.walk(List.append(&2, String, segs, [k]), T.Tw{rows, T.JAot{}, [], "", "", heads, False{}}, 0)
+    == T.End{tb.set(segs, "", rows, T.rows.repl(tb.rows(segs, rows), k,
+      T.VAots{T.tree.pre(tb.join(segs, ""), k), T.VAot{T.tree.pre(tb.join(segs, ""), k), []}
+        <> elems})), "",
+      T.heads.drop(heads, String.append(T.tree.pre(tb.join(segs, ""), k), "."))} : T.End}
+
+# LAW: an [[array]] header is refused exactly when its last segment names
+# something other than an array of tables: a table, an inline table, a
+# static array or any other value
+# TOML-TEXT-2
+law aot_header_refused_exactly:
+  for +segs: List<&2, String>
+  for +k: String
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for eo: {tb.open(segs, rows) == True{} : Bool}
+  {String.is_empty(end_bad(T.tree.walk(List.append(&2, String, segs, [k]),
+    T.Tw{rows, T.JAot{}, [], "", "", heads, False{}}, 0)))
+    == aot.ok(T.get(tb.rows(segs, rows), k)) : Bool}
+
+# LAW: a walk that starts with an error keeps it and changes nothing: once a
+# key or header is refused, no later one in the same text clears the error
+# or touches the tables
+# TOML-TEXT-2
+law failed_walk_changes_nothing:
+  for path: List<&2, String>
+  for +rows: List<&2, T.Val>
+  for +job: T.Job
+  for +bad: String
+  for +pre: String
+  for +heads: List<&2, String>
+  for +inl: Bool
+  for +skip: U32
+  for +eb: {String.is_empty(bad) == False{} : Bool}
+  {T.tree.walk(path, T.Tw{rows, job, [], bad, pre, heads, inl}, skip) == T.End{rows, bad, heads}
+    : T.End}
+
+# a value as rows.seal leaves it: the rows of a table, of an element of an
+# array of tables and of an inline table, and the elements of an array of
+# tables, each sealed in turn; an array's items sealed and kept in order
+def sealed(+vv: T.Val) -> T.Val:
+  match vv:
+    case T.VPair{nn, T.VHead{pp, rows}}:
+      T.VPair{nn, T.VHead{pp, T.rows.seal(rows)}}
+    case T.VPair{nn, T.VAots{pp, elems}}:
+      T.VPair{nn, T.VAots{pp, T.rows.seal(elems)}}
+    case T.VPair{nn, T.VInl{rows}}:
+      T.VPair{nn, T.VInl{T.rows.seal(rows)}}
+    case T.VPair{nn, T.VArr{items}}:
+      T.VPair{nn, T.VArr{List.reverse(&2, T.Val, T.rows.seal(items))}}
+    case T.VAot{pp, rows}:
+      T.VAot{pp, T.rows.seal(rows)}
+    case T.VAots{pp, elems}:
+      T.VAots{pp, T.rows.seal(elems)}
+    case T.VInl{rows}:
+      T.VInl{T.rows.seal(rows)}
+    case T.VArr{items}:
+      T.VArr{List.reverse(&2, T.Val, T.rows.seal(items))}
+    case _:
+      vv
+
+# LAW: rows.seal puts the newest row last: sealing rows with x at their head
+# is sealing the rest, then x sealed. Rows built newest first come out in the
+# order they were written, and every table inside is sealed the same way
+law seal_puts_newest_last:
+  for +x: T.Val
+  for +rows: List<&2, T.Val>
+  {T.rows.seal(x <> rows) == List.append(&2, T.Val, T.rows.seal(rows), [sealed(x)])
+    : List<&2, T.Val>}
+
+# LAW: the table a path leads to, once set, holds what it was set to, so the
+# next walk along the same path puts into what the last one left
+law tb_rows_after_set:
+  for path: List<&2, String>
+  for +pre: String
+  for +rows: List<&2, T.Val>
+  for +new: List<&2, T.Val>
+  for +eo: {tb.open(path, rows) == True{} : Bool}
+  {tb.rows(path, tb.set(path, pre, rows, new)) == new : List<&2, T.Val>}
+
+# LAW: and a walk still goes on through every segment of the path
+law tb_open_after_set:
+  for path: List<&2, String>
+  for +pre: String
+  for +rows: List<&2, T.Val>
+  for +new: List<&2, T.Val>
+  for +eo: {tb.open(path, rows) == True{} : Bool}
+  {tb.open(path, tb.set(path, pre, rows, new)) == True{} : Bool}
