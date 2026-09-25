@@ -28761,3 +28761,863 @@ def gd.g.take(+st: T.St, +val: T.Val, +eg: {Laws.good(st) == True{} : Bool},
 def Laws.gd_take(st, eg, val, ev):
   gd.g.take(st, val, eg, ev)
 
+
+# WP-R3: the value states other than a bare value's. Strings push scalar
+# values and end in val.take (gd.g.take), arrays and inline tables open a
+# frame and close into a value that seals well-formed.
+
+def gd.g.hold(+st: T.St, +lex2: T.Lex, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.st.hold(st, lex2, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HChar{cc}), gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+        gd.lx.mk(here, parts, buf, stack, T.HChar{cc}, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.p(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.b(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), ec))
+
+
+def gd.g.hold.on(+st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.bare.hold.on(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HChar{cc}), gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+        gd.lx.mk(here, parts, buf, stack, T.HChar{cc}, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.p(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.b(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), ec))
+
+
+def gd.g.comnl(+st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.com.nl(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, T.HChar{cc}), gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+        gd.lx.mk(here, parts, buf, stack, T.HChar{cc}, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.p(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.b(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), ec))
+
+
+def gd.g.multi(+st: T.St, +kind: T.QKind, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.multi(st, kind)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      eg
+
+
+def gd.g.mq(+st: T.St, +nn: U32, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.mq(st, nn)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      eg
+
+
+def gd.g.mqshut(+st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.mq.shut(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      eg
+
+
+def gd.g.foldsaw(+st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.fold.saw(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      eg
+
+
+def gd.g.strfin(+st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.str.fin(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.take(T.St{bad, rows, heads, here, parts, [], lex, back, qkind, stack, hold, uni, left, arrtab, lead}, T.VStr{T.buf.str(buf)},
+        gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, [], stack, hold), gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+          gd.lx.mk(here, parts, [], stack, hold, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.p(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), {==}, gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.r(Laws.gd.keys(stack), Laws.gd.hold(hold), gd.lx.s1(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg))))),
+        gd.ifok.any(String.is_empty(bad), T.wf.text(T.buf.str(buf)), gd.bs.ok(buf, "", gd.lx.b(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), {==})))
+
+
+# the quotes that did not close a multiline string are scalar values
+def gd.mqput(one: Bool, kind: T.QKind, +buf: List<&2, Char>, +eb: {Laws.gd.cs(buf) == True{} : Bool})
+  -> {Laws.gd.cs(T.mq.put(one, T.q.char(kind), buf)) == True{} : Bool}:
+  match one:
+    case True{}:
+      match kind:
+        case T.QBasic{}:
+          eb
+        case T.QLit{}:
+          eb
+        case T.QMulti{}:
+          eb
+        case T.QMultiLit{}:
+          eb
+    case False{}:
+      match kind:
+        case T.QBasic{}:
+          eb
+        case T.QLit{}:
+          eb
+        case T.QMulti{}:
+          eb
+        case T.QMultiLit{}:
+          eb
+
+def gd.g.mqback(+st: T.St, +cc: Char, +b2: List<&2, Char>, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool}, +eb: {Laws.gd.cs(b2) == True{} : Bool})
+  -> {Laws.good(T.lex.mq.back(st, cc, b2)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, b2, stack, T.HChar{cc}), gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+        gd.lx.mk(here, parts, b2, stack, T.HChar{cc}, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.p(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), eb, gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), ec))
+
+
+def gd.g.mqmore(+st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.mq.more(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, cc <> buf, stack, hold), gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+        gd.lx.mk(here, parts, cc <> buf, stack, hold, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.p(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.tt(T.wf.char(cc), Laws.gd.cs(buf), ec, gd.lx.b(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg))), gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.r(Laws.gd.keys(stack), Laws.gd.hold(hold), gd.lx.s1(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))))
+
+
+def gd.g.array(+st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.array(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, [], [], T.CArr{[], parts, here} <> stack, hold), gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+        gd.lx.mk(here, [], [], T.CArr{[], parts, here} <> stack, hold, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), {==}, {==},
+          gd.tt(Laws.gd.segs(parts), Bool.and(Laws.gd.segs(here), Laws.gd.keys(stack)), gd.lx.p(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)),
+            gd.tt(Laws.gd.segs(here), Laws.gd.keys(stack), gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))),
+          gd.r(Laws.gd.keys(stack), Laws.gd.hold(hold), gd.lx.s1(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))))
+
+
+def gd.g.inline(+st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.inline(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, [], [], T.CInl{[], parts, here} <> stack, hold), gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+        gd.lx.mk(here, [], [], T.CInl{[], parts, here} <> stack, hold, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), {==}, {==},
+          gd.tt(Laws.gd.segs(parts), Bool.and(Laws.gd.segs(here), Laws.gd.keys(stack)), gd.lx.p(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)),
+            gd.tt(Laws.gd.segs(here), Laws.gd.keys(stack), gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))),
+          gd.r(Laws.gd.keys(stack), Laws.gd.hold(hold), gd.lx.s1(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))))
+
+
+def gd.g.kclear(+st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.key.clear(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.tt(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, [], [], stack, hold), gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg),
+        gd.lx.mk(here, [], [], stack, hold, gd.lx.h(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), {==}, {==}, gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)), gd.r(Laws.gd.keys(stack), Laws.gd.hold(hold), gd.lx.s1(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))))
+
+
+# a frame's value taken out of the rows' half
+def gd.ifok.drop(ok: Bool, +aa: Bool, +bb: Bool, +cc: Bool, +ee: {Laws.gd.ifok(ok, Bool.and(aa, Bool.and(bb, cc))) == True{} : Bool})
+  -> {Laws.gd.ifok(ok, Bool.and(aa, cc)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      gd.tt(aa, cc, gd.l(aa, Bool.and(bb, cc), ee), gd.r(bb, cc, gd.r(aa, Bool.and(bb, cc), ee)))
+    case False{}:
+      {==}
+
+# the array's items, in order, are its value's
+def gd.ifok.arr(ok: Bool, +rows: List<&2, T.Val>, +items: List<&2, T.Val>, +rest: List<&2, T.Ctx>,
+  +ee: {Laws.gd.ifok(ok, Bool.and(T.wf.go(rows, T.WfRows{""}), Bool.and(T.wf.go(items, T.WfItems{}),
+    Laws.gd.vals(rest)))) == True{} : Bool})
+  -> {Laws.gd.ifok(ok, Laws.gd.vok(T.VArr{List.reverse(&2, T.Val, items)})) == True{} : Bool}:
+  match ok:
+    case True{}:
+      gd.rev.it(items, [], gd.l(T.wf.go(items, T.WfItems{}), Laws.gd.vals(rest),
+        gd.r(T.wf.go(rows, T.WfRows{""}), Bool.and(T.wf.go(items, T.WfItems{}), Laws.gd.vals(rest)), ee)), {==})
+    case False{}:
+      {==}
+
+# the inline table's rows, sealed, are its value's
+def gd.ifok.inlv(ok: Bool, +rows: List<&2, T.Val>, +inl: List<&2, T.Val>, +rest: List<&2, T.Ctx>,
+  +ee: {Laws.gd.ifok(ok, Bool.and(T.wf.go(rows, T.WfRows{""}), Bool.and(Laws.gd.inl(inl),
+    Laws.gd.vals(rest)))) == True{} : Bool})
+  -> {Laws.gd.ifok(ok, Laws.gd.vok(T.VInl{T.inl.seal(inl)})) == True{} : Bool}:
+  match ok:
+    case True{}:
+      gd.is(inl, "",
+        gd.l(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl), gd.l(Laws.gd.inl(inl), Laws.gd.vals(rest),
+          gd.r(T.wf.go(rows, T.WfRows{""}), Bool.and(Laws.gd.inl(inl), Laws.gd.vals(rest)), ee))),
+        gd.r(T.wf.go(inl, T.WfRows{""}), Laws.gd.na(inl), gd.l(Laws.gd.inl(inl), Laws.gd.vals(rest),
+          gd.r(T.wf.go(rows, T.WfRows{""}), Bool.and(Laws.gd.inl(inl), Laws.gd.vals(rest)), ee))))
+    case False{}:
+      {==}
+
+def gd.g.arrtop(stack: List<&2, T.Ctx>, +bad: String, +rows: List<&2, T.Val>, +heads: List<&2, String>, +back: T.Lex, +qkind: T.QKind,
+  +uni: U32, +left: U32, +arrtab: Bool, +lead: Bool,
+  +et: {Laws.gd.tr(bad, rows, stack) == True{} : Bool}, +ek: {Laws.gd.keys(stack) == True{} : Bool})
+  -> {Laws.good(T.arr.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+  match stack:
+    case []:
+      gd.tt(Laws.gd.tr(T.err.first(bad, "unclosed"), rows, []), True{},
+        gd.off(String.is_empty(T.err.first(bad, "unclosed")), Bool.and(T.wf.go(rows, T.WfRows{""}), True{}),
+          gd.err.ne2(bad, "unclosed", {==})), {==})
+    case T.CArr{+x0, +p0, +h0} <> +rest:
+      gd.g.take(T.St{bad, rows, heads, h0, p0, [], T.LTop{}, back, qkind, rest, T.HNone{}, uni, left, arrtab, lead}, T.VArr{List.reverse(&2, T.Val, x0)},
+        gd.tt(Laws.gd.tr(bad, rows, rest), Laws.gd.lx(h0, p0, [], rest, T.HNone{}),
+          gd.ifok.drop(String.is_empty(bad), T.wf.go(rows, T.WfRows{""}), T.wf.go(x0, T.WfItems{}), Laws.gd.vals(rest), et),
+          gd.lx.mk(h0, p0, [], rest, T.HNone{}, gd.l(Laws.gd.segs(h0), Laws.gd.keys(rest), gd.r(Laws.gd.segs(p0), Bool.and(Laws.gd.segs(h0), Laws.gd.keys(rest)), ek)),
+            gd.l(Laws.gd.segs(p0), Bool.and(Laws.gd.segs(h0), Laws.gd.keys(rest)), ek), {==},
+            gd.r(Laws.gd.segs(h0), Laws.gd.keys(rest), gd.r(Laws.gd.segs(p0), Bool.and(Laws.gd.segs(h0), Laws.gd.keys(rest)), ek)), {==})),
+        gd.ifok.arr(String.is_empty(bad), rows, x0, rest, et))
+    case T.CInl{+x0, +p0, +h0} <> +rest:
+      gd.tt(Laws.gd.tr(T.err.first(bad, "unclosed"), rows, []), True{},
+        gd.off(String.is_empty(T.err.first(bad, "unclosed")), Bool.and(T.wf.go(rows, T.WfRows{""}), True{}),
+          gd.err.ne2(bad, "unclosed", {==})), {==})
+
+
+def gd.g.inltop(stack: List<&2, T.Ctx>, +bad: String, +rows: List<&2, T.Val>, +heads: List<&2, String>, +back: T.Lex, +qkind: T.QKind,
+  +uni: U32, +left: U32, +arrtab: Bool, +lead: Bool,
+  +et: {Laws.gd.tr(bad, rows, stack) == True{} : Bool}, +ek: {Laws.gd.keys(stack) == True{} : Bool})
+  -> {Laws.good(T.inl.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+  match stack:
+    case []:
+      gd.tt(Laws.gd.tr(T.err.first(bad, "unclosed"), rows, []), True{},
+        gd.off(String.is_empty(T.err.first(bad, "unclosed")), Bool.and(T.wf.go(rows, T.WfRows{""}), True{}),
+          gd.err.ne2(bad, "unclosed", {==})), {==})
+    case T.CArr{+x0, +p0, +h0} <> +rest:
+      gd.tt(Laws.gd.tr(T.err.first(bad, "unclosed"), rows, []), True{},
+        gd.off(String.is_empty(T.err.first(bad, "unclosed")), Bool.and(T.wf.go(rows, T.WfRows{""}), True{}),
+          gd.err.ne2(bad, "unclosed", {==})), {==})
+    case T.CInl{+x0, +p0, +h0} <> +rest:
+      gd.g.take(T.St{bad, rows, heads, h0, p0, [], T.LTop{}, back, qkind, rest, T.HNone{}, uni, left, arrtab, lead}, T.VInl{T.inl.seal(x0)},
+        gd.tt(Laws.gd.tr(bad, rows, rest), Laws.gd.lx(h0, p0, [], rest, T.HNone{}),
+          gd.ifok.drop(String.is_empty(bad), T.wf.go(rows, T.WfRows{""}), Laws.gd.inl(x0), Laws.gd.vals(rest), et),
+          gd.lx.mk(h0, p0, [], rest, T.HNone{}, gd.l(Laws.gd.segs(h0), Laws.gd.keys(rest), gd.r(Laws.gd.segs(p0), Bool.and(Laws.gd.segs(h0), Laws.gd.keys(rest)), ek)),
+            gd.l(Laws.gd.segs(p0), Bool.and(Laws.gd.segs(h0), Laws.gd.keys(rest)), ek), {==},
+            gd.r(Laws.gd.segs(h0), Laws.gd.keys(rest), gd.r(Laws.gd.segs(p0), Bool.and(Laws.gd.segs(h0), Laws.gd.keys(rest)), ek)), {==})),
+        gd.ifok.inlv(String.is_empty(bad), rows, x0, rest, et))
+
+
+def gd.g.arrclose(+st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.arr.close(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.arrtop(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead, gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg), gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))
+
+
+def gd.g.inlclose(+st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.inl.close(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.inltop(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead, gd.l(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg), gd.lx.s(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))
+
+
+def gd.g.vnl3(inside: Bool, +st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.val.nl3(inside, st)) == True{} : Bool}:
+  match inside:
+    case True{}:
+      gd.g.err(st, "newline in inline table", {==}, eg)
+    case False{}:
+      gd.g.err(st, "newline before value", {==}, eg)
+
+
+def gd.g.vnl2(+st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.val.nl2(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.vnl3(T.inl.open(stack), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, eg)
+
+
+def gd.g.vinl(inl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.val.inl(inl, st, cc)) == True{} : Bool}:
+  match inl:
+    case True{}:
+      gd.g.inline(st, eg)
+    case False{}:
+      gd.g.push(st, cc, T.LBare{}, eg, ec)
+
+
+def gd.g.vbr(br: Bool, inl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.val.br(br, inl, st, cc)) == True{} : Bool}:
+  match br:
+    case True{}:
+      gd.g.array(st, eg)
+    case False{}:
+      gd.g.vinl(inl, st, cc, eg, ec)
+
+
+def gd.g.vlit(lit: Bool, br: Bool, inl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.val.lit(lit, br, inl, st, cc)) == True{} : Bool}:
+  match lit:
+    case True{}:
+      gd.g.qkey(st, T.QLit{}, T.LQ{}, eg)
+    case False{}:
+      gd.g.vbr(br, inl, st, cc, eg, ec)
+
+
+def gd.g.vq(qq: Bool, lit: Bool, br: Bool, inl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.val.q(qq, lit, br, inl, st, cc)) == True{} : Bool}:
+  match qq:
+    case True{}:
+      gd.g.qkey(st, T.QBasic{}, T.LQ{}, eg)
+    case False{}:
+      gd.g.vlit(lit, br, inl, st, cc, eg, ec)
+
+
+def gd.g.vhash(hash: Bool, qq: Bool, lit: Bool, br: Bool, inl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.val.hash(hash, qq, lit, br, inl, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      gd.g.com(st, T.LVal{}, eg)
+    case False{}:
+      gd.g.vq(qq, lit, br, inl, st, cc, eg, ec)
+
+
+def gd.g.vnl(nl: Bool, hash: Bool, qq: Bool, lit: Bool, br: Bool, inl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.val.nl(nl, hash, qq, lit, br, inl, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      gd.g.vnl2(st, cc, eg)
+    case False{}:
+      gd.g.vhash(hash, qq, lit, br, inl, st, cc, eg, ec)
+
+
+def gd.g.vgo(sp: Bool, nl: Bool, hash: Bool, qq: Bool, lit: Bool, br: Bool, inl: Bool, +st: T.St, +cc: Char,
+  +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.val.go(sp, nl, hash, qq, lit, br, inl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      gd.g.vnl(nl, hash, qq, lit, br, inl, st, cc, eg, ec)
+
+
+def gd.g.qgo(same: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.q.go(same, st, cc)) == True{} : Bool}:
+  match same:
+    case True{}:
+      gd.g.lex(st, T.LQ2{}, eg)
+    case False{}:
+      gd.g.hold(T.st.lex(st, T.LStr{}), T.LStr{}, cc, gd.g.lex(st, T.LStr{}, eg), ec)
+
+
+def gd.g.q(+st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.q(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.qgo(Char.is_eq(cc, T.q.char(qkind)), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc, eg, ec)
+
+
+def gd.g.q2go(same: Bool, +st: T.St, +cc: Char, +kind: T.QKind, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool},
+  +eo: {Laws.gd.okv(st, T.VStr{""}) == True{} : Bool})
+  -> {Laws.good(T.lex.q2.go(same, st, cc, kind)) == True{} : Bool}:
+  match same:
+    case True{}:
+      gd.g.multi(st, kind, eg)
+    case False{}:
+      gd.g.hold.on(T.val.take(st, T.VStr{""}), cc, gd.g.take(st, T.VStr{""}, eg, eo), ec)
+
+
+def gd.g.q2(+st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.q2(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.q2go(Char.is_eq(cc, T.q.char(qkind)), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc, qkind, eg, ec,
+        gd.ifok.any(String.is_empty(bad), True{}, {==}))
+
+
+def gd.g.schgo(bad: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.str.char.go(bad, st, cc)) == True{} : Bool}:
+  match bad:
+    case True{}:
+      gd.g.err(st, "invalid control", {==}, eg)
+    case False{}:
+      gd.g.push(st, cc, T.LStr{}, eg, ec)
+
+
+def gd.g.sch(+multi: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.str.char(multi, st, cc)) == True{} : Bool}:
+  gd.g.schgo(T.str.bad(Char.to_u32(cc), multi), st, cc, eg, ec)
+
+
+def gd.g.sbs(bs: Bool, +multi: Bool, +st: T.St, +cc: Char, +kind: T.QKind, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.str.bs(bs, multi, st, cc, kind)) == True{} : Bool}:
+  match bs:
+    case True{}:
+      gd.g.lex(st, T.LEsc{}, eg)
+    case False{}:
+      gd.g.sch(multi, st, cc, eg, ec)
+
+
+def gd.g.sesc(basic: Bool, +multi: Bool, +st: T.St, +cc: Char, +kind: T.QKind, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.str.esc(basic, multi, st, cc, kind)) == True{} : Bool}:
+  match basic:
+    case True{}:
+      gd.g.sbs(Char.is_eq(cc, '\\'), multi, st, cc, kind, eg, ec)
+    case False{}:
+      gd.g.sch(multi, st, cc, eg, ec)
+
+
+def gd.g.squote(multi: Bool, +st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.str.quote(multi, st)) == True{} : Bool}:
+  match multi:
+    case False{}:
+      gd.g.strfin(st, eg)
+    case True{}:
+      gd.g.mq(st, 1, eg)
+
+
+def gd.g.sgo(quote: Bool, +multi: Bool, +basic: Bool, +st: T.St, +cc: Char, +kind: T.QKind, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.str.go(quote, multi, basic, st, cc, kind)) == True{} : Bool}:
+  match quote:
+    case True{}:
+      gd.g.squote(multi, st, eg)
+    case False{}:
+      gd.g.sesc(basic, multi, st, cc, kind, eg, ec)
+
+
+def gd.g.str(+st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.str(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.sgo(Char.is_eq(cc, T.q.char(qkind)), T.q.multi(qkind), T.q.basic(qkind),
+        T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc, qkind, eg, ec)
+
+
+def gd.g.fendgo(saw: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.fold.end.go(saw, st, cc)) == True{} : Bool}:
+  match saw:
+    case True{}:
+      gd.g.hold(T.st.lex(st, T.LStr{}), T.LStr{}, cc, gd.g.lex(st, T.LStr{}, eg), ec)
+    case False{}:
+      gd.g.err(st, "invalid escape", {==}, eg)
+
+
+def gd.g.fend(+st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.fold.end(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.fendgo(U32.is_eq(left, 1), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc, eg, ec)
+
+
+def gd.g.fnl(nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.fold.nl(nl, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      gd.g.foldsaw(st, eg)
+    case False{}:
+      gd.g.fend(st, cc, eg, ec)
+
+
+def gd.g.fgo(sp: Bool, nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.fold.go(sp, nl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      gd.g.fnl(nl, st, cc, eg, ec)
+
+
+def gd.g.mqone(one: Bool, +st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.mq.one(one, st)) == True{} : Bool}:
+  match one:
+    case True{}:
+      gd.g.mq(st, 2, eg)
+    case False{}:
+      gd.g.mqshut(st, eg)
+
+
+def gd.g.mqgo(quote: Bool, +one: Bool, +st: T.St, +cc: Char, +buf: List<&2, Char>, +kind: T.QKind, +left: U32,
+  +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool}, +eb: {Laws.gd.cs(buf) == True{} : Bool})
+  -> {Laws.good(T.lex.mq.go(quote, one, st, cc, buf, kind, left)) == True{} : Bool}:
+  match quote:
+    case True{}:
+      gd.g.mqone(one, st, eg)
+    case False{}:
+      gd.g.mqback(st, cc, T.mq.put(one, T.q.char(kind), buf), eg, ec, gd.mqput(one, kind, buf, eb))
+
+
+def gd.g.mqstep(+st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.mq.step(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.mqgo(Char.is_eq(cc, T.q.char(qkind)), U32.is_eq(left, 1), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc, buf, qkind, left, eg, ec,
+        gd.lx.b(here, parts, buf, stack, hold, gd.r(Laws.gd.tr(bad, rows, stack), Laws.gd.lx(here, parts, buf, stack, hold), eg)))
+
+
+def gd.g.mqfin(+st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.mq.fin(st, cc)) == True{} : Bool}:
+  gd.g.hold.on(T.str.fin(st), cc, gd.g.strfin(st, eg), ec)
+
+
+def gd.g.mqroom(room: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.mq.room(room, st, cc)) == True{} : Bool}:
+  match room:
+    case True{}:
+      gd.g.mqmore(st, cc, eg, ec)
+    case False{}:
+      gd.g.mqfin(st, cc, eg, ec)
+
+
+def gd.g.mqendgo(quote: Bool, +room: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.mq.end.go(quote, room, st, cc)) == True{} : Bool}:
+  match quote:
+    case True{}:
+      gd.g.mqroom(room, st, cc, eg, ec)
+    case False{}:
+      gd.g.mqfin(st, cc, eg, ec)
+
+
+def gd.g.mqend(+st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.mq.end(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      gd.g.mqendgo(Char.is_eq(cc, T.q.char(qkind)), U32.is_lt(left, 2), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc, eg, ec)
+
+
+def gd.g.tnl2(nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.trim.nl(nl, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      gd.g.lex(st, T.LStr{}, eg)
+    case False{}:
+      gd.g.hold(T.st.lex(st, T.LStr{}), T.LStr{}, cc, gd.g.lex(st, T.LStr{}, eg), ec)
+
+
+def gd.g.trimgo(cr: Bool, nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.trim.go(cr, nl, st, cc)) == True{} : Bool}:
+  match cr:
+    case True{}:
+      gd.g.lex(st, T.LTrim2{}, eg)
+    case False{}:
+      gd.g.tnl2(nl, st, cc, eg, ec)
+
+
+def gd.g.trim2go(lf: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.trim2.go(lf, st, cc)) == True{} : Bool}:
+  match lf:
+    case True{}:
+      gd.g.lex(st, T.LStr{}, eg)
+    case False{}:
+      gd.g.hold(T.st.lex(st, T.LStr{}), T.LStr{}, cc, gd.g.lex(st, T.LStr{}, eg), ec)
+
+
+def gd.g.ctab(tab: Bool, +st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.com.tab(tab, st)) == True{} : Bool}:
+  match tab:
+    case True{}:
+      eg
+    case False{}:
+      gd.g.err(st, "invalid control in comment", {==}, eg)
+
+
+def gd.g.cctl(ctl: Bool, tab: Bool, +st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.com.ctl(ctl, tab, st)) == True{} : Bool}:
+  match ctl:
+    case False{}:
+      eg
+    case True{}:
+      gd.g.ctab(tab, st, eg)
+
+
+def gd.g.cgo(nl: Bool, ctl: Bool, tab: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.com.go(nl, ctl, tab, st, cc)) == True{} : Bool}:
+  match nl:
+    case False{}:
+      gd.g.cctl(ctl, tab, st, eg)
+    case True{}:
+      gd.g.comnl(st, cc, eg, ec)
+
+
+def gd.g.aend(end: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.arr.end(end, st, cc)) == True{} : Bool}:
+  match end:
+    case True{}:
+      gd.g.arrclose(st, eg)
+    case False{}:
+      gd.g.hold(T.st.lex(st, T.LVal{}), T.LVal{}, cc, gd.g.lex(st, T.LVal{}, eg), ec)
+
+
+def gd.g.aahash(hash: Bool, end: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.arr.hash(hash, end, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      gd.g.com(st, T.LArr{}, eg)
+    case False{}:
+      gd.g.aend(end, st, cc, eg, ec)
+
+
+def gd.g.aanl(nl: Bool, hash: Bool, end: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.arr.nl(nl, hash, end, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      eg
+    case False{}:
+      gd.g.aahash(hash, end, st, cc, eg, ec)
+
+
+def gd.g.aago(sp: Bool, nl: Bool, hash: Bool, end: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.arr.go(sp, nl, hash, end, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      gd.g.aanl(nl, hash, end, st, cc, eg, ec)
+
+
+def gd.g.acend(end: Bool, +st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.arrc.end(end, st)) == True{} : Bool}:
+  match end:
+    case True{}:
+      gd.g.arrclose(st, eg)
+    case False{}:
+      gd.g.err(st, "invalid array", {==}, eg)
+
+
+def gd.g.accomma(comma: Bool, end: Bool, +st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.arrc.comma(comma, end, st)) == True{} : Bool}:
+  match comma:
+    case True{}:
+      gd.g.lex(st, T.LArr{}, eg)
+    case False{}:
+      gd.g.acend(end, st, eg)
+
+
+def gd.g.achash(hash: Bool, comma: Bool, end: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.arrc.hash(hash, comma, end, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      gd.g.com(st, T.LArrC{}, eg)
+    case False{}:
+      gd.g.accomma(comma, end, st, eg)
+
+
+def gd.g.acnl(nl: Bool, hash: Bool, comma: Bool, end: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.arrc.nl(nl, hash, comma, end, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      eg
+    case False{}:
+      gd.g.achash(hash, comma, end, st, cc, eg)
+
+
+def gd.g.acgo(sp: Bool, nl: Bool, hash: Bool, comma: Bool, end: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.arrc.go(sp, nl, hash, comma, end, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      gd.g.acnl(nl, hash, comma, end, st, cc, eg)
+
+
+def gd.g.kbare(ok: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.key.bare(ok, st, cc)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      gd.g.push(st, cc, T.LKey{}, eg, ec)
+    case False{}:
+      gd.g.err(st, "invalid key", {==}, eg)
+
+
+def gd.g.klit(lit: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.key.lit(lit, st, cc)) == True{} : Bool}:
+  match lit:
+    case True{}:
+      gd.g.qkey(st, T.QLit{}, T.LKeyQ{}, eg)
+    case False{}:
+      gd.g.kbare(T.bare.at(cc), st, cc, eg, ec)
+
+
+def gd.g.kq0(qq: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.key.q(qq, st, cc)) == True{} : Bool}:
+  match qq:
+    case True{}:
+      gd.g.qkey(st, T.QBasic{}, T.LKeyQ{}, eg)
+    case False{}:
+      gd.g.klit(Char.is_eq(cc, '\''), st, cc, eg, ec)
+
+
+def gd.g.kstart(+st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.key.start(st, cc)) == True{} : Bool}:
+  gd.g.kq0(Char.is_eq(cc, '"'), T.lex.key.clear(st), cc, gd.g.kclear(st, eg), ec)
+
+
+def gd.g.inlnl(nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.inl.nl(nl, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      gd.g.err(st, "newline in inline table", {==}, eg)
+    case False{}:
+      gd.g.kstart(st, cc, eg, ec)
+
+
+def gd.g.inlend(end: Bool, nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.inl.end(end, nl, st, cc)) == True{} : Bool}:
+  match end:
+    case True{}:
+      gd.g.inlclose(st, eg)
+    case False{}:
+      gd.g.inlnl(nl, st, cc, eg, ec)
+
+
+def gd.g.inlhash(hash: Bool, end: Bool, nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.inl.hash(hash, end, nl, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      gd.g.com(st, T.LInl{}, eg)
+    case False{}:
+      gd.g.inlend(end, nl, st, cc, eg, ec)
+
+
+def gd.g.inlgo(sp: Bool, hash: Bool, end: Bool, nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.inl.go(sp, hash, end, nl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      gd.g.inlhash(hash, end, nl, st, cc, eg, ec)
+
+
+def gd.g.ikhash(hash: Bool, nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.inlk.hash(hash, nl, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      gd.g.com(st, T.LInlK{}, eg)
+    case False{}:
+      gd.g.inlnl(nl, st, cc, eg, ec)
+
+
+def gd.g.ikgo(sp: Bool, hash: Bool, nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool}, +ec: {T.wf.char(cc) == True{} : Bool})
+  -> {Laws.good(T.lex.inlk.go(sp, hash, nl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      gd.g.ikhash(hash, nl, st, cc, eg, ec)
+
+
+def gd.g.icnl(nl: Bool, +st: T.St, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.inlc.nl(nl, st)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      gd.g.err(st, "newline in inline table", {==}, eg)
+    case False{}:
+      gd.g.err(st, "invalid inline table", {==}, eg)
+
+
+def gd.g.icend(end: Bool, nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.inlc.end(end, nl, st, cc)) == True{} : Bool}:
+  match end:
+    case True{}:
+      gd.g.inlclose(st, eg)
+    case False{}:
+      gd.g.icnl(nl, st, eg)
+
+
+def gd.g.iccomma(comma: Bool, end: Bool, nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.inlc.comma(comma, end, nl, st, cc)) == True{} : Bool}:
+  match comma:
+    case True{}:
+      gd.g.lex(st, T.LInlK{}, eg)
+    case False{}:
+      gd.g.icend(end, nl, st, cc, eg)
+
+
+def gd.g.ichash(hash: Bool, comma: Bool, end: Bool, nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.inlc.hash(hash, comma, end, nl, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      gd.g.com(st, T.LInlC{}, eg)
+    case False{}:
+      gd.g.iccomma(comma, end, nl, st, cc, eg)
+
+
+def gd.g.icgo(sp: Bool, hash: Bool, comma: Bool, end: Bool, nl: Bool, +st: T.St, +cc: Char, +eg: {Laws.good(st) == True{} : Bool})
+  -> {Laws.good(T.lex.inlc.go(sp, hash, comma, end, nl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      gd.g.ichash(hash, comma, end, nl, st, cc, eg)
+
+
+def Laws.gd_value_steps(lex, hl, st, eg, cc, ec):
+  match lex:
+    case T.LTop{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LTop{}, st, cc)) == True{} : Bool}, hl)
+    case T.LLine{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LLine{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKey{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKey{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKeyDot{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKeyDot{}, st, cc)) == True{} : Bool}, hl)
+    case T.LAfter{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LAfter{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKeyQ{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKeyQ{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKeyE{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKeyE{}, st, cc)) == True{} : Bool}, hl)
+    case T.LKeyU{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LKeyU{}, st, cc)) == True{} : Bool}, hl)
+    case T.LVal{}:
+      gd.g.vgo(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+        Char.is_eq(cc, '['), Char.is_eq(cc, '{'), st, cc, eg, ec)
+    case T.LQ{}:
+      gd.g.q(st, cc, eg, ec)
+    case T.LQ2{}:
+      gd.g.q2(st, cc, eg, ec)
+    case T.LStr{}:
+      gd.g.str(st, cc, eg, ec)
+    case T.LEsc{}:
+      gd.g.esc(T.esc.of(cc), st, T.LStr{}, eg, gd.e.of(cc))
+    case T.LUni{}:
+      gd.g.uni(st, cc, T.LStr{}, eg)
+    case T.LFold{}:
+      gd.g.fgo(T.ch.sp(cc), T.ch.nl(cc), st, cc, eg, ec)
+    case T.LMq{}:
+      gd.g.mqstep(st, cc, eg, ec)
+    case T.LMqEnd{}:
+      gd.g.mqend(st, cc, eg, ec)
+    case T.LTrim{}:
+      gd.g.trimgo(U32.is_eq(Char.to_u32(cc), 13), T.ch.nl(cc), st, cc, eg, ec)
+    case T.LTrim2{}:
+      gd.g.trim2go(U32.is_eq(Char.to_u32(cc), 10), st, cc, eg, ec)
+    case T.LBare{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LBare{}, st, cc)) == True{} : Bool}, hl)
+    case T.LDate{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LDate{}, st, cc)) == True{} : Bool}, hl)
+    case T.LCom{}:
+      gd.g.cgo(T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), st, cc, eg, ec)
+    case T.LHead{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHead{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadGap{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadGap{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadDot{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadDot{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadQ{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadQ{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadE{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadE{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadU{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadU{}, st, cc)) == True{} : Bool}, hl)
+    case T.LHeadR{}:
+      Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LHeadR{}, st, cc)) == True{} : Bool}, hl)
+    case T.LArr{}:
+      gd.g.aago(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ']'), st, cc, eg, ec)
+    case T.LArrC{}:
+      gd.g.acgo(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, ']'), st, cc,
+        eg)
+    case T.LInl{}:
+      gd.g.inlgo(T.ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '}'), T.ch.nl(cc), st, cc, eg, ec)
+    case T.LInlK{}:
+      gd.g.ikgo(T.ch.sp(cc), Char.is_eq(cc, '#'), T.ch.nl(cc), st, cc, eg, ec)
+    case T.LInlC{}:
+      gd.g.icgo(T.ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, '}'), T.ch.nl(cc), st, cc,
+        eg)
+    case T.LSink{}:
+      eg

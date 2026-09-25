@@ -3312,3 +3312,61 @@ law gd_take:
   for +val: T.Val
   for ev: {gd.okv(st, val) == True{} : Bool}
   {good(T.val.take(st, val)) == True{} : Bool}
+
+# the value states whose steps need no bare word read: a value's start,
+# strings, comments, arrays, inline tables and the failed state
+def gd.vl(lex: T.Lex) -> Bool:
+  match lex:
+    case T.LVal{}:
+      True{}
+    case T.LQ{}:
+      True{}
+    case T.LQ2{}:
+      True{}
+    case T.LStr{}:
+      True{}
+    case T.LEsc{}:
+      True{}
+    case T.LUni{}:
+      True{}
+    case T.LFold{}:
+      True{}
+    case T.LMq{}:
+      True{}
+    case T.LMqEnd{}:
+      True{}
+    case T.LTrim{}:
+      True{}
+    case T.LTrim2{}:
+      True{}
+    case T.LCom{}:
+      True{}
+    case T.LSink{}:
+      True{}
+    case T.LArr{}:
+      True{}
+    case T.LArrC{}:
+      True{}
+    case T.LInl{}:
+      True{}
+    case T.LInlK{}:
+      True{}
+    case T.LInlC{}:
+      True{}
+    case _:
+      False{}
+
+# LAW: every step in a value, other than one that ends a bare word, keeps a
+# state good: from every good state, whatever its fields, one character that
+# is a Unicode scalar value read in any of the eighteen states of a value's
+# start, a string, a comment, an array, an inline table or the failed state
+# leaves a good state
+# TOML-RT-3
+law gd_value_steps:
+  for +lex: T.Lex
+  for hl: {gd.vl(lex) == True{} : Bool}
+  for +st: T.St
+  for eg: {good(st) == True{} : Bool}
+  for +cc: Char
+  for ec: {T.wf.char(cc) == True{} : Bool}
+  {good(T.read.on(lex, st, cc)) == True{} : Bool}
