@@ -12184,3 +12184,490 @@ def sw.inl(
 
 def Laws.basic_string_reads_back_in_inline_table(k, ek, s, es):
   sw.inl(k, ek, s, es)
+
+# WP-N: a scalar reads back as itself. A bare value is read from the value
+# state one character at a time on the fast path, ended by a newline, and
+# classified by word.val; the classification is proved kind by kind.
+
+# The ten digits. A digit is a code point from 48 to 57, so its bits above
+# the sixth are zero and its six low bits are one of ten patterns; a claim
+# made of each of the ten digit characters is made of every digit.
+
+# a code point's comparisons with 48 and 57, bit by bit, the bits above the
+# sixth comparing as cc with zero
+def dg.cp(+b0: Bool, +b1: Bool, +b2: Bool, +b3: Bool, +b4: Bool, +b5: Bool, +cc: Cmp) -> Bool:
+  Bool.and(Cmp.is_ge(Word.cmp.fin(b0, False{}, Word.cmp.fin(b1, False{}, Word.cmp.fin(b2, False{},
+    Word.cmp.fin(b3, False{}, Word.cmp.fin(b4, True{}, Word.cmp.fin(b5, True{}, cc))))))),
+    Cmp.is_le(Word.cmp.fin(b0, True{}, Word.cmp.fin(b1, False{}, Word.cmp.fin(b2, False{},
+    Word.cmp.fin(b3, True{}, Word.cmp.fin(b4, True{}, Word.cmp.fin(b5, True{}, cc))))))))
+
+# the char of six low bits and zeros above them
+def dg.ch(b0: Bool, b1: Bool, b2: Bool, b3: Bool, b4: Bool, b5: Bool) -> Char:
+  Chr{U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, Eq.zw(26n)}}}}}}}}
+
+# the six low bits of a digit, highest first: ten patterns are the digits,
+# and the others compare below 48 or above 57
+def dg.bits(
+  -P: Char -> Type,
+  +b5: Bool,
+  +b4: Bool,
+  +b3: Bool,
+  +b2: Bool,
+  +b1: Bool,
+  +b0: Bool,
+  h: {dg.cp(b0, b1, b2, b3, b4, b5, EQ{}) == True{} : Bool},
+  p0: P('0'),
+  p1: P('1'),
+  p2: P('2'),
+  p3: P('3'),
+  p4: P('4'),
+  p5: P('5'),
+  p6: P('6'),
+  p7: P('7'),
+  p8: P('8'),
+  p9: P('9')
+) -> P(dg.ch(b0, b1, b2, b3, b4, b5)):
+  match b5:
+    case False{}:
+      Eq.bit.absurd(&1, P(dg.ch(b0, b1, b2, b3, b4, False{})), h)
+    case True{}:
+      match b4:
+        case False{}:
+          Eq.bit.absurd(&1, P(dg.ch(b0, b1, b2, b3, False{}, True{})), h)
+        case True{}:
+          match b3:
+            case False{}:
+              match b2 b1 b0:
+                case False{} False{} False{}:
+                  p0
+                case False{} False{} True{}:
+                  p1
+                case False{} True{} False{}:
+                  p2
+                case False{} True{} True{}:
+                  p3
+                case True{} False{} False{}:
+                  p4
+                case True{} False{} True{}:
+                  p5
+                case True{} True{} False{}:
+                  p6
+                case True{} True{} True{}:
+                  p7
+            case True{}:
+              match b2:
+                case True{}:
+                  Eq.bit.absurd(&1, P(dg.ch(b0, b1, True{}, True{}, True{}, True{})), h)
+                case False{}:
+                  match b1:
+                    case True{}:
+                      Eq.bit.absurd(&1, P(dg.ch(b0, True{}, False{}, True{}, True{}, True{})), h)
+                    case False{}:
+                      match b0:
+                        case False{}:
+                          p8
+                        case True{}:
+                          p9
+
+# the bits above the sixth compare as cc with zero: they are zero, or the
+# code point is above 57
+def dg.at(
+  -P: Char -> Type,
+  cc: Cmp,
+  +b5: Bool,
+  +b4: Bool,
+  +b3: Bool,
+  +b2: Bool,
+  +b1: Bool,
+  +b0: Bool,
+  +rest: Word(26n),
+  ec: {Word.cmp(26n, rest, Eq.zw(26n)) == cc : Cmp},
+  h: {dg.cp(b0, b1, b2, b3, b4, b5, cc) == True{} : Bool},
+  p0: P('0'),
+  p1: P('1'),
+  p2: P('2'),
+  p3: P('3'),
+  p4: P('4'),
+  p5: P('5'),
+  p6: P('6'),
+  p7: P('7'),
+  p8: P('8'),
+  p9: P('9')
+) -> P(Chr{U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, rest}}}}}}}}):
+  match cc:
+    case LT{}:
+      Eq.bit.gone(&1, P(Chr{U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, rest}}}}}}}}),
+        Eq.bit.clash2(Equal.trans(Bool, True{}, Cmp.is_lt(Word.cmp(26n, rest, Eq.zw(26n))), False{},
+          Equal.sym(Bool, Cmp.is_lt(Word.cmp(26n, rest, Eq.zw(26n))), True{},
+            Equal.cong(Cmp, Bool, xx => Cmp.is_lt(xx), Word.cmp(26n, rest, Eq.zw(26n)), LT{}, ec)),
+          Eq.zw_nlt(26n, rest))))
+    case GT{}:
+      Eq.bit.absurd(&1, P(Chr{U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, rest}}}}}}}}), h)
+    case EQ{}:
+      er = Equal.sym(Word(26n), rest, Eq.zw(26n), Eq.word_eq(26n, rest, Eq.zw(26n), ec))
+      %er : P(Chr{U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, _}}}}}}}})
+      dg.bits(P, b5, b4, b3, b2, b1, b0, h, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9)
+
+# a claim made of each of the ten digits is made of every digit
+def dg.elim(
+  -P: Char -> Type,
+  cc: Char,
+  h: {Char.is_digit(cc) == True{} : Bool},
+  p0: P('0'),
+  p1: P('1'),
+  p2: P('2'),
+  p3: P('3'),
+  p4: P('4'),
+  p5: P('5'),
+  p6: P('6'),
+  p7: P('7'),
+  p8: P('8'),
+  p9: P('9')
+) -> P(cc):
+  match cc:
+    case Chr{U32{WCon{+b0, WCon{+b1, WCon{+b2, WCon{+b3, WCon{+b4, WCon{+b5, +rest}}}}}}}}:
+      dg.at(P, Word.cmp(26n, rest, Eq.zw(26n)), b5, b4, b3, b2, b1, b0, rest, {==}, h,
+        p0, p1, p2, p3, p4, p5, p6, p7, p8, p9)
+
+# The scan of a bare value. It starts in the value state, stays on the fast
+# path for each character it keeps, and a newline ends it.
+
+# a character a bare value keeps is no delimiter
+def wd.delim(+cc: Char, hw: {Laws.word.char(cc) == True{} : Bool}) -> {T.ch.delim(cc) == False{} : Bool}:
+  Eq.not.true(T.ch.delim(cc), Eq.and.left(Bool.not(T.ch.delim(cc)),
+    Bool.not(Bool.or(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''))), hw))
+
+# a character that is no delimiter is pushed on the fast path
+def wd.fast(
+  +fx: Laws.Vf,
+  +buf: List<&2, Char>,
+  +cc: Char,
+  hd: {T.ch.delim(cc) == False{} : Bool}
+) -> {T.MScan{T.read.fast(Laws.vst(fx, buf, T.LBare{}), cc)} == T.MScan{Laws.vst(fx, cc <> buf, T.LBare{})}
+  : T.Mode}:
+  match fx:
+    case Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}:
+      Equal.cong(Bool, T.Mode, bb => T.MScan{T.read.fast.bare(bb, bad, rows, heads, here, parts, buf, back,
+        qkind, stack, uni, left, arrtab, cc)}, T.ch.delim(cc), False{}, hd)
+
+# a later character of a bare value is pushed and the value goes on
+def wd.step(
+  +fx: Laws.Vf,
+  +buf: List<&2, Char>,
+  +xx: U32,
+  +hw: {Laws.word.char(Chr{xx}) == True{} : Bool}
+) -> {T.doc.scan(Laws.vst(fx, buf, T.LBare{}), Chr{xx}) == T.MScan{Laws.vst(fx, Chr{xx} <> buf, T.LBare{})}
+  : T.Mode}:
+  Equal.trans(T.Mode,
+    T.doc.scan(Laws.vst(fx, buf, T.LBare{}), Chr{xx}),
+    T.MScan{T.read.fast(Laws.vst(fx, buf, T.LBare{}), Chr{xx})},
+    T.MScan{Laws.vst(fx, Chr{xx} <> buf, T.LBare{})},
+    scan.other(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), U32.is_eq(xx, 13),
+      Laws.vst(fx, buf, T.LBare{}), Chr{xx}, {==}, {==}, {==}, ch => Laws.word.char(ch), hw, {==}, {==}, {==}),
+    wd.fast(fx, buf, Chr{xx}, wd.delim(Chr{xx}, hw)))
+
+# the characters a bare value keeps are pushed one by one, whatever follows
+def wd.run(
+  ks: String,
+  +rr: String,
+  +fx: Laws.Vf,
+  +buf: List<&2, Char>,
+  +ee: {Laws.word.rest(ks) == True{} : Bool}
+) -> {T.doc.read(String.append(ks, rr), T.MScan{Laws.vst(fx, buf, T.LBare{})})
+  == T.doc.read(rr, T.MScan{Laws.vst(fx, rev.onto(ks, buf), T.LBare{})}) : T.Doc}:
+  match ks:
+    case SNil{}:
+      {==}
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          Equal.trans(T.Doc,
+            T.doc.read(String.append(tt, rr), T.doc.scan(Laws.vst(fx, buf, T.LBare{}), Chr{xx})),
+            T.doc.read(String.append(tt, rr), T.MScan{Laws.vst(fx, Chr{xx} <> buf, T.LBare{})}),
+            T.doc.read(rr, T.MScan{Laws.vst(fx, rev.onto(tt, Chr{xx} <> buf), T.LBare{})}),
+            Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, rr), md),
+              T.doc.scan(Laws.vst(fx, buf, T.LBare{}), Chr{xx}),
+              T.MScan{Laws.vst(fx, Chr{xx} <> buf, T.LBare{})},
+              wd.step(fx, buf, xx, Eq.and.left(Laws.word.char(Chr{xx}), Laws.word.rest(tt), ee))),
+            wd.run(tt, rr, fx, Chr{xx} <> buf, Eq.and.right(Laws.word.char(Chr{xx}), Laws.word.rest(tt), ee)))
+
+# the value state's dispatch sends a character that starts a bare value to
+# the bare state
+def wd.go(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  qq: Bool,
+  lit: Bool,
+  br: Bool,
+  inl: Bool,
+  +st: T.St,
+  +cc: Char,
+  hsp: {sp == False{} : Bool},
+  hnl: {nl == False{} : Bool},
+  hhs: {hash == False{} : Bool},
+  hqq: {qq == False{} : Bool},
+  hlt: {lit == False{} : Bool},
+  hbr: {br == False{} : Bool},
+  hin: {inl == False{} : Bool}
+) -> {T.lex.val.go(sp, nl, hash, qq, lit, br, inl, st, cc) == T.st.push(st, cc, T.LBare{}) : T.St}:
+  match sp:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.lex.val.go(True{}, nl, hash, qq, lit, br, inl, st, cc)
+        == T.st.push(st, cc, T.LBare{}) : T.St}, hsp)
+    case False{}:
+      match nl:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.lex.val.go(False{}, True{}, hash, qq, lit, br, inl, st, cc)
+            == T.st.push(st, cc, T.LBare{}) : T.St}, hnl)
+        case False{}:
+          match hash:
+            case True{}:
+              Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, True{}, qq, lit, br, inl, st, cc)
+                == T.st.push(st, cc, T.LBare{}) : T.St}, hhs)
+            case False{}:
+              match qq:
+                case True{}:
+                  Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, False{}, True{}, lit, br, inl, st, cc)
+                    == T.st.push(st, cc, T.LBare{}) : T.St}, hqq)
+                case False{}:
+                  match lit:
+                    case True{}:
+                      Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, False{}, False{}, True{}, br, inl, st,
+                        cc) == T.st.push(st, cc, T.LBare{}) : T.St}, hlt)
+                    case False{}:
+                      match br:
+                        case True{}:
+                          Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, False{}, False{}, False{}, True{},
+                            inl, st, cc) == T.st.push(st, cc, T.LBare{}) : T.St}, hbr)
+                        case False{}:
+                          match inl:
+                            case True{}:
+                              Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, False{}, False{}, False{},
+                                False{}, True{}, st, cc) == T.st.push(st, cc, T.LBare{}) : T.St}, hin)
+                            case False{}:
+                              {==}
+
+# the value state passes a character that is no space and no newline to its
+# dispatch, which sends it to the bare state
+def wd.ws(
+  sp: Bool,
+  nl: Bool,
+  bad: String,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  back: T.Lex,
+  qkind: T.QKind,
+  stack: List<&2, T.Ctx>,
+  uni: U32,
+  left: U32,
+  arrtab: Bool,
+  +cc: Char,
+  hsp: {sp == False{} : Bool},
+  hnl: {nl == False{} : Bool},
+  fsp: {T.ch.sp(cc) == False{} : Bool},
+  fnl: {T.ch.nl(cc) == False{} : Bool},
+  fhs: {Char.is_eq(cc, '#') == False{} : Bool},
+  fqq: {Char.is_eq(cc, '"') == False{} : Bool},
+  flt: {Char.is_eq(cc, '\'') == False{} : Bool},
+  fbr: {Char.is_eq(cc, '[') == False{} : Bool},
+  fin: {Char.is_eq(cc, '{') == False{} : Bool}
+) -> {T.read.fast.ws(sp, nl, False{}, bad, rows, heads, here, parts, [], T.LVal{}, back, qkind, stack, uni,
+  left, arrtab, cc) == T.St{bad, rows, heads, here, parts, [cc], T.LBare{}, back, qkind, stack, T.HNone{},
+  uni, left, arrtab, False{}} : T.St}:
+  match sp:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.fast.ws(True{}, nl, False{}, bad, rows, heads, here, parts, [], T.LVal{}, back,
+        qkind, stack, uni, left, arrtab, cc) == T.St{bad, rows, heads, here, parts, [cc], T.LBare{}, back, qkind,
+        stack, T.HNone{}, uni, left, arrtab, False{}} : T.St}, hsp)
+    case False{}:
+      match nl:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.read.fast.ws(False{}, True{}, False{}, bad, rows, heads, here, parts, [],
+            T.LVal{}, back, qkind, stack, uni, left, arrtab, cc) == T.St{bad, rows, heads, here, parts, [cc],
+            T.LBare{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}} : T.St}, hnl)
+        case False{}:
+          Equal.cong(T.St, T.St, ss => T.read.once2(ss),
+            T.lex.val.go(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'),
+              Char.is_eq(cc, '\''), Char.is_eq(cc, '['), Char.is_eq(cc, '{'), T.St{bad, rows, heads, here, parts,
+              [], T.LVal{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc),
+            T.st.push(T.St{bad, rows, heads, here, parts, [], T.LVal{}, back, qkind, stack, T.HNone{}, uni, left,
+              arrtab, False{}}, cc, T.LBare{}),
+            wd.go(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+              Char.is_eq(cc, '['), Char.is_eq(cc, '{'), T.St{bad, rows, heads, here, parts, [], T.LVal{}, back,
+              qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc, fsp, fnl, fhs, fqq, flt, fbr, fin))
+
+# the first character of a bare value, read from the value state, is pushed
+def wd.lval(
+  +fx: Laws.Vf,
+  +cc: Char,
+  +fsp: {T.ch.sp(cc) == False{} : Bool},
+  +fnl: {T.ch.nl(cc) == False{} : Bool},
+  +fhs: {Char.is_eq(cc, '#') == False{} : Bool},
+  +fqq: {Char.is_eq(cc, '"') == False{} : Bool},
+  +flt: {Char.is_eq(cc, '\'') == False{} : Bool},
+  +fbr: {Char.is_eq(cc, '[') == False{} : Bool},
+  +fin: {Char.is_eq(cc, '{') == False{} : Bool}
+) -> {T.MScan{T.read.fast(Laws.vst(fx, [], T.LVal{}), cc)} == T.MScan{Laws.vst(fx, [cc], T.LBare{})} : T.Mode}:
+  match fx:
+    case Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}:
+      Equal.cong(T.St, T.Mode, ss => T.MScan{ss},
+        T.read.fast.ws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, [], T.LVal{}, back,
+          qkind, stack, uni, left, arrtab, cc),
+        T.St{bad, rows, heads, here, parts, [cc], T.LBare{}, back, qkind, stack, T.HNone{}, uni, left, arrtab,
+          False{}},
+        wd.ws(T.ch.sp(cc), T.ch.nl(cc), bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab, cc,
+          fsp, fnl, fsp, fnl, fhs, fqq, flt, fbr, fin))
+
+# the facts wd.lval takes, from a character that starts a bare value. The
+# delimiters are a space, a newline, #, a comma and the closers, in that order
+def wd.first(
+  +fx: Laws.Vf,
+  +xx: U32,
+  +h1: {Laws.word.first(Chr{xx}) == True{} : Bool}
+) -> {T.doc.scan(Laws.vst(fx, [], T.LVal{}), Chr{xx}) == T.MScan{Laws.vst(fx, [Chr{xx}], T.LBare{})} : T.Mode}:
+  +hw = {Eq.and.left(Laws.word.char(Chr{xx}), Bool.not(Bool.or(Char.is_eq(Chr{xx}, '['),
+    Char.is_eq(Chr{xx}, '{'))), h1) : {Laws.word.char(Chr{xx}) == True{} : Bool}}
+  +hd = {wd.delim(Chr{xx}, hw) : {T.ch.delim(Chr{xx}) == False{} : Bool}}
+  +hq = {Eq.not.true(Bool.or(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\'')),
+    Eq.and.right(Bool.not(T.ch.delim(Chr{xx})), Bool.not(Bool.or(Char.is_eq(Chr{xx}, '"'),
+    Char.is_eq(Chr{xx}, '\''))), hw))
+    : {Bool.or(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\'')) == False{} : Bool}}
+  +hb = {Eq.not.true(Bool.or(Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '{')),
+    Eq.and.right(Laws.word.char(Chr{xx}), Bool.not(Bool.or(Char.is_eq(Chr{xx}, '['),
+    Char.is_eq(Chr{xx}, '{'))), h1)) : {Bool.or(Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '{')) == False{} : Bool}}
+  +d1 = {Eq.or.right_false(T.ch.sp(Chr{xx}), Bool.or(T.ch.nl(Chr{xx}), Bool.or(Char.is_eq(Chr{xx}, '#'),
+    Bool.or(Char.is_eq(Chr{xx}, ','), Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}'))))), hd)
+    : {Bool.or(T.ch.nl(Chr{xx}), Bool.or(Char.is_eq(Chr{xx}, '#'), Bool.or(Char.is_eq(Chr{xx}, ','),
+    Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}'))))) == False{} : Bool}}
+  +d2 = {Eq.or.right_false(T.ch.nl(Chr{xx}), Bool.or(Char.is_eq(Chr{xx}, '#'), Bool.or(Char.is_eq(Chr{xx}, ','),
+    Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}')))), d1)
+    : {Bool.or(Char.is_eq(Chr{xx}, '#'), Bool.or(Char.is_eq(Chr{xx}, ','), Bool.or(Char.is_eq(Chr{xx}, ']'),
+    Char.is_eq(Chr{xx}, '}')))) == False{} : Bool}}
+  Equal.trans(T.Mode,
+    T.doc.scan(Laws.vst(fx, [], T.LVal{}), Chr{xx}),
+    T.MScan{T.read.fast(Laws.vst(fx, [], T.LVal{}), Chr{xx})},
+    T.MScan{Laws.vst(fx, [Chr{xx}], T.LBare{})},
+    scan.other(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), U32.is_eq(xx, 13),
+      Laws.vst(fx, [], T.LVal{}), Chr{xx}, {==}, {==}, {==}, ch => Laws.word.first(ch), h1, {==}, {==}, {==}),
+    wd.lval(fx, Chr{xx},
+      Eq.or.left_false(T.ch.sp(Chr{xx}), Bool.or(T.ch.nl(Chr{xx}), Bool.or(Char.is_eq(Chr{xx}, '#'),
+        Bool.or(Char.is_eq(Chr{xx}, ','), Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}'))))), hd),
+      Eq.or.left_false(T.ch.nl(Chr{xx}), Bool.or(Char.is_eq(Chr{xx}, '#'), Bool.or(Char.is_eq(Chr{xx}, ','),
+        Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}')))), d1),
+      Eq.or.left_false(Char.is_eq(Chr{xx}, '#'), Bool.or(Char.is_eq(Chr{xx}, ','),
+        Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}'))), d2),
+      Eq.or.left_false(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), hq),
+      Eq.or.right_false(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), hq),
+      Eq.or.left_false(Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '{'), hb),
+      Eq.or.right_false(Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '{'), hb)))
+
+# a newline ends a bare value: word.val classifies the characters pushed, in
+# the order they came, and a value is put where the state puts values
+def wd.end(
+  +fx: Laws.Vf,
+  +buf: List<&2, Char>
+) -> {T.doc.scan(Laws.vst(fx, buf, T.LBare{}), '\n') == T.MScan{T.read.once2(T.bare.got(
+  T.word.val(List.reverse(&2, Char, buf)), Laws.vst(fx, [], T.LBare{}), '\n', Laws.vf.inl(fx)))} : T.Mode}:
+  match fx:
+    case Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}:
+      {==}
+
+# the characters of a text, onto a list
+def tl.onto(ss: String, ys: List<&2, Char>) -> List<&2, Char>:
+  match ss:
+    case SNil{}:
+      ys
+    case SCon{hh, tt}:
+      hh <> tl.onto(tt, ys)
+
+# reversing what a text was pushed onto puts the text back in front
+def wd.rev(
+  ss: String,
+  acc: List<&2, Char>,
+  ys: List<&2, Char>
+) -> {List.reverse.go(&2, Char, rev.onto(ss, acc), ys) == List.reverse.go(&2, Char, acc, tl.onto(ss, ys))
+  : List<&2, Char>}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{hh, tt}:
+      wd.rev(tt, hh <> acc, ys)
+
+# a text's characters onto nothing are its characters
+def tl.nil(ss: String) -> {tl.onto(ss, []) == String.to_list(ss) : List<&2, Char>}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{+hh, tt}:
+      Equal.cong(List<&2, Char>, List<&2, Char>, ys => hh <> ys, tl.onto(tt, []), String.to_list(tt), tl.nil(tt))
+
+# a bare value's first character and the rest, pushed, read back in order
+def wd.order(
+  +cc: Char,
+  +tt: String
+) -> {List.reverse(&2, Char, rev.onto(tt, [cc])) == String.to_list(SCon{cc, tt}) : List<&2, Char>}:
+  Equal.trans(List<&2, Char>, List.reverse.go(&2, Char, rev.onto(tt, [cc]), []),
+    List.reverse.go(&2, Char, [cc], tl.onto(tt, [])), String.to_list(SCon{cc, tt}),
+    wd.rev(tt, [cc], []),
+    Equal.cong(List<&2, Char>, List<&2, Char>, ys => cc <> ys, tl.onto(tt, []), String.to_list(tt), tl.nil(tt)))
+
+def Laws.word_reads_back(v, s, hc, hv, fx, rest):
+  match s:
+    case SNil{}:
+      Eq.bit.absurd(&2, {Laws.from_val(fx, String.append(SNil{}, SCon{'\n', rest})) == Laws.after_val(fx, v, rest)
+        : T.Doc}, hc)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          +h1 = {Eq.and.left(Laws.word.first(Chr{xx}), Laws.word.rest(tt), hc)
+            : {Laws.word.first(Chr{xx}) == True{} : Bool}}
+          +hr = {Eq.and.right(Laws.word.first(Chr{xx}), Laws.word.rest(tt), hc) : {Laws.word.rest(tt) == True{} : Bool}}
+          +ho = {Equal.trans(T.Got, T.word.val(List.reverse(&2, Char, rev.onto(tt, [Chr{xx}]))),
+            T.word.val(String.to_list(SCon{Chr{xx}, tt})), T.GotVal{v},
+            Equal.cong(List<&2, Char>, T.Got, cs => T.word.val(cs), List.reverse(&2, Char, rev.onto(tt, [Chr{xx}])),
+              String.to_list(SCon{Chr{xx}, tt}), wd.order(Chr{xx}, tt)), hv)
+            : {T.word.val(List.reverse(&2, Char, rev.onto(tt, [Chr{xx}]))) == T.GotVal{v} : T.Got}}
+          Equal.trans(T.Doc,
+            T.doc.read(String.append(tt, SCon{'\n', rest}), T.doc.scan(Laws.vst(fx, [], T.LVal{}), Chr{xx})),
+            T.doc.read(String.append(tt, SCon{'\n', rest}), T.MScan{Laws.vst(fx, [Chr{xx}], T.LBare{})}),
+            Laws.after_val(fx, v, rest),
+            Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, SCon{'\n', rest}), md),
+              T.doc.scan(Laws.vst(fx, [], T.LVal{}), Chr{xx}), T.MScan{Laws.vst(fx, [Chr{xx}], T.LBare{})},
+              wd.first(fx, xx, h1)),
+            Equal.trans(T.Doc,
+              T.doc.read(String.append(tt, SCon{'\n', rest}), T.MScan{Laws.vst(fx, [Chr{xx}], T.LBare{})}),
+              T.doc.read(SCon{'\n', rest}, T.MScan{Laws.vst(fx, rev.onto(tt, [Chr{xx}]), T.LBare{})}),
+              Laws.after_val(fx, v, rest),
+              wd.run(tt, SCon{'\n', rest}, fx, [Chr{xx}], hr),
+              Equal.trans(T.Doc,
+                T.doc.read(rest, T.doc.scan(Laws.vst(fx, rev.onto(tt, [Chr{xx}]), T.LBare{}), '\n')),
+                T.doc.read(rest, T.MScan{T.read.once2(T.bare.got(T.word.val(List.reverse(&2, Char,
+                  rev.onto(tt, [Chr{xx}]))), Laws.vst(fx, [], T.LBare{}), '\n', Laws.vf.inl(fx)))}),
+                Laws.after_val(fx, v, rest),
+                Equal.cong(T.Mode, T.Doc, md => T.doc.read(rest, md),
+                  T.doc.scan(Laws.vst(fx, rev.onto(tt, [Chr{xx}]), T.LBare{}), '\n'),
+                  T.MScan{T.read.once2(T.bare.got(T.word.val(List.reverse(&2, Char, rev.onto(tt, [Chr{xx}]))),
+                    Laws.vst(fx, [], T.LBare{}), '\n', Laws.vf.inl(fx)))},
+                  wd.end(fx, rev.onto(tt, [Chr{xx}]))),
+                Equal.cong(T.Got, T.Doc, gg => T.doc.read(rest, T.MScan{T.read.once2(T.bare.got(gg,
+                  Laws.vst(fx, [], T.LBare{}), '\n', Laws.vf.inl(fx)))}),
+                  T.word.val(List.reverse(&2, Char, rev.onto(tt, [Chr{xx}]))), T.GotVal{v}, ho))))
+
+# Booleans. Both texts are fixed, so both facts compute.
+
+def Laws.bool_word(b):
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def Laws.bool_reads_back(b, fx, rest):
+  match b:
+    case True{}:
+      Laws.word_reads_back(T.VBool{True{}}, "true", {==}, {==}, fx, rest)
+    case False{}:
+      Laws.word_reads_back(T.VBool{False{}}, "false", {==}, {==}, fx, rest)

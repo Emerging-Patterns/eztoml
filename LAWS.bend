@@ -2196,3 +2196,90 @@ law basic_string_reads_back_in_inline_table:
   for es: {short(s) == True{} : Bool}
   {own(T.parse(String.append(k, String.append(" = {v = ", String.append(T.key.basic(s), "}\n")))))
     == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VStr{s}}]}}]} : T.Doc}
+
+# WP-N: a scalar reads back as itself. render writes an integer, a float, a
+# boolean and a datetime as a bare word. The scanner reads a bare word from the
+# state that waits for a value, up to the character that ends it, and word.val
+# classifies it. The laws below state the classification of what render
+# writes, kind by kind, and the scan in premise form: from every value state,
+# whatever else it holds, as the round trip's document induction uses it.
+
+# the fields of a scanner state that a bare value does not decide
+type Vf is Data:
+  Vf{bad: String, rows: List<&2, T.Val>, heads: List<&2, String>, here: List<&2, String>,
+    parts: List<&2, String>, back: T.Lex, qkind: T.QKind, stack: List<&2, T.Ctx>,
+    uni: U32, left: U32, arrtab: Bool}
+
+# the scanner with those fields, a buffer and a lex state, holding no
+# character and past the first character of the text
+def vst(fx: Vf, buf: List<&2, Char>, lex: T.Lex) -> T.St:
+  match fx:
+    case Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}:
+      T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, T.HNone{}, uni,
+        left, arrtab, False{}}
+
+# whether those fields are inside an inline table
+def vf.inl(fx: Vf) -> Bool:
+  match fx:
+    case Vf{_bad, _rows, _heads, _here, _parts, _back, _qkind, stack, _uni, _left, _arrtab}:
+      T.inl.open(stack)
+
+# a text read from the state that waits for a value
+def from_val(fx: Vf, text: String) -> T.Doc:
+  T.doc.read(text, T.MScan{vst(fx, [], T.LVal{})})
+
+# the text after a value's newline, read on from the state that put the value
+# where the state puts values
+def after_val(+fx: Vf, vv: T.Val, rest: String) -> T.Doc:
+  T.doc.read(rest, T.MScan{T.read.once2(T.bare.hold(T.val.take(vst(fx, [], T.LBare{}), vv), '\n',
+    vf.inl(fx)))})
+
+# a character a bare value keeps: no delimiter and no quote
+def word.char(+cc: Char) -> Bool:
+  Bool.and(Bool.not(T.ch.delim(cc)), Bool.not(Bool.or(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''))))
+
+# a character that starts a bare value: one it keeps, and no bracket or brace
+def word.first(+cc: Char) -> Bool:
+  Bool.and(word.char(cc), Bool.not(Bool.or(Char.is_eq(cc, '['), Char.is_eq(cc, '{'))))
+
+# characters a bare value keeps
+def word.rest(ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      True{}
+    case SCon{+hh, tt}:
+      Bool.and(word.char(hh), word.rest(tt))
+
+# a bare value: a character that starts one, then characters it keeps
+def word.chars(ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      False{}
+    case SCon{+hh, tt}:
+      Bool.and(word.first(hh), word.rest(tt))
+
+# LAW: a bare value then a newline is read from every value state as the value
+# word.val classifies it as, put where the state puts values, and the text
+# after the newline is read on from there
+law word_reads_back:
+  for +v: T.Val
+  for +s: String
+  for +hc: {word.chars(s) == True{} : Bool}
+  for hv: {T.word.val(String.to_list(s)) == T.GotVal{v} : T.Got}
+  for +fx: Vf
+  for +rest: String
+  {from_val(fx, String.append(s, SCon{'\n', rest})) == after_val(fx, v, rest) : T.Doc}
+
+# LAW: a boolean's text is classified as the boolean
+law bool_word:
+  for b: Bool
+  {T.word.val(String.to_list(T.render.atom(T.VBool{b}))) == T.GotVal{T.VBool{b}} : T.Got}
+
+# LAW: a boolean's text then a newline is read from every value state as the
+# boolean
+law bool_reads_back:
+  for +b: Bool
+  for +fx: Vf
+  for +rest: String
+  {from_val(fx, String.append(T.render.atom(T.VBool{b}), SCon{'\n', rest}))
+    == after_val(fx, T.VBool{b}, rest) : T.Doc}
