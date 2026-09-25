@@ -6879,18 +6879,6 @@ def rp.parse(
               kv.key(xx, tt, String.append(s, "\"\n"), ek),
               rp.read(s, SCon{Chr{xx}, tt}, ep)))
 
-def Laws.render_parse_plain_pair(e, k, ek, s, ep, es):
-  Equal.trans(Bool,
-    Bool.and(String.is_empty(T.bad(T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})))),
-      Laws.same(T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})), T.Doc{e, [T.VPair{k,
-        T.VStr{s}}]})),
-    Laws.same(T.Doc{"", [T.VPair{k, rp.val(s)}]}, T.Doc{e, [T.VPair{k, T.VStr{s}}]}),
-    True{},
-    Equal.cong(T.Doc, Bool, dd => Bool.and(String.is_empty(T.bad(dd)), Laws.same(dd, T.Doc{e,
-      [T.VPair{k, T.VStr{s}}]})), T.parse(T.render(T.Doc{e, [T.VPair{k, T.VStr{s}}]})),
-      T.Doc{"", [T.VPair{k, rp.val(s)}]}, rp.parse(e, k, ek, s, ep)),
-    rp.same(e, k, rp.val(s), s, rp.own(s, k, es)))
-
 # WP-W: contracts of the walk. A walk along a path is one navigation step per
 # segment before the last (nav.walk), then the job at the last (tree.leaf),
 # then the frames rebuilt back to the root (nav.rebuild). A step goes through
@@ -31176,6 +31164,7 @@ def Laws.gd_value_steps(lex, hl, st, eg, cc, ec):
     case T.LSink{}:
       eg
 
+
 # WP-D: the document induction. render writes a table's pairs that are no
 # table first, one line each, then its tables and arrays of tables, each a
 # header and then the same again for its rows. parse reads each line from the
@@ -31547,7 +31536,10 @@ def wa.lm.p(
       ih
 
 # rows.look finds nothing exactly when get does
-def wa.lm(rows: List<&2, T.Val>, +nn: String) -> {lk.miss(T.rows.look(rows, nn)) == Laws.is_miss(T.get(rows, nn)) : Bool}:
+def wa.lm(
+  rows: List<&2, T.Val>,
+  +nn: String
+) -> {lk.miss(T.rows.look(rows, nn)) == Laws.is_miss(T.get(rows, nn)) : Bool}:
   match rows:
     case []:
       {==}
@@ -31642,7 +31634,11 @@ def wa.lr.p(
         ih)
 
 # a name whose pairs are replaced by x refers to x, if it referred to anything
-def wa.lr(rows: List<&2, T.Val>, +nn: String, +xx: T.Val) -> {T.rows.look(T.rows.repl(rows, nn, xx), nn)
+def wa.lr(
+  rows: List<&2, T.Val>,
+  +nn: String,
+  +xx: T.Val
+) -> {T.rows.look(T.rows.repl(rows, nn, xx), nn)
   == lk.r(T.rows.look(rows, nn), xx) : T.Look}:
   match rows:
     case []:
@@ -31692,22 +31688,31 @@ def wa.rr.p(
         T.rows.repl.step(T.str.eq(n2, nn), n2, xx, yy, _u => T.rows.repl(T.rows.repl(t, nn, xx), nn, yy)),
         T.VPair{n2, yy} <> T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
         T.VPair{n2, yy} <> T.rows.repl(t, nn, yy),
-        Equal.cong(Bool, List<&2, T.Val>, b2 => T.rows.repl.step(b2, n2, xx, yy, _u => T.rows.repl(T.rows.repl(t, nn, xx),
+        Equal.cong(Bool, List<&2, T.Val>, b2 => T.rows.repl.step(b2, n2, xx, yy, _u => T.rows.repl(T.rows.repl(t, nn,
+          xx),
           nn, yy)), T.str.eq(n2, nn), True{}, ee),
-        Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VPair{n2, yy} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
+        Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VPair{n2, yy} <> zs, T.rows.repl(T.rows.repl(t, nn, xx),
+          nn, yy),
           T.rows.repl(t, nn, yy), ih))
     case False{}:
       Equal.trans(List<&2, T.Val>,
         T.rows.repl.step(T.str.eq(n2, nn), n2, old, yy, _u => T.rows.repl(T.rows.repl(t, nn, xx), nn, yy)),
         T.VPair{n2, old} <> T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
         T.VPair{n2, old} <> T.rows.repl(t, nn, yy),
-        Equal.cong(Bool, List<&2, T.Val>, b2 => T.rows.repl.step(b2, n2, old, yy, _u => T.rows.repl(T.rows.repl(t, nn, xx),
+        Equal.cong(Bool, List<&2, T.Val>, b2 => T.rows.repl.step(b2, n2, old, yy, _u => T.rows.repl(T.rows.repl(t, nn,
+          xx),
           nn, yy)), T.str.eq(n2, nn), False{}, ee),
-        Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VPair{n2, old} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
+        Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VPair{n2, old} <> zs, T.rows.repl(T.rows.repl(t, nn, xx),
+          nn, yy),
           T.rows.repl(t, nn, yy), ih))
 
 # replacing a name's pairs twice is replacing them once with the second value
-def wa.rr(rows: List<&2, T.Val>, +nn: String, +xx: T.Val, +yy: T.Val) -> {T.rows.repl(T.rows.repl(rows, nn, xx), nn, yy)
+def wa.rr(
+  rows: List<&2, T.Val>,
+  +nn: String,
+  +xx: T.Val,
+  +yy: T.Val
+) -> {T.rows.repl(T.rows.repl(rows, nn, xx), nn, yy)
   == T.rows.repl(rows, nn, yy) : List<&2, T.Val>}:
   match rows:
     case []:
@@ -31719,13 +31724,16 @@ def wa.rr(rows: List<&2, T.Val>, +nn: String, +xx: T.Val, +yy: T.Val) -> {T.rows
       Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VStr{a1} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
         T.rows.repl(t, nn, yy), wa.rr(t, nn, xx, yy))
     case T.VSpan{+a1, +a2} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VSpan{a1, a2} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VSpan{a1, a2} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn,
+        yy),
         T.rows.repl(t, nn, yy), wa.rr(t, nn, xx, yy))
     case T.VInt{+a1, +a2} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VInt{a1, a2} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VInt{a1, a2} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn,
+        yy),
         T.rows.repl(t, nn, yy), wa.rr(t, nn, xx, yy))
     case T.VFlo{+a1, +a2} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VFlo{a1, a2} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VFlo{a1, a2} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn,
+        yy),
         T.rows.repl(t, nn, yy), wa.rr(t, nn, xx, yy))
     case T.VBool{+a1} <> +t:
       Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VBool{a1} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
@@ -31740,13 +31748,16 @@ def wa.rr(rows: List<&2, T.Val>, +nn: String, +xx: T.Val, +yy: T.Val) -> {T.rows
       Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VInl{a1} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
         T.rows.repl(t, nn, yy), wa.rr(t, nn, xx, yy))
     case T.VHead{+a1, +a2} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VHead{a1, a2} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VHead{a1, a2} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn,
+        yy),
         T.rows.repl(t, nn, yy), wa.rr(t, nn, xx, yy))
     case T.VAot{+a1, +a2} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VAot{a1, a2} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VAot{a1, a2} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn,
+        yy),
         T.rows.repl(t, nn, yy), wa.rr(t, nn, xx, yy))
     case T.VAots{+a1, +a2} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VAots{a1, a2} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn, yy),
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VAots{a1, a2} <> zs, T.rows.repl(T.rows.repl(t, nn, xx), nn,
+        yy),
         T.rows.repl(t, nn, yy), wa.rr(t, nn, xx, yy))
 
 # one pair of rows that do not hold the name
@@ -31781,27 +31792,38 @@ def wa.rm(
       wa.rm.p(T.str.eq(n2, nn), n2, old, t, nn, xx, em, e2 => wa.rm(t, nn, xx, e2))
 
     case T.VStr{+a1} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VStr{a1} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx, em))
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VStr{a1} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx,
+        em))
     case T.VSpan{+a1, +a2} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VSpan{a1, a2} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx, em))
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VSpan{a1, a2} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn,
+        xx, em))
     case T.VInt{+a1, +a2} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VInt{a1, a2} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx, em))
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VInt{a1, a2} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn,
+        xx, em))
     case T.VFlo{+a1, +a2} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VFlo{a1, a2} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx, em))
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VFlo{a1, a2} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn,
+        xx, em))
     case T.VBool{+a1} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VBool{a1} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx, em))
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VBool{a1} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx,
+        em))
     case T.VWhen{+a1} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VWhen{a1} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx, em))
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VWhen{a1} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx,
+        em))
     case T.VArr{+a1} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VArr{a1} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx, em))
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VArr{a1} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx,
+        em))
     case T.VInl{+a1} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VInl{a1} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx, em))
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VInl{a1} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx,
+        em))
     case T.VHead{+a1, +a2} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VHead{a1, a2} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx, em))
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VHead{a1, a2} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn,
+        xx, em))
     case T.VAot{+a1, +a2} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VAot{a1, a2} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx, em))
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VAot{a1, a2} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn,
+        xx, em))
     case T.VAots{+a1, +a2} <> +t:
-      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VAots{a1, a2} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn, xx, em))
+      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VAots{a1, a2} <> zs, T.rows.repl(t, nn, xx), t, wa.rm(t, nn,
+        xx, em))
 
 # a pair at the head of the rows is what its name refers to
 def wa.look.hd(
@@ -31822,9 +31844,11 @@ def wa.repl.hd(
 ) -> {T.rows.repl(T.VPair{nn, xx} <> cs, nn, yy) == T.VPair{nn, yy} <> cs : List<&2, T.Val>}:
   Equal.trans(List<&2, T.Val>, T.rows.repl.step(T.str.eq(nn, nn), nn, xx, yy, _u => T.rows.repl(cs, nn, yy)),
     T.VPair{nn, yy} <> T.rows.repl(cs, nn, yy), T.VPair{nn, yy} <> cs,
-    Equal.cong(Bool, List<&2, T.Val>, b2 => T.rows.repl.step(b2, nn, xx, yy, _u => T.rows.repl(cs, nn, yy)), T.str.eq(nn, nn),
+    Equal.cong(Bool, List<&2, T.Val>, b2 => T.rows.repl.step(b2, nn, xx, yy, _u => T.rows.repl(cs, nn, yy)),
+      T.str.eq(nn, nn),
       True{}, str.eq.self(nn)),
-    Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VPair{nn, yy} <> zs, T.rows.repl(cs, nn, yy), cs, wa.rm(cs, nn, yy, em)))
+    Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.VPair{nn, yy} <> zs, T.rows.repl(cs, nn, yy), cs, wa.rm(cs, nn,
+      yy, em)))
 
 
 # the table a pair holds, with its rows replaced: a table's own rows, or the
@@ -31934,49 +31958,60 @@ def wa.head.x(
 
         case T.VStr{+a1} <> +older:
           Eq.bit.absurd(&2, {Laws.tb.put.in(T.look.of(T.VAots{pp, T.VStr{a1} <> older}), nn, T.VPair{nn,
-            T.VAots{pp, T.VStr{a1} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VStr{a1} <> older}, new)} <> cs
+            T.VAots{pp, T.VStr{a1} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VStr{a1} <> older},
+              new)} <> cs
             : List<&2, T.Val>}, ok)
         case T.VSpan{+a1, +a2} <> +older:
           Eq.bit.absurd(&2, {Laws.tb.put.in(T.look.of(T.VAots{pp, T.VSpan{a1, a2} <> older}), nn, T.VPair{nn,
-            T.VAots{pp, T.VSpan{a1, a2} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VSpan{a1, a2} <> older}, new)} <> cs
+            T.VAots{pp, T.VSpan{a1, a2} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VSpan{a1,
+              a2} <> older}, new)} <> cs
             : List<&2, T.Val>}, ok)
         case T.VInt{+a1, +a2} <> +older:
           Eq.bit.absurd(&2, {Laws.tb.put.in(T.look.of(T.VAots{pp, T.VInt{a1, a2} <> older}), nn, T.VPair{nn,
-            T.VAots{pp, T.VInt{a1, a2} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VInt{a1, a2} <> older}, new)} <> cs
+            T.VAots{pp, T.VInt{a1, a2} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VInt{a1,
+              a2} <> older}, new)} <> cs
             : List<&2, T.Val>}, ok)
         case T.VFlo{+a1, +a2} <> +older:
           Eq.bit.absurd(&2, {Laws.tb.put.in(T.look.of(T.VAots{pp, T.VFlo{a1, a2} <> older}), nn, T.VPair{nn,
-            T.VAots{pp, T.VFlo{a1, a2} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VFlo{a1, a2} <> older}, new)} <> cs
+            T.VAots{pp, T.VFlo{a1, a2} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VFlo{a1,
+              a2} <> older}, new)} <> cs
             : List<&2, T.Val>}, ok)
         case T.VBool{+a1} <> +older:
           Eq.bit.absurd(&2, {Laws.tb.put.in(T.look.of(T.VAots{pp, T.VBool{a1} <> older}), nn, T.VPair{nn,
-            T.VAots{pp, T.VBool{a1} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VBool{a1} <> older}, new)} <> cs
+            T.VAots{pp, T.VBool{a1} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VBool{a1} <> older},
+              new)} <> cs
             : List<&2, T.Val>}, ok)
         case T.VWhen{+a1} <> +older:
           Eq.bit.absurd(&2, {Laws.tb.put.in(T.look.of(T.VAots{pp, T.VWhen{a1} <> older}), nn, T.VPair{nn,
-            T.VAots{pp, T.VWhen{a1} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VWhen{a1} <> older}, new)} <> cs
+            T.VAots{pp, T.VWhen{a1} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VWhen{a1} <> older},
+              new)} <> cs
             : List<&2, T.Val>}, ok)
         case T.VArr{+a1} <> +older:
           Eq.bit.absurd(&2, {Laws.tb.put.in(T.look.of(T.VAots{pp, T.VArr{a1} <> older}), nn, T.VPair{nn,
-            T.VAots{pp, T.VArr{a1} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VArr{a1} <> older}, new)} <> cs
+            T.VAots{pp, T.VArr{a1} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VArr{a1} <> older},
+              new)} <> cs
             : List<&2, T.Val>}, ok)
         case T.VInl{+a1} <> +older:
           Eq.bit.absurd(&2, {Laws.tb.put.in(T.look.of(T.VAots{pp, T.VInl{a1} <> older}), nn, T.VPair{nn,
-            T.VAots{pp, T.VInl{a1} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VInl{a1} <> older}, new)} <> cs
+            T.VAots{pp, T.VInl{a1} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VInl{a1} <> older},
+              new)} <> cs
             : List<&2, T.Val>}, ok)
         case T.VHead{+a1, +a2} <> +older:
           Eq.bit.absurd(&2, {Laws.tb.put.in(T.look.of(T.VAots{pp, T.VHead{a1, a2} <> older}), nn, T.VPair{nn,
-            T.VAots{pp, T.VHead{a1, a2} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VHead{a1, a2} <> older}, new)} <> cs
+            T.VAots{pp, T.VHead{a1, a2} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VHead{a1,
+              a2} <> older}, new)} <> cs
             : List<&2, T.Val>}, ok)
         case T.VAot{+q, +r} <> +older:
           wa.repl.hd(nn, T.VAots{pp, T.VAot{q, r} <> older}, cs, T.VAots{pp, T.VAot{pp, new} <> older}, em)
         case T.VAots{+a1, +a2} <> +older:
           Eq.bit.absurd(&2, {Laws.tb.put.in(T.look.of(T.VAots{pp, T.VAots{a1, a2} <> older}), nn, T.VPair{nn,
-            T.VAots{pp, T.VAots{a1, a2} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VAots{a1, a2} <> older}, new)} <> cs
+            T.VAots{pp, T.VAots{a1, a2} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VAots{a1,
+              a2} <> older}, new)} <> cs
             : List<&2, T.Val>}, ok)
         case T.VPair{+a1, +a2} <> +older:
           Eq.bit.absurd(&2, {Laws.tb.put.in(T.look.of(T.VAots{pp, T.VPair{a1, a2} <> older}), nn, T.VPair{nn,
-            T.VAots{pp, T.VPair{a1, a2} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VPair{a1, a2} <> older}, new)} <> cs
+            T.VAots{pp, T.VPair{a1, a2} <> older}} <> cs, pre, new) == T.VPair{nn, slot(T.VAots{pp, T.VPair{a1,
+              a2} <> older}, new)} <> cs
             : List<&2, T.Val>}, ok)
     case T.VStr{+a1}:
       Eq.bit.absurd(&2, {Laws.tb.put.in(T.look.of(T.VStr{a1}), nn, T.VPair{nn, T.VStr{a1}} <> cs, pre, new)
@@ -32019,7 +32054,8 @@ def wa.head(
   em: {Laws.is_miss(T.get(cs, nn)) == True{} : Bool},
   ok: {slot.ok(xx) == True{} : Bool}
 ) -> {Laws.tb.set([nn], pre, T.VPair{nn, xx} <> cs, new) == T.VPair{nn, slot(xx, new)} <> cs : List<&2, T.Val>}:
-  Equal.trans(List<&2, T.Val>, Laws.tb.put.in(T.rows.look(T.VPair{nn, xx} <> cs, nn), nn, T.VPair{nn, xx} <> cs, pre, new),
+  Equal.trans(List<&2, T.Val>, Laws.tb.put.in(T.rows.look(T.VPair{nn, xx} <> cs, nn), nn, T.VPair{nn, xx} <> cs, pre,
+    new),
     Laws.tb.put.in(T.look.of(xx), nn, T.VPair{nn, xx} <> cs, pre, new), T.VPair{nn, slot(xx, new)} <> cs,
     Equal.cong(T.Look, List<&2, T.Val>, lk => Laws.tb.put.in(lk, nn, T.VPair{nn, xx} <> cs, pre, new),
       T.rows.look(T.VPair{nn, xx} <> cs, nn), T.look.of(xx), wa.look.hd(nn, xx, cs)),
@@ -32063,7 +32099,21 @@ def wa.G(
 ) -> Type:
   {Laws.tb.put.in(T.rows.look(wa.R1(lk, seg, rest, pre, rows, aa), seg), seg, wa.R1(lk, seg, rest, pre, rows, aa), pre,
     Laws.tb.set(rest, T.tree.pre(pre, seg), Laws.tb.into(T.rows.look(wa.R1(lk, seg, rest, pre, rows, aa), seg)), bb))
-    == Laws.tb.put.in(lk, seg, rows, pre, Laws.tb.set(rest, T.tree.pre(pre, seg), Laws.tb.into(lk), bb)) : List<&2, T.Val>}
+    == Laws.tb.put.in(lk, seg, rows, pre, Laws.tb.set(rest, T.tree.pre(pre, seg), Laws.tb.into(lk),
+      bb)) : List<&2, T.Val>}
+
+# the step's claim for the rows under the name: for every open r2, setting
+# them twice is setting them once
+def wa.ssIH(
+  +rest: List<&2, String>,
+  +pre: String,
+  +seg: String,
+  +aa: List<&2, T.Val>,
+  +bb: List<&2, T.Val>
+) -> Type:
+  @r2: List<&2, T.Val> -> {Laws.tb.open(rest, r2) == True{} : Bool} ->
+    {Laws.tb.set(rest, T.tree.pre(pre, seg), Laws.tb.set(rest, T.tree.pre(pre, seg), r2, aa), bb)
+      == Laws.tb.set(rest, T.tree.pre(pre, seg), r2, bb) : List<&2, T.Val>}
 
 # the step's rows set twice are the rows set once, by what the name refers to
 def wa.ss.l(
@@ -32076,8 +32126,7 @@ def wa.ss.l(
   +bb: List<&2, T.Val>,
   e: {T.rows.look(rows, seg) == lk : T.Look},
   eo: {Bool.and(Laws.tb.can(lk), Laws.tb.open(rest, Laws.tb.into(lk))) == True{} : Bool},
-  ih: @r2: List<&2, T.Val> -> {Laws.tb.open(rest, r2) == True{} : Bool} -> {Laws.tb.set(rest, T.tree.pre(pre, seg),
-    Laws.tb.set(rest, T.tree.pre(pre, seg), r2, aa), bb) == Laws.tb.set(rest, T.tree.pre(pre, seg), r2, bb) : List<&2, T.Val>}
+  ih: wa.ssIH(rest, pre, seg, aa, bb)
 ) -> wa.G(lk, seg, rest, pre, rows, aa, bb):
   match lk:
     case T.KMiss{}:
@@ -32090,15 +32139,18 @@ def wa.ss.l(
         Equal.cong(T.Look, Bool, l2 => lk.miss(l2), T.rows.look(rows, seg), T.KMiss{}, e))
         : {Laws.is_miss(T.get(rows, seg)) == True{} : Bool}}
       Equal.trans(List<&2, T.Val>,
-        Laws.tb.put.in(T.rows.look(r1, seg), seg, r1, pre, Laws.tb.set(rest, p1, Laws.tb.into(T.rows.look(r1, seg)), bb)),
+        Laws.tb.put.in(T.rows.look(r1, seg), seg, r1, pre, Laws.tb.set(rest, p1, Laws.tb.into(T.rows.look(r1, seg)),
+          bb)),
         Laws.tb.put.in(T.KHead{p1, sa}, seg, r1, pre, x1),
         T.VPair{seg, T.VHead{p1, Laws.tb.set(rest, p1, [], bb)}} <> rows,
-        Equal.cong(T.Look, List<&2, T.Val>, l2 => Laws.tb.put.in(l2, seg, r1, pre, Laws.tb.set(rest, p1, Laws.tb.into(l2), bb)),
+        Equal.cong(T.Look, List<&2, T.Val>, l2 => Laws.tb.put.in(l2, seg, r1, pre, Laws.tb.set(rest, p1,
+          Laws.tb.into(l2), bb)),
           T.rows.look(r1, seg), T.KHead{p1, sa}, wa.look.hd(seg, T.VHead{p1, sa}, rows)),
         Equal.trans(List<&2, T.Val>, T.rows.repl(r1, seg, T.VHead{p1, x1}), T.VPair{seg, T.VHead{p1, x1}} <> rows,
           T.VPair{seg, T.VHead{p1, Laws.tb.set(rest, p1, [], bb)}} <> rows,
           wa.repl.hd(seg, T.VHead{p1, sa}, rows, T.VHead{p1, x1}, em),
-          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zz => T.VPair{seg, T.VHead{p1, zz}} <> rows, x1, Laws.tb.set(rest, p1, [], bb),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zz => T.VPair{seg, T.VHead{p1, zz}} <> rows, x1,
+            Laws.tb.set(rest, p1, [], bb),
             ih([], eo))))
     case T.KHead{+p, +sub}:
       +p1 = {T.tree.pre(pre, seg) : String}
@@ -32110,15 +32162,18 @@ def wa.ss.l(
         Equal.cong(T.Look, T.Look, l2 => lk.r(l2, T.VHead{p, sa}), T.rows.look(rows, seg), T.KHead{p, sub}, e))
         : {T.rows.look(r1, seg) == T.KHead{p, sa} : T.Look}}
       Equal.trans(List<&2, T.Val>,
-        Laws.tb.put.in(T.rows.look(r1, seg), seg, r1, pre, Laws.tb.set(rest, p1, Laws.tb.into(T.rows.look(r1, seg)), bb)),
+        Laws.tb.put.in(T.rows.look(r1, seg), seg, r1, pre, Laws.tb.set(rest, p1, Laws.tb.into(T.rows.look(r1, seg)),
+          bb)),
         T.rows.repl(r1, seg, T.VHead{p, x1}),
         T.rows.repl(rows, seg, T.VHead{p, Laws.tb.set(rest, p1, sub, bb)}),
-        Equal.cong(T.Look, List<&2, T.Val>, l2 => Laws.tb.put.in(l2, seg, r1, pre, Laws.tb.set(rest, p1, Laws.tb.into(l2), bb)),
+        Equal.cong(T.Look, List<&2, T.Val>, l2 => Laws.tb.put.in(l2, seg, r1, pre, Laws.tb.set(rest, p1,
+          Laws.tb.into(l2), bb)),
           T.rows.look(r1, seg), T.KHead{p, sa}, el),
         Equal.trans(List<&2, T.Val>, T.rows.repl(r1, seg, T.VHead{p, x1}), T.rows.repl(rows, seg, T.VHead{p, x1}),
           T.rows.repl(rows, seg, T.VHead{p, Laws.tb.set(rest, p1, sub, bb)}),
           wa.rr(rows, seg, T.VHead{p, sa}, T.VHead{p, x1}),
-          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zz => T.rows.repl(rows, seg, T.VHead{p, zz}), x1, Laws.tb.set(rest, p1, sub, bb),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zz => T.rows.repl(rows, seg, T.VHead{p, zz}), x1,
+            Laws.tb.set(rest, p1, sub, bb),
             ih(sub, eo))))
     case T.KAots{+p, es}:
       match es:
@@ -32148,7 +32203,8 @@ def wa.ss.l(
           +sa = {Laws.tb.set(rest, p1, r, aa) : List<&2, T.Val>}
           +x1 = {Laws.tb.set(rest, p1, sa, bb) : List<&2, T.Val>}
           +r1 = {T.rows.repl(rows, seg, T.VAots{p, T.VAot{p, sa} <> older}) : List<&2, T.Val>}
-          +el = {Equal.trans(T.Look, T.rows.look(r1, seg), lk.r(T.rows.look(rows, seg), T.VAots{p, T.VAot{p, sa} <> older}),
+          +el = {Equal.trans(T.Look, T.rows.look(r1, seg), lk.r(T.rows.look(rows, seg), T.VAots{p, T.VAot{p,
+            sa} <> older}),
             T.KAots{p, T.VAot{p, sa} <> older},
             wa.lr(rows, seg, T.VAots{p, T.VAot{p, sa} <> older}),
             Equal.cong(T.Look, T.Look, l2 => lk.r(l2, T.VAots{p, T.VAot{p, sa} <> older}), T.rows.look(rows, seg),
@@ -32159,13 +32215,15 @@ def wa.ss.l(
               bb)),
             T.rows.repl(r1, seg, T.VAots{p, T.VAot{p, x1} <> older}),
             T.rows.repl(rows, seg, T.VAots{p, T.VAot{p, Laws.tb.set(rest, p1, r, bb)} <> older}),
-            Equal.cong(T.Look, List<&2, T.Val>, l2 => Laws.tb.put.in(l2, seg, r1, pre, Laws.tb.set(rest, p1, Laws.tb.into(l2), bb)),
+            Equal.cong(T.Look, List<&2, T.Val>, l2 => Laws.tb.put.in(l2, seg, r1, pre, Laws.tb.set(rest, p1,
+              Laws.tb.into(l2), bb)),
               T.rows.look(r1, seg), T.KAots{p, T.VAot{p, sa} <> older}, el),
             Equal.trans(List<&2, T.Val>, T.rows.repl(r1, seg, T.VAots{p, T.VAot{p, x1} <> older}),
               T.rows.repl(rows, seg, T.VAots{p, T.VAot{p, x1} <> older}),
               T.rows.repl(rows, seg, T.VAots{p, T.VAot{p, Laws.tb.set(rest, p1, r, bb)} <> older}),
               wa.rr(rows, seg, T.VAots{p, T.VAot{p, sa} <> older}, T.VAots{p, T.VAot{p, x1} <> older}),
-              Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zz => T.rows.repl(rows, seg, T.VAots{p, T.VAot{p, zz} <> older}), x1,
+              Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zz => T.rows.repl(rows, seg, T.VAots{p, T.VAot{p,
+                zz} <> older}), x1,
                 Laws.tb.set(rest, p1, r, bb), ih(r, eo))))
         case T.VAots{+a1, +a2} <> +older:
           Eq.bit.absurd(&1, wa.G(T.KAots{p, T.VAots{a1, a2} <> older}, seg, rest, pre, rows, aa, bb), eo)
@@ -32184,7 +32242,8 @@ def wa.ss(
   +aa: List<&2, T.Val>,
   +bb: List<&2, T.Val>,
   eo: {Laws.tb.open(path, rows) == True{} : Bool}
-) -> {Laws.tb.set(path, pre, Laws.tb.set(path, pre, rows, aa), bb) == Laws.tb.set(path, pre, rows, bb) : List<&2, T.Val>}:
+) -> {Laws.tb.set(path, pre, Laws.tb.set(path, pre, rows, aa), bb) == Laws.tb.set(path, pre, rows,
+  bb) : List<&2, T.Val>}:
   match path:
     case []:
       {==}
@@ -32218,7 +32277,8 @@ def wa.ra(
   aa: List<&2, String>,
   +bb: List<&2, String>,
   rows: List<&2, T.Val>
-) -> {Laws.tb.rows(List.append(&2, String, aa, bb), rows) == Laws.tb.rows(bb, Laws.tb.rows(aa, rows)) : List<&2, T.Val>}:
+) -> {Laws.tb.rows(List.append(&2, String, aa, bb), rows) == Laws.tb.rows(bb, Laws.tb.rows(aa,
+  rows)) : List<&2, T.Val>}:
   match aa:
     case []:
       {==}
@@ -32275,14 +32335,16 @@ def wa.enter(
     Laws.tb.set(he, "", r1, Laws.tb.set([nn], Laws.tb.join(he, ""), Laws.tb.rows(he, r1), new)),
     Laws.tb.set(he, "", r0, T.VPair{nn, slot(xx, new)} <> cs),
     wa.sa(he, [nn], "", r1, new),
-    Equal.trans(List<&2, T.Val>, Laws.tb.set(he, "", r1, Laws.tb.set([nn], Laws.tb.join(he, ""), Laws.tb.rows(he, r1), new)),
+    Equal.trans(List<&2, T.Val>, Laws.tb.set(he, "", r1, Laws.tb.set([nn], Laws.tb.join(he, ""), Laws.tb.rows(he, r1),
+      new)),
       Laws.tb.set(he, "", r1, T.VPair{nn, slot(xx, new)} <> cs),
       Laws.tb.set(he, "", r0, T.VPair{nn, slot(xx, new)} <> cs),
       Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zz => Laws.tb.set(he, "", r1, zz),
         Laws.tb.set([nn], Laws.tb.join(he, ""), Laws.tb.rows(he, r1), new), T.VPair{nn, slot(xx, new)} <> cs,
         Equal.trans(List<&2, T.Val>, Laws.tb.set([nn], Laws.tb.join(he, ""), Laws.tb.rows(he, r1), new),
           Laws.tb.set([nn], Laws.tb.join(he, ""), T.VPair{nn, xx} <> cs, new), T.VPair{nn, slot(xx, new)} <> cs,
-          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zz => Laws.tb.set([nn], Laws.tb.join(he, ""), zz, new), Laws.tb.rows(he, r1),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zz => Laws.tb.set([nn], Laws.tb.join(he, ""), zz, new),
+            Laws.tb.rows(he, r1),
             T.VPair{nn, xx} <> cs, Laws.tb_rows_after_set(he, "", r0, T.VPair{nn, xx} <> cs, eo)),
           wa.head(nn, xx, cs, Laws.tb.join(he, ""), new, em, ok))),
       wa.ss(he, "", r0, T.VPair{nn, xx} <> cs, T.VPair{nn, slot(xx, new)} <> cs, eo)))
@@ -32384,7 +32446,8 @@ def os.step(
   +ho: {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>},
   +h1: {Laws.own.rows(T.rows.seal([xx])) == Laws.own.rows([yy]) : List<&2, T.Val>}
 ) -> {Laws.own.rows(T.rows.seal(xx <> cs)) == Laws.own.rows(List.append(&2, T.Val, mm, [yy])) : List<&2, T.Val>}:
-  +h2 = {Equal.trans(List<&2, T.Val>, Laws.own.rows([Laws.sealed(xx)]), Laws.own.rows(T.rows.seal([xx])), Laws.own.rows([yy]),
+  +h2 = {Equal.trans(List<&2, T.Val>, Laws.own.rows([Laws.sealed(xx)]), Laws.own.rows(T.rows.seal([xx])),
+    Laws.own.rows([yy]),
     Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.own.rows(zs), [Laws.sealed(xx)], T.rows.seal([xx]),
       Equal.sym(List<&2, T.Val>, T.rows.seal([xx]), [Laws.sealed(xx)], Laws.seal_puts_newest_last(xx, []))), h1)
     : {Laws.own.rows([Laws.sealed(xx)]) == Laws.own.rows([yy]) : List<&2, T.Val>}}
@@ -32397,13 +32460,16 @@ def os.step(
       List.append(&2, T.Val, Laws.own.rows(T.rows.seal(cs)), Laws.own.rows([Laws.sealed(xx)])),
       Laws.own.rows(List.append(&2, T.Val, mm, [yy])),
       cv.own.app(T.rows.seal(cs), [Laws.sealed(xx)]),
-      Equal.trans(List<&2, T.Val>, List.append(&2, T.Val, Laws.own.rows(T.rows.seal(cs)), Laws.own.rows([Laws.sealed(xx)])),
+      Equal.trans(List<&2, T.Val>, List.append(&2, T.Val, Laws.own.rows(T.rows.seal(cs)),
+        Laws.own.rows([Laws.sealed(xx)])),
         List.append(&2, T.Val, Laws.own.rows(mm), Laws.own.rows([yy])),
         Laws.own.rows(List.append(&2, T.Val, mm, [yy])),
-        Equal.trans(List<&2, T.Val>, List.append(&2, T.Val, Laws.own.rows(T.rows.seal(cs)), Laws.own.rows([Laws.sealed(xx)])),
+        Equal.trans(List<&2, T.Val>, List.append(&2, T.Val, Laws.own.rows(T.rows.seal(cs)),
+          Laws.own.rows([Laws.sealed(xx)])),
           List.append(&2, T.Val, Laws.own.rows(mm), Laws.own.rows([Laws.sealed(xx)])),
           List.append(&2, T.Val, Laws.own.rows(mm), Laws.own.rows([yy])),
-          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => List.append(&2, T.Val, zs, Laws.own.rows([Laws.sealed(xx)])),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => List.append(&2, T.Val, zs,
+            Laws.own.rows([Laws.sealed(xx)])),
             Laws.own.rows(T.rows.seal(cs)), Laws.own.rows(mm), ho),
           Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => List.append(&2, T.Val, Laws.own.rows(mm), zs),
             Laws.own.rows([Laws.sealed(xx)]), Laws.own.rows([yy]), h2)),
@@ -32460,9 +32526,31 @@ def kp.Then(
   +rest: String,
   -PP: T.Doc -> Type
 ) -> Type:
-  @c2: List<&2, T.Val> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 -> {cv.fr(c2, tz) == True{} : Bool} ->
+  @c2: List<&2, T.Val> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
+    {cv.fr(c2, tz) == True{} : Bool} ->
     {Laws.own.rows(T.rows.seal(c2)) == Laws.own.rows(List.append(&2, T.Val, mm, ks)) : List<&2, T.Val>} ->
     PP(T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, c2), hs, he, b2, q2, u2, l2, ab)}))
+
+# what the key pass over the pairs after the first gives: from any rows c2
+# fresh for the names after them, it reads the rest as kp.Then says
+def kp.Rec(
+  +t: List<&2, T.Val>,
+  +r0: List<&2, T.Val>,
+  +he: List<&2, String>,
+  +hs: List<&2, String>,
+  +ab: Bool,
+  +tz: List<&2, T.Val>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  @c2: List<&2, T.Val> -> @m2: List<&2, T.Val> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
+    {cv.fr(c2, List.append(&2, T.Val, Laws.canon.keys(t), tz)) == True{} : Bool} ->
+    {nd(List.append(&2, T.Val, Laws.canon.keys(t), tz)) == True{} : Bool} ->
+    {Laws.own.rows(T.rows.seal(c2)) == Laws.own.rows(m2) : List<&2, T.Val>} ->
+    kp.Then(r0, he, hs, ab, m2, Laws.canon.keys(t), tz, rest, PP) ->
+    PP(T.doc.read(String.append(T.render.pass(t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, c2),
+      hs,
+      he, b2, q2, u2, l2, ab)}))
 
 # one pair of the key pass: its line puts it, and the pass goes on
 def kp.one(
@@ -32491,13 +32579,7 @@ def kp.one(
   +hn: {nd(T.VPair{kk, v} <> List.append(&2, T.Val, Laws.canon.keys(t), tz)) == True{} : Bool},
   +ho: {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>},
   ih: kp.Then(r0, he, hs, ab, mm, T.VPair{kk, v} <> Laws.canon.keys(t), tz, rest, PP),
-  rec: @c2: List<&2, T.Val> -> @m2: List<&2, T.Val> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
-    {cv.fr(c2, List.append(&2, T.Val, Laws.canon.keys(t), tz)) == True{} : Bool} ->
-    {nd(List.append(&2, T.Val, Laws.canon.keys(t), tz)) == True{} : Bool} ->
-    {Laws.own.rows(T.rows.seal(c2)) == Laws.own.rows(m2) : List<&2, T.Val>} ->
-    kp.Then(r0, he, hs, ab, m2, Laws.canon.keys(t), tz, rest, PP) ->
-    PP(T.doc.read(String.append(T.render.pass(t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, c2), hs,
-      he, b2, q2, u2, l2, ab)}))
+  rec: kp.Rec(t, r0, he, hs, ab, tz, rest, PP)
 ) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, v} <> t, "\n", True{}, False{}), rest),
   T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, he, bk, qk, un, lf, ab)})):
   +rw = {Laws.tb.set(he, "", r0, cs) : List<&2, T.Val>}
@@ -32538,7 +32620,8 @@ def kp.one(
           Laws.tb.set(he, "", r0, T.VPair{kk, vv} <> cs),
           Equal.trans(List<&2, T.Val>, Laws.tb.set(he, "", rw, T.VPair{kk, vv} <> Laws.tb.rows(he, rw)),
             Laws.tb.set(he, "", rw, T.VPair{kk, vv} <> cs), Laws.tb.set(he, "", r0, T.VPair{kk, vv} <> cs),
-            Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.tb.set(he, "", rw, T.VPair{kk, vv} <> zs), Laws.tb.rows(he, rw), cs, erw),
+            Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.tb.set(he, "", rw, T.VPair{kk, vv} <> zs),
+              Laws.tb.rows(he, rw), cs, erw),
             wa.ss(he, "", r0, cs, T.VPair{kk, vv} <> cs, eo))),
         rec(T.VPair{kk, vv} <> cs, List.append(&2, T.Val, mm, [T.VPair{kk, v}]), b2, q2, u2, l2,
           cv.fr.step(zz, kk, vv, cs, Eq.and.right(Laws.is_miss(T.get(cs, kk)), cv.fr(cs, zz), hf),
@@ -32581,12 +32664,14 @@ def kp(
   +hn: {nd(List.append(&2, T.Val, Laws.canon.keys(ys), tz)) == True{} : Bool},
   ho: {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>},
   ih: kp.Then(r0, he, hs, ab, mm, Laws.canon.keys(ys), tz, rest, PP)
-) -> PP(T.doc.read(String.append(T.render.pass(ys, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs),
+) -> PP(T.doc.read(String.append(T.render.pass(ys, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0,
+  cs),
   hs, he, bk, qk, un, lf, ab)})):
   match ys:
     case []:
       ih(cs, bk, qk, un, lf, hf, Equal.trans(List<&2, T.Val>, Laws.own.rows(T.rows.seal(cs)), Laws.own.rows(mm),
-        Laws.own.rows(List.append(&2, T.Val, mm, [])), ho, Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.own.rows(zs), mm,
+        Laws.own.rows(List.append(&2, T.Val, mm, [])), ho, Equal.cong(List<&2, T.Val>, List<&2, T.Val>,
+          zs => Laws.own.rows(zs), mm,
         List.append(&2, T.Val, mm, []), Equal.sym(List<&2, T.Val>, List.append(&2, T.Val, mm, []), mm, va.nil(mm)))))
     case T.VPair{+kk, T.VHead{+p, +r}} <> +t:
       kp(t, hp, r0, he, hs, ab, cs, mm, tz, bk, qk, un, lf, rest, PP, eo, ec,
@@ -32611,49 +32696,66 @@ def kp(
       +htx = {Eq.and.left(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t),
         ha)) : {T.wf.text(kk) == True{} : Bool}}
       kp.one(kk, T.VStr{a1}, t, r0, he, hs, ab, cs, mm, tz, bk, qk, un, lf, rest, PP, eo, ec, hw1,
-        Eq.and.left(Laws.cv.short1(T.VStr{a1}), Laws.short.rows(t), hl), hi.at(T.wf.atom(T.VStr{a1}), T.wf.text(kk), hw1, htx), hf, hn,
+        Eq.and.left(Laws.cv.short1(T.VStr{a1}), Laws.short.rows(t), hl), hi.at(T.wf.atom(T.VStr{a1}), T.wf.text(kk),
+          hw1, htx), hf, hn,
         ho, ih,
-        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2, u2,
+        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2,
+          u2,
           l2, rest, PP, eo, ec, hwt, Eq.and.right(Laws.cv.short1(T.VStr{a1}), Laws.short.rows(t), hl), f2, n2, o2, i2))
     case T.VPair{+kk, T.VSpan{+a1, +a2}} <> +t:
       +ha = {wt.ok(Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)) == True{} : Bool}}
       +hwt = {wt.more(Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {T.wf.go(t, T.WfRows{hp}) == True{} : Bool}}
-      +hw1 = {Eq.and.left(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t), ha) : {T.wf.atom(T.VSpan{a1, a2}) == True{} : Bool}}
-      +htx = {Eq.and.left(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t),
+      +hw1 = {Eq.and.left(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t), ha) : {T.wf.atom(T.VSpan{a1,
+        a2}) == True{} : Bool}}
+      +htx = {Eq.and.left(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk,
+        t),
         ha)) : {T.wf.text(kk) == True{} : Bool}}
       kp.one(kk, T.VSpan{a1, a2}, t, r0, he, hs, ab, cs, mm, tz, bk, qk, un, lf, rest, PP, eo, ec, hw1,
-        Eq.and.left(Laws.cv.short1(T.VSpan{a1, a2}), Laws.short.rows(t), hl), hi.at(T.wf.atom(T.VSpan{a1, a2}), T.wf.text(kk), hw1, htx), hf, hn,
+        Eq.and.left(Laws.cv.short1(T.VSpan{a1, a2}), Laws.short.rows(t), hl), hi.at(T.wf.atom(T.VSpan{a1, a2}),
+          T.wf.text(kk), hw1, htx), hf, hn,
         ho, ih,
-        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2, u2,
-          l2, rest, PP, eo, ec, hwt, Eq.and.right(Laws.cv.short1(T.VSpan{a1, a2}), Laws.short.rows(t), hl), f2, n2, o2, i2))
+        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2,
+          u2,
+          l2, rest, PP, eo, ec, hwt, Eq.and.right(Laws.cv.short1(T.VSpan{a1, a2}), Laws.short.rows(t), hl), f2, n2, o2,
+            i2))
     case T.VPair{+kk, T.VInt{+a1, +a2}} <> +t:
       +ha = {wt.ok(Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)) == True{} : Bool}}
       +hwt = {wt.more(Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {T.wf.go(t, T.WfRows{hp}) == True{} : Bool}}
-      +hw1 = {Eq.and.left(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t), ha) : {T.wf.atom(T.VInt{a1, a2}) == True{} : Bool}}
-      +htx = {Eq.and.left(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t),
+      +hw1 = {Eq.and.left(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t), ha) : {T.wf.atom(T.VInt{a1,
+        a2}) == True{} : Bool}}
+      +htx = {Eq.and.left(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk,
+        t),
         ha)) : {T.wf.text(kk) == True{} : Bool}}
       kp.one(kk, T.VInt{a1, a2}, t, r0, he, hs, ab, cs, mm, tz, bk, qk, un, lf, rest, PP, eo, ec, hw1,
-        Eq.and.left(Laws.cv.short1(T.VInt{a1, a2}), Laws.short.rows(t), hl), hi.at(T.wf.atom(T.VInt{a1, a2}), T.wf.text(kk), hw1, htx), hf, hn,
+        Eq.and.left(Laws.cv.short1(T.VInt{a1, a2}), Laws.short.rows(t), hl), hi.at(T.wf.atom(T.VInt{a1, a2}),
+          T.wf.text(kk), hw1, htx), hf, hn,
         ho, ih,
-        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2, u2,
-          l2, rest, PP, eo, ec, hwt, Eq.and.right(Laws.cv.short1(T.VInt{a1, a2}), Laws.short.rows(t), hl), f2, n2, o2, i2))
+        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2,
+          u2,
+          l2, rest, PP, eo, ec, hwt, Eq.and.right(Laws.cv.short1(T.VInt{a1, a2}), Laws.short.rows(t), hl), f2, n2, o2,
+            i2))
     case T.VPair{+kk, T.VFlo{+a1, +a2}} <> +t:
       +ha = {wt.ok(Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)) == True{} : Bool}}
       +hwt = {wt.more(Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {T.wf.go(t, T.WfRows{hp}) == True{} : Bool}}
-      +hw1 = {Eq.and.left(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t), ha) : {T.wf.atom(T.VFlo{a1, a2}) == True{} : Bool}}
-      +htx = {Eq.and.left(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t),
+      +hw1 = {Eq.and.left(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t), ha) : {T.wf.atom(T.VFlo{a1,
+        a2}) == True{} : Bool}}
+      +htx = {Eq.and.left(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk,
+        t),
         ha)) : {T.wf.text(kk) == True{} : Bool}}
       kp.one(kk, T.VFlo{a1, a2}, t, r0, he, hs, ab, cs, mm, tz, bk, qk, un, lf, rest, PP, eo, ec, hw1,
-        Eq.and.left(Laws.cv.short1(T.VFlo{a1, a2}), Laws.short.rows(t), hl), hi.at(T.wf.atom(T.VFlo{a1, a2}), T.wf.text(kk), hw1, htx), hf, hn,
+        Eq.and.left(Laws.cv.short1(T.VFlo{a1, a2}), Laws.short.rows(t), hl), hi.at(T.wf.atom(T.VFlo{a1, a2}),
+          T.wf.text(kk), hw1, htx), hf, hn,
         ho, ih,
-        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2, u2,
-          l2, rest, PP, eo, ec, hwt, Eq.and.right(Laws.cv.short1(T.VFlo{a1, a2}), Laws.short.rows(t), hl), f2, n2, o2, i2))
+        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2,
+          u2,
+          l2, rest, PP, eo, ec, hwt, Eq.and.right(Laws.cv.short1(T.VFlo{a1, a2}), Laws.short.rows(t), hl), f2, n2, o2,
+            i2))
     case T.VPair{+kk, T.VBool{+a1}} <> +t:
       +ha = {wt.ok(Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)) == True{} : Bool}}
@@ -32663,9 +32765,11 @@ def kp(
       +htx = {Eq.and.left(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t),
         ha)) : {T.wf.text(kk) == True{} : Bool}}
       kp.one(kk, T.VBool{a1}, t, r0, he, hs, ab, cs, mm, tz, bk, qk, un, lf, rest, PP, eo, ec, hw1,
-        Eq.and.left(Laws.cv.short1(T.VBool{a1}), Laws.short.rows(t), hl), hi.at(T.wf.atom(T.VBool{a1}), T.wf.text(kk), hw1, htx), hf, hn,
+        Eq.and.left(Laws.cv.short1(T.VBool{a1}), Laws.short.rows(t), hl), hi.at(T.wf.atom(T.VBool{a1}), T.wf.text(kk),
+          hw1, htx), hf, hn,
         ho, ih,
-        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2, u2,
+        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2,
+          u2,
           l2, rest, PP, eo, ec, hwt, Eq.and.right(Laws.cv.short1(T.VBool{a1}), Laws.short.rows(t), hl), f2, n2, o2, i2))
     case T.VPair{+kk, T.VWhen{+a1}} <> +t:
       +ha = {wt.ok(Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
@@ -32676,74 +32780,96 @@ def kp(
       +htx = {Eq.and.left(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t),
         ha)) : {T.wf.text(kk) == True{} : Bool}}
       kp.one(kk, T.VWhen{a1}, t, r0, he, hs, ab, cs, mm, tz, bk, qk, un, lf, rest, PP, eo, ec, hw1,
-        Eq.and.left(Laws.cv.short1(T.VWhen{a1}), Laws.short.rows(t), hl), hi.at(T.wf.atom(T.VWhen{a1}), T.wf.text(kk), hw1, htx), hf, hn,
+        Eq.and.left(Laws.cv.short1(T.VWhen{a1}), Laws.short.rows(t), hl), hi.at(T.wf.atom(T.VWhen{a1}), T.wf.text(kk),
+          hw1, htx), hf, hn,
         ho, ih,
-        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2, u2,
+        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2,
+          u2,
           l2, rest, PP, eo, ec, hwt, Eq.and.right(Laws.cv.short1(T.VWhen{a1}), Laws.short.rows(t), hl), f2, n2, o2, i2))
     case T.VPair{+kk, T.VArr{+a1}} <> +t:
       +hin = {wt.more(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp})), hw)
         : {T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-      +hwt = {wt.more(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}), hin) : {T.wf.go(t, T.WfRows{hp}) == True{}
+      +hwt = {wt.more(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}), hin) : {T.wf.go(t,
+        T.WfRows{hp}) == True{}
         : Bool}}
-      +hw1 = {wt.ok(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}), hin) : {T.wf.go(a1, T.WfItems{}) == True{} : Bool}}
+      +hw1 = {wt.ok(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}), hin) : {T.wf.go(a1,
+        T.WfItems{}) == True{} : Bool}}
       +htx = {Eq.and.left(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), wt.ok(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1,
         T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp})), hw)) : {T.wf.text(kk) == True{} : Bool}}
       kp.one(kk, T.VArr{a1}, t, r0, he, hs, ab, cs, mm, tz, bk, qk, un, lf, rest, PP, eo, ec, hw1,
-        Eq.and.left(Laws.cv.short1(T.VArr{a1}), Laws.short.rows(t), hl), hi.cn(T.wf.text(kk), T.wf.go(a1, T.WfItems{}), htx, hw1), hf,
+        Eq.and.left(Laws.cv.short1(T.VArr{a1}), Laws.short.rows(t), hl), hi.cn(T.wf.text(kk), T.wf.go(a1, T.WfItems{}),
+          htx, hw1), hf,
         hn, ho, ih,
-        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2, u2,
+        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2,
+          u2,
           l2, rest, PP, eo, ec, hwt, Eq.and.right(Laws.cv.short1(T.VArr{a1}), Laws.short.rows(t), hl), f2, n2, o2, i2))
     case T.VPair{+kk, T.VInl{+a1}} <> +t:
       +hin = {wt.more(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp})), hw)
         : {T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
       +hwt = {wt.more(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp}), hin) : {T.wf.go(t, T.WfRows{hp}) == True{}
         : Bool}}
-      +hw1 = {wt.ok(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp}), hin) : {T.wf.go(a1, T.WfInl{}) == True{} : Bool}}
+      +hw1 = {wt.ok(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp}), hin) : {T.wf.go(a1,
+        T.WfInl{}) == True{} : Bool}}
       +htx = {Eq.and.left(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), wt.ok(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1,
         T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp})), hw)) : {T.wf.text(kk) == True{} : Bool}}
       kp.one(kk, T.VInl{a1}, t, r0, he, hs, ab, cs, mm, tz, bk, qk, un, lf, rest, PP, eo, ec, hw1,
-        Eq.and.left(Laws.cv.short1(T.VInl{a1}), Laws.short.rows(t), hl), hi.cn(T.wf.text(kk), T.wf.go(a1, T.WfInl{}), htx, hw1), hf,
+        Eq.and.left(Laws.cv.short1(T.VInl{a1}), Laws.short.rows(t), hl), hi.cn(T.wf.text(kk), T.wf.go(a1, T.WfInl{}),
+          htx, hw1), hf,
         hn, ho, ih,
-        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2, u2,
+        +c2 => +m2 => +b2 => +q2 => +u2 => +l2 => f2 => n2 => o2 => i2 => kp(t, hp, r0, he, hs, ab, c2, m2, tz, b2, q2,
+          u2,
           l2, rest, PP, eo, ec, hwt, Eq.and.right(Laws.cv.short1(T.VInl{a1}), Laws.short.rows(t), hl), f2, n2, o2, i2))
     case T.VPair{+kk, T.VAot{+a1, +a2}} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAot{a1, a2}} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAot{a1, a2}} <> t, "\n", True{},
+        False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
     case T.VPair{+kk, T.VPair{+a1, +a2}} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VPair{a1, a2}} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VPair{a1, a2}} <> t, "\n", True{},
+        False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
     case T.VStr{+a1} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VStr{a1} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VStr{a1} <> t, "\n", True{}, False{}), rest),
+        T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
     case T.VSpan{+a1, +a2} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VSpan{a1, a2} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VSpan{a1, a2} <> t, "\n", True{}, False{}), rest),
+        T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
     case T.VInt{+a1, +a2} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VInt{a1, a2} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VInt{a1, a2} <> t, "\n", True{}, False{}), rest),
+        T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
     case T.VFlo{+a1, +a2} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VFlo{a1, a2} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VFlo{a1, a2} <> t, "\n", True{}, False{}), rest),
+        T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
     case T.VBool{+a1} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VBool{a1} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VBool{a1} <> t, "\n", True{}, False{}), rest),
+        T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
     case T.VWhen{+a1} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VWhen{a1} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VWhen{a1} <> t, "\n", True{}, False{}), rest),
+        T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
     case T.VArr{+a1} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VArr{a1} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VArr{a1} <> t, "\n", True{}, False{}), rest),
+        T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
     case T.VInl{+a1} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VInl{a1} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VInl{a1} <> t, "\n", True{}, False{}), rest),
+        T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
     case T.VHead{+a1, +a2} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VHead{a1, a2} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VHead{a1, a2} <> t, "\n", True{}, False{}), rest),
+        T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
     case T.VAot{+a1, +a2} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VAot{a1, a2} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VAot{a1, a2} <> t, "\n", True{}, False{}), rest),
+        T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
     case T.VAots{+a1, +a2} <> +t:
-      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VAots{a1, a2} <> t, "\n", True{}, False{}), rest), T.MScan{dl(Laws.tb.set(he, "",
+      Eq.bit.absurd(&1, PP(T.doc.read(String.append(T.render.pass(T.VAots{a1, a2} <> t, "\n", True{}, False{}), rest),
+        T.MScan{dl(Laws.tb.set(he, "",
           r0, cs), hs, he, bk, qk, un, lf, ab)})), hw)
 
 # Headers after a value. A value before a header may have left uni and left
@@ -32867,7 +32993,8 @@ def qh.go(
   hb: {bs == False{} : Bool},
   hn: {nl == False{} : Bool},
   hc: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
-) -> {T.read.once2(T.lex.kq.go(quote, bs, True{}, nl, qh(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}, T.LHeadGap{},
+) -> {T.read.once2(T.lex.kq.go(quote, bs, True{}, nl, qh(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu},
+  T.LHeadGap{},
   T.LHeadQ{})) == qh(rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf) : T.St}:
   match quote:
     case True{}:
@@ -33409,7 +33536,8 @@ def hm.bbody(
   +arrtab: Bool,
   +ee: {T.bare.all(String.to_list(ks)) == True{} : Bool}
 ) -> {T.doc.read(String.append(ks, rr), T.MScan{hm.st(rows, heads, here, parts, dd <> bb, T.LHead{}, back, qkind, un,
-  lf, arrtab)}) == T.doc.read(rr, T.MScan{hm.st(rows, heads, here, parts, rev.onto(ks, dd <> bb), T.LHead{}, back, qkind,
+  lf, arrtab)}) == T.doc.read(rr, T.MScan{hm.st(rows, heads, here, parts, rev.onto(ks, dd <> bb), T.LHead{}, back,
+    qkind,
   un, lf, arrtab)}) : T.Doc}:
   match ks:
     case SNil{}:
@@ -33890,19 +34018,23 @@ def hm.core(
     case False{}:
       hm.segs(t, ss, False{}, rows, heads, here, [], back, qkind, un, lf, False{}, wh.tail(False{}, rest), PP)(
         +bk => +qk => +u2 => +l2 => pp.step(PP,
-          T.doc.read(SCon{'\n', rest}, T.MScan{hm.aft(True{}, rows, heads, here, List.reverse.go(&2, String, t, [ss]), bk,
+          T.doc.read(SCon{'\n', rest}, T.MScan{hm.aft(True{}, rows, heads, here, List.reverse.go(&2, String, t, [ss]),
+            bk,
             qk, u2, l2, False{})}),
           T.doc.read(rest, T.MScan{dl(rows2, heads2, ss <> t, bk, qk, u2, l2, False{})}),
-          hm.fin(False{}, rows, heads, here, List.reverse.go(&2, String, t, [ss]), bk, qk, u2, l2, ss <> t, rows2, heads2,
+          hm.fin(False{}, rows, heads, here, List.reverse.go(&2, String, t, [ss]), bk, qk, u2, l2, ss <> t, rows2,
+            heads2,
             rest, wh.rne(t, ss, []), wh.rev2(t, ss), ew),
           ih(bk, qk, u2, l2)))
     case True{}:
       hm.segs(t, ss, False{}, rows, heads, here, [], back, qkind, un, lf, True{}, wh.tail(True{}, rest), PP)(
         +bk => +qk => +u2 => +l2 => pp.step(PP,
-          T.doc.read(SCon{']', SCon{'\n', rest}}, T.MScan{hm.aft(True{}, rows, heads, here, List.reverse.go(&2, String, t,
+          T.doc.read(SCon{']', SCon{'\n', rest}}, T.MScan{hm.aft(True{}, rows, heads, here, List.reverse.go(&2, String,
+            t,
             [ss]), bk, qk, u2, l2, True{})}),
           T.doc.read(rest, T.MScan{dl(rows2, heads2, ss <> t, bk, qk, u2, l2, False{})}),
-          hm.fin(True{}, rows, heads, here, List.reverse.go(&2, String, t, [ss]), bk, qk, u2, l2, ss <> t, rows2, heads2,
+          hm.fin(True{}, rows, heads, here, List.reverse.go(&2, String, t, [ss]), bk, qk, u2, l2, ss <> t, rows2,
+            heads2,
             rest, wh.rne(t, ss, []), wh.rev2(t, ss), ew),
           ih(bk, qk, u2, l2)))
 
@@ -33957,7 +34089,8 @@ def hm.law(
             String.append(T.key(s0), String.append(wh.more(List.append(&2, String, ss, [kk])), SCon{']',
               wh.tail(arrtab, rest)})),
             Eq.append_assoc(T.key(s0), wh.more(List.append(&2, String, ss, [kk])), SCon{']', wh.tail(arrtab, rest)}))),
-        hm.core(arrtab, s0, List.append(&2, String, ss, [kk]), rows, heads, here, back, qkind, un, lf, a0, rows2, heads2,
+        hm.core(arrtab, s0, List.append(&2, String, ss, [kk]), rows, heads, here, back, qkind, un, lf, a0, rows2,
+          heads2,
           rest, PP, ew, ih))
 
 # Names. wf says each pair's name is none of the later pairs'. parse reads
@@ -34205,7 +34338,8 @@ def fr.tabs(
     case T.VPair{+nn, T.VAot{+a1, +a2}} <> +t:
       fr.tabs(t, kk, cv.fs.r(T.str.eq(nn, kk), T.VAot{a1, a2}, _u => T.rows.find(t, kk), ee))
     case T.VPair{+nn, T.VAots{+a1, +a2}} <> +t:
-      fs.join(T.str.eq(nn, kk), T.VAots{a1, Laws.canon.go(a2, Laws.CElems{a1})}, _u => T.rows.find(Laws.canon.tabs(t), kk),
+      fs.join(T.str.eq(nn, kk), T.VAots{a1, Laws.canon.go(a2, Laws.CElems{a1})}, _u => T.rows.find(Laws.canon.tabs(t),
+        kk),
         cv.fs.l(T.str.eq(nn, kk), T.VAots{a1, a2}, _u => T.rows.find(t, kk), ee),
         fr.tabs(t, kk, cv.fs.r(T.str.eq(nn, kk), T.VAots{a1, a2}, _u => T.rows.find(t, kk), ee)))
     case T.VPair{+nn, T.VPair{+a1, +a2}} <> +t:
@@ -34292,7 +34426,8 @@ def nd.suf(
     case []:
       hh
     case T.VPair{+nn, _vv} <> +t:
-      nd.suf(t, bb, Eq.and.right(T.wf.fresh(T.get(List.append(&2, T.Val, t, bb), nn)), nd(List.append(&2, T.Val, t, bb)), hh))
+      nd.suf(t, bb, Eq.and.right(T.wf.fresh(T.get(List.append(&2, T.Val, t, bb), nn)), nd(List.append(&2, T.Val, t,
+        bb)), hh))
 
     case T.VStr{_a1} <> +t:
       nd.suf(t, bb, hh)
@@ -34330,7 +34465,8 @@ def nd.wf(
       +ha = {wt.ok(Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk))), _u => T.wf.then(T.wf.go(r, T.WfRows{p}),
         _v => T.wf.go(t, T.WfRows{hp})), hw) : {Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk))) == True{}
         : Bool}}
-      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.left(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk)),
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.left(T.wf.key(kk, t), T.str.eq(p,
+        T.tree.pre(hp, kk)),
         ha)) : {T.wf.fresh(T.get(t, kk)) == True{} : Bool}}
       +hwt = {wt.more(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(Bool.and(T.wf.key(kk, t),
         T.str.eq(p, T.tree.pre(hp, kk))), _u => T.wf.then(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp})), hw))
@@ -34342,7 +34478,8 @@ def nd.wf(
         kk)))), _u => T.wf.then(T.wf.go(es, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
         : {Bool.and(Bool.not(List.is_empty(&2, T.Val, es)), Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk))))
         == True{} : Bool}}
-      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.left(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk)),
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.left(T.wf.key(kk, t), T.str.eq(p,
+        T.tree.pre(hp, kk)),
         Eq.and.right(Bool.not(List.is_empty(&2, T.Val, es)), Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk))),
         ha))) : {T.wf.fresh(T.get(t, kk)) == True{} : Bool}}
       +hwt = {wt.more(T.wf.go(es, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(Bool.and(Bool.not(
@@ -34355,93 +34492,123 @@ def nd.wf(
     case T.VPair{+kk, T.VStr{+a1}} <> +t:
       +ha = {wt.ok(Bool.and(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {Bool.and(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t)) == True{} : Bool}}
-      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t), ha))
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t),
+        ha))
         : {T.wf.fresh(T.get(t, kk)) == True{} : Bool}}
-      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2,
+        T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
         fr.app(Laws.canon.keys(t), Laws.canon.tabs(t), kk, fr.keys(t, kk, fr), fr.tabs(t, kk, fr)),
         nd.wf(t, hp, wt.more(Bool.and(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)))
     case T.VPair{+kk, T.VSpan{+a1, +a2}} <> +t:
       +ha = {wt.ok(Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)) == True{} : Bool}}
-      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t), ha))
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk,
+        t), ha))
         : {T.wf.fresh(T.get(t, kk)) == True{} : Bool}}
-      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2,
+        T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
         fr.app(Laws.canon.keys(t), Laws.canon.tabs(t), kk, fr.keys(t, kk, fr), fr.tabs(t, kk, fr)),
-        nd.wf(t, hp, wt.more(Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)))
+        nd.wf(t, hp, wt.more(Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+          hw)))
     case T.VPair{+kk, T.VInt{+a1, +a2}} <> +t:
       +ha = {wt.ok(Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)) == True{} : Bool}}
-      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t), ha))
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk,
+        t), ha))
         : {T.wf.fresh(T.get(t, kk)) == True{} : Bool}}
-      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2,
+        T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
         fr.app(Laws.canon.keys(t), Laws.canon.tabs(t), kk, fr.keys(t, kk, fr), fr.tabs(t, kk, fr)),
         nd.wf(t, hp, wt.more(Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)))
     case T.VPair{+kk, T.VFlo{+a1, +a2}} <> +t:
       +ha = {wt.ok(Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)) == True{} : Bool}}
-      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t), ha))
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk,
+        t), ha))
         : {T.wf.fresh(T.get(t, kk)) == True{} : Bool}}
-      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2,
+        T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
         fr.app(Laws.canon.keys(t), Laws.canon.tabs(t), kk, fr.keys(t, kk, fr), fr.tabs(t, kk, fr)),
         nd.wf(t, hp, wt.more(Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)))
     case T.VPair{+kk, T.VBool{+a1}} <> +t:
       +ha = {wt.ok(Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)) == True{} : Bool}}
-      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t), ha))
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t),
+        ha))
         : {T.wf.fresh(T.get(t, kk)) == True{} : Bool}}
-      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2,
+        T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
         fr.app(Laws.canon.keys(t), Laws.canon.tabs(t), kk, fr.keys(t, kk, fr), fr.tabs(t, kk, fr)),
         nd.wf(t, hp, wt.more(Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)))
     case T.VPair{+kk, T.VWhen{+a1}} <> +t:
       +ha = {wt.ok(Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)
         : {Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t)) == True{} : Bool}}
-      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t), ha))
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.right(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t),
+        ha))
         : {T.wf.fresh(T.get(t, kk)) == True{} : Bool}}
-      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2,
+        T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
         fr.app(Laws.canon.keys(t), Laws.canon.tabs(t), kk, fr.keys(t, kk, fr), fr.tabs(t, kk, fr)),
         nd.wf(t, hp, wt.more(Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)))
     case T.VPair{+kk, T.VArr{+a1}} <> +t:
       +hin = {wt.more(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp})), hw)
         : {T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), wt.ok(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1, T.WfItems{}),
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), wt.ok(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1,
+        T.WfItems{}),
         _v => T.wf.go(t, T.WfRows{hp})), hw)) : {T.wf.fresh(T.get(t, kk)) == True{} : Bool}}
-      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2,
+        T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
         fr.app(Laws.canon.keys(t), Laws.canon.tabs(t), kk, fr.keys(t, kk, fr), fr.tabs(t, kk, fr)),
         nd.wf(t, hp, wt.more(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}), hin)))
     case T.VPair{+kk, T.VInl{+a1}} <> +t:
       +hin = {wt.more(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp})), hw)
         : {T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), wt.ok(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1, T.WfInl{}),
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), wt.ok(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1,
+        T.WfInl{}),
         _v => T.wf.go(t, T.WfRows{hp})), hw)) : {T.wf.fresh(T.get(t, kk)) == True{} : Bool}}
-      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+      cv.and2(T.wf.fresh(T.get(List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)), kk)), nd(List.append(&2,
+        T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
         fr.app(Laws.canon.keys(t), Laws.canon.tabs(t), kk, fr.keys(t, kk, fr), fr.tabs(t, kk, fr)),
         nd.wf(t, hp, wt.more(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp}), hin)))
     case T.VPair{+kk, T.VAot{+a1, +a2}} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VPair{kk, T.VAot{a1, a2}} <> t), Laws.canon.tabs(T.VPair{kk, T.VAot{a1, a2}} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VPair{kk, T.VAot{a1, a2}} <> t),
+        Laws.canon.tabs(T.VPair{kk, T.VAot{a1, a2}} <> t))) == True{} : Bool}, hw)
     case T.VPair{+kk, T.VPair{+a1, +a2}} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VPair{kk, T.VPair{a1, a2}} <> t), Laws.canon.tabs(T.VPair{kk, T.VPair{a1, a2}} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VPair{kk, T.VPair{a1, a2}} <> t),
+        Laws.canon.tabs(T.VPair{kk, T.VPair{a1, a2}} <> t))) == True{} : Bool}, hw)
     case T.VStr{+a1} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VStr{a1} <> t), Laws.canon.tabs(T.VStr{a1} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VStr{a1} <> t),
+        Laws.canon.tabs(T.VStr{a1} <> t))) == True{} : Bool}, hw)
     case T.VSpan{+a1, +a2} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VSpan{a1, a2} <> t), Laws.canon.tabs(T.VSpan{a1, a2} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VSpan{a1, a2} <> t), Laws.canon.tabs(T.VSpan{a1,
+        a2} <> t))) == True{} : Bool}, hw)
     case T.VInt{+a1, +a2} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VInt{a1, a2} <> t), Laws.canon.tabs(T.VInt{a1, a2} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VInt{a1, a2} <> t), Laws.canon.tabs(T.VInt{a1,
+        a2} <> t))) == True{} : Bool}, hw)
     case T.VFlo{+a1, +a2} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VFlo{a1, a2} <> t), Laws.canon.tabs(T.VFlo{a1, a2} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VFlo{a1, a2} <> t), Laws.canon.tabs(T.VFlo{a1,
+        a2} <> t))) == True{} : Bool}, hw)
     case T.VBool{+a1} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VBool{a1} <> t), Laws.canon.tabs(T.VBool{a1} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VBool{a1} <> t),
+        Laws.canon.tabs(T.VBool{a1} <> t))) == True{} : Bool}, hw)
     case T.VWhen{+a1} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VWhen{a1} <> t), Laws.canon.tabs(T.VWhen{a1} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VWhen{a1} <> t),
+        Laws.canon.tabs(T.VWhen{a1} <> t))) == True{} : Bool}, hw)
     case T.VArr{+a1} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VArr{a1} <> t), Laws.canon.tabs(T.VArr{a1} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VArr{a1} <> t),
+        Laws.canon.tabs(T.VArr{a1} <> t))) == True{} : Bool}, hw)
     case T.VInl{+a1} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VInl{a1} <> t), Laws.canon.tabs(T.VInl{a1} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VInl{a1} <> t),
+        Laws.canon.tabs(T.VInl{a1} <> t))) == True{} : Bool}, hw)
     case T.VHead{+a1, +a2} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VHead{a1, a2} <> t), Laws.canon.tabs(T.VHead{a1, a2} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VHead{a1, a2} <> t), Laws.canon.tabs(T.VHead{a1,
+        a2} <> t))) == True{} : Bool}, hw)
     case T.VAot{+a1, +a2} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VAot{a1, a2} <> t), Laws.canon.tabs(T.VAot{a1, a2} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VAot{a1, a2} <> t), Laws.canon.tabs(T.VAot{a1,
+        a2} <> t))) == True{} : Bool}, hw)
     case T.VAots{+a1, +a2} <> +t:
-      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VAots{a1, a2} <> t), Laws.canon.tabs(T.VAots{a1, a2} <> t))) == True{} : Bool}, hw)
+      Eq.bit.absurd(&2, {nd(List.append(&2, T.Val, Laws.canon.keys(T.VAots{a1, a2} <> t), Laws.canon.tabs(T.VAots{a1,
+        a2} <> t))) == True{} : Bool}, hw)
 
 # The walk counts the current table's segments in a U32 (path.len) and counts
 # them down again (counts.down), so a key's put needs a table nested fewer
@@ -34536,7 +34703,8 @@ def cd.drop(
       cv.and2(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(t, U32.add(mm, 1)),
         Equal.cong(Bool, Bool, bb => Bool.not(bb), U32.is_zero(U32.add(mm, 1)), False{}, ez),
         cd.drop(t, U32.add(mm, 1), Eq.not.true(U32.is_zero(U32.add(U32.add(mm, 1), 1)),
-          Eq.and.left(Bool.not(U32.is_zero(U32.add(U32.add(mm, 1), 1))), Laws.counts(t, U32.add(U32.add(mm, 1), 1)), ee)),
+          Eq.and.left(Bool.not(U32.is_zero(U32.add(U32.add(mm, 1), 1))), Laws.counts(t, U32.add(U32.add(mm, 1), 1)),
+            ee)),
           Eq.and.right(Bool.not(U32.is_zero(U32.add(U32.add(mm, 1), 1))), Laws.counts(t, U32.add(U32.add(mm, 1), 1)),
             ee)))
 
@@ -34728,7 +34896,12 @@ def slot.okk(xx: T.Val, +aa: List<&2, T.Val>) -> {slot.ok(slot(xx, aa)) == slot.
       {==}
 
 # four texts appended left to right, then grouped to the right
-def as4(+aa: String, +bb: String, +cc: String, +dd: String) -> {String.append(String.append(String.append(aa, bb), cc),
+def as4(
+  +aa: String,
+  +bb: String,
+  +cc: String,
+  +dd: String
+) -> {String.append(String.append(String.append(aa, bb), cc),
   dd) == String.append(aa, String.append(bb, String.append(cc, dd))) : String}:
   Equal.trans(String, String.append(String.append(String.append(aa, bb), cc), dd),
     String.append(String.append(aa, bb), String.append(cc, dd)), String.append(aa, String.append(bb, String.append(cc,
@@ -34778,9 +34951,12 @@ def tt.aot(
     String.append(String.append(qq, SCon{']', SCon{']', SCon{'\n', String.append(String.append(x1, x2), x3)}}}), rest),
     String.append(qq, SCon{']', SCon{']', SCon{'\n', String.append(x1, String.append(x2, String.append(x3, rest)))}}}),
     Equal.trans(String,
-      String.append(String.append(qq, SCon{']', SCon{']', SCon{'\n', String.append(String.append(x1, x2), x3)}}}), rest),
-      String.append(qq, SCon{']', SCon{']', SCon{'\n', String.append(String.append(String.append(x1, x2), x3), rest)}}}),
-      String.append(qq, SCon{']', SCon{']', SCon{'\n', String.append(x1, String.append(x2, String.append(x3, rest)))}}}),
+      String.append(String.append(qq, SCon{']', SCon{']', SCon{'\n', String.append(String.append(x1, x2), x3)}}}),
+        rest),
+      String.append(qq, SCon{']', SCon{']', SCon{'\n', String.append(String.append(String.append(x1, x2), x3),
+        rest)}}}),
+      String.append(qq, SCon{']', SCon{']', SCon{'\n', String.append(x1, String.append(x2, String.append(x3,
+        rest)))}}}),
       Eq.append_assoc(qq, SCon{']', SCon{']', SCon{'\n', String.append(String.append(x1, x2), x3)}}}, rest),
       Equal.cong(String, String, zz => String.append(qq, SCon{']', SCon{']', SCon{'\n', zz}}}),
         String.append(String.append(String.append(x1, x2), x3), rest),
@@ -34890,6 +35066,21 @@ def tt.aots(
       T.render.pass(es, "\n", True{}, False{}), "", pe),
     Eq.append_assoc(x2, x3, rest))
 
+# the rest of the text after a header for kk: from the start of the next
+# line, in the table the pair holds, its value vx put in front of cs
+def hdr.Then(
+  +vx: T.Val,
+  +kk: String,
+  +he: List<&2, String>,
+  +r0: List<&2, T.Val>,
+  +cs: List<&2, T.Val>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  @hs2: List<&2, String> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
+    PP(T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, vx} <> cs), hs2,
+      List.append(&2, String, he, [kk]), b2, q2, u2, l2, False{})}))
+
 # a [table] header for a name the current table's parent does not hold, read
 # from the start of any line: the rest is read from the start of the next
 # line in the new, empty table
@@ -34911,10 +35102,9 @@ def hdr.tab(
   +eo: {Laws.tb.open(he, r0) == True{} : Bool},
   +em: {Laws.is_miss(T.get(cs, kk)) == True{} : Bool},
   +ep: {T.tree.pre(Laws.tb.join(he, ""), kk) == pp : String},
-  ih: @hs2: List<&2, String> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
-    PP(T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, T.VHead{pp, []}} <> cs), hs2,
-      List.append(&2, String, he, [kk]), b2, q2, u2, l2, False{})}))
-) -> PP(T.doc.read(SCon{'[', String.append(pp, SCon{']', SCon{'\n', rest}})}, T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs,
+  ih: hdr.Then(T.VHead{pp, []}, kk, he, r0, cs, rest, PP)
+) -> PP(T.doc.read(SCon{'[', String.append(pp, SCon{']', SCon{'\n', rest}})}, T.MScan{dl(Laws.tb.set(he, "", r0, cs),
+  hs,
   cur, bk, qk, un, lf, ab)})):
   +rr = {Laws.tb.set(he, "", r0, cs) : List<&2, T.Val>}
   +p0 = {T.tree.pre(Laws.tb.join(he, ""), kk) : String}
@@ -34926,22 +35116,26 @@ def hdr.tab(
   hm.law(False{}, he, kk, rr, hs, cur, bk, qk, un, lf, ab, r2, h2, rest, PP,
     Laws.header_defines_new_table(he, kk, rr, hs, Laws.tb_open_after_set(he, "", r0, cs, eo),
       Equal.trans(T.Hit, T.get(Laws.tb.rows(he, rr), kk), T.get(cs, kk), T.Miss{},
-        Equal.cong(List<&2, T.Val>, T.Hit, zs => T.get(zs, kk), Laws.tb.rows(he, rr), cs, erw), cv.miss(T.get(cs, kk), em))),
+        Equal.cong(List<&2, T.Val>, T.Hit, zs => T.get(zs, kk), Laws.tb.rows(he, rr), cs, erw), cv.miss(T.get(cs, kk),
+          em))),
     +b2 => +q2 => +u2 => +l2 => pp.step(PP,
       T.doc.read(rest, T.MScan{dl(r2, h2, List.append(&2, String, he, [kk]), b2, q2, u2, l2, False{})}),
       T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, T.VHead{pp, []}} <> cs), h2,
         List.append(&2, String, he, [kk]), b2, q2, u2, l2, False{})}),
-      Equal.cong(List<&2, T.Val>, T.Doc, zs => T.doc.read(rest, T.MScan{dl(zs, h2, List.append(&2, String, he, [kk]), b2, q2, u2,
+      Equal.cong(List<&2, T.Val>, T.Doc, zs => T.doc.read(rest, T.MScan{dl(zs, h2, List.append(&2, String, he, [kk]),
+        b2, q2, u2,
         l2, False{})}), r2, Laws.tb.set(he, "", r0, T.VPair{kk, T.VHead{pp, []}} <> cs),
         Equal.trans(List<&2, T.Val>, r2, Laws.tb.set(he, "", rr, T.VPair{kk, T.VHead{p0, []}} <> cs),
           Laws.tb.set(he, "", r0, T.VPair{kk, T.VHead{pp, []}} <> cs),
-          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.tb.set(he, "", rr, T.VPair{kk, T.VHead{p0, []}} <> zs), Laws.tb.rows(he, rr),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.tb.set(he, "", rr, T.VPair{kk, T.VHead{p0,
+            []}} <> zs), Laws.tb.rows(he, rr),
             cs, erw),
           Equal.trans(List<&2, T.Val>, Laws.tb.set(he, "", rr, T.VPair{kk, T.VHead{p0, []}} <> cs),
             Laws.tb.set(he, "", r0, T.VPair{kk, T.VHead{p0, []}} <> cs),
             Laws.tb.set(he, "", r0, T.VPair{kk, T.VHead{pp, []}} <> cs),
             wa.ss(he, "", r0, cs, T.VPair{kk, T.VHead{p0, []}} <> cs, eo),
-            Equal.cong(String, List<&2, T.Val>, zz => Laws.tb.set(he, "", r0, T.VPair{kk, T.VHead{zz, []}} <> cs), p0, pp, ep)))),
+            Equal.cong(String, List<&2, T.Val>, zz => Laws.tb.set(he, "", r0, T.VPair{kk, T.VHead{zz, []}} <> cs), p0,
+              pp, ep)))),
       ih(h2, b2, q2, u2, l2)))
 
 # an [[array]] header for a name the current table's parent does not hold:
@@ -34964,36 +35158,40 @@ def hdr.aot0(
   +eo: {Laws.tb.open(he, r0) == True{} : Bool},
   +em: {Laws.is_miss(T.get(cs, kk)) == True{} : Bool},
   +ep: {T.tree.pre(Laws.tb.join(he, ""), kk) == pp : String},
-  ih: @hs2: List<&2, String> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
-    PP(T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{pp, [T.VAot{pp, []}]}} <> cs), hs2,
-      List.append(&2, String, he, [kk]), b2, q2, u2, l2, False{})}))
-) -> PP(T.doc.read(SCon{'[', SCon{'[', String.append(pp, SCon{']', SCon{']', SCon{'\n', rest}}})}}, T.MScan{dl(Laws.tb.set(he,
+  ih: hdr.Then(T.VAots{pp, [T.VAot{pp, []}]}, kk, he, r0, cs, rest, PP)
+) -> PP(T.doc.read(SCon{'[', SCon{'[', String.append(pp, SCon{']', SCon{']', SCon{'\n', rest}}})}},
+  T.MScan{dl(Laws.tb.set(he,
   "", r0, cs), hs, cur, bk, qk, un, lf, ab)})):
   +rr = {Laws.tb.set(he, "", r0, cs) : List<&2, T.Val>}
   +p0 = {T.tree.pre(Laws.tb.join(he, ""), kk) : String}
   +erw = {Laws.tb_rows_after_set(he, "", r0, cs, eo) : {Laws.tb.rows(he, rr) == cs : List<&2, T.Val>}}
   +r2 = {Laws.tb.set(he, "", rr, T.VPair{kk, T.VAots{p0, [T.VAot{p0, []}]}} <> Laws.tb.rows(he, rr)) : List<&2, T.Val>}
-  %ep : PP(T.doc.read(SCon{'[', SCon{'[', String.append(_, SCon{']', SCon{']', SCon{'\n', rest}}})}}, T.MScan{dl(rr, hs, cur, bk,
+  %ep : PP(T.doc.read(SCon{'[', SCon{'[', String.append(_, SCon{']', SCon{']', SCon{'\n', rest}}})}}, T.MScan{dl(rr, hs,
+    cur, bk,
     qk, un, lf, ab)}))
   hm.law(True{}, he, kk, rr, hs, cur, bk, qk, un, lf, ab, r2, hs, rest, PP,
     Laws.aot_header_starts_array(he, kk, rr, hs, Laws.tb_open_after_set(he, "", r0, cs, eo),
       Equal.trans(T.Hit, T.get(Laws.tb.rows(he, rr), kk), T.get(cs, kk), T.Miss{},
-        Equal.cong(List<&2, T.Val>, T.Hit, zs => T.get(zs, kk), Laws.tb.rows(he, rr), cs, erw), cv.miss(T.get(cs, kk), em))),
+        Equal.cong(List<&2, T.Val>, T.Hit, zs => T.get(zs, kk), Laws.tb.rows(he, rr), cs, erw), cv.miss(T.get(cs, kk),
+          em))),
     +b2 => +q2 => +u2 => +l2 => pp.step(PP,
       T.doc.read(rest, T.MScan{dl(r2, hs, List.append(&2, String, he, [kk]), b2, q2, u2, l2, False{})}),
       T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{pp, [T.VAot{pp, []}]}} <> cs), hs,
         List.append(&2, String, he, [kk]), b2, q2, u2, l2, False{})}),
-      Equal.cong(List<&2, T.Val>, T.Doc, zs => T.doc.read(rest, T.MScan{dl(zs, hs, List.append(&2, String, he, [kk]), b2, q2, u2,
+      Equal.cong(List<&2, T.Val>, T.Doc, zs => T.doc.read(rest, T.MScan{dl(zs, hs, List.append(&2, String, he, [kk]),
+        b2, q2, u2,
         l2, False{})}), r2, Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{pp, [T.VAot{pp, []}]}} <> cs),
         Equal.trans(List<&2, T.Val>, r2, Laws.tb.set(he, "", rr, T.VPair{kk, T.VAots{p0, [T.VAot{p0, []}]}} <> cs),
           Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{pp, [T.VAot{pp, []}]}} <> cs),
-          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.tb.set(he, "", rr, T.VPair{kk, T.VAots{p0, [T.VAot{p0, []}]}} <> zs),
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.tb.set(he, "", rr, T.VPair{kk, T.VAots{p0, [T.VAot{p0,
+            []}]}} <> zs),
             Laws.tb.rows(he, rr), cs, erw),
           Equal.trans(List<&2, T.Val>, Laws.tb.set(he, "", rr, T.VPair{kk, T.VAots{p0, [T.VAot{p0, []}]}} <> cs),
             Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{p0, [T.VAot{p0, []}]}} <> cs),
             Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{pp, [T.VAot{pp, []}]}} <> cs),
             wa.ss(he, "", r0, cs, T.VPair{kk, T.VAots{p0, [T.VAot{p0, []}]}} <> cs, eo),
-            Equal.cong(String, List<&2, T.Val>, zz => Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{zz, [T.VAot{zz, []}]}} <> cs), p0,
+            Equal.cong(String, List<&2, T.Val>, zz => Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{zz, [T.VAot{zz,
+              []}]}} <> cs), p0,
               pp, ep)))),
       ih(hs, b2, q2, u2, l2)))
 
@@ -35018,18 +35216,19 @@ def hdr.aot1(
   +eo: {Laws.tb.open(he, r0) == True{} : Bool},
   +em: {Laws.is_miss(T.get(cs, kk)) == True{} : Bool},
   +ep: {T.tree.pre(Laws.tb.join(he, ""), kk) == pp : String},
-  ih: @hs2: List<&2, String> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
-    PP(T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{pp, T.VAot{pp, []} <> ee}} <> cs), hs2,
-      List.append(&2, String, he, [kk]), b2, q2, u2, l2, False{})}))
-) -> PP(T.doc.read(SCon{'[', SCon{'[', String.append(pp, SCon{']', SCon{']', SCon{'\n', rest}}})}}, T.MScan{dl(Laws.tb.set(he,
+  ih: hdr.Then(T.VAots{pp, T.VAot{pp, []} <> ee}, kk, he, r0, cs, rest, PP)
+) -> PP(T.doc.read(SCon{'[', SCon{'[', String.append(pp, SCon{']', SCon{']', SCon{'\n', rest}}})}},
+  T.MScan{dl(Laws.tb.set(he,
   "", r0, T.VPair{kk, T.VAots{pp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})):
   +c1 = {T.VPair{kk, T.VAots{pp, ee}} <> cs : List<&2, T.Val>}
   +rr = {Laws.tb.set(he, "", r0, c1) : List<&2, T.Val>}
   +p0 = {T.tree.pre(Laws.tb.join(he, ""), kk) : String}
   +erw = {Laws.tb_rows_after_set(he, "", r0, c1, eo) : {Laws.tb.rows(he, rr) == c1 : List<&2, T.Val>}}
-  +r2 = {Laws.tb.set(he, "", rr, T.rows.repl(Laws.tb.rows(he, rr), kk, T.VAots{p0, T.VAot{p0, []} <> ee})) : List<&2, T.Val>}
+  +r2 = {Laws.tb.set(he, "", rr, T.rows.repl(Laws.tb.rows(he, rr), kk, T.VAots{p0, T.VAot{p0,
+    []} <> ee})) : List<&2, T.Val>}
   +h2 = {T.heads.drop(hs, String.append(p0, ".")) : List<&2, String>}
-  %ep : PP(T.doc.read(SCon{'[', SCon{'[', String.append(_, SCon{']', SCon{']', SCon{'\n', rest}}})}}, T.MScan{dl(rr, hs, cur, bk,
+  %ep : PP(T.doc.read(SCon{'[', SCon{'[', String.append(_, SCon{']', SCon{']', SCon{'\n', rest}}})}}, T.MScan{dl(rr, hs,
+    cur, bk,
     qk, un, lf, ab)}))
   hm.law(True{}, he, kk, rr, hs, cur, bk, qk, un, lf, ab, r2, h2, rest, PP,
     Laws.aot_header_extends_array(he, kk, rr, hs, pp, ee, Laws.tb_open_after_set(he, "", r0, c1, eo),
@@ -35040,22 +35239,27 @@ def hdr.aot1(
       T.doc.read(rest, T.MScan{dl(r2, h2, List.append(&2, String, he, [kk]), b2, q2, u2, l2, False{})}),
       T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{pp, T.VAot{pp, []} <> ee}} <> cs), h2,
         List.append(&2, String, he, [kk]), b2, q2, u2, l2, False{})}),
-      Equal.cong(List<&2, T.Val>, T.Doc, zs => T.doc.read(rest, T.MScan{dl(zs, h2, List.append(&2, String, he, [kk]), b2, q2, u2,
+      Equal.cong(List<&2, T.Val>, T.Doc, zs => T.doc.read(rest, T.MScan{dl(zs, h2, List.append(&2, String, he, [kk]),
+        b2, q2, u2,
         l2, False{})}), r2, Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{pp, T.VAot{pp, []} <> ee}} <> cs),
         Equal.trans(List<&2, T.Val>, r2, Laws.tb.set(he, "", rr, T.VPair{kk, T.VAots{p0, T.VAot{p0, []} <> ee}} <> cs),
           Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{pp, T.VAot{pp, []} <> ee}} <> cs),
-          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.tb.set(he, "", rr, zs), T.rows.repl(Laws.tb.rows(he, rr), kk, T.VAots{p0,
+          Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.tb.set(he, "", rr, zs), T.rows.repl(Laws.tb.rows(he,
+            rr), kk, T.VAots{p0,
             T.VAot{p0, []} <> ee}), T.VPair{kk, T.VAots{p0, T.VAot{p0, []} <> ee}} <> cs,
             Equal.trans(List<&2, T.Val>, T.rows.repl(Laws.tb.rows(he, rr), kk, T.VAots{p0, T.VAot{p0, []} <> ee}),
-              T.rows.repl(c1, kk, T.VAots{p0, T.VAot{p0, []} <> ee}), T.VPair{kk, T.VAots{p0, T.VAot{p0, []} <> ee}} <> cs,
-              Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.rows.repl(zs, kk, T.VAots{p0, T.VAot{p0, []} <> ee}), Laws.tb.rows(he, rr), c1,
+              T.rows.repl(c1, kk, T.VAots{p0, T.VAot{p0, []} <> ee}), T.VPair{kk, T.VAots{p0, T.VAot{p0,
+                []} <> ee}} <> cs,
+              Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => T.rows.repl(zs, kk, T.VAots{p0, T.VAot{p0, []} <> ee}),
+                Laws.tb.rows(he, rr), c1,
                 erw),
               wa.repl.hd(kk, T.VAots{pp, ee}, cs, T.VAots{p0, T.VAot{p0, []} <> ee}, em))),
           Equal.trans(List<&2, T.Val>, Laws.tb.set(he, "", rr, T.VPair{kk, T.VAots{p0, T.VAot{p0, []} <> ee}} <> cs),
             Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{p0, T.VAot{p0, []} <> ee}} <> cs),
             Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{pp, T.VAot{pp, []} <> ee}} <> cs),
             wa.ss(he, "", r0, c1, T.VPair{kk, T.VAots{p0, T.VAot{p0, []} <> ee}} <> cs, eo),
-            Equal.cong(String, List<&2, T.Val>, zz => Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{zz, T.VAot{zz, []} <> ee}} <> cs), p0,
+            Equal.cong(String, List<&2, T.Val>, zz => Laws.tb.set(he, "", r0, T.VPair{kk, T.VAots{zz, T.VAot{zz,
+              []} <> ee}} <> cs), p0,
               pp, ep)))),
       ih(h2, b2, q2, u2, l2)))
 
@@ -35070,7 +35274,8 @@ def tp.Then(
   +rest: String,
   -PP: T.Doc -> Type
 ) -> Type:
-  @c2: List<&2, T.Val> -> @hs2: List<&2, String> -> @he2: List<&2, String> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 -> @a2: Bool ->
+  @c2: List<&2, T.Val> -> @hs2: List<&2, String> -> @he2: List<&2, String> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 ->
+    @l2: U32 -> @a2: Bool ->
     {Laws.own.rows(T.rows.seal(c2)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
     PP(T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, c2), hs2, he2, b2, q2, u2, l2, a2)}))
 
@@ -35086,9 +35291,56 @@ def tp.ThenE(
   +rest: String,
   -PP: T.Doc -> Type
 ) -> Type:
-  @e2: List<&2, T.Val> -> @hs2: List<&2, String> -> @he2: List<&2, String> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 -> @a2: Bool ->
+  @e2: List<&2, T.Val> -> @hs2: List<&2, String> -> @he2: List<&2, String> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 ->
+    @l2: U32 -> @a2: Bool ->
     {Laws.own.rows(T.rows.seal(e2)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-    PP(T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{pp, e2}} <> cs), hs2, he2, b2, q2, u2, l2, a2)}))
+    PP(T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{pp, e2}} <> cs), hs2, he2, b2, q2, u2,
+      l2, a2)}))
+
+# the counts down from a path's length
+def cdn(+path: List<&2, String>) -> Bool:
+  Laws.counts.down(path, T.path.len(path, 0))
+
+# what the table pass the caller gives does: from rows c2 fresh for the
+# tables of r, it reads the tables of r and then the rest
+def body.Rec(
+  +kk: String,
+  +xx: T.Val,
+  +r: List<&2, T.Val>,
+  +he: List<&2, String>,
+  +r0: List<&2, T.Val>,
+  +cs: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +ab: Bool,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  @c2: List<&2, T.Val> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
+    {cv.fr(c2, Laws.canon.tabs(r)) == True{} : Bool} -> {nd(Laws.canon.tabs(r)) == True{} : Bool} ->
+    {Laws.own.rows(T.rows.seal(c2)) == Laws.own.rows(Laws.canon.keys(r)) : List<&2, T.Val>} ->
+    tp.Then(Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, [])} <> cs), List.append(&2, String, he, [kk]), List.append(&2,
+      T.Val, Laws.canon.keys(r), Laws.canon.tabs(r)), rest, PP) ->
+    PP(T.doc.read(String.append(T.render.pass(r, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(List.append(&2,
+      String, he, [kk]), "", Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, [])} <> cs), c2), hs, List.append(&2, String,
+      he, [kk]), b2, q2, u2, l2, ab)}))
+
+# the rest after the rows of the table the pair holds: from any line state,
+# its rows c3 sealed owning the rows of r reordered
+def body.Then(
+  +kk: String,
+  +xx: T.Val,
+  +r: List<&2, T.Val>,
+  +he: List<&2, String>,
+  +r0: List<&2, T.Val>,
+  +cs: List<&2, T.Val>,
+  +rest: String,
+  -PP: T.Doc -> Type
+) -> Type:
+  @c3: List<&2, T.Val> -> @hs3: List<&2, String> -> @he3: List<&2, String> -> @b3: T.Lex -> @q3: T.QKind -> @u3: U32 ->
+    @l3: U32 -> @a3: Bool ->
+    {Laws.own.rows(T.rows.seal(c3)) == Laws.own.rows(Laws.canon.rows(r)) : List<&2, T.Val>} ->
+    PP(T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, c3)} <> cs), hs3, he3, b3, q3, u3, l3,
+      a3)}))
 
 # the rows of the table a pair holds, read after its header: the key pass,
 # then the table pass the caller gives (rec), leave in it what own reads,
@@ -35112,48 +35364,53 @@ def body(
   +eo: {Laws.tb.open(he, r0) == True{} : Bool},
   +em: {Laws.is_miss(T.get(cs, kk)) == True{} : Bool},
   +ok: {slot.ok(xx) == True{} : Bool},
-  +ec: {Laws.counts.down(List.append(&2, String, he, [kk]), T.path.len(List.append(&2, String, he, [kk]), 0)) == True{} : Bool},
+  +ec: {cdn(List.append(&2, String, he, [kk])) == True{} : Bool},
   +hw: {T.wf.go(r, T.WfRows{pq}) == True{} : Bool},
   +hl: {Laws.short.rows(r) == True{} : Bool},
-  rec: @c2: List<&2, T.Val> -> @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
-    {cv.fr(c2, Laws.canon.tabs(r)) == True{} : Bool} -> {nd(Laws.canon.tabs(r)) == True{} : Bool} ->
-    {Laws.own.rows(T.rows.seal(c2)) == Laws.own.rows(Laws.canon.keys(r)) : List<&2, T.Val>} ->
-    tp.Then(Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, [])} <> cs), List.append(&2, String, he, [kk]), List.append(&2, T.Val, Laws.canon.keys(r), Laws.canon.tabs(r)), rest, PP) ->
-    PP(T.doc.read(String.append(T.render.pass(r, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(List.append(&2, String, he, [kk]), "", Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, [])} <> cs), c2), hs, List.append(&2, String, he, [kk]), b2, q2, u2, l2, ab)})),
-  ih: @c3: List<&2, T.Val> -> @hs3: List<&2, String> -> @he3: List<&2, String> -> @b3: T.Lex -> @q3: T.QKind -> @u3: U32 -> @l3: U32 -> @a3: Bool ->
-    {Laws.own.rows(T.rows.seal(c3)) == Laws.own.rows(Laws.canon.rows(r)) : List<&2, T.Val>} ->
-    PP(T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, c3)} <> cs), hs3, he3, b3, q3, u3, l3, a3)}))
-) -> PP(T.doc.read(String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{}, True{}), rest)), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, [])} <> cs), hs, List.append(&2, String, he, [kk]), bk, qk, un, lf, ab)})):
+  rec: body.Rec(kk, xx, r, he, r0, cs, hs, ab, rest, PP),
+  ih: body.Then(kk, xx, r, he, r0, cs, rest, PP)
+) -> PP(T.doc.read(String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{},
+  True{}), rest)), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, [])} <> cs), hs, List.append(&2, String, he,
+  [kk]), bk, qk, un, lf, ab)})):
   +r1 = {Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, [])} <> cs) : List<&2, T.Val>}
   +ok1 = {Equal.trans(Bool, slot.ok(slot(xx, [])), slot.ok(xx), True{}, slot.okk(xx, []), ok)
     : {slot.ok(slot(xx, [])) == True{} : Bool}}
-  +tx = {String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{}, True{}), rest)) : String}
+  +tx = {String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{}, True{}),
+    rest)) : String}
   +nw = {nd.wf(r, pq, hw) : {nd(List.append(&2, T.Val, Laws.canon.keys(r), Laws.canon.tabs(r))) == True{} : Bool}}
   pp.step(PP, T.doc.read(tx, T.MScan{dl(r1, hs, List.append(&2, String, he, [kk]), bk, qk, un, lf, ab)}),
-    T.doc.read(tx, T.MScan{dl(Laws.tb.set(List.append(&2, String, he, [kk]), "", r1, []), hs, List.append(&2, String, he, [kk]), bk, qk, un, lf, ab)}),
-    Equal.cong(List<&2, T.Val>, T.Doc, zs => T.doc.read(tx, T.MScan{dl(zs, hs, List.append(&2, String, he, [kk]), bk, qk, un, lf, ab)}), r1,
+    T.doc.read(tx, T.MScan{dl(Laws.tb.set(List.append(&2, String, he, [kk]), "", r1, []), hs, List.append(&2, String,
+      he, [kk]), bk, qk, un, lf, ab)}),
+    Equal.cong(List<&2, T.Val>, T.Doc, zs => T.doc.read(tx, T.MScan{dl(zs, hs, List.append(&2, String, he, [kk]), bk,
+      qk, un, lf, ab)}), r1,
       Laws.tb.set(List.append(&2, String, he, [kk]), "", r1, []),
       Equal.sym(List<&2, T.Val>, Laws.tb.set(List.append(&2, String, he, [kk]), "", r1, []), r1,
         Equal.trans(List<&2, T.Val>, Laws.tb.set(List.append(&2, String, he, [kk]), "", r1, []),
           Laws.tb.set(he, "", r0, T.VPair{kk, slot(slot(xx, []), [])} <> cs), r1,
           wa.enter(he, r0, kk, slot(xx, []), cs, [], eo, em, ok1),
-          Equal.cong(T.Val, List<&2, T.Val>, zz => Laws.tb.set(he, "", r0, T.VPair{kk, zz} <> cs), slot(slot(xx, []), []),
+          Equal.cong(T.Val, List<&2, T.Val>, zz => Laws.tb.set(he, "", r0, T.VPair{kk, zz} <> cs), slot(slot(xx, []),
+            []),
             slot(xx, []), slot.ss(xx, [], []))))),
-    kp(r, pq, r1, List.append(&2, String, he, [kk]), hs, ab, [], [], Laws.canon.tabs(r), bk, qk, un, lf, String.append(T.render.pass(r, "\n", True{}, True{}), rest), PP,
+    kp(r, pq, r1, List.append(&2, String, he, [kk]), hs, ab, [], [], Laws.canon.tabs(r), bk, qk, un, lf,
+      String.append(T.render.pass(r, "\n", True{}, True{}), rest), PP,
       wa.eopen(he, r0, kk, slot(xx, []), cs, eo, ok1), ec, hw, hl,
       cv.fr.nil(List.append(&2, T.Val, Laws.canon.keys(r), Laws.canon.tabs(r))), nw, {==},
       +c2 => +b2 => +q2 => +u2 => +l2 => f2 => o2 => rec(c2, b2, q2, u2, l2, f2,
         nd.suf(Laws.canon.keys(r), Laws.canon.tabs(r), nw), o2,
         +c3 => +hs3 => +he3 => +b3 => +q3 => +u3 => +l3 => +a3 => o3 => pp.step(PP,
-          T.doc.read(rest, T.MScan{dl(Laws.tb.set(List.append(&2, String, he, [kk]), "", r1, c3), hs3, he3, b3, q3, u3, l3, a3)}),
-          T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, c3)} <> cs), hs3, he3, b3, q3, u3, l3, a3)}),
+          T.doc.read(rest, T.MScan{dl(Laws.tb.set(List.append(&2, String, he, [kk]), "", r1, c3), hs3, he3, b3, q3, u3,
+            l3, a3)}),
+          T.doc.read(rest, T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, c3)} <> cs), hs3, he3, b3, q3, u3,
+            l3, a3)}),
           Equal.cong(List<&2, T.Val>, T.Doc, zs => T.doc.read(rest, T.MScan{dl(zs, hs3, he3, b3, q3, u3, l3, a3)}),
-            Laws.tb.set(List.append(&2, String, he, [kk]), "", r1, c3), Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, c3)} <> cs),
+            Laws.tb.set(List.append(&2, String, he, [kk]), "", r1, c3), Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx,
+              c3)} <> cs),
             Equal.trans(List<&2, T.Val>, Laws.tb.set(List.append(&2, String, he, [kk]), "", r1, c3),
               Laws.tb.set(he, "", r0, T.VPair{kk, slot(slot(xx, []), c3)} <> cs),
               Laws.tb.set(he, "", r0, T.VPair{kk, slot(xx, c3)} <> cs),
               wa.enter(he, r0, kk, slot(xx, []), cs, c3, eo, em, ok1),
-              Equal.cong(T.Val, List<&2, T.Val>, zz => Laws.tb.set(he, "", r0, T.VPair{kk, zz} <> cs), slot(slot(xx, []), c3),
+              Equal.cong(T.Val, List<&2, T.Val>, zz => Laws.tb.set(he, "", r0, T.VPair{kk, zz} <> cs), slot(slot(xx,
+                []), c3),
                 slot(xx, c3), slot.ss(xx, [], c3)))),
           ih(c3, hs3, he3, b3, q3, u3, l3, a3, o3)))))
 
@@ -35185,15 +35442,19 @@ def tp.G(
     case False{}:
       {Laws.tb.join(he, "") == hp : String} -> {T.wf.go(ys, T.WfRows{hp}) == True{} : Bool} ->
         {Laws.short.rows(ys) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(ys)) == True{} : Bool} ->
-        {nd(Laws.canon.tabs(ys)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        {nd(Laws.canon.tabs(ys)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
         tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(ys)), rest, PP) ->
-        PP(T.doc.read(String.append(T.render.pass(ys, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)}))
+        PP(T.doc.read(String.append(T.render.pass(ys, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0,
+          cs), hs, cur, bk, qk, un, lf, ab)}))
     case True{}:
       {T.tree.pre(Laws.tb.join(he, ""), nn) == hp : String} -> {Laws.is_miss(T.get(cs, nn)) == True{} : Bool} ->
         {Laws.short(hp) == True{} : Bool} -> {T.wf.go(ys, T.WfElems{hp}) == True{} : Bool} ->
-        {Laws.short.rows(ys) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        {Laws.short.rows(ys) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
         tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(ys, Laws.CElems{hp})), rest, PP) ->
-        PP(T.doc.read(String.append(T.render.pass(ys, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)}))
+        PP(T.doc.read(String.append(T.render.pass(ys, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0,
+          T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)}))
 
 # the table pass: each table's header, then its rows as a table's, and each
 # array of tables' elements, each a header then its rows
@@ -35220,12 +35481,16 @@ def tp(
 ) -> tp.G(md, ys, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab, rest, PP):
   match ys md:
     case [] False{}:
-      _ej => _hw => _hl => _hf => _hn => ho => ih => ih(cs, hs, cur, bk, qk, un, lf, ab, Equal.trans(List<&2, T.Val>, Laws.own.rows(T.rows.seal(cs)),
-        Laws.own.rows(mm), Laws.own.rows(List.append(&2, T.Val, mm, [])), ho, Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.own.rows(zs), mm, List.append(&2, T.Val, mm, []),
+      _ej => _hw => _hl => _hf => _hn => ho => ih => ih(cs, hs, cur, bk, qk, un, lf, ab, Equal.trans(List<&2, T.Val>,
+        Laws.own.rows(T.rows.seal(cs)),
+        Laws.own.rows(mm), Laws.own.rows(List.append(&2, T.Val, mm, [])), ho, Equal.cong(List<&2, T.Val>,
+          List<&2, T.Val>, zs => Laws.own.rows(zs), mm, List.append(&2, T.Val, mm, []),
         Equal.sym(List<&2, T.Val>, List.append(&2, T.Val, mm, []), mm, va.nil(mm)))))
     case [] True{}:
-      _ep => _em => _sh => _hw => _hl => ho => ih => ih(ee, hs, cur, bk, qk, un, lf, ab, Equal.trans(List<&2, T.Val>, Laws.own.rows(T.rows.seal(ee)),
-        Laws.own.rows(mm), Laws.own.rows(List.append(&2, T.Val, mm, [])), ho, Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.own.rows(zs), mm, List.append(&2, T.Val, mm, []),
+      _ep => _em => _sh => _hw => _hl => ho => ih => ih(ee, hs, cur, bk, qk, un, lf, ab, Equal.trans(List<&2, T.Val>,
+        Laws.own.rows(T.rows.seal(ee)),
+        Laws.own.rows(mm), Laws.own.rows(List.append(&2, T.Val, mm, [])), ho, Equal.cong(List<&2, T.Val>,
+          List<&2, T.Val>, zs => Laws.own.rows(zs), mm, List.append(&2, T.Val, mm, []),
         Equal.sym(List<&2, T.Val>, List.append(&2, T.Val, mm, []), mm, va.nil(mm)))))
     case T.VPair{+kk, T.VHead{+p, +r}} <> +t False{}:
       +ej => +hw => +hl => +hf => +hn => +ho => ih =>
@@ -35251,190 +35516,467 @@ def tp(
           kk)) == True{} : Bool}}
         +x0 = {T.VPair{kk, T.VHead{p, Laws.canon.rows(r)}} : T.Val}
         +zz = {String.append(T.render.pass(t, "\n", True{}, True{}), rest) : String}
-        pp.step(PP, T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VHead{p, r}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)}),
-          T.doc.read(SCon{'[', String.append(p, SCon{']', SCon{'\n', String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{}, True{}), zz))}})},
+        pp.step(PP, T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VHead{p, r}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)}),
+          T.doc.read(SCon{'[', String.append(p, SCon{']', SCon{'\n', String.append(T.render.pass(r, "\n", True{},
+            False{}), String.append(T.render.pass(r, "\n", True{}, True{}), zz))}})},
             T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)}),
-          Equal.cong(String, T.Doc, ss => T.doc.read(ss, T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)}),
-            String.append(T.render.pass(T.VPair{kk, T.VHead{p, r}} <> t, "\n", True{}, True{}), rest), SCon{'[', String.append(p, SCon{']', SCon{'\n',
-            String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{}, True{}), zz))}})}, tt.head(kk, p, r, t, rest)),
-          hdr.tab(kk, p, he, r0, cs, hs, cur, bk, qk, un, lf, ab, String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{}, True{}), zz)), PP, eo, em, ep,
-            +hs2 => +b2 => +q2 => +u2 => +l2 => body(kk, T.VHead{p, []}, r, p, he, r0, cs, hs2, b2, q2, u2, l2, False{}, zz,
-              PP, eo, em, {==}, cd(he, kk, Equal.trans(Bool, Laws.short(T.tree.pre(Laws.tb.join(he, ""), kk)), Laws.short(p),
-              True{}, Equal.cong(String, Bool, s2 => Laws.short(s2), T.tree.pre(Laws.tb.join(he, ""), kk), p, ep), shp)),
+          Equal.cong(String, T.Doc, ss => T.doc.read(ss, T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un,
+            lf, ab)}),
+            String.append(T.render.pass(T.VPair{kk, T.VHead{p, r}} <> t, "\n", True{}, True{}), rest), SCon{'[',
+              String.append(p, SCon{']', SCon{'\n',
+            String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{}, True{}),
+              zz))}})}, tt.head(kk, p, r, t, rest)),
+          hdr.tab(kk, p, he, r0, cs, hs, cur, bk, qk, un, lf, ab, String.append(T.render.pass(r, "\n", True{}, False{}),
+            String.append(T.render.pass(r, "\n", True{}, True{}), zz)), PP, eo, em, ep,
+            +hs2 => +b2 => +q2 => +u2 => +l2 => body(kk, T.VHead{p, []}, r, p, he, r0, cs, hs2, b2, q2, u2, l2, False{},
+              zz,
+              PP, eo, em, {==}, cd(he, kk, Equal.trans(Bool, Laws.short(T.tree.pre(Laws.tb.join(he, ""), kk)),
+                Laws.short(p),
+              True{}, Equal.cong(String, Bool, s2 => Laws.short(s2), T.tree.pre(Laws.tb.join(he, ""), kk), p, ep),
+                shp)),
               hwr, Eq.and.left(Laws.short.rows(r), Laws.short.rows(t), hl2),
               +c2 => +b3 => +q3 => +u3 => +l3 => f2 => n2 => o2 => i2 => tp(r, False{}, p, Laws.tb.set(he, "", r0,
-                T.VPair{kk, T.VHead{p, []}} <> cs), List.append(&2, String, he, [kk]), c2, Laws.canon.keys(r), nn, ee, hs2, List.append(&2, String, he, [kk]), b3, q3, u3, l3,
+                T.VPair{kk, T.VHead{p, []}} <> cs), List.append(&2, String, he, [kk]), c2, Laws.canon.keys(r), nn, ee,
+                  hs2, List.append(&2, String, he, [kk]), b3, q3, u3, l3,
                 False{}, zz, PP, wa.eopen(he, r0, kk, T.VHead{p, []}, cs, eo, {==}))(Equal.trans(String,
-                Laws.tb.join(List.append(&2, String, he, [kk]), ""), T.tree.pre(Laws.tb.join(he, ""), kk), p, wa.ja(he, "", kk), ep), hwr,
+                Laws.tb.join(List.append(&2, String, he, [kk]), ""), T.tree.pre(Laws.tb.join(he, ""), kk), p, wa.ja(he,
+                  "", kk), ep), hwr,
                 Eq.and.left(Laws.short.rows(r), Laws.short.rows(t), hl2), f2, n2, o2, i2),
               +c3 => +hs3 => +he3 => +b4 => +q4 => +u4 => +l4 => +a4 => o3 => tp(t, False{}, hp, r0, he,
-                T.VPair{kk, T.VHead{p, c3}} <> cs, List.append(&2, T.Val, mm, [x0]), nn, ee, hs3, he3, b4, q4, u4, l4, a4, rest,
+                T.VPair{kk, T.VHead{p, c3}} <> cs, List.append(&2, T.Val, mm, [x0]), nn, ee, hs3, he3, b4, q4, u4, l4,
+                  a4, rest,
                 PP, eo)(ej, hwt, Eq.and.right(Laws.short.rows(r), Laws.short.rows(t), hl2),
                 cv.fr.step(Laws.canon.tabs(t), kk, T.VHead{p, c3}, cs, Eq.and.right(Laws.is_miss(T.get(cs, kk)),
                   cv.fr(cs, Laws.canon.tabs(t)), hf), Eq.and.left(T.wf.fresh(T.get(Laws.canon.tabs(t), kk)),
                   nd(Laws.canon.tabs(t)), hn)),
                 Eq.and.right(T.wf.fresh(T.get(Laws.canon.tabs(t), kk)), nd(Laws.canon.tabs(t)), hn),
                 os.step(T.VPair{kk, T.VHead{p, c3}}, cs, mm, x0, ho, Equal.cong(List<&2, T.Val>, List<&2, T.Val>,
-                  zs => [T.VPair{kk, T.VHead{p, zs}}], Laws.own.rows(T.rows.seal(c3)), Laws.own.rows(Laws.canon.rows(r)), o3)),
+                  zs => [T.VPair{kk, T.VHead{p, zs}}], Laws.own.rows(T.rows.seal(c3)),
+                    Laws.own.rows(Laws.canon.rows(r)), o3)),
                 +c5 => +hs5 => +he5 => +b5 => +q5 => +u5 => +l5 => +a5 => o5 => ih(c5, hs5, he5, b5, q5, u5, l5, a5,
-                  Equal.trans(List<&2, T.Val>, Laws.own.rows(T.rows.seal(c5)), Laws.own.rows(List.append(&2, T.Val, List.append(&2, T.Val, mm, [x0]), Laws.canon.tabs(t))),
+                  Equal.trans(List<&2, T.Val>, Laws.own.rows(T.rows.seal(c5)), Laws.own.rows(List.append(&2, T.Val,
+                    List.append(&2, T.Val, mm, [x0]), Laws.canon.tabs(t))),
                     Laws.own.rows(List.append(&2, T.Val, mm, x0 <> Laws.canon.tabs(t))), o5,
-                    Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.own.rows(zs), List.append(&2, T.Val, List.append(&2, T.Val, mm, [x0]), Laws.canon.tabs(t)),
-                      List.append(&2, T.Val, mm, x0 <> Laws.canon.tabs(t)), va.assoc(mm, [x0], Laws.canon.tabs(t)))))))))
+                    Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.own.rows(zs), List.append(&2, T.Val,
+                      List.append(&2, T.Val, mm, [x0]), Laws.canon.tabs(t)),
+                      List.append(&2, T.Val, mm, x0 <> Laws.canon.tabs(t)), va.assoc(mm, [x0],
+                        Laws.canon.tabs(t)))))))))
     case T.VPair{+kk, T.VAots{+p, []}} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, []}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, []}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, []}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, []}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, []}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, []}} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VPair{kk, T.VAots{p, []}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk,
+        T.VAots{p,
+        []}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, []}} <> t)), rest,
+        PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, []}} <> t, "\n", True{}, True{}), rest),
+        T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VPair{+kk, T.VAots{+p, T.VStr{+a1} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VStr{a1} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VStr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VStr{a1} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VStr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
           : {T.wf.then(T.wf.go(T.VStr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VStr{a1} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VStr{a1} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VStr{a1} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VStr{a1} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VStr{a1} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VStr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VStr{a1} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p,
+          T.VStr{a1} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p,
+          T.VStr{a1} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VStr{a1} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VStr{a1} <> et}} <> t, "\n", True{},
+          True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VStr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VSpan{+a1, +a2} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VSpan{a1, a2} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VSpan{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VSpan{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VSpan{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
           : {T.wf.then(T.wf.go(T.VSpan{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VSpan{a1, a2} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VSpan{a1, a2} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VSpan{a1, a2} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VSpan{a1, a2} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VSpan{a1, a2} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VSpan{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VSpan{a1,
+          a2} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VSpan{a1,
+          a2} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VSpan{a1,
+          a2} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VSpan{a1, a2} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VSpan{a1, a2} <> et}} <> t, "\n",
+          True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VSpan{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VInt{+a1, +a2} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VInt{a1, a2} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VInt{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VInt{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VInt{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
           : {T.wf.then(T.wf.go(T.VInt{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VInt{a1, a2} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VInt{a1, a2} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VInt{a1, a2} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VInt{a1, a2} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VInt{a1, a2} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VInt{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VInt{a1,
+          a2} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VInt{a1,
+          a2} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VInt{a1,
+          a2} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VInt{a1, a2} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VInt{a1, a2} <> et}} <> t, "\n",
+          True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VInt{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VFlo{+a1, +a2} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VFlo{a1, a2} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VFlo{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VFlo{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VFlo{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
           : {T.wf.then(T.wf.go(T.VFlo{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VFlo{a1, a2} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VFlo{a1, a2} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VFlo{a1, a2} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VFlo{a1, a2} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VFlo{a1, a2} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VFlo{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VFlo{a1,
+          a2} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VFlo{a1,
+          a2} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VFlo{a1,
+          a2} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VFlo{a1, a2} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VFlo{a1, a2} <> et}} <> t, "\n",
+          True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VFlo{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VBool{+a1} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VBool{a1} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VBool{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VBool{a1} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VBool{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
           : {T.wf.then(T.wf.go(T.VBool{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VBool{a1} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VBool{a1} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VBool{a1} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VBool{a1} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VBool{a1} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VBool{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VBool{a1} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p,
+          T.VBool{a1} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p,
+          T.VBool{a1} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VBool{a1} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VBool{a1} <> et}} <> t, "\n",
+          True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VBool{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VWhen{+a1} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VWhen{a1} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VWhen{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VWhen{a1} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VWhen{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
           : {T.wf.then(T.wf.go(T.VWhen{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VWhen{a1} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VWhen{a1} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VWhen{a1} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VWhen{a1} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VWhen{a1} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VWhen{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VWhen{a1} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p,
+          T.VWhen{a1} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p,
+          T.VWhen{a1} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VWhen{a1} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VWhen{a1} <> et}} <> t, "\n",
+          True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VWhen{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VArr{+a1} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VArr{a1} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VArr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VArr{a1} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VArr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
           : {T.wf.then(T.wf.go(T.VArr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VArr{a1} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VArr{a1} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VArr{a1} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VArr{a1} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VArr{a1} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VArr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VArr{a1} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p,
+          T.VArr{a1} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p,
+          T.VArr{a1} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VArr{a1} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VArr{a1} <> et}} <> t, "\n", True{},
+          True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VArr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VInl{+a1} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VInl{a1} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VInl{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VInl{a1} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VInl{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
           : {T.wf.then(T.wf.go(T.VInl{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VInl{a1} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VInl{a1} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VInl{a1} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VInl{a1} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VInl{a1} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VInl{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VInl{a1} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p,
+          T.VInl{a1} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p,
+          T.VInl{a1} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VInl{a1} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VInl{a1} <> et}} <> t, "\n", True{},
+          True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VInl{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VHead{+a1, +a2} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VHead{a1, a2} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VHead{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VHead{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VHead{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
           : {T.wf.then(T.wf.go(T.VHead{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VHead{a1, a2} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VHead{a1, a2} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VHead{a1, a2} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VHead{a1, a2} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VHead{a1, a2} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VHead{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VHead{a1,
+          a2} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VHead{a1,
+          a2} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VHead{a1,
+          a2} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VHead{a1, a2} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VHead{a1, a2} <> et}} <> t, "\n",
+          True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VHead{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VAots{+a1, +a2} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VAots{a1, a2} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VAots{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VAots{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VAots{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
           : {T.wf.then(T.wf.go(T.VAots{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VAots{a1, a2} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VAots{a1, a2} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VAots{a1, a2} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VAots{a1, a2} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAots{a1, a2} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VAots{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VAots{a1,
+          a2} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VAots{a1,
+          a2} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VAots{a1,
+          a2} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VAots{a1, a2} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAots{a1, a2} <> et}} <> t, "\n",
+          True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VAots{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VStr{+b1}} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VStr{b1}} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VStr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {T.wf.then(T.wf.go(T.VPair{a1, T.VStr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VStr{b1}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VStr{b1}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VStr{b1}} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VStr{b1}} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VStr{b1}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VStr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VStr{b1}} <> et)),
+          Bool.and(T.wf.key(kk, t), T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VStr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VPair{a1, T.VStr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})) == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VStr{b1}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VStr{b1}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VStr{b1}} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VStr{b1}} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VStr{b1}} <> et}} <> t,
+          "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VPair{a1, T.VStr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VSpan{+b1, +b2}} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VSpan{b1, b2}} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VSpan{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {T.wf.then(T.wf.go(T.VPair{a1, T.VSpan{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VSpan{b1, b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VSpan{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VSpan{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VSpan{b1, b2}} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VSpan{b1, b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VSpan{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VSpan{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t), T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VSpan{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t, T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VPair{a1, T.VSpan{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})) == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VSpan{b1,
+          b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VSpan{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VSpan{b1,
+          b2}} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VSpan{b1, b2}} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VSpan{b1,
+          b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un,
+          lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VSpan{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}),
+          hin))
     case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VInt{+b1, +b2}} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VInt{b1, b2}} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VInt{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {T.wf.then(T.wf.go(T.VPair{a1, T.VInt{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInt{b1, b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInt{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInt{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInt{b1, b2}} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInt{b1, b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VInt{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VInt{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t), T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VInt{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t, T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VPair{a1, T.VInt{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})) == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInt{b1,
+          b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VInt{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VInt{b1,
+          b2}} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInt{b1, b2}} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInt{b1,
+          b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un,
+          lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VInt{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}),
+          hin))
     case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VFlo{+b1, +b2}} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VFlo{b1, b2}} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VFlo{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {T.wf.then(T.wf.go(T.VPair{a1, T.VFlo{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VFlo{b1, b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VFlo{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VFlo{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VFlo{b1, b2}} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VFlo{b1, b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VFlo{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VFlo{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t), T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VFlo{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t, T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VPair{a1, T.VFlo{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})) == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VFlo{b1,
+          b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VFlo{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VFlo{b1,
+          b2}} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VFlo{b1, b2}} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VFlo{b1,
+          b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un,
+          lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VFlo{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}),
+          hin))
     case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VBool{+b1}} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VBool{b1}} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VBool{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {T.wf.then(T.wf.go(T.VPair{a1, T.VBool{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VBool{b1}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VBool{b1}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VBool{b1}} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VBool{b1}} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VBool{b1}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VBool{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VBool{b1}} <> et)),
+          Bool.and(T.wf.key(kk, t), T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VBool{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VPair{a1, T.VBool{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})) == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VBool{b1}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VBool{b1}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VBool{b1}} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VBool{b1}} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VBool{b1}} <> et}} <> t,
+          "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VPair{a1, T.VBool{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VWhen{+b1}} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VWhen{b1}} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VWhen{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {T.wf.then(T.wf.go(T.VPair{a1, T.VWhen{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VWhen{b1}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VWhen{b1}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VWhen{b1}} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VWhen{b1}} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VWhen{b1}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VWhen{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VWhen{b1}} <> et)),
+          Bool.and(T.wf.key(kk, t), T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VWhen{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VPair{a1, T.VWhen{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})) == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VWhen{b1}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VWhen{b1}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VWhen{b1}} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VWhen{b1}} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VWhen{b1}} <> et}} <> t,
+          "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VPair{a1, T.VWhen{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VArr{+b1}} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VArr{b1}} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VArr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {T.wf.then(T.wf.go(T.VPair{a1, T.VArr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VArr{b1}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VArr{b1}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VArr{b1}} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VArr{b1}} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VArr{b1}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VArr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VArr{b1}} <> et)),
+          Bool.and(T.wf.key(kk, t), T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VArr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VPair{a1, T.VArr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})) == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VArr{b1}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VArr{b1}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VArr{b1}} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VArr{b1}} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VArr{b1}} <> et}} <> t,
+          "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VPair{a1, T.VArr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VInl{+b1}} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VInl{b1}} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VInl{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {T.wf.then(T.wf.go(T.VPair{a1, T.VInl{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInl{b1}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInl{b1}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInl{b1}} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInl{b1}} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInl{b1}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VInl{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VInl{b1}} <> et)),
+          Bool.and(T.wf.key(kk, t), T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VInl{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VPair{a1, T.VInl{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})) == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VInl{b1}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VInl{b1}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VInl{b1}} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInl{b1}} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInl{b1}} <> et}} <> t,
+          "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})),
+          wt.ok(T.wf.go(T.VPair{a1, T.VInl{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
     case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VHead{+b1, +b2}} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VHead{b1, b2}} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VHead{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {T.wf.then(T.wf.go(T.VPair{a1, T.VHead{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VHead{b1, b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VHead{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VHead{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VHead{b1, b2}} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VHead{b1, b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VHead{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VHead{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t), T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VHead{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t, T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VPair{a1, T.VHead{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})) == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VHead{b1,
+          b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VHead{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VHead{b1,
+          b2}} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VHead{b1, b2}} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VHead{b1,
+          b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un,
+          lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VHead{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}),
+          hin))
     case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VAot{+b1, +b2}} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VAot{b1, b2}} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VAot{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {T.wf.then(T.wf.go(T.VPair{a1, T.VAot{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAot{b1, b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAot{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAot{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAot{b1, b2}} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAot{b1, b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VAot{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VAot{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t), T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VAot{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t, T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VPair{a1, T.VAot{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})) == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAot{b1,
+          b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VAot{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VAot{b1,
+          b2}} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAot{b1, b2}} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAot{b1,
+          b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un,
+          lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VAot{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}),
+          hin))
     case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VAots{+b1, +b2}} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VAots{b1, b2}} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VAots{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {T.wf.then(T.wf.go(T.VPair{a1, T.VAots{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAots{b1, b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAots{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAots{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAots{b1, b2}} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAots{b1, b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VAots{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VAots{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t), T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VAots{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t, T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VPair{a1, T.VAots{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})) == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAots{b1,
+          b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VAots{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VAots{b1,
+          b2}} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAots{b1, b2}} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAots{b1,
+          b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un,
+          lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VAots{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}),
+          hin))
     case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VPair{+b1, +b2}} <> +et}} <> +t False{}:
       _ej => hw =>
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VPair{b1, b2}} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VPair{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {T.wf.then(T.wf.go(T.VPair{a1, T.VPair{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VPair{b1, b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VPair{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VPair{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VPair{b1, b2}} <> et}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VPair{b1, b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VPair{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VPair{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t), T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VPair{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t, T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VPair{a1, T.VPair{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})) == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VPair{b1,
+          b2}} <> et}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VPair{b1, b2}} <> et}} <> t)) == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VPair{b1,
+          b2}} <> et}} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.Then(r0, he, List.append(&2,
+          T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VPair{b1, b2}} <> et}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VPair{b1,
+          b2}} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un,
+          lf, ab)})), wt.ok(T.wf.go(T.VPair{a1, T.VPair{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}),
+          hin))
     case T.VPair{+kk, T.VAots{+p, T.VAot{+q, +r} <> +et}} <> +t False{}:
       +ej => +hw => +hl => +hf => +hn => +ho => ih =>
-        +ha = {wt.ok(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VAot{q, r} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
-          : {Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VAot{q, r} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk))))
+        +ha = {wt.ok(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VAot{q, r} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
+          : {Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VAot{q, r} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
+            T.tree.pre(hp, kk))))
           == True{} : Bool}}
-        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VAot{q, r} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
-          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VAot{q, r} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
           : {T.wf.then(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
-        +hwe = {wt.ok(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin) : {T.wf.go(T.VAot{q, r} <> et, T.WfElems{p})
+        +hwe = {wt.ok(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}),
+          hin) : {T.wf.go(T.VAot{q, r} <> et, T.WfElems{p})
           == True{} : Bool}}
-        +hwt = {wt.more(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin) : {T.wf.go(t, T.WfRows{hp})
+        +hwt = {wt.more(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin) : {T.wf.go(t,
+          T.WfRows{hp})
           == True{} : Bool}}
-        +hb = {Eq.and.right(Bool.not(List.is_empty(&2, T.Val, T.VAot{q, r} <> et)), Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp,
+        +hb = {Eq.and.right(Bool.not(List.is_empty(&2, T.Val, T.VAot{q, r} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp,
           kk))), ha) : {Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk))) == True{} : Bool}}
         +ep = {Equal.trans(String, T.tree.pre(Laws.tb.join(he, ""), kk), T.tree.pre(hp, kk), p,
           Equal.cong(String, String, zz => T.tree.pre(zz, kk), Laws.tb.join(he, ""), hp, ej),
           Equal.sym(String, p, T.tree.pre(hp, kk), str.eq.true(p, T.tree.pre(hp, kk), Eq.and.right(T.wf.key(kk, t),
           T.str.eq(p, T.tree.pre(hp, kk)), hb)))) : {T.tree.pre(Laws.tb.join(he, ""), kk) == p : String}}
-        +shp = {Eq.and.left(Laws.short(p), Bool.and(Laws.short.rows(T.VAot{q, r} <> et), Laws.short.rows(t)), hl) : {Laws.short(p)
+        +shp = {Eq.and.left(Laws.short(p), Bool.and(Laws.short.rows(T.VAot{q, r} <> et), Laws.short.rows(t)),
+          hl) : {Laws.short(p)
           == True{} : Bool}}
         +hl2 = {Eq.and.right(Laws.short(p), Bool.and(Laws.short.rows(T.VAot{q, r} <> et), Laws.short.rows(t)), hl)
           : {Bool.and(Laws.short.rows(T.VAot{q, r} <> et), Laws.short.rows(t)) == True{} : Bool}}
@@ -35451,21 +35993,28 @@ def tp(
           T.WfElems{p}) == True{} : Bool}}
         +hle = {Eq.and.left(Laws.short.rows(T.VAot{q, r} <> et), Laws.short.rows(t), hl2)
           : {Bool.and(Laws.short.rows(r), Laws.short.rows(et)) == True{} : Bool}}
-        +ejq = {Equal.trans(String, Laws.tb.join(List.append(&2, String, he, [kk]), ""), p, q, Equal.trans(String, Laws.tb.join(List.append(&2, String, he, [kk]), ""),
+        +ejq = {Equal.trans(String, Laws.tb.join(List.append(&2, String, he, [kk]), ""), p, q, Equal.trans(String,
+          Laws.tb.join(List.append(&2, String, he, [kk]), ""),
           T.tree.pre(Laws.tb.join(he, ""), kk), p, wa.ja(he, "", kk), ep), Equal.sym(String, q, p, eq))
           : {Laws.tb.join(List.append(&2, String, he, [kk]), "") == q : String}}
-        +bd = {String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{}, True{}), String.append(T.render.pass(et, "\n", True{}, True{}), zz))) : String}
+        +bd = {String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{},
+          True{}), String.append(T.render.pass(et, "\n", True{}, True{}), zz))) : String}
         +x0 = {T.VPair{kk, T.VAots{p, Laws.canon.go(T.VAot{q, r} <> et, Laws.CElems{p})}} : T.Val}
-        pp.step(PP, T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)}),
+        pp.step(PP, T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n",
+          True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)}),
           T.doc.read(SCon{'[', SCon{'[', String.append(p, SCon{']', SCon{']', SCon{'\n', bd}}})}},
             T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)}),
-          Equal.cong(String, T.Doc, ss => T.doc.read(ss, T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)}),
-            String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n", True{}, True{}), rest), SCon{'[', SCon{'[', String.append(p, SCon{']', SCon{']',
+          Equal.cong(String, T.Doc, ss => T.doc.read(ss, T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un,
+            lf, ab)}),
+            String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n", True{}, True{}), rest),
+              SCon{'[', SCon{'[', String.append(p, SCon{']', SCon{']',
             SCon{'\n', bd}}})}},
-            Equal.trans(String, String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n", True{}, True{}), rest), String.append(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}), zz),
+            Equal.trans(String, String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n",
+              True{}, True{}), rest), String.append(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}), zz),
               SCon{'[', SCon{'[', String.append(p, SCon{']', SCon{']', SCon{'\n', bd}}})}},
               tt.aots(kk, p, T.VAot{q, r} <> et, t, rest, tt.pe(T.VAot{q, r} <> et, p, hwe)),
-            Equal.trans(String, String.append(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}), zz), SCon{'[', SCon{'[', String.append(q, SCon{']',
+            Equal.trans(String, String.append(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}), zz), SCon{'[',
+              SCon{'[', String.append(q, SCon{']',
               SCon{']', SCon{'\n', bd}}})}}, SCon{'[', SCon{'[', String.append(p, SCon{']', SCon{']', SCon{'\n',
               bd}}})}}, tt.aot(q, r, et, zz),
               Equal.cong(String, String, s2 => SCon{'[', SCon{'[', String.append(s2, SCon{']', SCon{']', SCon{'\n',
@@ -35477,15 +36026,19 @@ def tp(
                 Equal.cong(String, Bool, s2 => Laws.short(s2), T.tree.pre(Laws.tb.join(he, ""), kk), p, ep), shp)),
               hwr, Eq.and.left(Laws.short.rows(r), Laws.short.rows(et), hle),
               +c2 => +b3 => +q3 => +u3 => +l3 => f2 => n2 => o2 => i2 => tp(r, False{}, q, Laws.tb.set(he, "", r0,
-                T.VPair{kk, T.VAots{p, [T.VAot{p, []}]}} <> cs), List.append(&2, String, he, [kk]), c2, Laws.canon.keys(r), nn, ee, hs2, List.append(&2, String, he, [kk]), b3,
-                q3, u3, l3, False{}, String.append(T.render.pass(et, "\n", True{}, True{}), zz), PP, wa.eopen(he, r0, kk, T.VAots{p, [T.VAot{p, []}]}, cs, eo,
+                T.VPair{kk, T.VAots{p, [T.VAot{p, []}]}} <> cs), List.append(&2, String, he, [kk]), c2,
+                  Laws.canon.keys(r), nn, ee, hs2, List.append(&2, String, he, [kk]), b3,
+                q3, u3, l3, False{}, String.append(T.render.pass(et, "\n", True{}, True{}), zz), PP, wa.eopen(he, r0,
+                  kk, T.VAots{p, [T.VAot{p, []}]}, cs, eo,
                 {==}))(ejq, hwr, Eq.and.left(Laws.short.rows(r), Laws.short.rows(et), hle), f2, n2, o2, i2),
               +c3 => +hs3 => +he3 => +b4 => +q4 => +u4 => +l4 => +a4 => o3 => tp(et, True{}, p, r0, he, cs,
                 [T.VAot{p, Laws.canon.rows(r)}], kk, [T.VAot{p, c3}], hs3, he3, b4, q4, u4, l4, a4, zz, PP, eo)(ep, em,
                 shp, hwet, Eq.and.right(Laws.short.rows(r), Laws.short.rows(et), hle),
-                Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => [T.VAot{p, zs}], Laws.own.rows(T.rows.seal(c3)), Laws.own.rows(Laws.canon.rows(r)), o3),
+                Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => [T.VAot{p, zs}], Laws.own.rows(T.rows.seal(c3)),
+                  Laws.own.rows(Laws.canon.rows(r)), o3),
                 +e5 => +hs5 => +he5 => +b5 => +q5 => +u5 => +l5 => +a5 => o5 => tp(t, False{}, hp, r0, he,
-                  T.VPair{kk, T.VAots{p, e5}} <> cs, List.append(&2, T.Val, mm, [x0]), nn, ee, hs5, he5, b5, q5, u5, l5, a5, rest,
+                  T.VPair{kk, T.VAots{p, e5}} <> cs, List.append(&2, T.Val, mm, [x0]), nn, ee, hs5, he5, b5, q5, u5, l5,
+                    a5, rest,
                   PP, eo)(ej, hwt, Eq.and.right(Laws.short.rows(T.VAot{q, r} <> et), Laws.short.rows(t), hl2),
                   cv.fr.step(Laws.canon.tabs(t), kk, T.VAots{p, e5}, cs, Eq.and.right(Laws.is_miss(T.get(cs, kk)),
                     cv.fr(cs, Laws.canon.tabs(t)), hf), Eq.and.left(T.wf.fresh(T.get(Laws.canon.tabs(t), kk)),
@@ -35495,97 +36048,160 @@ def tp(
                     zs => [T.VPair{kk, T.VAots{p, zs}}], Laws.own.rows(T.rows.seal(e5)),
                     Laws.own.rows(Laws.canon.go(T.VAot{q, r} <> et, Laws.CElems{p})), o5)),
                   +c6 => +hs6 => +he6 => +b6 => +q6 => +u6 => +l6 => +a6 => o6 => ih(c6, hs6, he6, b6, q6, u6, l6, a6,
-                    Equal.trans(List<&2, T.Val>, Laws.own.rows(T.rows.seal(c6)), Laws.own.rows(List.append(&2, T.Val, List.append(&2, T.Val, mm, [x0]), Laws.canon.tabs(t))),
+                    Equal.trans(List<&2, T.Val>, Laws.own.rows(T.rows.seal(c6)), Laws.own.rows(List.append(&2, T.Val,
+                      List.append(&2, T.Val, mm, [x0]), Laws.canon.tabs(t))),
                       Laws.own.rows(List.append(&2, T.Val, mm, x0 <> Laws.canon.tabs(t))), o6,
-                      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.own.rows(zs), List.append(&2, T.Val, List.append(&2, T.Val, mm, [x0]), Laws.canon.tabs(t)),
-                        List.append(&2, T.Val, mm, x0 <> Laws.canon.tabs(t)), va.assoc(mm, [x0], Laws.canon.tabs(t)))))))))
+                      Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.own.rows(zs), List.append(&2, T.Val,
+                        List.append(&2, T.Val, mm, [x0]), Laws.canon.tabs(t)),
+                        List.append(&2, T.Val, mm, x0 <> Laws.canon.tabs(t)), va.assoc(mm, [x0],
+                          Laws.canon.tabs(t)))))))))
 )
     case T.VPair{+kk, T.VStr{+a1}} <> +t False{}:
-      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab, rest,
+      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab,
+        rest,
         PP, eo)(ej, wt.more(Bool.and(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw),
         Eq.and.right(Laws.cv.short1(T.VStr{a1}), Laws.short.rows(t), hl), hf, hn, ho, ih)
     case T.VPair{+kk, T.VSpan{+a1, +a2}} <> +t False{}:
-      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab, rest,
+      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab,
+        rest,
         PP, eo)(ej, wt.more(Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw),
         Eq.and.right(Laws.cv.short1(T.VSpan{a1, a2}), Laws.short.rows(t), hl), hf, hn, ho, ih)
     case T.VPair{+kk, T.VInt{+a1, +a2}} <> +t False{}:
-      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab, rest,
+      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab,
+        rest,
         PP, eo)(ej, wt.more(Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw),
         Eq.and.right(Laws.cv.short1(T.VInt{a1, a2}), Laws.short.rows(t), hl), hf, hn, ho, ih)
     case T.VPair{+kk, T.VFlo{+a1, +a2}} <> +t False{}:
-      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab, rest,
+      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab,
+        rest,
         PP, eo)(ej, wt.more(Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw),
         Eq.and.right(Laws.cv.short1(T.VFlo{a1, a2}), Laws.short.rows(t), hl), hf, hn, ho, ih)
     case T.VPair{+kk, T.VBool{+a1}} <> +t False{}:
-      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab, rest,
+      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab,
+        rest,
         PP, eo)(ej, wt.more(Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw),
         Eq.and.right(Laws.cv.short1(T.VBool{a1}), Laws.short.rows(t), hl), hf, hn, ho, ih)
     case T.VPair{+kk, T.VWhen{+a1}} <> +t False{}:
-      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab, rest,
+      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab,
+        rest,
         PP, eo)(ej, wt.more(Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw),
         Eq.and.right(Laws.cv.short1(T.VWhen{a1}), Laws.short.rows(t), hl), hf, hn, ho, ih)
     case T.VPair{+kk, T.VArr{+a1}} <> +t False{}:
-      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab, rest,
+      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab,
+        rest,
         PP, eo)(ej, wt.more(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
         _u => T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp})), hw)),
         Eq.and.right(Laws.cv.short1(T.VArr{a1}), Laws.short.rows(t), hl), hf, hn, ho, ih)
     case T.VPair{+kk, T.VInl{+a1}} <> +t False{}:
-      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab, rest,
+      ej => hw => hl => hf => hn => ho => ih => tp(t, False{}, hp, r0, he, cs, mm, nn, ee, hs, cur, bk, qk, un, lf, ab,
+        rest,
         PP, eo)(ej, wt.more(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
         _u => T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp})), hw)),
         Eq.and.right(Laws.cv.short1(T.VInl{a1}), Laws.short.rows(t), hl), hf, hn, ho, ih)
     case T.VPair{+kk, T.VAot{+a1, +a2}} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAot{a1, a2}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VAot{a1, a2}} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAot{a1, a2}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAot{a1, a2}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAot{a1, a2}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VAot{a1, a2}} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VPair{kk, T.VAot{a1, a2}} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VAot{a1,
+          a2}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VAot{a1, a2}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VAot{a1, a2}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VPair{+kk, T.VPair{+a1, +a2}} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VPair{a1, a2}} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VPair{kk, T.VPair{a1, a2}} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VPair{a1, a2}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VPair{a1, a2}} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VPair{a1, a2}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{kk, T.VPair{a1, a2}} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VPair{kk, T.VPair{a1, a2}} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VPair{kk, T.VPair{a1,
+          a2}} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VPair{kk, T.VPair{a1, a2}} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{kk, T.VPair{a1, a2}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VStr{+a1} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VStr{a1} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VStr{a1} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VStr{a1} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VStr{a1} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VStr{a1} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VStr{a1} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VStr{a1} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VStr{a1} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VStr{a1} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VStr{a1} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VSpan{+a1, +a2} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VSpan{a1, a2} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VSpan{a1, a2} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VSpan{a1, a2} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VSpan{a1, a2} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VSpan{a1, a2} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VSpan{a1, a2} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VSpan{a1, a2} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VSpan{a1,
+          a2} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VSpan{a1, a2} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VSpan{a1, a2} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VInt{+a1, +a2} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VInt{a1, a2} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VInt{a1, a2} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VInt{a1, a2} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VInt{a1, a2} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VInt{a1, a2} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VInt{a1, a2} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VInt{a1, a2} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VInt{a1,
+          a2} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VInt{a1, a2} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VInt{a1, a2} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VFlo{+a1, +a2} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VFlo{a1, a2} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VFlo{a1, a2} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VFlo{a1, a2} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VFlo{a1, a2} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VFlo{a1, a2} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VFlo{a1, a2} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VFlo{a1, a2} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VFlo{a1,
+          a2} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VFlo{a1, a2} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VFlo{a1, a2} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VBool{+a1} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VBool{a1} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VBool{a1} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VBool{a1} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VBool{a1} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VBool{a1} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VBool{a1} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VBool{a1} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VBool{a1} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VBool{a1} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VBool{a1} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VWhen{+a1} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VWhen{a1} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VWhen{a1} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VWhen{a1} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VWhen{a1} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VWhen{a1} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VWhen{a1} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VWhen{a1} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VWhen{a1} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VWhen{a1} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VWhen{a1} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VArr{+a1} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VArr{a1} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VArr{a1} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VArr{a1} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VArr{a1} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VArr{a1} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VArr{a1} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VArr{a1} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VArr{a1} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VArr{a1} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VArr{a1} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VInl{+a1} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VInl{a1} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VInl{a1} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VInl{a1} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VInl{a1} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VInl{a1} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VInl{a1} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VInl{a1} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VInl{a1} <> t)) == True{} : Bool} ->
+          {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VInl{a1} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VInl{a1} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VHead{+a1, +a2} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VHead{a1, a2} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VHead{a1, a2} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VHead{a1, a2} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VHead{a1, a2} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VHead{a1, a2} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VHead{a1, a2} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VHead{a1, a2} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VHead{a1,
+          a2} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VHead{a1, a2} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VHead{a1, a2} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VAot{+a1, +a2} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VAot{a1, a2} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VAot{a1, a2} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VAot{a1, a2} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VAot{a1, a2} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VAot{a1, a2} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VAot{a1, a2} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VAot{a1, a2} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VAot{a1,
+          a2} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VAot{a1, a2} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VAot{a1, a2} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VAots{+a1, +a2} <> +t False{}:
-      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VAots{a1, a2} <> t) == True{} : Bool} -> {cv.fr(cs, Laws.canon.tabs(T.VAots{a1, a2} <> t))
-        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VAots{a1, a2} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
-        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VAots{a1, a2} <> t)), rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VAots{a1, a2} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ej => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VAots{a1, a2} <> t) == True{} : Bool} -> {cv.fr(cs,
+        Laws.canon.tabs(T.VAots{a1, a2} <> t))
+        == True{} : Bool} -> {nd(Laws.canon.tabs(T.VAots{a1,
+          a2} <> t)) == True{} : Bool} -> {Laws.own.rows(T.rows.seal(cs)) == Laws.own.rows(mm) : List<&2, T.Val>} ->
+        tp.Then(r0, he, List.append(&2, T.Val, mm, Laws.canon.tabs(T.VAots{a1, a2} <> t)), rest,
+          PP) -> PP(T.doc.read(String.append(T.render.pass(T.VAots{a1, a2} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VAot{+q, +r} <> +t True{}:
       +ep => +em => +shp => +hw => +hl => +ho => ih =>
         +h1 = {wt.more(T.str.eq(q, hp), _u => T.wf.then(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp})), hw)
@@ -35596,18 +36212,23 @@ def tp(
           : Bool}}
         +hwt = {wt.more(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp}), h1) : {T.wf.go(t, T.WfElems{hp})
           == True{} : Bool}}
-        +ejq = {Equal.trans(String, Laws.tb.join(List.append(&2, String, he, [nn]), ""), hp, q, Equal.trans(String, Laws.tb.join(List.append(&2, String, he, [nn]), ""),
+        +ejq = {Equal.trans(String, Laws.tb.join(List.append(&2, String, he, [nn]), ""), hp, q, Equal.trans(String,
+          Laws.tb.join(List.append(&2, String, he, [nn]), ""),
           T.tree.pre(Laws.tb.join(he, ""), nn), hp, wa.ja(he, "", nn), ep), Equal.sym(String, q, hp, eq))
           : {Laws.tb.join(List.append(&2, String, he, [nn]), "") == q : String}}
         +x0 = {T.VAot{hp, Laws.canon.rows(r)} : T.Val}
-        +bd = {String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{}, True{}), String.append(T.render.pass(t, "\n", True{}, True{}), rest))) : String}
-        +st = {T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)} : T.Mode}
+        +bd = {String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{},
+          True{}), String.append(T.render.pass(t, "\n", True{}, True{}), rest))) : String}
+        +st = {T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)} : T.Mode}
         pp.step(PP, T.doc.read(String.append(T.render.pass(T.VAot{q, r} <> t, "\n", True{}, True{}), rest), st),
           T.doc.read(SCon{'[', SCon{'[', String.append(hp, SCon{']', SCon{']', SCon{'\n', bd}}})}}, st),
           Equal.cong(String, T.Doc, ss => T.doc.read(ss, st),
-            String.append(T.render.pass(T.VAot{q, r} <> t, "\n", True{}, True{}), rest), SCon{'[', SCon{'[', String.append(hp, SCon{']', SCon{']', SCon{'\n',
+            String.append(T.render.pass(T.VAot{q, r} <> t, "\n", True{}, True{}), rest), SCon{'[', SCon{'[',
+              String.append(hp, SCon{']', SCon{']', SCon{'\n',
             bd}}})}},
-            Equal.trans(String, String.append(T.render.pass(T.VAot{q, r} <> t, "\n", True{}, True{}), rest), SCon{'[', SCon{'[', String.append(q, SCon{']',
+            Equal.trans(String, String.append(T.render.pass(T.VAot{q, r} <> t, "\n", True{}, True{}), rest), SCon{'[',
+              SCon{'[', String.append(q, SCon{']',
               SCon{']', SCon{'\n', bd}}})}}, SCon{'[', SCon{'[', String.append(hp, SCon{']', SCon{']', SCon{'\n',
               bd}}})}}, tt.aot(q, r, t, rest),
               Equal.cong(String, String, s2 => SCon{'[', SCon{'[', String.append(s2, SCon{']', SCon{']', SCon{'\n',
@@ -35619,105 +36240,3107 @@ def tp(
                 Equal.cong(String, Bool, s2 => Laws.short(s2), T.tree.pre(Laws.tb.join(he, ""), nn), hp, ep), shp)),
               hwr, Eq.and.left(Laws.short.rows(r), Laws.short.rows(t), hl),
               +c2 => +b3 => +q3 => +u3 => +l3 => f2 => n2 => o2 => i2 => tp(r, False{}, q, Laws.tb.set(he, "", r0,
-                T.VPair{nn, T.VAots{hp, T.VAot{hp, []} <> ee}} <> cs), List.append(&2, String, he, [nn]), c2, Laws.canon.keys(r), nn, ee, hs2, List.append(&2, String, he, [nn]),
-                b3, q3, u3, l3, False{}, String.append(T.render.pass(t, "\n", True{}, True{}), rest), PP, wa.eopen(he, r0, nn, T.VAots{hp, T.VAot{hp, []} <> ee},
+                T.VPair{nn, T.VAots{hp, T.VAot{hp, []} <> ee}} <> cs), List.append(&2, String, he, [nn]), c2,
+                  Laws.canon.keys(r), nn, ee, hs2, List.append(&2, String, he, [nn]),
+                b3, q3, u3, l3, False{}, String.append(T.render.pass(t, "\n", True{}, True{}), rest), PP, wa.eopen(he,
+                  r0, nn, T.VAots{hp, T.VAot{hp, []} <> ee},
                 cs, eo, {==}))(ejq, hwr, Eq.and.left(Laws.short.rows(r), Laws.short.rows(t), hl), f2, n2, o2, i2),
               +c3 => +hs3 => +he3 => +b4 => +q4 => +u4 => +l4 => +a4 => o3 => tp(t, True{}, hp, r0, he, cs,
-                List.append(&2, T.Val, mm, [x0]), nn, T.VAot{hp, c3} <> ee, hs3, he3, b4, q4, u4, l4, a4, rest, PP, eo)(ep, em, shp,
+                List.append(&2, T.Val, mm, [x0]), nn, T.VAot{hp, c3} <> ee, hs3, he3, b4, q4, u4, l4, a4, rest, PP,
+                  eo)(ep, em, shp,
                 hwt, Eq.and.right(Laws.short.rows(r), Laws.short.rows(t), hl),
-                os.step(T.VAot{hp, c3}, ee, mm, x0, ho, Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => [T.VAot{hp, zs}], Laws.own.rows(T.rows.seal(c3)),
+                os.step(T.VAot{hp, c3}, ee, mm, x0, ho, Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => [T.VAot{hp,
+                  zs}], Laws.own.rows(T.rows.seal(c3)),
                   Laws.own.rows(Laws.canon.rows(r)), o3)),
                 +e5 => +hs5 => +he5 => +b5 => +q5 => +u5 => +l5 => +a5 => o5 => ih(e5, hs5, he5, b5, q5, u5, l5, a5,
-                  Equal.trans(List<&2, T.Val>, Laws.own.rows(T.rows.seal(e5)), Laws.own.rows(List.append(&2, T.Val, List.append(&2, T.Val, mm, [x0]), Laws.canon.go(t, Laws.CElems{hp}))),
+                  Equal.trans(List<&2, T.Val>, Laws.own.rows(T.rows.seal(e5)), Laws.own.rows(List.append(&2, T.Val,
+                    List.append(&2, T.Val, mm, [x0]), Laws.canon.go(t, Laws.CElems{hp}))),
                     Laws.own.rows(List.append(&2, T.Val, mm, x0 <> Laws.canon.go(t, Laws.CElems{hp}))), o5,
-                    Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.own.rows(zs), List.append(&2, T.Val, List.append(&2, T.Val, mm, [x0]), Laws.canon.go(t, Laws.CElems{hp})),
-                      List.append(&2, T.Val, mm, x0 <> Laws.canon.go(t, Laws.CElems{hp})), va.assoc(mm, [x0], Laws.canon.go(t,
+                    Equal.cong(List<&2, T.Val>, List<&2, T.Val>, zs => Laws.own.rows(zs), List.append(&2, T.Val,
+                      List.append(&2, T.Val, mm, [x0]), Laws.canon.go(t, Laws.CElems{hp})),
+                      List.append(&2, T.Val, mm, x0 <> Laws.canon.go(t, Laws.CElems{hp})), va.assoc(mm, [x0],
+                        Laws.canon.go(t,
                       Laws.CElems{hp})))))))))
     case T.VStr{+a1} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VStr{a1} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VStr{a1} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VStr{a1} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VStr{a1} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VStr{a1} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VSpan{+a1, +a2} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VSpan{a1, a2} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VSpan{a1, a2} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VSpan{a1, a2} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VSpan{a1, a2} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VSpan{a1, a2} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VInt{+a1, +a2} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VInt{a1, a2} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VInt{a1, a2} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VInt{a1, a2} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VInt{a1, a2} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VInt{a1, a2} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VFlo{+a1, +a2} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VFlo{a1, a2} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VFlo{a1, a2} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VFlo{a1, a2} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VFlo{a1, a2} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VFlo{a1, a2} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VBool{+a1} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VBool{a1} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VBool{a1} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VBool{a1} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VBool{a1} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VBool{a1} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VWhen{+a1} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VWhen{a1} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VWhen{a1} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VWhen{a1} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VWhen{a1} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VWhen{a1} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VArr{+a1} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VArr{a1} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VArr{a1} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VArr{a1} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VArr{a1} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VArr{a1} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VInl{+a1} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VInl{a1} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VInl{a1} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VInl{a1} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VInl{a1} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VInl{a1} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VHead{+a1, +a2} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VHead{a1, a2} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VHead{a1, a2} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VHead{a1, a2} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VHead{a1, a2} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VHead{a1, a2} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VAots{+a1, +a2} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VAots{a1, a2} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VAots{a1, a2} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VAots{a1, a2} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VAots{a1, a2} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VAots{a1, a2} <> t, "\n", True{}, True{}), rest),
+          T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
     case T.VPair{+a1, T.VStr{+b1}} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VStr{b1}} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VStr{b1}} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VStr{b1}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VStr{b1}} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VStr{b1}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)})), hw)
     case T.VPair{+a1, T.VSpan{+b1, +b2}} <> +t True{}:
-      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VSpan{b1, b2}} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VSpan{b1, b2}} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VSpan{b1, b2}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VSpan{b1,
+        b2}} <> t) == True{} : Bool} ->
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VSpan{b1, b2}} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VSpan{b1, b2}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)})), hw)
     case T.VPair{+a1, T.VInt{+b1, +b2}} <> +t True{}:
-      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VInt{b1, b2}} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VInt{b1, b2}} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VInt{b1, b2}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VInt{b1,
+        b2}} <> t) == True{} : Bool} ->
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VInt{b1, b2}} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VInt{b1, b2}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)})), hw)
     case T.VPair{+a1, T.VFlo{+b1, +b2}} <> +t True{}:
-      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VFlo{b1, b2}} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VFlo{b1, b2}} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VFlo{b1, b2}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VFlo{b1,
+        b2}} <> t) == True{} : Bool} ->
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VFlo{b1, b2}} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VFlo{b1, b2}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)})), hw)
     case T.VPair{+a1, T.VBool{+b1}} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VBool{b1}} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VBool{b1}} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VBool{b1}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VBool{b1}} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VBool{b1}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)})), hw)
     case T.VPair{+a1, T.VWhen{+b1}} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VWhen{b1}} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VWhen{b1}} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VWhen{b1}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VWhen{b1}} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VWhen{b1}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)})), hw)
     case T.VPair{+a1, T.VArr{+b1}} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VArr{b1}} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VArr{b1}} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VArr{b1}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VArr{b1}} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VArr{b1}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)})), hw)
     case T.VPair{+a1, T.VInl{+b1}} <> +t True{}:
       _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VInl{b1}} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VInl{b1}} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VInl{b1}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VInl{b1}} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VInl{b1}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)})), hw)
     case T.VPair{+a1, T.VHead{+b1, +b2}} <> +t True{}:
-      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VHead{b1, b2}} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VHead{b1, b2}} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VHead{b1, b2}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VHead{b1,
+        b2}} <> t) == True{} : Bool} ->
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VHead{b1, b2}} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VHead{b1, b2}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)})), hw)
     case T.VPair{+a1, T.VAot{+b1, +b2}} <> +t True{}:
-      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VAot{b1, b2}} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VAot{b1, b2}} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VAot{b1, b2}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VAot{b1,
+        b2}} <> t) == True{} : Bool} ->
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VAot{b1, b2}} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VAot{b1, b2}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)})), hw)
     case T.VPair{+a1, T.VAots{+b1, +b2}} <> +t True{}:
-      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VAots{b1, b2}} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VAots{b1, b2}} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VAots{b1, b2}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VAots{b1,
+        b2}} <> t) == True{} : Bool} ->
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VAots{b1, b2}} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VAots{b1, b2}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)})), hw)
     case T.VPair{+a1, T.VPair{+b1, +b2}} <> +t True{}:
-      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VPair{b1, b2}} <> t) == True{} : Bool} ->
-        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp, List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VPair{b1, b2}} <> t, Laws.CElems{hp})),
-        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VPair{b1, b2}} <> t, "\n", True{}, True{}), rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf, ab)})), hw)
+      _ep => _em => _sh => hw => Eq.bit.absurd(&1, {Laws.short.rows(T.VPair{a1, T.VPair{b1,
+        b2}} <> t) == True{} : Bool} ->
+        {Laws.own.rows(T.rows.seal(ee)) == Laws.own.rows(mm) : List<&2, T.Val>} -> tp.ThenE(r0, he, cs, nn, hp,
+          List.append(&2, T.Val, mm, Laws.canon.go(T.VPair{a1, T.VPair{b1, b2}} <> t, Laws.CElems{hp})),
+        rest, PP) -> PP(T.doc.read(String.append(T.render.pass(T.VPair{a1, T.VPair{b1, b2}} <> t, "\n", True{}, True{}),
+          rest), T.MScan{dl(Laws.tb.set(he, "", r0, T.VPair{nn, T.VAots{hp, ee}} <> cs), hs, cur, bk, qk, un, lf,
+          ab)})), hw)
+
+# The start of the document. The scanner starts with the byte-order-mark
+# check pending (st.start); for a first character that is no byte-order mark
+# that is the start of a line in the root. render's text starts with a key,
+# a bracket, or nothing.
+
+# a text read from the start of the document as from the start of a line
+def se(tx: String) -> Type:
+  {T.doc.read(tx, T.MScan{T.st.start()}) == T.doc.read(tx, T.MScan{dl([], [], [], T.LTop{}, T.QBasic{}, 0, 0,
+    False{})}) : T.Doc}
+
+# one text for another equal to it
+def se.cast(aa: String, bb: String, ee: {aa == bb : String}, hh: se(aa)) -> se(bb):
+  %ee : se(_)
+  hh
+
+# a header's bracket
+def se.br(+xx: String) -> se(SCon{'[', xx}):
+  {==}
+
+# a key as key writes it, bare or quoted
+def se.kg(bb: Bool, +kk: String, eb: {T.bare(kk) == bb : Bool}, +ww: String) -> se(String.append(T.key.go(bb, kk), ww)):
+  match bb:
+    case True{}:
+      kl.start1(Laws.Seg{Laws.SpBare{}, kk}, ww, eb)
+    case False{}:
+      kl.start1(Laws.Seg{Laws.SpBasic{}, kk}, ww, {==})
+
+# a key as key writes it
+def se.key(+kk: String, +ww: String) -> se(String.append(T.key(kk), ww)):
+  se.kg(T.bare(kk), kk, {==}, ww)
+
+# the key pass's text, then any text read so
+def se.P(
+  xs: List<&2, T.Val>,
+  +hp: String,
+  +zz: String,
+  +hw: {T.wf.go(xs, T.WfRows{hp}) == True{} : Bool},
+  hz: se(zz)
+) -> se(String.append(T.render.pass(xs, "\n", True{}, False{}), zz)):
+  match xs:
+    case []:
+      hz
+    case T.VPair{+kk, T.VHead{+p, +r}} <> +t:
+      se.P(t, hp, zz, wt.more(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk))), _u => T.wf.then(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp})),
+          hw)), hz)
+    case T.VPair{+kk, T.VAots{+p, +es}} <> +t:
+      se.P(t, hp, zz, wt.more(T.wf.go(es, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(Bool.and(Bool.not(
+        List.is_empty(&2, T.Val, es)), Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk)))),
+          _u => T.wf.then(T.wf.go(es,
+        T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)), hz)
+    case T.VPair{+kk, T.VStr{+a1}} <> +t:
+      se.cast(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VStr{a1}, String.append(SCon{'\n',
+        T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+        String.append(T.render.pass(T.VPair{kk, T.VStr{a1}} <> t, "\n", True{}, False{}), zz),
+        Equal.sym(String, String.append(T.render.pass(T.VPair{kk, T.VStr{a1}} <> t, "\n", True{}, False{}), zz),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VStr{a1}, String.append(SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+          Equal.trans(String, String.append(T.render.pass(T.VPair{kk, T.VStr{a1}} <> t, "\n", True{}, False{}), zz),
+            String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VStr{a1}, SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})})}}}), zz),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VStr{a1}, String.append(SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+            Equal.cong(String, String, ss => String.append(ss, zz), T.render.pass(T.VPair{kk, T.VStr{a1}} <> t, "\n",
+              True{}, False{}),
+              String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VStr{a1}, SCon{'\n', T.render.pass(t,
+                "\n", True{}, False{})})}}}),
+              Laws.pass_value(kk, T.VStr{a1}, Eq.and.left(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t),
+                wt.ok(Bool.and(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)), t, "\n",
+                True{})),
+            kp.txt(kk, T.VStr{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))),
+        se.key(kk, SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VStr{a1}, String.append(SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}, zz))}}}))
+    case T.VPair{+kk, T.VSpan{+a1, +a2}} <> +t:
+      se.cast(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VSpan{a1, a2},
+        String.append(SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+        String.append(T.render.pass(T.VPair{kk, T.VSpan{a1, a2}} <> t, "\n", True{}, False{}), zz),
+        Equal.sym(String, String.append(T.render.pass(T.VPair{kk, T.VSpan{a1, a2}} <> t, "\n", True{}, False{}), zz),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VSpan{a1, a2}, String.append(SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+          Equal.trans(String, String.append(T.render.pass(T.VPair{kk, T.VSpan{a1, a2}} <> t, "\n", True{}, False{}),
+            zz),
+            String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VSpan{a1, a2}, SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})})}}}), zz),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VSpan{a1, a2}, String.append(SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+            Equal.cong(String, String, ss => String.append(ss, zz), T.render.pass(T.VPair{kk, T.VSpan{a1, a2}} <> t,
+              "\n", True{}, False{}),
+              String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VSpan{a1, a2}, SCon{'\n',
+                T.render.pass(t, "\n", True{}, False{})})}}}),
+              Laws.pass_value(kk, T.VSpan{a1, a2}, Eq.and.left(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t),
+                wt.ok(Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)), t,
+                "\n", True{})),
+            kp.txt(kk, T.VSpan{a1, a2}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))),
+        se.key(kk, SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VSpan{a1, a2}, String.append(SCon{'\n', T.render.pass(t,
+          "\n", True{}, False{})}, zz))}}}))
+    case T.VPair{+kk, T.VInt{+a1, +a2}} <> +t:
+      se.cast(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInt{a1, a2}, String.append(SCon{'\n',
+        T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+        String.append(T.render.pass(T.VPair{kk, T.VInt{a1, a2}} <> t, "\n", True{}, False{}), zz),
+        Equal.sym(String, String.append(T.render.pass(T.VPair{kk, T.VInt{a1, a2}} <> t, "\n", True{}, False{}), zz),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VInt{a1, a2}, String.append(SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+          Equal.trans(String, String.append(T.render.pass(T.VPair{kk, T.VInt{a1, a2}} <> t, "\n", True{}, False{}), zz),
+            String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInt{a1, a2}, SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})})}}}), zz),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInt{a1, a2}, String.append(SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+            Equal.cong(String, String, ss => String.append(ss, zz), T.render.pass(T.VPair{kk, T.VInt{a1, a2}} <> t,
+              "\n", True{}, False{}),
+              String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInt{a1, a2}, SCon{'\n',
+                T.render.pass(t, "\n", True{}, False{})})}}}),
+              Laws.pass_value(kk, T.VInt{a1, a2}, Eq.and.left(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t),
+                wt.ok(Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)), t,
+                "\n", True{})),
+            kp.txt(kk, T.VInt{a1, a2}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))),
+        se.key(kk, SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInt{a1, a2}, String.append(SCon{'\n', T.render.pass(t,
+          "\n", True{}, False{})}, zz))}}}))
+    case T.VPair{+kk, T.VFlo{+a1, +a2}} <> +t:
+      se.cast(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VFlo{a1, a2}, String.append(SCon{'\n',
+        T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+        String.append(T.render.pass(T.VPair{kk, T.VFlo{a1, a2}} <> t, "\n", True{}, False{}), zz),
+        Equal.sym(String, String.append(T.render.pass(T.VPair{kk, T.VFlo{a1, a2}} <> t, "\n", True{}, False{}), zz),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VFlo{a1, a2}, String.append(SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+          Equal.trans(String, String.append(T.render.pass(T.VPair{kk, T.VFlo{a1, a2}} <> t, "\n", True{}, False{}), zz),
+            String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VFlo{a1, a2}, SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})})}}}), zz),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VFlo{a1, a2}, String.append(SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+            Equal.cong(String, String, ss => String.append(ss, zz), T.render.pass(T.VPair{kk, T.VFlo{a1, a2}} <> t,
+              "\n", True{}, False{}),
+              String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VFlo{a1, a2}, SCon{'\n',
+                T.render.pass(t, "\n", True{}, False{})})}}}),
+              Laws.pass_value(kk, T.VFlo{a1, a2}, Eq.and.left(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t),
+                wt.ok(Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)), t,
+                "\n", True{})),
+            kp.txt(kk, T.VFlo{a1, a2}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))),
+        se.key(kk, SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VFlo{a1, a2}, String.append(SCon{'\n', T.render.pass(t,
+          "\n", True{}, False{})}, zz))}}}))
+    case T.VPair{+kk, T.VBool{+a1}} <> +t:
+      se.cast(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VBool{a1}, String.append(SCon{'\n',
+        T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+        String.append(T.render.pass(T.VPair{kk, T.VBool{a1}} <> t, "\n", True{}, False{}), zz),
+        Equal.sym(String, String.append(T.render.pass(T.VPair{kk, T.VBool{a1}} <> t, "\n", True{}, False{}), zz),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VBool{a1}, String.append(SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+          Equal.trans(String, String.append(T.render.pass(T.VPair{kk, T.VBool{a1}} <> t, "\n", True{}, False{}), zz),
+            String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VBool{a1}, SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})})}}}), zz),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VBool{a1}, String.append(SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+            Equal.cong(String, String, ss => String.append(ss, zz), T.render.pass(T.VPair{kk, T.VBool{a1}} <> t, "\n",
+              True{}, False{}),
+              String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VBool{a1}, SCon{'\n', T.render.pass(t,
+                "\n", True{}, False{})})}}}),
+              Laws.pass_value(kk, T.VBool{a1}, Eq.and.left(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t),
+                wt.ok(Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)), t, "\n",
+                True{})),
+            kp.txt(kk, T.VBool{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))),
+        se.key(kk, SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VBool{a1}, String.append(SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}, zz))}}}))
+    case T.VPair{+kk, T.VWhen{+a1}} <> +t:
+      se.cast(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VWhen{a1}, String.append(SCon{'\n',
+        T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+        String.append(T.render.pass(T.VPair{kk, T.VWhen{a1}} <> t, "\n", True{}, False{}), zz),
+        Equal.sym(String, String.append(T.render.pass(T.VPair{kk, T.VWhen{a1}} <> t, "\n", True{}, False{}), zz),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VWhen{a1}, String.append(SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+          Equal.trans(String, String.append(T.render.pass(T.VPair{kk, T.VWhen{a1}} <> t, "\n", True{}, False{}), zz),
+            String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VWhen{a1}, SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})})}}}), zz),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VWhen{a1}, String.append(SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+            Equal.cong(String, String, ss => String.append(ss, zz), T.render.pass(T.VPair{kk, T.VWhen{a1}} <> t, "\n",
+              True{}, False{}),
+              String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VWhen{a1}, SCon{'\n', T.render.pass(t,
+                "\n", True{}, False{})})}}}),
+              Laws.pass_value(kk, T.VWhen{a1}, Eq.and.left(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t),
+                wt.ok(Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)), t, "\n",
+                True{})),
+            kp.txt(kk, T.VWhen{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))),
+        se.key(kk, SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VWhen{a1}, String.append(SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}, zz))}}}))
+    case T.VPair{+kk, T.VArr{+a1}} <> +t:
+      se.cast(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VArr{a1}, String.append(SCon{'\n',
+        T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+        String.append(T.render.pass(T.VPair{kk, T.VArr{a1}} <> t, "\n", True{}, False{}), zz),
+        Equal.sym(String, String.append(T.render.pass(T.VPair{kk, T.VArr{a1}} <> t, "\n", True{}, False{}), zz),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VArr{a1}, String.append(SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+          Equal.trans(String, String.append(T.render.pass(T.VPair{kk, T.VArr{a1}} <> t, "\n", True{}, False{}), zz),
+            String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VArr{a1}, SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})})}}}), zz),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VArr{a1}, String.append(SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+            Equal.cong(String, String, ss => String.append(ss, zz), T.render.pass(T.VPair{kk, T.VArr{a1}} <> t, "\n",
+              True{}, False{}),
+              String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VArr{a1}, SCon{'\n', T.render.pass(t,
+                "\n", True{}, False{})})}}}),
+              Laws.pass_value(kk, T.VArr{a1}, wt.ok(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}),
+                wt.more(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1, T.WfItems{}),
+          _v => T.wf.go(t, T.WfRows{hp})), hw)), t, "\n", True{})),
+            kp.txt(kk, T.VArr{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))),
+        se.key(kk, SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VArr{a1}, String.append(SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}, zz))}}}))
+    case T.VPair{+kk, T.VInl{+a1}} <> +t:
+      se.cast(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInl{a1}, String.append(SCon{'\n',
+        T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+        String.append(T.render.pass(T.VPair{kk, T.VInl{a1}} <> t, "\n", True{}, False{}), zz),
+        Equal.sym(String, String.append(T.render.pass(T.VPair{kk, T.VInl{a1}} <> t, "\n", True{}, False{}), zz),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VInl{a1}, String.append(SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+          Equal.trans(String, String.append(T.render.pass(T.VPair{kk, T.VInl{a1}} <> t, "\n", True{}, False{}), zz),
+            String.append(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInl{a1}, SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})})}}}), zz),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInl{a1}, String.append(SCon{'\n',
+              T.render.pass(t, "\n", True{}, False{})}, zz))}}}),
+            Equal.cong(String, String, ss => String.append(ss, zz), T.render.pass(T.VPair{kk, T.VInl{a1}} <> t, "\n",
+              True{}, False{}),
+              String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInl{a1}, SCon{'\n', T.render.pass(t,
+                "\n", True{}, False{})})}}}),
+              Laws.pass_value(kk, T.VInl{a1}, wt.ok(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp}),
+                wt.more(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1, T.WfInl{}),
+          _v => T.wf.go(t, T.WfRows{hp})), hw)), t, "\n", True{})),
+            kp.txt(kk, T.VInl{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, zz))),
+        se.key(kk, SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInl{a1}, String.append(SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}, zz))}}}))
+    case T.VPair{+kk, T.VAot{+a1, +a2}} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAot{a1, a2}} <> t, "\n", True{}, False{}), zz)),
+        hw)
+    case T.VPair{+kk, T.VPair{+a1, +a2}} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VPair{a1, a2}} <> t, "\n", True{}, False{}), zz)),
+        hw)
+    case T.VStr{+a1} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VStr{a1} <> t, "\n", True{}, False{}), zz)), hw)
+    case T.VSpan{+a1, +a2} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VSpan{a1, a2} <> t, "\n", True{}, False{}), zz)), hw)
+    case T.VInt{+a1, +a2} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VInt{a1, a2} <> t, "\n", True{}, False{}), zz)), hw)
+    case T.VFlo{+a1, +a2} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VFlo{a1, a2} <> t, "\n", True{}, False{}), zz)), hw)
+    case T.VBool{+a1} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VBool{a1} <> t, "\n", True{}, False{}), zz)), hw)
+    case T.VWhen{+a1} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VWhen{a1} <> t, "\n", True{}, False{}), zz)), hw)
+    case T.VArr{+a1} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VArr{a1} <> t, "\n", True{}, False{}), zz)), hw)
+    case T.VInl{+a1} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VInl{a1} <> t, "\n", True{}, False{}), zz)), hw)
+    case T.VHead{+a1, +a2} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VHead{a1, a2} <> t, "\n", True{}, False{}), zz)), hw)
+    case T.VAot{+a1, +a2} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VAot{a1, a2} <> t, "\n", True{}, False{}), zz)), hw)
+    case T.VAots{+a1, +a2} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VAots{a1, a2} <> t, "\n", True{}, False{}), zz)), hw)
+
+# the table pass's text, then any text read so
+def se.T(
+  xs: List<&2, T.Val>,
+  +hp: String,
+  +zz: String,
+  +hw: {T.wf.go(xs, T.WfRows{hp}) == True{} : Bool},
+  hz: se(zz)
+) -> se(String.append(T.render.pass(xs, "\n", True{}, True{}), zz)):
+  match xs:
+    case []:
+      hz
+    case T.VPair{+kk, T.VHead{+p, +r}} <> +t:
+      se.cast(SCon{'[', String.append(p, SCon{']', SCon{'\n', String.append(T.render.pass(r, "\n", True{}, False{}),
+        String.append(T.render.pass(r, "\n", True{}, True{}), String.append(T.render.pass(t, "\n", True{}, True{}),
+        zz)))}})},
+        String.append(T.render.pass(T.VPair{kk, T.VHead{p, r}} <> t, "\n", True{}, True{}), zz),
+        Equal.sym(String, String.append(T.render.pass(T.VPair{kk, T.VHead{p, r}} <> t, "\n", True{}, True{}), zz),
+          SCon{'[', String.append(p, SCon{']', SCon{'\n',
+          String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{}, True{}),
+            String.append(T.render.pass(t, "\n", True{}, True{}), zz)))}})}, tt.head(kk, p, r, t, zz)),
+        se.br(String.append(p, SCon{']', SCon{'\n', String.append(T.render.pass(r, "\n", True{}, False{}),
+          String.append(T.render.pass(r, "\n", True{}, True{}), String.append(T.render.pass(t, "\n", True{}, True{}),
+          zz)))}})))
+    case T.VPair{+kk, T.VAots{+p, []}} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, []}} <> t, "\n", True{}, True{}), zz)),
+        hw)
+    case T.VPair{+kk, T.VAots{+p, T.VAot{+q, +r} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VAot{q, r} <> et)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+        == True{} : Bool}}
+      +bd = {String.append(T.render.pass(r, "\n", True{}, False{}), String.append(T.render.pass(r, "\n", True{},
+        True{}), String.append(T.render.pass(et, "\n", True{}, True{}), String.append(T.render.pass(t, "\n", True{},
+        True{}), zz)))) : String}
+      se.cast(SCon{'[', SCon{'[', String.append(q, SCon{']', SCon{']', SCon{'\n', bd}}})}},
+        String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n", True{}, True{}), zz),
+        Equal.sym(String, String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n", True{},
+          True{}), zz), SCon{'[', SCon{'[',
+          String.append(q, SCon{']', SCon{']', SCon{'\n', bd}}})}},
+          Equal.trans(String, String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n",
+            True{}, True{}), zz),
+            String.append(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}), String.append(T.render.pass(t, "\n",
+              True{}, True{}), zz)),
+            SCon{'[', SCon{'[', String.append(q, SCon{']', SCon{']', SCon{'\n', bd}}})}},
+            tt.aots(kk, p, T.VAot{q, r} <> et, t, zz, tt.pe(T.VAot{q, r} <> et, p, wt.ok(T.wf.go(T.VAot{q, r} <> et,
+              T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))),
+            tt.aot(q, r, et, String.append(T.render.pass(t, "\n", True{}, True{}), zz)))),
+        se.br(SCon{'[', String.append(q, SCon{']', SCon{']', SCon{'\n', bd}}})}))
+    case T.VPair{+kk, T.VAots{+p, T.VStr{+a1} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VStr{a1} <> et)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VStr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VStr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VStr{a1} <> et}} <> t, "\n", True{},
+        True{}), zz)), wt.ok(T.wf.go(T.VStr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VSpan{+a1, +a2} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VSpan{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VSpan{a1, a2} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VSpan{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VSpan{a1, a2} <> et}} <> t, "\n",
+        True{}, True{}), zz)), wt.ok(T.wf.go(T.VSpan{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VInt{+a1, +a2} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VInt{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VInt{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VInt{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VInt{a1, a2} <> et}} <> t, "\n", True{},
+        True{}), zz)), wt.ok(T.wf.go(T.VInt{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VFlo{+a1, +a2} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VFlo{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VFlo{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VFlo{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VFlo{a1, a2} <> et}} <> t, "\n", True{},
+        True{}), zz)), wt.ok(T.wf.go(T.VFlo{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VBool{+a1} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VBool{a1} <> et)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VBool{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VBool{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VBool{a1} <> et}} <> t, "\n", True{},
+        True{}), zz)), wt.ok(T.wf.go(T.VBool{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VWhen{+a1} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VWhen{a1} <> et)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VWhen{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VWhen{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VWhen{a1} <> et}} <> t, "\n", True{},
+        True{}), zz)), wt.ok(T.wf.go(T.VWhen{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VArr{+a1} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VArr{a1} <> et)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VArr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VArr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VArr{a1} <> et}} <> t, "\n", True{},
+        True{}), zz)), wt.ok(T.wf.go(T.VArr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VInl{+a1} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VInl{a1} <> et)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VInl{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VInl{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VInl{a1} <> et}} <> t, "\n", True{},
+        True{}), zz)), wt.ok(T.wf.go(T.VInl{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VHead{+a1, +a2} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VHead{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VHead{a1, a2} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VHead{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VHead{a1, a2} <> et}} <> t, "\n",
+        True{}, True{}), zz)), wt.ok(T.wf.go(T.VHead{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VAots{+a1, +a2} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VAots{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VAots{a1, a2} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VAots{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAots{a1, a2} <> et}} <> t, "\n",
+        True{}, True{}), zz)), wt.ok(T.wf.go(T.VAots{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VStr{+b1}} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VStr{b1}} <> et)), Bool.and(T.wf.key(kk,
+        t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VStr{b1}} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VStr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VStr{b1}} <> et}} <> t,
+        "\n", True{}, True{}), zz)), wt.ok(T.wf.go(T.VPair{a1, T.VStr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VSpan{+b1, +b2}} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VSpan{b1, b2}} <> et)),
+        Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VSpan{b1, b2}} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VSpan{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VSpan{b1, b2}} <> et}} <> t,
+        "\n", True{}, True{}), zz)), wt.ok(T.wf.go(T.VPair{a1, T.VSpan{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VInt{+b1, +b2}} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VInt{b1, b2}} <> et)),
+        Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VInt{b1, b2}} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VInt{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInt{b1, b2}} <> et}} <> t,
+        "\n", True{}, True{}), zz)), wt.ok(T.wf.go(T.VPair{a1, T.VInt{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VFlo{+b1, +b2}} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VFlo{b1, b2}} <> et)),
+        Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VFlo{b1, b2}} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VFlo{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VFlo{b1, b2}} <> et}} <> t,
+        "\n", True{}, True{}), zz)), wt.ok(T.wf.go(T.VPair{a1, T.VFlo{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VBool{+b1}} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VBool{b1}} <> et)), Bool.and(T.wf.key(kk,
+        t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VBool{b1}} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VBool{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VBool{b1}} <> et}} <> t,
+        "\n", True{}, True{}), zz)), wt.ok(T.wf.go(T.VPair{a1, T.VBool{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VWhen{+b1}} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VWhen{b1}} <> et)), Bool.and(T.wf.key(kk,
+        t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VWhen{b1}} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VWhen{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VWhen{b1}} <> et}} <> t,
+        "\n", True{}, True{}), zz)), wt.ok(T.wf.go(T.VPair{a1, T.VWhen{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VArr{+b1}} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VArr{b1}} <> et)), Bool.and(T.wf.key(kk,
+        t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VArr{b1}} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VArr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VArr{b1}} <> et}} <> t,
+        "\n", True{}, True{}), zz)), wt.ok(T.wf.go(T.VPair{a1, T.VArr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VInl{+b1}} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VInl{b1}} <> et)), Bool.and(T.wf.key(kk,
+        t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VInl{b1}} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VInl{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInl{b1}} <> et}} <> t,
+        "\n", True{}, True{}), zz)), wt.ok(T.wf.go(T.VPair{a1, T.VInl{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VHead{+b1, +b2}} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VHead{b1, b2}} <> et)),
+        Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VHead{b1, b2}} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VHead{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VHead{b1, b2}} <> et}} <> t,
+        "\n", True{}, True{}), zz)), wt.ok(T.wf.go(T.VPair{a1, T.VHead{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VAot{+b1, +b2}} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VAot{b1, b2}} <> et)),
+        Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VAot{b1, b2}} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VAot{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAot{b1, b2}} <> et}} <> t,
+        "\n", True{}, True{}), zz)), wt.ok(T.wf.go(T.VPair{a1, T.VAot{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VAots{+b1, +b2}} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VAots{b1, b2}} <> et)),
+        Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VAots{b1, b2}} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VAots{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAots{b1, b2}} <> et}} <> t,
+        "\n", True{}, True{}), zz)), wt.ok(T.wf.go(T.VPair{a1, T.VAots{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VPair{+b1, +b2}} <> +et}} <> +t:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VPair{b1, b2}} <> et)),
+        Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VPair{b1, b2}} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+        T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VPair{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}))
+        == True{} : Bool}}
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VPair{b1, b2}} <> et}} <> t,
+        "\n", True{}, True{}), zz)), wt.ok(T.wf.go(T.VPair{a1, T.VPair{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+        T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VStr{+a1}} <> +t:
+      se.T(t, hp, zz, wt.more(Bool.and(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw), hz)
+    case T.VPair{+kk, T.VSpan{+a1, +a2}} <> +t:
+      se.T(t, hp, zz, wt.more(Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+        hw), hz)
+    case T.VPair{+kk, T.VInt{+a1, +a2}} <> +t:
+      se.T(t, hp, zz, wt.more(Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw),
+        hz)
+    case T.VPair{+kk, T.VFlo{+a1, +a2}} <> +t:
+      se.T(t, hp, zz, wt.more(Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw),
+        hz)
+    case T.VPair{+kk, T.VBool{+a1}} <> +t:
+      se.T(t, hp, zz, wt.more(Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw),
+        hz)
+    case T.VPair{+kk, T.VWhen{+a1}} <> +t:
+      se.T(t, hp, zz, wt.more(Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw),
+        hz)
+    case T.VPair{+kk, T.VArr{+a1}} <> +t:
+      se.T(t, hp, zz, wt.more(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
+        _u => T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp})), hw)), hz)
+    case T.VPair{+kk, T.VInl{+a1}} <> +t:
+      se.T(t, hp, zz, wt.more(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
+        _u => T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp})), hw)), hz)
+    case T.VPair{+kk, T.VAot{+a1, +a2}} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VAot{a1, a2}} <> t, "\n", True{}, True{}), zz)),
+        hw)
+    case T.VPair{+kk, T.VPair{+a1, +a2}} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VPair{kk, T.VPair{a1, a2}} <> t, "\n", True{}, True{}), zz)),
+        hw)
+    case T.VStr{+a1} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VStr{a1} <> t, "\n", True{}, True{}), zz)), hw)
+    case T.VSpan{+a1, +a2} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VSpan{a1, a2} <> t, "\n", True{}, True{}), zz)), hw)
+    case T.VInt{+a1, +a2} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VInt{a1, a2} <> t, "\n", True{}, True{}), zz)), hw)
+    case T.VFlo{+a1, +a2} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VFlo{a1, a2} <> t, "\n", True{}, True{}), zz)), hw)
+    case T.VBool{+a1} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VBool{a1} <> t, "\n", True{}, True{}), zz)), hw)
+    case T.VWhen{+a1} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VWhen{a1} <> t, "\n", True{}, True{}), zz)), hw)
+    case T.VArr{+a1} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VArr{a1} <> t, "\n", True{}, True{}), zz)), hw)
+    case T.VInl{+a1} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VInl{a1} <> t, "\n", True{}, True{}), zz)), hw)
+    case T.VHead{+a1, +a2} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VHead{a1, a2} <> t, "\n", True{}, True{}), zz)), hw)
+    case T.VAot{+a1, +a2} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VAot{a1, a2} <> t, "\n", True{}, True{}), zz)), hw)
+    case T.VAots{+a1, +a2} <> +t:
+      Eq.bit.absurd(&1, se(String.append(T.render.pass(T.VAots{a1, a2} <> t, "\n", True{}, True{}), zz)), hw)
+
+# the document parse reads back from what render wrote, read out, is canon:
+# the key pass and the table pass over the root, from the start of the text
+def ex.canon(
+  +ee: String,
+  +xs: List<&2, T.Val>,
+  +hw: {T.wf.go(xs, T.WfRows{""}) == True{} : Bool},
+  +hl: {Laws.short.rows(xs) == True{} : Bool}
+) -> {Laws.own(T.parse(T.render(T.Doc{ee, xs}))) == Laws.canon(T.Doc{ee, xs}) : T.Doc}:
+  +tx = {String.append(T.render.pass(xs, "\n", True{}, False{}), T.render.pass(xs, "\n", True{}, True{})) : String}
+  +tz = {String.append(T.render.pass(xs, "\n", True{}, False{}), String.append(T.render.pass(xs, "\n", True{}, True{}),
+    "")) : String}
+  +nw = {nd.wf(xs, "", hw) : {nd(List.append(&2, T.Val, Laws.canon.keys(xs), Laws.canon.tabs(xs))) == True{} : Bool}}
+  +etx = {Equal.cong(String, String, s2 => String.append(T.render.pass(xs, "\n", True{}, False{}), s2),
+    T.render.pass(xs, "\n", True{}, True{}), String.append(T.render.pass(xs, "\n", True{}, True{}), ""),
+    Equal.sym(String, String.append(T.render.pass(xs, "\n", True{}, True{}), ""), T.render.pass(xs, "\n", True{},
+      True{}), Eq.append_nil(T.render.pass(xs, "\n", True{}, True{})))) : {tx == tz : String}}
+  Equal.trans(T.Doc, Laws.own(T.doc.read(tx, T.MScan{T.st.start()})), Laws.own(T.doc.read(tx, T.MScan{dl([], [], [],
+    T.LTop{}, T.QBasic{}, 0, 0, False{})})),
+    Laws.canon(T.Doc{ee, xs}),
+    Equal.cong(T.Doc, T.Doc, dd => Laws.own(dd), T.doc.read(tx, T.MScan{T.st.start()}), T.doc.read(tx, T.MScan{dl([],
+      [], [], T.LTop{}, T.QBasic{}, 0, 0, False{})}),
+      se.cast(tz, tx, Equal.sym(String, tx, tz, etx), se.P(xs, "", String.append(T.render.pass(xs, "\n", True{},
+        True{}), ""), hw, se.T(xs, "", "", hw, {==})))),
+    pp.step(dd => {Laws.own(dd) == Laws.canon(T.Doc{ee, xs}) : T.Doc}, T.doc.read(tx, T.MScan{dl([], [], [], T.LTop{},
+      T.QBasic{}, 0, 0, False{})}),
+      T.doc.read(tz, T.MScan{dl([], [], [], T.LTop{}, T.QBasic{}, 0, 0, False{})}),
+      Equal.cong(String, T.Doc, s2 => T.doc.read(s2, T.MScan{dl([], [], [], T.LTop{}, T.QBasic{}, 0, 0, False{})}), tx,
+        tz, etx),
+      kp(xs, "", [], [], [], False{}, [], [], Laws.canon.tabs(xs), T.LTop{}, T.QBasic{}, 0, 0,
+        String.append(T.render.pass(xs, "\n", True{}, True{}), ""),
+        dd => {Laws.own(dd) == Laws.canon(T.Doc{ee, xs}) : T.Doc}, {==}, {==}, hw, hl,
+        cv.fr.nil(List.append(&2, T.Val, Laws.canon.keys(xs), Laws.canon.tabs(xs))), nw, {==},
+        +c2 => +b2 => +q2 => +u2 => +l2 => f2 => o2 => tp(xs, False{}, "", [], [], c2, Laws.canon.keys(xs), "", [], [],
+          [], b2,
+          q2, u2, l2, False{}, "", dd => {Laws.own(dd) == Laws.canon(T.Doc{ee, xs}) : T.Doc}, {==})({==}, hw, hl, f2,
+          nd.suf(Laws.canon.keys(xs), Laws.canon.tabs(xs), nw), o2,
+          +c3 => _hs3 => _he3 => _b3 => _q3 => _u3 => _l3 => _a3 => o3 => Equal.cong(List<&2, T.Val>, T.Doc,
+            zs => T.Doc{"", zs}, Laws.own.rows(T.rows.seal(c3)), Laws.own.rows(Laws.canon.rows(xs)), o3)))))
+
+
+# Every string's bound, and every table path's, from the bound on the whole
+# text: a piece of a short text is short, from either end, and a string's
+# escapes are at least as many characters as the string.
+
+# the start of a short text is short
+def cn.pf(
+  aa: String,
+  +bb: String,
+  +mm: U32,
+  +ee: {Laws.counts(String.append(aa, bb), mm) == True{} : Bool}
+) -> {Laws.counts(aa, mm) == True{} : Bool}:
+  match aa:
+    case SNil{}:
+      {==}
+    case SCon{_h, +t}:
+      cv.and2(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(t, U32.add(mm, 1)),
+        Eq.and.left(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(String.append(t, bb), U32.add(mm, 1)), ee),
+        cn.pf(t, bb, U32.add(mm, 1), Eq.and.right(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(String.append(t,
+          bb),
+          U32.add(mm, 1)), ee)))
+
+# a character's escape is at least one character, whatever its class
+def esc.ne.k(
+  kk: T.BK,
+  +cc: Char,
+  +uu: U32
+) -> {String.is_empty(String.from_list(List.reverse(&2, Char, T.basic.disp(kk,
+  cc, uu, [])))) == False{} : Bool}:
+  match kk:
+    case T.BKCh{}:
+      {==}
+    case T.BKEsc{_m}:
+      {==}
+    case T.BKHex{}:
+      {==}
+
+# a character's escape is at least one character
+def esc.ne(+cc: Char) -> {String.is_empty(Laws.esc(cc)) == False{} : Bool}:
+  esc.ne.k(T.basic.cls(Char.to_u32(cc)), cc, Char.to_u32(cc))
+
+# a text of at least one character, then more: counting it passes one
+def esc.cnt(
+  ee: String,
+  +ww: String,
+  +mm: U32,
+  ne: {String.is_empty(ee) == False{} : Bool},
+  +hh: {Laws.counts(String.append(ee, ww), mm) == True{} : Bool}
+) -> {Bool.and(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(ww, U32.add(mm, 1))) == True{} : Bool}:
+  match ee:
+    case SNil{}:
+      Eq.bit.absurd2(&2, {Bool.and(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(ww, U32.add(mm, 1))) == True{}
+        : Bool}, ne)
+    case SCon{_h, +r}:
+      cv.and2(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(ww, U32.add(mm, 1)),
+        Eq.and.left(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(String.append(r, ww), U32.add(mm, 1)), hh),
+        cd.dp(r, ww, U32.add(mm, 1), Eq.and.right(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(String.append(r,
+          ww),
+          U32.add(mm, 1)), hh)))
+
+# a string whose escapes are short is short
+def esc.cs(
+  ss: String,
+  +mm: U32,
+  +hh: {Laws.counts(Laws.escs(ss), mm) == True{} : Bool}
+) -> {Laws.counts(ss, mm) == True{} : Bool}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{+c, +t}:
+      +h2 = {esc.cnt(Laws.esc(c), Laws.escs(t), mm, esc.ne(c), hh) : {Bool.and(Bool.not(U32.is_zero(U32.add(mm, 1))),
+        Laws.counts(Laws.escs(t), U32.add(mm, 1))) == True{} : Bool}}
+      cv.and2(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(t, U32.add(mm, 1)),
+        Eq.and.left(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(Laws.escs(t), U32.add(mm, 1)), h2),
+        esc.cs(t, U32.add(mm, 1), Eq.and.right(Bool.not(U32.is_zero(U32.add(mm, 1))), Laws.counts(Laws.escs(t),
+          U32.add(mm, 1)), h2)))
+
+# a string whose basic form starts a short text is short
+def sb(
+  +ss: String,
+  +ww: String,
+  +hh: {Laws.counts(String.append(T.key.basic(ss), ww), 0) == True{} : Bool}
+) -> {Laws.short(ss) == True{} : Bool}:
+  +x1 = {String.append(String.append(Laws.escs(ss), "\""), ww) : String}
+  +c1 = {Equal.trans(Bool, Laws.counts(SCon{'"', x1}, 0), Laws.counts(String.append(T.key.basic(ss), ww), 0), True{},
+    Equal.cong(String, Bool, x2 => Laws.counts(String.append(x2, ww), 0), "\"" ++ Laws.escs(ss) ++ "\"",
+      T.key.basic(ss),
+      Equal.sym(String, T.key.basic(ss), "\"" ++ Laws.escs(ss) ++ "\"", Laws.basic_escs(ss))),
+        hh) : {Laws.counts(SCon{'"', x1}, 0) == True{} : Bool}}
+  esc.cs(ss, 0, cn.pf(Laws.escs(ss), "\"", 0, cn.pf(String.append(Laws.escs(ss), "\""), ww, 0, cd.dp("\"", x1, 0, c1))))
+
+# and so is a span whose quoted form starts one
+def ssp(
+  +src: String,
+  +kk: U32,
+  +ww: String,
+  +hh: {Laws.counts(String.append(T.span.quote(src, kk), ww), 0) == True{} : Bool}
+) -> {Laws.short(T.span.str(src, kk, U32.is_zero(kk))) == True{} : Bool}:
+  sb(T.span.str(src, kk, U32.is_zero(kk)), ww, Equal.trans(Bool, Laws.counts(String.append(T.key.basic(T.span.str(src,
+    kk, U32.is_zero(kk))), ww), 0),
+    Laws.counts(String.append(T.span.quote(src, kk), ww), 0), True{}, Equal.cong(String, Bool,
+      x2 => Laws.counts(String.append(x2, ww), 0),
+    T.key.basic(T.span.str(src, kk, U32.is_zero(kk))), T.span.quote(src, kk), Equal.sym(String, T.span.quote(src, kk),
+    T.key.basic(T.span.str(src, kk, U32.is_zero(kk))), Laws.span_quote_basic(src, kk))), hh))
+
+# which list sg reads: an array's items, or an inline table's pairs
+def sg.at(md: Bool) -> T.WfAt:
+  match md:
+    case False{}:
+      T.WfItems{}
+    case True{}:
+      T.WfInl{}
+
+# every string in the values of an array or an inline table, as render.go
+# writes them, is short when their text is
+def sg(
+  vs: List<&2, T.Val>,
+  md: Bool,
+  +hw: {T.wf.go(vs, sg.at(md)) == True{} : Bool},
+  +hh: {Laws.counts(T.render.go(vs, ", ", False{}), 0) == True{} : Bool}
+) -> {Laws.cv.shorts(vs) == True{} : Bool}:
+  match vs md:
+    case [] _m:
+      {==}
+    case T.VPair{+kk, T.VStr{+a1}} <> +t True{}:
+      cv.and2(Laws.short(a1), Laws.cv.shorts(t), sb(a1, String.append(T.render.suf(", ", False{}, List.is_empty(&2,
+        T.Val, t)), T.render.go(t, ", ", False{})), cd.dp(" = ", String.append(T.render.atom(T.VStr{a1}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}))), 0,
+        cd.dp(T.key(kk), String.append(" = ", String.append(T.render.atom(T.VStr{a1}), String.append(T.render.suf(", ",
+        False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})))), 0, hh))), sg(t, True{},
+        wt.more(Bool.and(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfInl{}), hw),
+        cd.dp(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0,
+        cd.dp(T.render.atom(T.VStr{a1}), String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+        T.render.go(t, ", ", False{})), 0, cd.dp(" = ", String.append(T.render.atom(T.VStr{a1}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}))), 0,
+        cd.dp(T.key(kk), String.append(" = ", String.append(T.render.atom(T.VStr{a1}), String.append(T.render.suf(", ",
+        False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})))), 0, hh))))))
+    case T.VPair{+kk, T.VStr{+a1}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VStr{a1}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VSpan{+a1, +a2}} <> +t True{}:
+      cv.and2(Laws.short(T.span.str(a1, a2, U32.is_zero(a2))), Laws.cv.shorts(t), ssp(a1, a2,
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})),
+        cd.dp(" = ", String.append(T.render.atom(T.VSpan{a1, a2}), String.append(T.render.suf(", ", False{},
+        List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}))), 0, cd.dp(T.key(kk), String.append(" = ",
+        String.append(T.render.atom(T.VSpan{a1, a2}), String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val,
+        t)), T.render.go(t, ", ", False{})))), 0, hh))), sg(t, True{}, wt.more(Bool.and(T.wf.atom(T.VSpan{a1, a2}),
+        T.wf.key(kk, t)), _u => T.wf.go(t, T.WfInl{}), hw), cd.dp(T.render.suf(", ", False{}, List.is_empty(&2, T.Val,
+        t)), T.render.go(t, ", ", False{}), 0, cd.dp(T.render.atom(T.VSpan{a1, a2}), String.append(T.render.suf(", ",
+        False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})), 0, cd.dp(" = ",
+        String.append(T.render.atom(T.VSpan{a1, a2}), String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val,
+        t)), T.render.go(t, ", ", False{}))), 0, cd.dp(T.key(kk), String.append(" = ",
+        String.append(T.render.atom(T.VSpan{a1, a2}), String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val,
+        t)), T.render.go(t, ", ", False{})))), 0, hh))))))
+    case T.VPair{+kk, T.VSpan{+a1, +a2}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VSpan{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VInt{+a1, +a2}} <> +t True{}:
+      sg(t, True{}, wt.more(Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfInl{}), hw),
+        cd.dp(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0,
+        cd.dp(T.render.atom(T.VInt{a1, a2}), String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+        T.render.go(t, ", ", False{})), 0, cd.dp(" = ", String.append(T.render.atom(T.VInt{a1, a2}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}))), 0,
+        cd.dp(T.key(kk), String.append(" = ", String.append(T.render.atom(T.VInt{a1, a2}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})))), 0,
+        hh)))))
+    case T.VPair{+kk, T.VInt{+a1, +a2}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VInt{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VFlo{+a1, +a2}} <> +t True{}:
+      sg(t, True{}, wt.more(Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfInl{}), hw),
+        cd.dp(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0,
+        cd.dp(T.render.atom(T.VFlo{a1, a2}), String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+        T.render.go(t, ", ", False{})), 0, cd.dp(" = ", String.append(T.render.atom(T.VFlo{a1, a2}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}))), 0,
+        cd.dp(T.key(kk), String.append(" = ", String.append(T.render.atom(T.VFlo{a1, a2}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})))), 0,
+        hh)))))
+    case T.VPair{+kk, T.VFlo{+a1, +a2}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VFlo{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VBool{+a1}} <> +t True{}:
+      sg(t, True{}, wt.more(Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfInl{}), hw),
+        cd.dp(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0,
+        cd.dp(T.render.atom(T.VBool{a1}), String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+        T.render.go(t, ", ", False{})), 0, cd.dp(" = ", String.append(T.render.atom(T.VBool{a1}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}))), 0,
+        cd.dp(T.key(kk), String.append(" = ", String.append(T.render.atom(T.VBool{a1}), String.append(T.render.suf(", ",
+        False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})))), 0, hh)))))
+    case T.VPair{+kk, T.VBool{+a1}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VBool{a1}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VWhen{+a1}} <> +t True{}:
+      sg(t, True{}, wt.more(Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfInl{}), hw),
+        cd.dp(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0,
+        cd.dp(T.render.atom(T.VWhen{a1}), String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+        T.render.go(t, ", ", False{})), 0, cd.dp(" = ", String.append(T.render.atom(T.VWhen{a1}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}))), 0,
+        cd.dp(T.key(kk), String.append(" = ", String.append(T.render.atom(T.VWhen{a1}), String.append(T.render.suf(", ",
+        False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})))), 0, hh)))))
+    case T.VPair{+kk, T.VWhen{+a1}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VWhen{a1}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VArr{+a1}} <> +t True{}:
+      +hin = {wt.more(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfInl{})), hw)
+        : {T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfInl{})) == True{} : Bool}}
+      cv.and2(Laws.cv.shorts(a1), Laws.cv.shorts(t),
+        sg(a1, False{}, wt.ok(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfInl{}), hin), cn.pf(T.render.go(a1, ", ",
+          False{}), String.append("]", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+          T.render.go(t, ", ", False{}))), 0, cd.dp(" = [", String.append(T.render.go(a1, ", ", False{}),
+          String.append("]", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t,
+          ", ", False{})))), 0, cd.dp(T.key(kk), String.append(" = [", String.append(T.render.go(a1, ", ", False{}),
+          String.append("]", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t,
+          ", ", False{}))))), 0, hh)))),
+        sg(t, True{}, wt.more(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfInl{}), hin), cd.dp(T.render.suf(", ",
+          False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0, cd.dp("]",
+          String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})), 0,
+          cd.dp(T.render.go(a1, ", ", False{}), String.append("]", String.append(T.render.suf(", ", False{},
+          List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}))), 0, cd.dp(" = [", String.append(T.render.go(a1,
+          ", ", False{}), String.append("]", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+          T.render.go(t, ", ", False{})))), 0, cd.dp(T.key(kk), String.append(" = [", String.append(T.render.go(a1,
+          ", ", False{}), String.append("]", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+          T.render.go(t, ", ", False{}))))), 0, hh)))))))
+    case T.VPair{+kk, T.VArr{+a1}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VArr{a1}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VInl{+a1}} <> +t True{}:
+      +hin = {wt.more(T.wf.key(kk, t), _u => T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfInl{})), hw)
+        : {T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfInl{})) == True{} : Bool}}
+      cv.and2(Laws.cv.shorts(a1), Laws.cv.shorts(t),
+        sg(a1, True{}, wt.ok(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfInl{}), hin), cn.pf(T.render.go(a1, ", ",
+          False{}), String.append("}", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+          T.render.go(t, ", ", False{}))), 0, cd.dp(" = {", String.append(T.render.go(a1, ", ", False{}),
+          String.append("}", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t,
+          ", ", False{})))), 0, cd.dp(T.key(kk), String.append(" = {", String.append(T.render.go(a1, ", ", False{}),
+          String.append("}", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t,
+          ", ", False{}))))), 0, hh)))),
+        sg(t, True{}, wt.more(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfInl{}), hin), cd.dp(T.render.suf(", ",
+          False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0, cd.dp("}",
+          String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})), 0,
+          cd.dp(T.render.go(a1, ", ", False{}), String.append("}", String.append(T.render.suf(", ", False{},
+          List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}))), 0, cd.dp(" = {", String.append(T.render.go(a1,
+          ", ", False{}), String.append("}", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+          T.render.go(t, ", ", False{})))), 0, cd.dp(T.key(kk), String.append(" = {", String.append(T.render.go(a1,
+          ", ", False{}), String.append("}", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+          T.render.go(t, ", ", False{}))))), 0, hh)))))))
+    case T.VPair{+kk, T.VInl{+a1}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VInl{a1}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VHead{+a1, +a2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VHead{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VHead{+a1, +a2}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VHead{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VAot{+a1, +a2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VAot{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VAot{+a1, +a2}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VAot{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VAots{+a1, +a2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VAots{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VAots{+a1, +a2}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VAots{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VPair{+a1, +a2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VPair{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VPair{+a1, +a2}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VPair{kk, T.VPair{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VStr{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VStr{a1} <> t) == True{} : Bool}, hw)
+    case T.VStr{+a1} <> +t False{}:
+      cv.and2(Laws.short(a1), Laws.cv.shorts(t), sb(a1, String.append(T.render.suf(", ", False{}, List.is_empty(&2,
+        T.Val, t)), T.render.go(t, ", ", False{})), hh), sg(t, False{}, wt.more(T.wf.atom(T.VStr{a1}), _u => T.wf.go(t,
+        T.WfItems{}), hw), cd.dp(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ",
+        False{}), 0, cd.dp(T.render.atom(T.VStr{a1}), String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val,
+        t)), T.render.go(t, ", ", False{})), 0, hh))))
+    case T.VSpan{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VSpan{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VSpan{+a1, +a2} <> +t False{}:
+      cv.and2(Laws.short(T.span.str(a1, a2, U32.is_zero(a2))), Laws.cv.shorts(t), ssp(a1, a2,
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})), hh),
+        sg(t, False{}, wt.more(T.wf.atom(T.VSpan{a1, a2}), _u => T.wf.go(t, T.WfItems{}), hw), cd.dp(T.render.suf(", ",
+        False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0, cd.dp(T.render.atom(T.VSpan{a1, a2}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})), 0,
+        hh))))
+    case T.VInt{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VInt{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VInt{+a1, +a2} <> +t False{}:
+      sg(t, False{}, wt.more(T.wf.atom(T.VInt{a1, a2}), _u => T.wf.go(t, T.WfItems{}), hw), cd.dp(T.render.suf(", ",
+        False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0, cd.dp(T.render.atom(T.VInt{a1, a2}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})), 0, hh)))
+    case T.VFlo{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VFlo{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VFlo{+a1, +a2} <> +t False{}:
+      sg(t, False{}, wt.more(T.wf.atom(T.VFlo{a1, a2}), _u => T.wf.go(t, T.WfItems{}), hw), cd.dp(T.render.suf(", ",
+        False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0, cd.dp(T.render.atom(T.VFlo{a1, a2}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})), 0, hh)))
+    case T.VBool{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VBool{a1} <> t) == True{} : Bool}, hw)
+    case T.VBool{+a1} <> +t False{}:
+      sg(t, False{}, wt.more(T.wf.atom(T.VBool{a1}), _u => T.wf.go(t, T.WfItems{}), hw), cd.dp(T.render.suf(", ",
+        False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0, cd.dp(T.render.atom(T.VBool{a1}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})), 0, hh)))
+    case T.VWhen{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VWhen{a1} <> t) == True{} : Bool}, hw)
+    case T.VWhen{+a1} <> +t False{}:
+      sg(t, False{}, wt.more(T.wf.atom(T.VWhen{a1}), _u => T.wf.go(t, T.WfItems{}), hw), cd.dp(T.render.suf(", ",
+        False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0, cd.dp(T.render.atom(T.VWhen{a1}),
+        String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})), 0, hh)))
+    case T.VArr{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VArr{a1} <> t) == True{} : Bool}, hw)
+    case T.VArr{+a1} <> +t False{}:
+      cv.and2(Laws.cv.shorts(a1), Laws.cv.shorts(t),
+        sg(a1, False{}, wt.ok(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfItems{}), hw), cn.pf(T.render.go(a1, ", ",
+          False{}), String.append("]", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+          T.render.go(t, ", ", False{}))), 0, cd.dp("[", String.append(T.render.go(a1, ", ", False{}),
+          String.append("]", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t,
+          ", ", False{})))), 0, hh))),
+        sg(t, False{}, wt.more(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfItems{}), hw), cd.dp(T.render.suf(", ",
+          False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0, cd.dp("]",
+          String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})), 0,
+          cd.dp(T.render.go(a1, ", ", False{}), String.append("]", String.append(T.render.suf(", ", False{},
+          List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}))), 0, cd.dp("[", String.append(T.render.go(a1,
+          ", ", False{}), String.append("]", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+          T.render.go(t, ", ", False{})))), 0, hh))))))
+    case T.VInl{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VInl{a1} <> t) == True{} : Bool}, hw)
+    case T.VInl{+a1} <> +t False{}:
+      cv.and2(Laws.cv.shorts(a1), Laws.cv.shorts(t),
+        sg(a1, True{}, wt.ok(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfItems{}), hw), cn.pf(T.render.go(a1, ", ",
+          False{}), String.append("}", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+          T.render.go(t, ", ", False{}))), 0, cd.dp("{", String.append(T.render.go(a1, ", ", False{}),
+          String.append("}", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t,
+          ", ", False{})))), 0, hh))),
+        sg(t, False{}, wt.more(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfItems{}), hw), cd.dp(T.render.suf(", ",
+          False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}), 0, cd.dp("}",
+          String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{})), 0,
+          cd.dp(T.render.go(a1, ", ", False{}), String.append("}", String.append(T.render.suf(", ", False{},
+          List.is_empty(&2, T.Val, t)), T.render.go(t, ", ", False{}))), 0, cd.dp("{", String.append(T.render.go(a1,
+          ", ", False{}), String.append("}", String.append(T.render.suf(", ", False{}, List.is_empty(&2, T.Val, t)),
+          T.render.go(t, ", ", False{})))), 0, hh))))))
+    case T.VHead{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VHead{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VHead{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VHead{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VAot{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VAot{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VAot{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VAot{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VAots{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VAots{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VAots{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.cv.shorts(T.VAots{a1, a2} <> t) == True{} : Bool}, hw)
+
+# the text after a value's text
+def tx.w(
+  vv: T.Val,
+  +ww: String,
+  +hh: {Laws.counts(Laws.cv.tx(vv, ww), 0) == True{} : Bool}
+) -> {Laws.counts(ww, 0) == True{} : Bool}:
+  match vv:
+    case T.VArr{+its}:
+      cd.dp("]", ww, 0, cd.dp(T.render.go(its, ", ", False{}), SCon{']', ww}, 0, cd.dp("[",
+        String.append(T.render.go(its, ", ", False{}), SCon{']', ww}), 0, hh)))
+    case T.VInl{+rs}:
+      cd.dp("}", ww, 0, cd.dp(T.render.go(rs, ", ", False{}), SCon{'}', ww}, 0, cd.dp("{", String.append(T.render.go(rs,
+        ", ", False{}), SCon{'}', ww}), 0, hh)))
+    case T.VStr{+a1}:
+      cd.dp(T.render.atom(T.VStr{a1}), ww, 0, hh)
+    case T.VSpan{+a1, +a2}:
+      cd.dp(T.render.atom(T.VSpan{a1, a2}), ww, 0, hh)
+    case T.VInt{+a1, +a2}:
+      cd.dp(T.render.atom(T.VInt{a1, a2}), ww, 0, hh)
+    case T.VFlo{+a1, +a2}:
+      cd.dp(T.render.atom(T.VFlo{a1, a2}), ww, 0, hh)
+    case T.VBool{+a1}:
+      cd.dp(T.render.atom(T.VBool{a1}), ww, 0, hh)
+    case T.VWhen{+a1}:
+      cd.dp(T.render.atom(T.VWhen{a1}), ww, 0, hh)
+    case T.VHead{+a1, +a2}:
+      cd.dp(T.render.atom(T.VHead{a1, a2}), ww, 0, hh)
+    case T.VAot{+a1, +a2}:
+      cd.dp(T.render.atom(T.VAot{a1, a2}), ww, 0, hh)
+    case T.VAots{+a1, +a2}:
+      cd.dp(T.render.atom(T.VAots{a1, a2}), ww, 0, hh)
+    case T.VPair{+a1, +a2}:
+      cd.dp(T.render.atom(T.VPair{a1, a2}), ww, 0, hh)
+
+# every string in a well-formed value whose text starts a short text is short
+def sv1(
+  vv: T.Val,
+  +ww: String,
+  +hw: {Laws.cv.wf(vv) == True{} : Bool},
+  +hh: {Laws.counts(Laws.cv.tx(vv, ww), 0) == True{} : Bool}
+) -> {Laws.cv.short1(vv) == True{} : Bool}:
+  match vv:
+    case T.VArr{+its}:
+      sg(its, False{}, hw, cn.pf(T.render.go(its, ", ", False{}), SCon{']', ww}, 0, cd.dp("[",
+        String.append(T.render.go(its, ", ", False{}), SCon{']', ww}), 0, hh)))
+    case T.VInl{+rs}:
+      sg(rs, True{}, hw, cn.pf(T.render.go(rs, ", ", False{}), SCon{'}', ww}, 0, cd.dp("{",
+        String.append(T.render.go(rs, ", ", False{}), SCon{'}', ww}), 0, hh)))
+    case T.VStr{+a1}:
+      sb(a1, ww, hh)
+    case T.VSpan{+a1, +a2}:
+      ssp(a1, a2, ww, hh)
+    case T.VInt{_a1, _a2}:
+      {==}
+    case T.VFlo{_a1, _a2}:
+      {==}
+    case T.VBool{_a1}:
+      {==}
+    case T.VWhen{_a1}:
+      {==}
+    case T.VHead{_a1, _a2}:
+      {==}
+    case T.VAot{_a1, _a2}:
+      {==}
+    case T.VAots{_a1, _a2}:
+      {==}
+    case T.VPair{_a1, _a2}:
+      {==}
+
+# what sd claims of a list: a table's rows (md false) whose key pass and
+# table pass texts are short, or an array's elements (md true) whose text is
+def sd.G(md: Bool, +xs: List<&2, T.Val>, +hp: String) -> Type:
+  match md:
+    case False{}:
+      {T.wf.go(xs, T.WfRows{hp}) == True{} : Bool} -> {Laws.counts(T.render.pass(xs, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(xs, "\n", True{}, True{}), 0) == True{} : Bool} ->
+        {Laws.short.rows(xs) == True{} : Bool}
+    case True{}:
+      {T.wf.go(xs, T.WfElems{hp}) == True{} : Bool} -> {Laws.counts(T.render.pass(xs, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(xs) == True{} : Bool}
+
+# every string and every table path in a well-formed document whose text is
+# short is short
+def sd(xs: List<&2, T.Val>, md: Bool, +hp: String) -> sd.G(md, xs, hp):
+  match xs md:
+    case [] False{}:
+      _hw => _h1 => _h2 => {==}
+    case [] True{}:
+      _hw => _h2 => {==}
+    case T.VPair{+kk, T.VStr{+a1}} <> +t False{}:
+      +hw => +h1 => +h2 =>
+        +hw1 = {Eq.and.left(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t), wt.ok(Bool.and(T.wf.atom(T.VStr{a1}), T.wf.key(kk,
+          t)), _u => T.wf.go(t, T.WfRows{hp}), hw)) : {Laws.cv.wf(T.VStr{a1}) == True{} : Bool}}
+        +k1 = {Equal.trans(Bool, Laws.counts(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VStr{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})})}}}), 0),
+          Laws.counts(T.render.pass(T.VPair{kk, T.VStr{a1}} <> t, "\n", True{}, False{}), 0), True{}, Equal.cong(String,
+          Bool, x2 => Laws.counts(x2, 0),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VStr{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}), T.render.pass(T.VPair{kk, T.VStr{a1}} <> t, "\n", True{}, False{}),
+            Equal.sym(String, T.render.pass(T.VPair{kk, T.VStr{a1}} <> t, "\n", True{}, False{}),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VStr{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}),
+          Laws.pass_value(kk, T.VStr{a1}, hw1, t, "\n", True{}))), h1) : {Laws.counts(String.append(T.key(kk), SCon{' ',
+            SCon{'=', SCon{' ', Laws.cv.tx(T.VStr{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})})}}}),
+            0) == True{} : Bool}}
+        +k2 = {cd.dp(" = ", Laws.cv.tx(T.VStr{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}), 0,
+          cd.dp(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VStr{a1}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})})}}}, 0, k1)) : {Laws.counts(Laws.cv.tx(T.VStr{a1}, SCon{'\n', T.render.pass(t, "\n", True{},
+          False{})}), 0) == True{} : Bool}}
+        cv.and2(Laws.cv.short1(T.VStr{a1}), Laws.short.rows(t), sv1(T.VStr{a1}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}, hw1, k2),
+          sd(t, False{}, hp)(wt.more(Bool.and(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+            hw), cd.dp("\n", T.render.pass(t, "\n", True{}, False{}), 0, tx.w(T.VStr{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})}, k2)), h2))
+    case T.VPair{+kk, T.VSpan{+a1, +a2}} <> +t False{}:
+      +hw => +h1 => +h2 =>
+        +hw1 = {Eq.and.left(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t), wt.ok(Bool.and(T.wf.atom(T.VSpan{a1, a2}),
+          T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)) : {Laws.cv.wf(T.VSpan{a1, a2}) == True{} : Bool}}
+        +k1 = {Equal.trans(Bool, Laws.counts(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VSpan{a1, a2}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})})}}}), 0),
+          Laws.counts(T.render.pass(T.VPair{kk, T.VSpan{a1, a2}} <> t, "\n", True{}, False{}), 0), True{},
+          Equal.cong(String, Bool, x2 => Laws.counts(x2, 0),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VSpan{a1, a2}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}), T.render.pass(T.VPair{kk, T.VSpan{a1, a2}} <> t, "\n", True{}, False{}),
+            Equal.sym(String, T.render.pass(T.VPair{kk, T.VSpan{a1, a2}} <> t, "\n", True{}, False{}),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VSpan{a1, a2}, SCon{'\n',
+            T.render.pass(t, "\n", True{}, False{})})}}}),
+          Laws.pass_value(kk, T.VSpan{a1, a2}, hw1, t, "\n", True{}))), h1) : {Laws.counts(String.append(T.key(kk),
+            SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VSpan{a1, a2}, SCon{'\n', T.render.pass(t, "\n", True{},
+            False{})})}}}), 0) == True{} : Bool}}
+        +k2 = {cd.dp(" = ", Laws.cv.tx(T.VSpan{a1, a2}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}), 0,
+          cd.dp(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VSpan{a1, a2}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})})}}}, 0, k1)) : {Laws.counts(Laws.cv.tx(T.VSpan{a1, a2}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}), 0) == True{} : Bool}}
+        cv.and2(Laws.cv.short1(T.VSpan{a1, a2}), Laws.short.rows(t), sv1(T.VSpan{a1, a2}, SCon{'\n', T.render.pass(t,
+          "\n", True{}, False{})}, hw1, k2),
+          sd(t, False{}, hp)(wt.more(Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t,
+            T.WfRows{hp}), hw), cd.dp("\n", T.render.pass(t, "\n", True{}, False{}), 0, tx.w(T.VSpan{a1, a2}, SCon{'\n',
+            T.render.pass(t, "\n", True{}, False{})}, k2)), h2))
+    case T.VPair{+kk, T.VInt{+a1, +a2}} <> +t False{}:
+      +hw => +h1 => +h2 =>
+        +hw1 = {Eq.and.left(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t), wt.ok(Bool.and(T.wf.atom(T.VInt{a1, a2}),
+          T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)) : {Laws.cv.wf(T.VInt{a1, a2}) == True{} : Bool}}
+        +k1 = {Equal.trans(Bool, Laws.counts(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VInt{a1, a2}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})})}}}), 0),
+          Laws.counts(T.render.pass(T.VPair{kk, T.VInt{a1, a2}} <> t, "\n", True{}, False{}), 0), True{},
+          Equal.cong(String, Bool, x2 => Laws.counts(x2, 0),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInt{a1, a2}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}), T.render.pass(T.VPair{kk, T.VInt{a1, a2}} <> t, "\n", True{}, False{}),
+            Equal.sym(String, T.render.pass(T.VPair{kk, T.VInt{a1, a2}} <> t, "\n", True{}, False{}),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInt{a1, a2}, SCon{'\n',
+            T.render.pass(t, "\n", True{}, False{})})}}}),
+          Laws.pass_value(kk, T.VInt{a1, a2}, hw1, t, "\n", True{}))), h1) : {Laws.counts(String.append(T.key(kk),
+            SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInt{a1, a2}, SCon{'\n', T.render.pass(t, "\n", True{},
+            False{})})}}}), 0) == True{} : Bool}}
+        +k2 = {cd.dp(" = ", Laws.cv.tx(T.VInt{a1, a2}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}), 0,
+          cd.dp(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInt{a1, a2}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})})}}}, 0, k1)) : {Laws.counts(Laws.cv.tx(T.VInt{a1, a2}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}), 0) == True{} : Bool}}
+        cv.and2(Laws.cv.short1(T.VInt{a1, a2}), Laws.short.rows(t), sv1(T.VInt{a1, a2}, SCon{'\n', T.render.pass(t,
+          "\n", True{}, False{})}, hw1, k2),
+          sd(t, False{}, hp)(wt.more(Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t,
+            T.WfRows{hp}), hw), cd.dp("\n", T.render.pass(t, "\n", True{}, False{}), 0, tx.w(T.VInt{a1, a2}, SCon{'\n',
+            T.render.pass(t, "\n", True{}, False{})}, k2)), h2))
+    case T.VPair{+kk, T.VFlo{+a1, +a2}} <> +t False{}:
+      +hw => +h1 => +h2 =>
+        +hw1 = {Eq.and.left(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t), wt.ok(Bool.and(T.wf.atom(T.VFlo{a1, a2}),
+          T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw)) : {Laws.cv.wf(T.VFlo{a1, a2}) == True{} : Bool}}
+        +k1 = {Equal.trans(Bool, Laws.counts(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VFlo{a1, a2}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})})}}}), 0),
+          Laws.counts(T.render.pass(T.VPair{kk, T.VFlo{a1, a2}} <> t, "\n", True{}, False{}), 0), True{},
+          Equal.cong(String, Bool, x2 => Laws.counts(x2, 0),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VFlo{a1, a2}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}), T.render.pass(T.VPair{kk, T.VFlo{a1, a2}} <> t, "\n", True{}, False{}),
+            Equal.sym(String, T.render.pass(T.VPair{kk, T.VFlo{a1, a2}} <> t, "\n", True{}, False{}),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VFlo{a1, a2}, SCon{'\n',
+            T.render.pass(t, "\n", True{}, False{})})}}}),
+          Laws.pass_value(kk, T.VFlo{a1, a2}, hw1, t, "\n", True{}))), h1) : {Laws.counts(String.append(T.key(kk),
+            SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VFlo{a1, a2}, SCon{'\n', T.render.pass(t, "\n", True{},
+            False{})})}}}), 0) == True{} : Bool}}
+        +k2 = {cd.dp(" = ", Laws.cv.tx(T.VFlo{a1, a2}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}), 0,
+          cd.dp(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VFlo{a1, a2}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})})}}}, 0, k1)) : {Laws.counts(Laws.cv.tx(T.VFlo{a1, a2}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}), 0) == True{} : Bool}}
+        cv.and2(Laws.cv.short1(T.VFlo{a1, a2}), Laws.short.rows(t), sv1(T.VFlo{a1, a2}, SCon{'\n', T.render.pass(t,
+          "\n", True{}, False{})}, hw1, k2),
+          sd(t, False{}, hp)(wt.more(Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t,
+            T.WfRows{hp}), hw), cd.dp("\n", T.render.pass(t, "\n", True{}, False{}), 0, tx.w(T.VFlo{a1, a2}, SCon{'\n',
+            T.render.pass(t, "\n", True{}, False{})}, k2)), h2))
+    case T.VPair{+kk, T.VBool{+a1}} <> +t False{}:
+      +hw => +h1 => +h2 =>
+        +hw1 = {Eq.and.left(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t), wt.ok(Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk,
+          t)), _u => T.wf.go(t, T.WfRows{hp}), hw)) : {Laws.cv.wf(T.VBool{a1}) == True{} : Bool}}
+        +k1 = {Equal.trans(Bool, Laws.counts(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VBool{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})})}}}), 0),
+          Laws.counts(T.render.pass(T.VPair{kk, T.VBool{a1}} <> t, "\n", True{}, False{}), 0), True{},
+          Equal.cong(String, Bool, x2 => Laws.counts(x2, 0),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VBool{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}), T.render.pass(T.VPair{kk, T.VBool{a1}} <> t, "\n", True{}, False{}),
+            Equal.sym(String, T.render.pass(T.VPair{kk, T.VBool{a1}} <> t, "\n", True{}, False{}),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VBool{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}),
+          Laws.pass_value(kk, T.VBool{a1}, hw1, t, "\n", True{}))), h1) : {Laws.counts(String.append(T.key(kk),
+            SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VBool{a1}, SCon{'\n', T.render.pass(t, "\n", True{},
+            False{})})}}}), 0) == True{} : Bool}}
+        +k2 = {cd.dp(" = ", Laws.cv.tx(T.VBool{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}), 0,
+          cd.dp(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VBool{a1}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})})}}}, 0, k1)) : {Laws.counts(Laws.cv.tx(T.VBool{a1}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}), 0) == True{} : Bool}}
+        cv.and2(Laws.cv.short1(T.VBool{a1}), Laws.short.rows(t), sv1(T.VBool{a1}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}, hw1, k2),
+          sd(t, False{}, hp)(wt.more(Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+            hw), cd.dp("\n", T.render.pass(t, "\n", True{}, False{}), 0, tx.w(T.VBool{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})}, k2)), h2))
+    case T.VPair{+kk, T.VWhen{+a1}} <> +t False{}:
+      +hw => +h1 => +h2 =>
+        +hw1 = {Eq.and.left(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t), wt.ok(Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk,
+          t)), _u => T.wf.go(t, T.WfRows{hp}), hw)) : {Laws.cv.wf(T.VWhen{a1}) == True{} : Bool}}
+        +k1 = {Equal.trans(Bool, Laws.counts(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VWhen{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})})}}}), 0),
+          Laws.counts(T.render.pass(T.VPair{kk, T.VWhen{a1}} <> t, "\n", True{}, False{}), 0), True{},
+          Equal.cong(String, Bool, x2 => Laws.counts(x2, 0),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VWhen{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}), T.render.pass(T.VPair{kk, T.VWhen{a1}} <> t, "\n", True{}, False{}),
+            Equal.sym(String, T.render.pass(T.VPair{kk, T.VWhen{a1}} <> t, "\n", True{}, False{}),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VWhen{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}),
+          Laws.pass_value(kk, T.VWhen{a1}, hw1, t, "\n", True{}))), h1) : {Laws.counts(String.append(T.key(kk),
+            SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VWhen{a1}, SCon{'\n', T.render.pass(t, "\n", True{},
+            False{})})}}}), 0) == True{} : Bool}}
+        +k2 = {cd.dp(" = ", Laws.cv.tx(T.VWhen{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}), 0,
+          cd.dp(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VWhen{a1}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})})}}}, 0, k1)) : {Laws.counts(Laws.cv.tx(T.VWhen{a1}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}), 0) == True{} : Bool}}
+        cv.and2(Laws.cv.short1(T.VWhen{a1}), Laws.short.rows(t), sv1(T.VWhen{a1}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}, hw1, k2),
+          sd(t, False{}, hp)(wt.more(Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+            hw), cd.dp("\n", T.render.pass(t, "\n", True{}, False{}), 0, tx.w(T.VWhen{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})}, k2)), h2))
+    case T.VPair{+kk, T.VArr{+a1}} <> +t False{}:
+      +hw => +h1 => +h2 =>
+        +hw1 = {wt.ok(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
+          _u => T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp})),
+          hw)) : {Laws.cv.wf(T.VArr{a1}) == True{} : Bool}}
+        +k1 = {Equal.trans(Bool, Laws.counts(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VArr{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})})}}}), 0),
+          Laws.counts(T.render.pass(T.VPair{kk, T.VArr{a1}} <> t, "\n", True{}, False{}), 0), True{}, Equal.cong(String,
+          Bool, x2 => Laws.counts(x2, 0),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VArr{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}), T.render.pass(T.VPair{kk, T.VArr{a1}} <> t, "\n", True{}, False{}),
+            Equal.sym(String, T.render.pass(T.VPair{kk, T.VArr{a1}} <> t, "\n", True{}, False{}),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VArr{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}),
+          Laws.pass_value(kk, T.VArr{a1}, hw1, t, "\n", True{}))), h1) : {Laws.counts(String.append(T.key(kk), SCon{' ',
+            SCon{'=', SCon{' ', Laws.cv.tx(T.VArr{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})})}}}),
+            0) == True{} : Bool}}
+        +k2 = {cd.dp(" = ", Laws.cv.tx(T.VArr{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}), 0,
+          cd.dp(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VArr{a1}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})})}}}, 0, k1)) : {Laws.counts(Laws.cv.tx(T.VArr{a1}, SCon{'\n', T.render.pass(t, "\n", True{},
+          False{})}), 0) == True{} : Bool}}
+        cv.and2(Laws.cv.short1(T.VArr{a1}), Laws.short.rows(t), sv1(T.VArr{a1}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}, hw1, k2),
+          sd(t, False{}, hp)(wt.more(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
+            _u => T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp})), hw)), cd.dp("\n",
+            T.render.pass(t, "\n", True{}, False{}), 0, tx.w(T.VArr{a1}, SCon{'\n', T.render.pass(t, "\n", True{},
+            False{})}, k2)), h2))
+    case T.VPair{+kk, T.VInl{+a1}} <> +t False{}:
+      +hw => +h1 => +h2 =>
+        +hw1 = {wt.ok(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
+          _u => T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp})),
+          hw)) : {Laws.cv.wf(T.VInl{a1}) == True{} : Bool}}
+        +k1 = {Equal.trans(Bool, Laws.counts(String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ',
+          Laws.cv.tx(T.VInl{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})})}}}), 0),
+          Laws.counts(T.render.pass(T.VPair{kk, T.VInl{a1}} <> t, "\n", True{}, False{}), 0), True{}, Equal.cong(String,
+          Bool, x2 => Laws.counts(x2, 0),
+          String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInl{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}), T.render.pass(T.VPair{kk, T.VInl{a1}} <> t, "\n", True{}, False{}),
+            Equal.sym(String, T.render.pass(T.VPair{kk, T.VInl{a1}} <> t, "\n", True{}, False{}),
+            String.append(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInl{a1}, SCon{'\n', T.render.pass(t,
+            "\n", True{}, False{})})}}}),
+          Laws.pass_value(kk, T.VInl{a1}, hw1, t, "\n", True{}))), h1) : {Laws.counts(String.append(T.key(kk), SCon{' ',
+            SCon{'=', SCon{' ', Laws.cv.tx(T.VInl{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})})}}}),
+            0) == True{} : Bool}}
+        +k2 = {cd.dp(" = ", Laws.cv.tx(T.VInl{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}), 0,
+          cd.dp(T.key(kk), SCon{' ', SCon{'=', SCon{' ', Laws.cv.tx(T.VInl{a1}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})})}}}, 0, k1)) : {Laws.counts(Laws.cv.tx(T.VInl{a1}, SCon{'\n', T.render.pass(t, "\n", True{},
+          False{})}), 0) == True{} : Bool}}
+        cv.and2(Laws.cv.short1(T.VInl{a1}), Laws.short.rows(t), sv1(T.VInl{a1}, SCon{'\n', T.render.pass(t, "\n",
+          True{}, False{})}, hw1, k2),
+          sd(t, False{}, hp)(wt.more(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
+            _u => T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp})), hw)), cd.dp("\n", T.render.pass(t,
+            "\n", True{}, False{}), 0, tx.w(T.VInl{a1}, SCon{'\n', T.render.pass(t, "\n", True{}, False{})}, k2)), h2))
+    case T.VPair{+kk, T.VHead{+p, +r}} <> +t False{}:
+      +hw => +h1 => +h2 =>
+        +hin = {wt.more(Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk))), _u => T.wf.then(T.wf.go(r,
+          T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t,
+          T.WfRows{hp})) == True{} : Bool}}
+        +zz = {String.append(String.append(T.render.pass(r, "\n", True{}, False{}), T.render.pass(r, "\n", True{},
+          True{})), T.render.pass(t, "\n", True{}, True{})) : String}
+        +j1 = {cd.dp("[", String.append(p, SCon{']', SCon{'\n', zz}}), 0, h2) : {Laws.counts(String.append(p, SCon{']',
+          SCon{'\n', zz}}), 0) == True{} : Bool}}
+        +j2 = {cd.dp("]\n", zz, 0, cd.dp(p, SCon{']', SCon{'\n', zz}}, 0, j1)) : {Laws.counts(zz, 0) == True{} : Bool}}
+        +j3 = {cn.pf(String.append(T.render.pass(r, "\n", True{}, False{}), T.render.pass(r, "\n", True{}, True{})),
+          T.render.pass(t, "\n", True{}, True{}), 0, j2) : {Laws.counts(String.append(T.render.pass(r, "\n", True{},
+          False{}), T.render.pass(r, "\n", True{}, True{})), 0) == True{} : Bool}}
+        cv.and2(Laws.short(p), Bool.and(Laws.short.rows(r), Laws.short.rows(t)), cn.pf(p, SCon{']', SCon{'\n', zz}}, 0,
+          j1),
+          cv.and2(Laws.short.rows(r), Laws.short.rows(t),
+            sd(r, False{}, p)(wt.ok(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp}), hin),
+              cn.pf(T.render.pass(r, "\n", True{}, False{}), T.render.pass(r, "\n", True{}, True{}), 0, j3),
+              cd.dp(T.render.pass(r, "\n", True{}, False{}), T.render.pass(r, "\n", True{}, True{}), 0, j3)),
+            sd(t, False{}, hp)(wt.more(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp}), hin), h1,
+              cd.dp(String.append(T.render.pass(r, "\n", True{}, False{}), T.render.pass(r, "\n", True{}, True{})),
+                T.render.pass(t, "\n", True{}, True{}), 0, j2))))
+    case T.VPair{+kk, T.VAots{+p, T.VAot{+q, +r} <> +et}} <> +t False{}:
+      +hw => +h1 => +h2 =>
+        +hin ={wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VAot{q, r} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p,
+          T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp})), hw)
+          : {T.wf.then(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
+        +hwe = {wt.ok(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}),
+          hin) : {T.wf.go(T.VAot{q, r} <> et, T.WfElems{p})
+          == True{} : Bool}}
+        +eq = {str.eq.true(q, p, wt.ok(T.str.eq(q, p), _u => T.wf.then(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(et,
+          T.WfElems{p})), hwe)) : {q == p : String}}
+        +j0 = {Equal.trans(Bool, Laws.counts(String.append(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}),
+          T.render.pass(t, "\n", True{}, True{})), 0), Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q,
+          r} <> et}} <> t, "\n", True{}, True{}), 0), True{},
+          Equal.cong(String, Bool, x2 => Laws.counts(x2, 0), String.append(T.render.pass(T.VAot{q, r} <> et, "\n",
+            True{}, True{}), T.render.pass(t, "\n", True{}, True{})), T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q,
+            r} <> et}} <> t, "\n", True{}, True{}),
+          Equal.sym(String, T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n", True{}, True{}),
+            String.append(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}), T.render.pass(t, "\n", True{},
+            True{})),
+          Equal.trans(String, T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n", True{}, True{}),
+            String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n", True{}, True{}), ""),
+            String.append(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}), T.render.pass(t, "\n", True{},
+              True{})), Equal.sym(String, String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t,
+              "\n", True{}, True{}), ""),
+            T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n", True{}, True{}),
+              Eq.append_nil(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n", True{}, True{}))),
+            Equal.trans(String, String.append(T.render.pass(T.VPair{kk, T.VAots{p, T.VAot{q, r} <> et}} <> t, "\n",
+              True{}, True{}), ""), String.append(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}),
+              String.append(T.render.pass(t, "\n", True{}, True{}), "")),
+              String.append(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}), T.render.pass(t, "\n", True{},
+                True{})), tt.aots(kk, p, T.VAot{q, r} <> et, t, "", tt.pe(T.VAot{q, r} <> et, p, hwe)),
+              Equal.cong(String, String, x3 => String.append(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}),
+                x3), String.append(T.render.pass(t, "\n", True{}, True{}), ""), T.render.pass(t, "\n", True{}, True{}),
+                Eq.append_nil(T.render.pass(t, "\n", True{}, True{}))))))),
+                  h2) : {Laws.counts(String.append(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}),
+                  T.render.pass(t, "\n", True{}, True{})), 0) == True{} : Bool}}
+        +j1 = {cn.pf(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}), T.render.pass(t, "\n", True{}, True{}), 0,
+          j0) : {Laws.counts(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}), 0) == True{} : Bool}}
+        +sq = {cn.pf(q, SCon{']', SCon{']', SCon{'\n', String.append(String.append(T.render.pass(r, "\n", True{},
+          False{}), T.render.pass(r, "\n", True{}, True{})), T.render.pass(et, "\n", True{}, True{}))}}}, 0, cd.dp("[[",
+          String.append(q, SCon{']', SCon{']', SCon{'\n', String.append(String.append(T.render.pass(r, "\n", True{},
+          False{}), T.render.pass(r, "\n", True{}, True{})), T.render.pass(et, "\n", True{}, True{}))}}}), 0,
+          j1)) : {Laws.short(q) == True{} : Bool}}
+        cv.and2(Laws.short(p), Bool.and(Laws.short.rows(T.VAot{q, r} <> et), Laws.short.rows(t)),
+          Equal.trans(Bool, Laws.short(p), Laws.short(q), True{}, Equal.cong(String, Bool, s2 => Laws.short(s2), p, q,
+            Equal.sym(String, q, p, eq)), sq),
+          cv.and2(Laws.short.rows(T.VAot{q, r} <> et), Laws.short.rows(t), sd(T.VAot{q, r} <> et, True{}, p)(hwe, j1),
+            sd(t, False{}, hp)(wt.more(T.wf.go(T.VAot{q, r} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin),
+              h1,
+              cd.dp(T.render.pass(T.VAot{q, r} <> et, "\n", True{}, True{}), T.render.pass(t, "\n", True{}, True{}), 0,
+                j0))))
+    case T.VPair{+kk, T.VAots{+p, []}} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, []}} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, []}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} ->
+        {Laws.short.rows(T.VPair{kk, T.VAots{p, []}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VAots{+p, T.VStr{+a1} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VStr{a1} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VStr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VStr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VStr{a1} <> et}} <> t, "\n", True{},
+          False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VStr{a1} <> et}} <> t,
+          "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VStr{a1} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VStr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VSpan{+a1, +a2} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VSpan{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VSpan{a1, a2} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VSpan{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VSpan{a1, a2} <> et}} <> t, "\n", True{},
+          False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VSpan{a1,
+          a2} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VSpan{a1, a2} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VSpan{a1, a2} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VInt{+a1, +a2} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VInt{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VInt{a1, a2} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VInt{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VInt{a1, a2} <> et}} <> t, "\n", True{},
+          False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VInt{a1,
+          a2} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VInt{a1, a2} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VInt{a1, a2} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VFlo{+a1, +a2} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VFlo{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VFlo{a1, a2} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VFlo{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VFlo{a1, a2} <> et}} <> t, "\n", True{},
+          False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VFlo{a1,
+          a2} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VFlo{a1, a2} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VFlo{a1, a2} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VBool{+a1} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VBool{a1} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VBool{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VBool{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VBool{a1} <> et}} <> t, "\n", True{},
+          False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VBool{a1} <> et}} <> t,
+          "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VBool{a1} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VBool{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VWhen{+a1} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VWhen{a1} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VWhen{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VWhen{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VWhen{a1} <> et}} <> t, "\n", True{},
+          False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VWhen{a1} <> et}} <> t,
+          "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VWhen{a1} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VWhen{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VArr{+a1} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VArr{a1} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VArr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VArr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VArr{a1} <> et}} <> t, "\n", True{},
+          False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VArr{a1} <> et}} <> t,
+          "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VArr{a1} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VArr{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VInl{+a1} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VInl{a1} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VInl{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VInl{a1} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VInl{a1} <> et}} <> t, "\n", True{},
+          False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VInl{a1} <> et}} <> t,
+          "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VInl{a1} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VInl{a1} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VHead{+a1, +a2} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VHead{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VHead{a1, a2} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VHead{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VHead{a1, a2} <> et}} <> t, "\n", True{},
+          False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VHead{a1,
+          a2} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VHead{a1, a2} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VHead{a1, a2} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VAots{+a1, +a2} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VAots{a1, a2} <> et)), Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VAots{a1, a2} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VAots{a1, a2} <> et, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VAots{a1, a2} <> et}} <> t, "\n", True{},
+          False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VAots{a1,
+          a2} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk, T.VAots{p,
+          T.VAots{a1, a2} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VAots{a1, a2} <> et, T.WfElems{p}),
+          _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VStr{+b1}} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VStr{b1}} <> et)),
+          Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VStr{b1}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VStr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VStr{b1}} <> et}} <> t, "\n",
+          True{}, False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VStr{b1}} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk,
+          T.VAots{p, T.VPair{a1, T.VStr{b1}} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VPair{a1,
+          T.VStr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VSpan{+b1, +b2}} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VSpan{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VSpan{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VSpan{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VSpan{b1, b2}} <> et}} <> t,
+          "\n", True{}, False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VSpan{b1, b2}} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk,
+          T.VAots{p, T.VPair{a1, T.VSpan{b1, b2}} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VPair{a1, T.VSpan{b1,
+          b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VInt{+b1, +b2}} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VInt{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VInt{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VInt{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInt{b1, b2}} <> et}} <> t,
+          "\n", True{}, False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VInt{b1, b2}} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk,
+          T.VAots{p, T.VPair{a1, T.VInt{b1, b2}} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VPair{a1, T.VInt{b1,
+          b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VFlo{+b1, +b2}} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VFlo{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VFlo{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VFlo{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VFlo{b1, b2}} <> et}} <> t,
+          "\n", True{}, False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VFlo{b1, b2}} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk,
+          T.VAots{p, T.VPair{a1, T.VFlo{b1, b2}} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VPair{a1, T.VFlo{b1,
+          b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VBool{+b1}} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VBool{b1}} <> et)),
+          Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VBool{b1}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VBool{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VBool{b1}} <> et}} <> t, "\n",
+          True{}, False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VBool{b1}} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk,
+          T.VAots{p, T.VPair{a1, T.VBool{b1}} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VPair{a1,
+          T.VBool{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VWhen{+b1}} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VWhen{b1}} <> et)),
+          Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VWhen{b1}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VWhen{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VWhen{b1}} <> et}} <> t, "\n",
+          True{}, False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VWhen{b1}} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk,
+          T.VAots{p, T.VPair{a1, T.VWhen{b1}} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VPair{a1,
+          T.VWhen{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VArr{+b1}} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VArr{b1}} <> et)),
+          Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VArr{b1}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VArr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VArr{b1}} <> et}} <> t, "\n",
+          True{}, False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VArr{b1}} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk,
+          T.VAots{p, T.VPair{a1, T.VArr{b1}} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VPair{a1,
+          T.VArr{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VInl{+b1}} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VInl{b1}} <> et)),
+          Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VInl{b1}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VInl{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VInl{b1}} <> et}} <> t, "\n",
+          True{}, False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VInl{b1}} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk,
+          T.VAots{p, T.VPair{a1, T.VInl{b1}} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VPair{a1,
+          T.VInl{b1}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VHead{+b1, +b2}} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VHead{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VHead{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VHead{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VHead{b1, b2}} <> et}} <> t,
+          "\n", True{}, False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VHead{b1, b2}} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk,
+          T.VAots{p, T.VPair{a1, T.VHead{b1, b2}} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VPair{a1, T.VHead{b1,
+          b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VAot{+b1, +b2}} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VAot{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VAot{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VAot{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAot{b1, b2}} <> et}} <> t,
+          "\n", True{}, False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VAot{b1, b2}} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk,
+          T.VAots{p, T.VPair{a1, T.VAot{b1, b2}} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VPair{a1, T.VAot{b1,
+          b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VAots{+b1, +b2}} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VAots{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VAots{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VAots{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VAots{b1, b2}} <> et}} <> t,
+          "\n", True{}, False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VAots{b1, b2}} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk,
+          T.VAots{p, T.VPair{a1, T.VAots{b1, b2}} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VPair{a1, T.VAots{b1,
+          b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAots{+p, T.VPair{+a1, T.VPair{+b1, +b2}} <> +et}} <> +t False{}:
+      hw =>
+        +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, T.VPair{a1, T.VPair{b1, b2}} <> et)),
+          Bool.and(T.wf.key(kk, t),
+          T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(T.VPair{a1, T.VPair{b1, b2}} <> et, T.WfElems{p}),
+            _v => T.wf.go(t,
+          T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(T.VPair{a1, T.VPair{b1, b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+            T.WfRows{hp}))
+          == True{} : Bool}}
+        Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1, T.VPair{b1, b2}} <> et}} <> t,
+          "\n", True{}, False{}), 0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAots{p, T.VPair{a1,
+          T.VPair{b1, b2}} <> et}} <> t, "\n", True{}, True{}), 0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk,
+          T.VAots{p, T.VPair{a1, T.VPair{b1, b2}} <> et}} <> t) == True{} : Bool}, wt.ok(T.wf.go(T.VPair{a1, T.VPair{b1,
+          b2}} <> et, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin))
+    case T.VPair{+kk, T.VAot{+a1, +a2}} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VAot{a1, a2}} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VAot{a1, a2}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk, T.VAot{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VPair{+a1, +a2}} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{kk, T.VPair{a1, a2}} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VPair{kk, T.VPair{a1, a2}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{kk, T.VPair{a1, a2}} <> t) == True{} : Bool}, hw)
+    case T.VStr{+a1} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VStr{a1} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VStr{a1} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VStr{a1} <> t) == True{} : Bool}, hw)
+    case T.VSpan{+a1, +a2} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VSpan{a1, a2} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VSpan{a1, a2} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VSpan{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VInt{+a1, +a2} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VInt{a1, a2} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VInt{a1, a2} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VInt{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VFlo{+a1, +a2} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VFlo{a1, a2} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VFlo{a1, a2} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VFlo{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VBool{+a1} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VBool{a1} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VBool{a1} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VBool{a1} <> t) == True{} : Bool}, hw)
+    case T.VWhen{+a1} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VWhen{a1} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VWhen{a1} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VWhen{a1} <> t) == True{} : Bool}, hw)
+    case T.VArr{+a1} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VArr{a1} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VArr{a1} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VArr{a1} <> t) == True{} : Bool}, hw)
+    case T.VInl{+a1} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VInl{a1} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VInl{a1} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VInl{a1} <> t) == True{} : Bool}, hw)
+    case T.VHead{+a1, +a2} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VHead{a1, a2} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VHead{a1, a2} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VHead{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VAot{+a1, +a2} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VAot{a1, a2} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VAot{a1, a2} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VAot{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VAots{+a1, +a2} <> +t False{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VAots{a1, a2} <> t, "\n", True{}, False{}),
+        0) == True{} : Bool} -> {Laws.counts(T.render.pass(T.VAots{a1, a2} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VAots{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VAot{+q, +r} <> +t True{}:
+      +hw => +h2 =>
+        +h1 = {wt.more(T.str.eq(q, hp), _u => T.wf.then(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp})), hw)
+          : {T.wf.then(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp})) == True{} : Bool}}
+        +zz = {String.append(String.append(T.render.pass(r, "\n", True{}, False{}), T.render.pass(r, "\n", True{},
+          True{})), T.render.pass(t, "\n", True{}, True{})) : String}
+        +j1 = {cd.dp(q, SCon{']', SCon{']', SCon{'\n', zz}}}, 0, cd.dp("[[", String.append(q, SCon{']', SCon{']',
+          SCon{'\n', zz}}}), 0, h2)) : {Laws.counts(SCon{']', SCon{']', SCon{'\n', zz}}}, 0) == True{} : Bool}}
+        +j2 = {cd.dp("]]\n", zz, 0, j1) : {Laws.counts(zz, 0) == True{} : Bool}}
+        +j3 = {cn.pf(String.append(T.render.pass(r, "\n", True{}, False{}), T.render.pass(r, "\n", True{}, True{})),
+          T.render.pass(t, "\n", True{}, True{}), 0, j2) : {Laws.counts(String.append(T.render.pass(r, "\n", True{},
+          False{}), T.render.pass(r, "\n", True{}, True{})), 0) == True{} : Bool}}
+        cv.and2(Laws.short.rows(r), Laws.short.rows(t),
+          sd(r, False{}, q)(wt.ok(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp}), h1), cn.pf(T.render.pass(r,
+            "\n", True{}, False{}), T.render.pass(r, "\n", True{}, True{}), 0, j3),
+            cd.dp(T.render.pass(r, "\n", True{}, False{}), T.render.pass(r, "\n", True{}, True{}), 0, j3)),
+          sd(t, True{}, hp)(wt.more(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp}), h1),
+            cd.dp(String.append(T.render.pass(r, "\n", True{}, False{}), T.render.pass(r, "\n", True{}, True{})),
+              T.render.pass(t, "\n", True{}, True{}), 0, j2)))
+    case T.VStr{+a1} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VStr{a1} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VStr{a1} <> t) == True{} : Bool}, hw)
+    case T.VSpan{+a1, +a2} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VSpan{a1, a2} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VSpan{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VInt{+a1, +a2} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VInt{a1, a2} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VInt{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VFlo{+a1, +a2} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VFlo{a1, a2} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VFlo{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VBool{+a1} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VBool{a1} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VBool{a1} <> t) == True{} : Bool}, hw)
+    case T.VWhen{+a1} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VWhen{a1} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VWhen{a1} <> t) == True{} : Bool}, hw)
+    case T.VArr{+a1} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VArr{a1} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VArr{a1} <> t) == True{} : Bool}, hw)
+    case T.VInl{+a1} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VInl{a1} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VInl{a1} <> t) == True{} : Bool}, hw)
+    case T.VHead{+a1, +a2} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VHead{a1, a2} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VHead{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VAots{+a1, +a2} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VAots{a1, a2} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VAots{a1, a2} <> t) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VStr{+b1}} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{a1, T.VStr{b1}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{a1, T.VStr{b1}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VSpan{+b1, +b2}} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{a1, T.VSpan{b1, b2}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{a1, T.VSpan{b1, b2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VInt{+b1, +b2}} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{a1, T.VInt{b1, b2}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{a1, T.VInt{b1, b2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VFlo{+b1, +b2}} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{a1, T.VFlo{b1, b2}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{a1, T.VFlo{b1, b2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VBool{+b1}} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{a1, T.VBool{b1}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{a1, T.VBool{b1}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VWhen{+b1}} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{a1, T.VWhen{b1}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{a1, T.VWhen{b1}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VArr{+b1}} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{a1, T.VArr{b1}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{a1, T.VArr{b1}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VInl{+b1}} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{a1, T.VInl{b1}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{a1, T.VInl{b1}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VHead{+b1, +b2}} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{a1, T.VHead{b1, b2}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{a1, T.VHead{b1, b2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VAot{+b1, +b2}} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{a1, T.VAot{b1, b2}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{a1, T.VAot{b1, b2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VAots{+b1, +b2}} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{a1, T.VAots{b1, b2}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{a1, T.VAots{b1, b2}} <> t) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VPair{+b1, +b2}} <> +t True{}:
+      hw => Eq.bit.absurd(&1, {Laws.counts(T.render.pass(T.VPair{a1, T.VPair{b1, b2}} <> t, "\n", True{}, True{}),
+        0) == True{} : Bool} -> {Laws.short.rows(T.VPair{a1, T.VPair{b1, b2}} <> t) == True{} : Bool}, hw)
+
+# every string and table path in a well-formed document whose rendered text
+# is short is short
+def sd.doc(
+  +ee: String,
+  +xs: List<&2, T.Val>,
+  +hw: {T.wf.go(xs, T.WfRows{""}) == True{} : Bool},
+  +hh: {Laws.short(T.render(T.Doc{ee, xs})) == True{} : Bool}
+) -> {Laws.short.rows(xs) == True{} : Bool}:
+  sd(xs, False{}, "")(hw, cn.pf(T.render.pass(xs, "\n", True{}, False{}), T.render.pass(xs, "\n", True{}, True{}), 0,
+    hh), cd.dp(T.render.pass(xs, "\n", True{}, False{}), T.render.pass(xs, "\n", True{}, True{}), 0, hh))
+
+
+# The same document. canon is the document with each table's pairs that are
+# no table moved in front of its tables and every span read out. same
+# compares a table as the pairs it holds, each against the other table's
+# first pair of its name, so moving a pair past pairs of other names changes
+# nothing, and own changes nothing either (own.l, own.r).
+
+# a lookup that missed is one wf.fresh reads so
+def miss.fresh(hh: T.Hit) -> {Laws.is_miss(hh) == T.wf.fresh(hh) : Bool}:
+  match hh:
+    case T.Miss{}:
+      {==}
+    case T.Found{_v}:
+      {==}
+
+# the pick of nn from the rows f2, then nn's pair, then rr
+def pk.afT(
+  +f2: List<&2, T.Val>,
+  +nn: String,
+  +xx: T.Val,
+  +rr: List<&2, T.Val>
+) -> Type:
+  {Laws.pick(List.append(&2, T.Val, f2, T.VPair{nn, xx} <> rr), nn) == Laws.Picked{xx, List.append(&2, T.Val, f2,
+    rr)} : Laws.Pick}
+
+# one pair of the rows before the one picked
+def pk.af.p(
+  bb: Bool,
+  +mm: String,
+  +ww: T.Val,
+  +nn: String,
+  +xx: T.Val,
+  +f2: List<&2, T.Val>,
+  +rr: List<&2, T.Val>,
+  eb: {bb == False{} : Bool},
+  ih: pk.afT(f2, nn, xx, rr)
+) -> {Laws.pick.step(bb, mm, ww, List.append(&2, T.Val, f2, T.VPair{nn, xx} <> rr), _u => Laws.pick(List.append(&2,
+  T.Val, f2, T.VPair{nn, xx} <> rr), nn))
+  == Laws.Picked{xx, T.VPair{mm, ww} <> List.append(&2, T.Val, f2, rr)} : Laws.Pick}:
+  match bb:
+    case True{}:
+      Eq.bit.absurd2(&2, {Laws.pick.step(True{}, mm, ww, List.append(&2, T.Val, f2, T.VPair{nn, xx} <> rr),
+        _u => Laws.pick(List.append(&2, T.Val, f2, T.VPair{nn, xx} <> rr), nn)) == Laws.Picked{xx, T.VPair{mm,
+        ww} <> List.append(&2, T.Val, f2, rr)} : Laws.Pick}, eb)
+    case False{}:
+      Equal.cong(Laws.Pick, Laws.Pick, pk => Laws.pick.cons(T.VPair{mm, ww}, pk), Laws.pick(List.append(&2, T.Val, f2,
+        T.VPair{nn, xx} <> rr), nn), Laws.Picked{xx, List.append(&2, T.Val, f2, rr)}, ih)
+
+# a pair behind rows that do not hold its name is what a pick of its name
+# takes, with those rows kept in front of the rest
+def pk.af(
+  ff: List<&2, T.Val>,
+  +nn: String,
+  +xx: T.Val,
+  +rr: List<&2, T.Val>,
+  +em: {T.wf.fresh(T.get(ff, nn)) == True{} : Bool}
+) -> {Laws.pick(List.append(&2, T.Val, ff, T.VPair{nn, xx} <> rr), nn) == Laws.Picked{xx, List.append(&2, T.Val, ff,
+  rr)} : Laws.Pick}:
+  match ff:
+    case []:
+      pick.self(nn, xx, rr)
+    case T.VPair{+mm, +ww} <> +f2:
+      pk.af.p(String.eq(mm, nn), mm, ww, nn, xx, f2, rr,
+        Equal.trans(Bool, String.eq(mm, nn), T.str.eq(mm, nn), False{}, Equal.sym(Bool, T.str.eq(mm, nn), String.eq(mm,
+          nn), str.eq.agree(mm, nn)), cv.fs.l(T.str.eq(mm, nn), ww, _u => T.rows.find(f2, nn), em)),
+        pk.af(f2, nn, xx, rr, cv.fs.r(T.str.eq(mm, nn), ww, _u => T.rows.find(f2, nn), em)))
+    case T.VStr{+a1} <> +f2:
+      Equal.cong(Laws.Pick, Laws.Pick, pk => Laws.pick.cons(T.VStr{a1}, pk), Laws.pick(List.append(&2, T.Val, f2,
+        T.VPair{nn, xx} <> rr), nn),
+        Laws.Picked{xx, List.append(&2, T.Val, f2, rr)}, pk.af(f2, nn, xx, rr, em))
+    case T.VSpan{+a1, +a2} <> +f2:
+      Equal.cong(Laws.Pick, Laws.Pick, pk => Laws.pick.cons(T.VSpan{a1, a2}, pk), Laws.pick(List.append(&2, T.Val, f2,
+        T.VPair{nn, xx} <> rr), nn),
+        Laws.Picked{xx, List.append(&2, T.Val, f2, rr)}, pk.af(f2, nn, xx, rr, em))
+    case T.VInt{+a1, +a2} <> +f2:
+      Equal.cong(Laws.Pick, Laws.Pick, pk => Laws.pick.cons(T.VInt{a1, a2}, pk), Laws.pick(List.append(&2, T.Val, f2,
+        T.VPair{nn, xx} <> rr), nn),
+        Laws.Picked{xx, List.append(&2, T.Val, f2, rr)}, pk.af(f2, nn, xx, rr, em))
+    case T.VFlo{+a1, +a2} <> +f2:
+      Equal.cong(Laws.Pick, Laws.Pick, pk => Laws.pick.cons(T.VFlo{a1, a2}, pk), Laws.pick(List.append(&2, T.Val, f2,
+        T.VPair{nn, xx} <> rr), nn),
+        Laws.Picked{xx, List.append(&2, T.Val, f2, rr)}, pk.af(f2, nn, xx, rr, em))
+    case T.VBool{+a1} <> +f2:
+      Equal.cong(Laws.Pick, Laws.Pick, pk => Laws.pick.cons(T.VBool{a1}, pk), Laws.pick(List.append(&2, T.Val, f2,
+        T.VPair{nn, xx} <> rr), nn),
+        Laws.Picked{xx, List.append(&2, T.Val, f2, rr)}, pk.af(f2, nn, xx, rr, em))
+    case T.VWhen{+a1} <> +f2:
+      Equal.cong(Laws.Pick, Laws.Pick, pk => Laws.pick.cons(T.VWhen{a1}, pk), Laws.pick(List.append(&2, T.Val, f2,
+        T.VPair{nn, xx} <> rr), nn),
+        Laws.Picked{xx, List.append(&2, T.Val, f2, rr)}, pk.af(f2, nn, xx, rr, em))
+    case T.VArr{+a1} <> +f2:
+      Equal.cong(Laws.Pick, Laws.Pick, pk => Laws.pick.cons(T.VArr{a1}, pk), Laws.pick(List.append(&2, T.Val, f2,
+        T.VPair{nn, xx} <> rr), nn),
+        Laws.Picked{xx, List.append(&2, T.Val, f2, rr)}, pk.af(f2, nn, xx, rr, em))
+    case T.VInl{+a1} <> +f2:
+      Equal.cong(Laws.Pick, Laws.Pick, pk => Laws.pick.cons(T.VInl{a1}, pk), Laws.pick(List.append(&2, T.Val, f2,
+        T.VPair{nn, xx} <> rr), nn),
+        Laws.Picked{xx, List.append(&2, T.Val, f2, rr)}, pk.af(f2, nn, xx, rr, em))
+    case T.VHead{+a1, +a2} <> +f2:
+      Equal.cong(Laws.Pick, Laws.Pick, pk => Laws.pick.cons(T.VHead{a1, a2}, pk), Laws.pick(List.append(&2, T.Val, f2,
+        T.VPair{nn, xx} <> rr), nn),
+        Laws.Picked{xx, List.append(&2, T.Val, f2, rr)}, pk.af(f2, nn, xx, rr, em))
+    case T.VAot{+a1, +a2} <> +f2:
+      Equal.cong(Laws.Pick, Laws.Pick, pk => Laws.pick.cons(T.VAot{a1, a2}, pk), Laws.pick(List.append(&2, T.Val, f2,
+        T.VPair{nn, xx} <> rr), nn),
+        Laws.Picked{xx, List.append(&2, T.Val, f2, rr)}, pk.af(f2, nn, xx, rr, em))
+    case T.VAots{+a1, +a2} <> +f2:
+      Equal.cong(Laws.Pick, Laws.Pick, pk => Laws.pick.cons(T.VAots{a1, a2}, pk), Laws.pick(List.append(&2, T.Val, f2,
+        T.VPair{nn, xx} <> rr), nn),
+        Laws.Picked{xx, List.append(&2, T.Val, f2, rr)}, pk.af(f2, nn, xx, rr, em))
+
+# a name every pair of a list is missing from stays missing from rows with a
+# pair of a name none of the list's has behind them
+def fr.snoc(
+  ls: List<&2, T.Val>,
+  +ff: List<&2, T.Val>,
+  +nn: String,
+  +xx: T.Val,
+  +h1: {cv.fr(ff, ls) == True{} : Bool},
+  +h2: {T.wf.fresh(T.get(ls, nn)) == True{} : Bool}
+) -> {cv.fr(List.append(&2, T.Val, ff, [T.VPair{nn, xx}]), ls) == True{} : Bool}:
+  match ls:
+    case []:
+      {==}
+    case T.VPair{+kk, +vv} <> +t:
+      +e1 = {cv.fs.l(T.str.eq(kk, nn), vv, _u => T.rows.find(t, nn), h2) : {T.str.eq(kk, nn) == False{} : Bool}}
+      +e2 = {Equal.trans(Bool, T.str.eq(nn, kk), T.str.eq(kk, nn), False{}, cv.seqs(nn, kk, True{}), e1)
+        : {T.str.eq(nn, kk) == False{} : Bool}}
+      cv.and2(Laws.is_miss(T.get(List.append(&2, T.Val, ff, [T.VPair{nn, xx}]), kk)), cv.fr(List.append(&2, T.Val, ff,
+        [T.VPair{nn, xx}]), t),
+        Equal.trans(Bool, Laws.is_miss(T.get(List.append(&2, T.Val, ff, [T.VPair{nn, xx}]), kk)),
+          T.wf.fresh(T.get(List.append(&2, T.Val, ff, [T.VPair{nn, xx}]), kk)), True{},
+          miss.fresh(T.get(List.append(&2, T.Val, ff, [T.VPair{nn, xx}]), kk)),
+          fr.app(ff, [T.VPair{nn, xx}], kk, Equal.trans(Bool, T.wf.fresh(T.get(ff, kk)), Laws.is_miss(T.get(ff, kk)),
+            True{},
+            Equal.sym(Bool, Laws.is_miss(T.get(ff, kk)), T.wf.fresh(T.get(ff, kk)), miss.fresh(T.get(ff, kk))),
+            Eq.and.left(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, t), h1)),
+            fs.join(T.str.eq(nn, kk), xx, _u => T.rows.find([], kk), e2, {==}))),
+        fr.snoc(t, ff, nn, xx, Eq.and.right(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, t), h1),
+          cv.fs.r(T.str.eq(kk, nn), vv, _u => T.rows.find(t, nn), h2)))
+    case T.VStr{_a1} <> +t:
+      fr.snoc(t, ff, nn, xx, h1, h2)
+    case T.VSpan{_a1, _a2} <> +t:
+      fr.snoc(t, ff, nn, xx, h1, h2)
+    case T.VInt{_a1, _a2} <> +t:
+      fr.snoc(t, ff, nn, xx, h1, h2)
+    case T.VFlo{_a1, _a2} <> +t:
+      fr.snoc(t, ff, nn, xx, h1, h2)
+    case T.VBool{_a1} <> +t:
+      fr.snoc(t, ff, nn, xx, h1, h2)
+    case T.VWhen{_a1} <> +t:
+      fr.snoc(t, ff, nn, xx, h1, h2)
+    case T.VArr{_a1} <> +t:
+      fr.snoc(t, ff, nn, xx, h1, h2)
+    case T.VInl{_a1} <> +t:
+      fr.snoc(t, ff, nn, xx, h1, h2)
+    case T.VHead{_a1, _a2} <> +t:
+      fr.snoc(t, ff, nn, xx, h1, h2)
+    case T.VAot{_a1, _a2} <> +t:
+      fr.snoc(t, ff, nn, xx, h1, h2)
+    case T.VAots{_a1, _a2} <> +t:
+      fr.snoc(t, ff, nn, xx, h1, h2)
+
+# a table's tables and arrays of tables, in order, as they are
+def rtabs(xs: List<&2, T.Val>) -> List<&2, T.Val>:
+  match xs:
+    case []:
+      []
+    case T.VPair{nn, T.VHead{pp, rr}} <> tt:
+      T.VPair{nn, T.VHead{pp, rr}} <> rtabs(tt)
+    case T.VPair{nn, T.VAots{pp, es}} <> tt:
+      T.VPair{nn, T.VAots{pp, es}} <> rtabs(tt)
+    case _hh <> tt:
+      rtabs(tt)
+
+# comparing a table's pairs that are no table, then any rows, against the
+# table's rows behind any rows ff none of their names are in: each such pair
+# picks itself, and what is left is ff and the table's tables
+def pk(
+  o: List<&2, T.Val>,
+  +hp: String,
+  +zz: List<&2, T.Val>,
+  +ff: List<&2, T.Val>,
+  +hw: {T.wf.go(o, T.WfRows{hp}) == True{} : Bool},
+  +hs: {selfs(o) == True{} : Bool},
+  +hf: {cv.fr(ff, Laws.canon.keys(o)) == True{} : Bool}
+) -> {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(o), zz), List.append(&2, T.Val, ff, o)) == Laws.same.go(zz,
+  List.append(&2, T.Val, ff, rtabs(o))) : Bool}:
+  match o:
+    case []:
+      {==}
+    case T.VPair{+kk, T.VHead{+p, +r}} <> +t:
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.left(T.wf.key(kk, t), T.str.eq(p,
+        T.tree.pre(hp, kk)), wt.ok(Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk))),
+        _u => T.wf.then(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp})), hw))) : {T.wf.fresh(T.get(t,
+        kk)) == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff,
+        T.VPair{kk, T.VHead{p, r}} <> t)),
+        Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, List.append(&2, T.Val, ff,
+          [T.VPair{kk, T.VHead{p, r}}]), t)),
+        Laws.same.go(zz, List.append(&2, T.Val, ff, T.VPair{kk, T.VHead{p, r}} <> rtabs(t))),
+        Equal.cong(List<&2, T.Val>, Bool, ys => Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), ys),
+          List.append(&2, T.Val, ff, T.VPair{kk, T.VHead{p, r}} <> t),
+          List.append(&2, T.Val, List.append(&2, T.Val, ff, [T.VPair{kk, T.VHead{p, r}}]), t),
+            Equal.sym(List<&2, T.Val>, List.append(&2, T.Val, List.append(&2, T.Val, ff, [T.VPair{kk, T.VHead{p, r}}]),
+            t), List.append(&2, T.Val, ff, T.VPair{kk, T.VHead{p, r}} <> t), va.assoc(ff,
+          [T.VPair{kk, T.VHead{p, r}}], t))),
+        Equal.trans(Bool, Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val,
+          List.append(&2, T.Val, ff, [T.VPair{kk, T.VHead{p, r}}]), t)),
+          Laws.same.go(zz, List.append(&2, T.Val, List.append(&2, T.Val, ff, [T.VPair{kk, T.VHead{p, r}}]), rtabs(t))),
+            Laws.same.go(zz, List.append(&2, T.Val, ff, T.VPair{kk, T.VHead{p, r}} <> rtabs(t))),
+          pk(t, hp, zz, List.append(&2, T.Val, ff, [T.VPair{kk, T.VHead{p, r}}]), wt.more(T.wf.go(r, T.WfRows{p}),
+            _v => T.wf.go(t, T.WfRows{hp}), wt.more(Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk))),
+            _u => T.wf.then(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)),
+            Eq.and.right(Laws.same.go(T.VPair{kk, T.VHead{p, r}} <> [], T.VPair{kk, T.VHead{p, r}} <> []),
+            selfs(t), hs), fr.snoc(Laws.canon.keys(t), ff, kk, T.VHead{p, r}, hf, fr.keys(t, kk, fr))),
+          Equal.cong(List<&2, T.Val>, Bool, ys => Laws.same.go(zz, ys), List.append(&2, T.Val, List.append(&2, T.Val,
+            ff, [T.VPair{kk, T.VHead{p, r}}]), rtabs(t)),
+            List.append(&2, T.Val, ff, T.VPair{kk, T.VHead{p, r}} <> rtabs(t)), va.assoc(ff, [T.VPair{kk, T.VHead{p,
+              r}}], rtabs(t)))))
+    case T.VPair{+kk, T.VAots{+p, +r}} <> +t:
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.left(T.wf.key(kk, t), T.str.eq(p,
+        T.tree.pre(hp, kk)), Eq.and.right(Bool.not(List.is_empty(&2, T.Val, r)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
+        T.tree.pre(hp, kk))), wt.ok(Bool.and(Bool.not(List.is_empty(&2, T.Val, r)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(r, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})),
+        hw)))) : {T.wf.fresh(T.get(t, kk)) == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff,
+        T.VPair{kk, T.VAots{p, r}} <> t)),
+        Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, List.append(&2, T.Val, ff,
+          [T.VPair{kk, T.VAots{p, r}}]), t)),
+        Laws.same.go(zz, List.append(&2, T.Val, ff, T.VPair{kk, T.VAots{p, r}} <> rtabs(t))),
+        Equal.cong(List<&2, T.Val>, Bool, ys => Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), ys),
+          List.append(&2, T.Val, ff, T.VPair{kk, T.VAots{p, r}} <> t),
+          List.append(&2, T.Val, List.append(&2, T.Val, ff, [T.VPair{kk, T.VAots{p, r}}]), t),
+            Equal.sym(List<&2, T.Val>, List.append(&2, T.Val, List.append(&2, T.Val, ff, [T.VPair{kk, T.VAots{p, r}}]),
+            t), List.append(&2, T.Val, ff, T.VPair{kk, T.VAots{p, r}} <> t), va.assoc(ff,
+          [T.VPair{kk, T.VAots{p, r}}], t))),
+        Equal.trans(Bool, Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val,
+          List.append(&2, T.Val, ff, [T.VPair{kk, T.VAots{p, r}}]), t)),
+          Laws.same.go(zz, List.append(&2, T.Val, List.append(&2, T.Val, ff, [T.VPair{kk, T.VAots{p, r}}]), rtabs(t))),
+            Laws.same.go(zz, List.append(&2, T.Val, ff, T.VPair{kk, T.VAots{p, r}} <> rtabs(t))),
+          pk(t, hp, zz, List.append(&2, T.Val, ff, [T.VPair{kk, T.VAots{p, r}}]), wt.more(T.wf.go(r, T.WfElems{p}),
+            _v => T.wf.go(t, T.WfRows{hp}), wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, r)),
+            Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(r, T.WfElems{p}),
+            _v => T.wf.go(t, T.WfRows{hp})), hw)), Eq.and.right(Laws.same.go(T.VPair{kk, T.VAots{p, r}} <> [],
+            T.VPair{kk, T.VAots{p, r}} <> []),
+            selfs(t), hs), fr.snoc(Laws.canon.keys(t), ff, kk, T.VAots{p, r}, hf, fr.keys(t, kk, fr))),
+          Equal.cong(List<&2, T.Val>, Bool, ys => Laws.same.go(zz, ys), List.append(&2, T.Val, List.append(&2, T.Val,
+            ff, [T.VPair{kk, T.VAots{p, r}}]), rtabs(t)),
+            List.append(&2, T.Val, ff, T.VPair{kk, T.VAots{p, r}} <> rtabs(t)), va.assoc(ff, [T.VPair{kk, T.VAots{p,
+              r}}], rtabs(t)))))
+    case T.VPair{+kk, T.VStr{+a1}} <> +t:
+      +hs1 = {Eq.and.left(Laws.same.go(T.VPair{kk, T.VStr{a1}} <> [], T.VPair{kk, T.VStr{a1}} <> []), selfs(t),
+        hs) : {Laws.same.go(T.VPair{kk, T.VStr{a1}} <> [], T.VPair{kk, T.VStr{a1}} <> [])
+        == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VStr{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+        List.append(&2, T.Val, ff, T.VPair{kk, T.VStr{a1}} <> t)),
+        Laws.same.go(T.VPair{kk, T.VStr{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz), T.VPair{kk,
+          T.VStr{a1}} <> List.append(&2, T.Val, ff, t)),
+        Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+        pick.same(kk, T.VStr{a1}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, T.VPair{kk,
+          T.VStr{a1}} <> t), T.VPair{kk, T.VStr{a1}} <> List.append(&2, T.Val, ff, t),
+          Equal.trans(Laws.Pick, Laws.pick(List.append(&2, T.Val, ff, T.VPair{kk, T.VStr{a1}} <> t), kk),
+            Laws.Picked{T.VStr{a1}, List.append(&2, T.Val, ff, t)},
+            Laws.pick(T.VPair{kk, T.VStr{a1}} <> List.append(&2, T.Val, ff, t), kk),
+            pk.af(ff, kk, T.VStr{a1}, t, Equal.trans(Bool, T.wf.fresh(T.get(ff, kk)), Laws.is_miss(T.get(ff, kk)),
+              True{},
+              Equal.sym(Bool, Laws.is_miss(T.get(ff, kk)), T.wf.fresh(T.get(ff, kk)), miss.fresh(T.get(ff, kk))),
+              Eq.and.left(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf))),
+            Equal.sym(Laws.Pick, Laws.pick(T.VPair{kk, T.VStr{a1}} <> List.append(&2, T.Val, ff, t), kk),
+              Laws.Picked{T.VStr{a1}, List.append(&2, T.Val, ff, t)},
+              pick.self(kk, T.VStr{a1}, List.append(&2, T.Val, ff, t))))),
+        Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VStr{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+          T.VPair{kk, T.VStr{a1}} <> List.append(&2, T.Val, ff, t)),
+          Bool.and(Laws.same.go(T.VPair{kk, T.VStr{a1}} <> [], T.VPair{kk, T.VStr{a1}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t))),
+          Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+          hc.p(kk, T.VStr{a1}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t)),
+          Equal.trans(Bool, Bool.and(Laws.same.go(T.VPair{kk, T.VStr{a1}} <> [], T.VPair{kk, T.VStr{a1}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+            List.append(&2, T.Val, ff, t))), Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t)),
+            Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+            Equal.cong(Bool, Bool, bt => Bool.and(bt, Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t))),
+              Laws.same.go(T.VPair{kk, T.VStr{a1}} <> [], T.VPair{kk, T.VStr{a1}} <> []), True{}, hs1),
+            pk(t, hp, zz, ff, wt.more(Bool.and(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+              hw), Eq.and.right(Laws.same.go(T.VPair{kk, T.VStr{a1}} <> [], T.VPair{kk, T.VStr{a1}} <> []), selfs(t),
+              hs),
+              Eq.and.right(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf)))))
+    case T.VPair{+kk, T.VSpan{+a1, +a2}} <> +t:
+      +hs1 = {Eq.and.left(Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> [], T.VPair{kk, T.VSpan{a1, a2}} <> []),
+        selfs(t), hs) : {Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> [], T.VPair{kk, T.VSpan{a1, a2}} <> [])
+        == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+        List.append(&2, T.Val, ff, T.VPair{kk, T.VSpan{a1, a2}} <> t)),
+        Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz), T.VPair{kk,
+          T.VSpan{a1, a2}} <> List.append(&2, T.Val, ff, t)),
+        Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+        pick.same(kk, T.VSpan{a1, a2}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff,
+          T.VPair{kk, T.VSpan{a1, a2}} <> t), T.VPair{kk, T.VSpan{a1, a2}} <> List.append(&2, T.Val, ff, t),
+          Equal.trans(Laws.Pick, Laws.pick(List.append(&2, T.Val, ff, T.VPair{kk, T.VSpan{a1, a2}} <> t), kk),
+            Laws.Picked{T.VSpan{a1, a2}, List.append(&2, T.Val, ff, t)},
+            Laws.pick(T.VPair{kk, T.VSpan{a1, a2}} <> List.append(&2, T.Val, ff, t), kk),
+            pk.af(ff, kk, T.VSpan{a1, a2}, t, Equal.trans(Bool, T.wf.fresh(T.get(ff, kk)), Laws.is_miss(T.get(ff, kk)),
+              True{},
+              Equal.sym(Bool, Laws.is_miss(T.get(ff, kk)), T.wf.fresh(T.get(ff, kk)), miss.fresh(T.get(ff, kk))),
+              Eq.and.left(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf))),
+            Equal.sym(Laws.Pick, Laws.pick(T.VPair{kk, T.VSpan{a1, a2}} <> List.append(&2, T.Val, ff, t), kk),
+              Laws.Picked{T.VSpan{a1, a2}, List.append(&2, T.Val, ff, t)},
+              pick.self(kk, T.VSpan{a1, a2}, List.append(&2, T.Val, ff, t))))),
+        Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+          T.VPair{kk, T.VSpan{a1, a2}} <> List.append(&2, T.Val, ff, t)),
+          Bool.and(Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> [], T.VPair{kk, T.VSpan{a1, a2}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t))),
+          Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+          hc.p(kk, T.VSpan{a1, a2}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t)),
+          Equal.trans(Bool, Bool.and(Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> [], T.VPair{kk, T.VSpan{a1,
+            a2}} <> []), Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+            List.append(&2, T.Val, ff, t))), Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t)),
+            Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+            Equal.cong(Bool, Bool, bt => Bool.and(bt, Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t))),
+              Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> [], T.VPair{kk, T.VSpan{a1, a2}} <> []), True{}, hs1),
+            pk(t, hp, zz, ff, wt.more(Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t,
+              T.WfRows{hp}), hw), Eq.and.right(Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> [], T.VPair{kk, T.VSpan{a1,
+              a2}} <> []), selfs(t), hs),
+              Eq.and.right(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf)))))
+    case T.VPair{+kk, T.VInt{+a1, +a2}} <> +t:
+      +hs1 = {Eq.and.left(Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> [], T.VPair{kk, T.VInt{a1, a2}} <> []), selfs(t),
+        hs) : {Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> [], T.VPair{kk, T.VInt{a1, a2}} <> [])
+        == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+        List.append(&2, T.Val, ff, T.VPair{kk, T.VInt{a1, a2}} <> t)),
+        Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz), T.VPair{kk,
+          T.VInt{a1, a2}} <> List.append(&2, T.Val, ff, t)),
+        Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+        pick.same(kk, T.VInt{a1, a2}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff,
+          T.VPair{kk, T.VInt{a1, a2}} <> t), T.VPair{kk, T.VInt{a1, a2}} <> List.append(&2, T.Val, ff, t),
+          Equal.trans(Laws.Pick, Laws.pick(List.append(&2, T.Val, ff, T.VPair{kk, T.VInt{a1, a2}} <> t), kk),
+            Laws.Picked{T.VInt{a1, a2}, List.append(&2, T.Val, ff, t)},
+            Laws.pick(T.VPair{kk, T.VInt{a1, a2}} <> List.append(&2, T.Val, ff, t), kk),
+            pk.af(ff, kk, T.VInt{a1, a2}, t, Equal.trans(Bool, T.wf.fresh(T.get(ff, kk)), Laws.is_miss(T.get(ff, kk)),
+              True{},
+              Equal.sym(Bool, Laws.is_miss(T.get(ff, kk)), T.wf.fresh(T.get(ff, kk)), miss.fresh(T.get(ff, kk))),
+              Eq.and.left(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf))),
+            Equal.sym(Laws.Pick, Laws.pick(T.VPair{kk, T.VInt{a1, a2}} <> List.append(&2, T.Val, ff, t), kk),
+              Laws.Picked{T.VInt{a1, a2}, List.append(&2, T.Val, ff, t)},
+              pick.self(kk, T.VInt{a1, a2}, List.append(&2, T.Val, ff, t))))),
+        Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+          T.VPair{kk, T.VInt{a1, a2}} <> List.append(&2, T.Val, ff, t)),
+          Bool.and(Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> [], T.VPair{kk, T.VInt{a1, a2}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t))),
+          Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+          hc.p(kk, T.VInt{a1, a2}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t)),
+          Equal.trans(Bool, Bool.and(Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> [], T.VPair{kk, T.VInt{a1, a2}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+            List.append(&2, T.Val, ff, t))), Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t)),
+            Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+            Equal.cong(Bool, Bool, bt => Bool.and(bt, Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t))),
+              Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> [], T.VPair{kk, T.VInt{a1, a2}} <> []), True{}, hs1),
+            pk(t, hp, zz, ff, wt.more(Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t,
+              T.WfRows{hp}), hw), Eq.and.right(Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> [], T.VPair{kk, T.VInt{a1,
+              a2}} <> []), selfs(t), hs),
+              Eq.and.right(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf)))))
+    case T.VPair{+kk, T.VFlo{+a1, +a2}} <> +t:
+      +hs1 = {Eq.and.left(Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> [], T.VPair{kk, T.VFlo{a1, a2}} <> []), selfs(t),
+        hs) : {Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> [], T.VPair{kk, T.VFlo{a1, a2}} <> [])
+        == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+        List.append(&2, T.Val, ff, T.VPair{kk, T.VFlo{a1, a2}} <> t)),
+        Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz), T.VPair{kk,
+          T.VFlo{a1, a2}} <> List.append(&2, T.Val, ff, t)),
+        Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+        pick.same(kk, T.VFlo{a1, a2}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff,
+          T.VPair{kk, T.VFlo{a1, a2}} <> t), T.VPair{kk, T.VFlo{a1, a2}} <> List.append(&2, T.Val, ff, t),
+          Equal.trans(Laws.Pick, Laws.pick(List.append(&2, T.Val, ff, T.VPair{kk, T.VFlo{a1, a2}} <> t), kk),
+            Laws.Picked{T.VFlo{a1, a2}, List.append(&2, T.Val, ff, t)},
+            Laws.pick(T.VPair{kk, T.VFlo{a1, a2}} <> List.append(&2, T.Val, ff, t), kk),
+            pk.af(ff, kk, T.VFlo{a1, a2}, t, Equal.trans(Bool, T.wf.fresh(T.get(ff, kk)), Laws.is_miss(T.get(ff, kk)),
+              True{},
+              Equal.sym(Bool, Laws.is_miss(T.get(ff, kk)), T.wf.fresh(T.get(ff, kk)), miss.fresh(T.get(ff, kk))),
+              Eq.and.left(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf))),
+            Equal.sym(Laws.Pick, Laws.pick(T.VPair{kk, T.VFlo{a1, a2}} <> List.append(&2, T.Val, ff, t), kk),
+              Laws.Picked{T.VFlo{a1, a2}, List.append(&2, T.Val, ff, t)},
+              pick.self(kk, T.VFlo{a1, a2}, List.append(&2, T.Val, ff, t))))),
+        Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+          T.VPair{kk, T.VFlo{a1, a2}} <> List.append(&2, T.Val, ff, t)),
+          Bool.and(Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> [], T.VPair{kk, T.VFlo{a1, a2}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t))),
+          Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+          hc.p(kk, T.VFlo{a1, a2}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t)),
+          Equal.trans(Bool, Bool.and(Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> [], T.VPair{kk, T.VFlo{a1, a2}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+            List.append(&2, T.Val, ff, t))), Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t)),
+            Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+            Equal.cong(Bool, Bool, bt => Bool.and(bt, Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t))),
+              Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> [], T.VPair{kk, T.VFlo{a1, a2}} <> []), True{}, hs1),
+            pk(t, hp, zz, ff, wt.more(Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t,
+              T.WfRows{hp}), hw), Eq.and.right(Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> [], T.VPair{kk, T.VFlo{a1,
+              a2}} <> []), selfs(t), hs),
+              Eq.and.right(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf)))))
+    case T.VPair{+kk, T.VBool{+a1}} <> +t:
+      +hs1 = {Eq.and.left(Laws.same.go(T.VPair{kk, T.VBool{a1}} <> [], T.VPair{kk, T.VBool{a1}} <> []), selfs(t),
+        hs) : {Laws.same.go(T.VPair{kk, T.VBool{a1}} <> [], T.VPair{kk, T.VBool{a1}} <> [])
+        == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VBool{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+        List.append(&2, T.Val, ff, T.VPair{kk, T.VBool{a1}} <> t)),
+        Laws.same.go(T.VPair{kk, T.VBool{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz), T.VPair{kk,
+          T.VBool{a1}} <> List.append(&2, T.Val, ff, t)),
+        Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+        pick.same(kk, T.VBool{a1}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff,
+          T.VPair{kk, T.VBool{a1}} <> t), T.VPair{kk, T.VBool{a1}} <> List.append(&2, T.Val, ff, t),
+          Equal.trans(Laws.Pick, Laws.pick(List.append(&2, T.Val, ff, T.VPair{kk, T.VBool{a1}} <> t), kk),
+            Laws.Picked{T.VBool{a1}, List.append(&2, T.Val, ff, t)},
+            Laws.pick(T.VPair{kk, T.VBool{a1}} <> List.append(&2, T.Val, ff, t), kk),
+            pk.af(ff, kk, T.VBool{a1}, t, Equal.trans(Bool, T.wf.fresh(T.get(ff, kk)), Laws.is_miss(T.get(ff, kk)),
+              True{},
+              Equal.sym(Bool, Laws.is_miss(T.get(ff, kk)), T.wf.fresh(T.get(ff, kk)), miss.fresh(T.get(ff, kk))),
+              Eq.and.left(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf))),
+            Equal.sym(Laws.Pick, Laws.pick(T.VPair{kk, T.VBool{a1}} <> List.append(&2, T.Val, ff, t), kk),
+              Laws.Picked{T.VBool{a1}, List.append(&2, T.Val, ff, t)},
+              pick.self(kk, T.VBool{a1}, List.append(&2, T.Val, ff, t))))),
+        Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VBool{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+          T.VPair{kk, T.VBool{a1}} <> List.append(&2, T.Val, ff, t)),
+          Bool.and(Laws.same.go(T.VPair{kk, T.VBool{a1}} <> [], T.VPair{kk, T.VBool{a1}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t))),
+          Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+          hc.p(kk, T.VBool{a1}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t)),
+          Equal.trans(Bool, Bool.and(Laws.same.go(T.VPair{kk, T.VBool{a1}} <> [], T.VPair{kk, T.VBool{a1}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+            List.append(&2, T.Val, ff, t))), Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t)),
+            Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+            Equal.cong(Bool, Bool, bt => Bool.and(bt, Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t))),
+              Laws.same.go(T.VPair{kk, T.VBool{a1}} <> [], T.VPair{kk, T.VBool{a1}} <> []), True{}, hs1),
+            pk(t, hp, zz, ff, wt.more(Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+              hw), Eq.and.right(Laws.same.go(T.VPair{kk, T.VBool{a1}} <> [], T.VPair{kk, T.VBool{a1}} <> []), selfs(t),
+              hs),
+              Eq.and.right(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf)))))
+    case T.VPair{+kk, T.VWhen{+a1}} <> +t:
+      +hs1 = {Eq.and.left(Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> [], T.VPair{kk, T.VWhen{a1}} <> []), selfs(t),
+        hs) : {Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> [], T.VPair{kk, T.VWhen{a1}} <> [])
+        == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+        List.append(&2, T.Val, ff, T.VPair{kk, T.VWhen{a1}} <> t)),
+        Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz), T.VPair{kk,
+          T.VWhen{a1}} <> List.append(&2, T.Val, ff, t)),
+        Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+        pick.same(kk, T.VWhen{a1}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff,
+          T.VPair{kk, T.VWhen{a1}} <> t), T.VPair{kk, T.VWhen{a1}} <> List.append(&2, T.Val, ff, t),
+          Equal.trans(Laws.Pick, Laws.pick(List.append(&2, T.Val, ff, T.VPair{kk, T.VWhen{a1}} <> t), kk),
+            Laws.Picked{T.VWhen{a1}, List.append(&2, T.Val, ff, t)},
+            Laws.pick(T.VPair{kk, T.VWhen{a1}} <> List.append(&2, T.Val, ff, t), kk),
+            pk.af(ff, kk, T.VWhen{a1}, t, Equal.trans(Bool, T.wf.fresh(T.get(ff, kk)), Laws.is_miss(T.get(ff, kk)),
+              True{},
+              Equal.sym(Bool, Laws.is_miss(T.get(ff, kk)), T.wf.fresh(T.get(ff, kk)), miss.fresh(T.get(ff, kk))),
+              Eq.and.left(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf))),
+            Equal.sym(Laws.Pick, Laws.pick(T.VPair{kk, T.VWhen{a1}} <> List.append(&2, T.Val, ff, t), kk),
+              Laws.Picked{T.VWhen{a1}, List.append(&2, T.Val, ff, t)},
+              pick.self(kk, T.VWhen{a1}, List.append(&2, T.Val, ff, t))))),
+        Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+          T.VPair{kk, T.VWhen{a1}} <> List.append(&2, T.Val, ff, t)),
+          Bool.and(Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> [], T.VPair{kk, T.VWhen{a1}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t))),
+          Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+          hc.p(kk, T.VWhen{a1}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t)),
+          Equal.trans(Bool, Bool.and(Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> [], T.VPair{kk, T.VWhen{a1}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+            List.append(&2, T.Val, ff, t))), Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t)),
+            Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+            Equal.cong(Bool, Bool, bt => Bool.and(bt, Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t))),
+              Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> [], T.VPair{kk, T.VWhen{a1}} <> []), True{}, hs1),
+            pk(t, hp, zz, ff, wt.more(Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+              hw), Eq.and.right(Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> [], T.VPair{kk, T.VWhen{a1}} <> []), selfs(t),
+              hs),
+              Eq.and.right(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf)))))
+    case T.VPair{+kk, T.VArr{+a1}} <> +t:
+      +hs1 = {Eq.and.left(Laws.same.go(T.VPair{kk, T.VArr{a1}} <> [], T.VPair{kk, T.VArr{a1}} <> []), selfs(t),
+        hs) : {Laws.same.go(T.VPair{kk, T.VArr{a1}} <> [], T.VPair{kk, T.VArr{a1}} <> [])
+        == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VArr{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+        List.append(&2, T.Val, ff, T.VPair{kk, T.VArr{a1}} <> t)),
+        Laws.same.go(T.VPair{kk, T.VArr{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz), T.VPair{kk,
+          T.VArr{a1}} <> List.append(&2, T.Val, ff, t)),
+        Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+        pick.same(kk, T.VArr{a1}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, T.VPair{kk,
+          T.VArr{a1}} <> t), T.VPair{kk, T.VArr{a1}} <> List.append(&2, T.Val, ff, t),
+          Equal.trans(Laws.Pick, Laws.pick(List.append(&2, T.Val, ff, T.VPair{kk, T.VArr{a1}} <> t), kk),
+            Laws.Picked{T.VArr{a1}, List.append(&2, T.Val, ff, t)},
+            Laws.pick(T.VPair{kk, T.VArr{a1}} <> List.append(&2, T.Val, ff, t), kk),
+            pk.af(ff, kk, T.VArr{a1}, t, Equal.trans(Bool, T.wf.fresh(T.get(ff, kk)), Laws.is_miss(T.get(ff, kk)),
+              True{},
+              Equal.sym(Bool, Laws.is_miss(T.get(ff, kk)), T.wf.fresh(T.get(ff, kk)), miss.fresh(T.get(ff, kk))),
+              Eq.and.left(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf))),
+            Equal.sym(Laws.Pick, Laws.pick(T.VPair{kk, T.VArr{a1}} <> List.append(&2, T.Val, ff, t), kk),
+              Laws.Picked{T.VArr{a1}, List.append(&2, T.Val, ff, t)},
+              pick.self(kk, T.VArr{a1}, List.append(&2, T.Val, ff, t))))),
+        Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VArr{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+          T.VPair{kk, T.VArr{a1}} <> List.append(&2, T.Val, ff, t)),
+          Bool.and(Laws.same.go(T.VPair{kk, T.VArr{a1}} <> [], T.VPair{kk, T.VArr{a1}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t))),
+          Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+          hc.p(kk, T.VArr{a1}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t)),
+          Equal.trans(Bool, Bool.and(Laws.same.go(T.VPair{kk, T.VArr{a1}} <> [], T.VPair{kk, T.VArr{a1}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+            List.append(&2, T.Val, ff, t))), Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t)),
+            Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+            Equal.cong(Bool, Bool, bt => Bool.and(bt, Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t))),
+              Laws.same.go(T.VPair{kk, T.VArr{a1}} <> [], T.VPair{kk, T.VArr{a1}} <> []), True{}, hs1),
+            pk(t, hp, zz, ff, wt.more(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
+              _u => T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp})), hw)),
+              Eq.and.right(Laws.same.go(T.VPair{kk, T.VArr{a1}} <> [], T.VPair{kk, T.VArr{a1}} <> []), selfs(t), hs),
+              Eq.and.right(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf)))))
+    case T.VPair{+kk, T.VInl{+a1}} <> +t:
+      +hs1 = {Eq.and.left(Laws.same.go(T.VPair{kk, T.VInl{a1}} <> [], T.VPair{kk, T.VInl{a1}} <> []), selfs(t),
+        hs) : {Laws.same.go(T.VPair{kk, T.VInl{a1}} <> [], T.VPair{kk, T.VInl{a1}} <> [])
+        == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VInl{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+        List.append(&2, T.Val, ff, T.VPair{kk, T.VInl{a1}} <> t)),
+        Laws.same.go(T.VPair{kk, T.VInl{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz), T.VPair{kk,
+          T.VInl{a1}} <> List.append(&2, T.Val, ff, t)),
+        Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+        pick.same(kk, T.VInl{a1}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, T.VPair{kk,
+          T.VInl{a1}} <> t), T.VPair{kk, T.VInl{a1}} <> List.append(&2, T.Val, ff, t),
+          Equal.trans(Laws.Pick, Laws.pick(List.append(&2, T.Val, ff, T.VPair{kk, T.VInl{a1}} <> t), kk),
+            Laws.Picked{T.VInl{a1}, List.append(&2, T.Val, ff, t)},
+            Laws.pick(T.VPair{kk, T.VInl{a1}} <> List.append(&2, T.Val, ff, t), kk),
+            pk.af(ff, kk, T.VInl{a1}, t, Equal.trans(Bool, T.wf.fresh(T.get(ff, kk)), Laws.is_miss(T.get(ff, kk)),
+              True{},
+              Equal.sym(Bool, Laws.is_miss(T.get(ff, kk)), T.wf.fresh(T.get(ff, kk)), miss.fresh(T.get(ff, kk))),
+              Eq.and.left(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf))),
+            Equal.sym(Laws.Pick, Laws.pick(T.VPair{kk, T.VInl{a1}} <> List.append(&2, T.Val, ff, t), kk),
+              Laws.Picked{T.VInl{a1}, List.append(&2, T.Val, ff, t)},
+              pick.self(kk, T.VInl{a1}, List.append(&2, T.Val, ff, t))))),
+        Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VInl{a1}} <> List.append(&2, T.Val, Laws.canon.keys(t), zz),
+          T.VPair{kk, T.VInl{a1}} <> List.append(&2, T.Val, ff, t)),
+          Bool.and(Laws.same.go(T.VPair{kk, T.VInl{a1}} <> [], T.VPair{kk, T.VInl{a1}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t))),
+          Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+          hc.p(kk, T.VInl{a1}, List.append(&2, T.Val, Laws.canon.keys(t), zz), List.append(&2, T.Val, ff, t)),
+          Equal.trans(Bool, Bool.and(Laws.same.go(T.VPair{kk, T.VInl{a1}} <> [], T.VPair{kk, T.VInl{a1}} <> []),
+            Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+            List.append(&2, T.Val, ff, t))), Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t)),
+            Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(t))),
+            Equal.cong(Bool, Bool, bt => Bool.and(bt, Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(t), zz),
+              List.append(&2, T.Val, ff, t))),
+              Laws.same.go(T.VPair{kk, T.VInl{a1}} <> [], T.VPair{kk, T.VInl{a1}} <> []), True{}, hs1),
+            pk(t, hp, zz, ff, wt.more(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
+              _u => T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp})), hw)),
+              Eq.and.right(Laws.same.go(T.VPair{kk, T.VInl{a1}} <> [], T.VPair{kk, T.VInl{a1}} <> []), selfs(t), hs),
+              Eq.and.right(Laws.is_miss(T.get(ff, kk)), cv.fr(ff, Laws.canon.keys(t)), hf)))))
+    case T.VPair{+kk, T.VAot{+a1, +a2}} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VPair{kk, T.VAot{a1, a2}} <> t), zz),
+        List.append(&2, T.Val, ff, T.VPair{kk, T.VAot{a1, a2}} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff,
+        rtabs(T.VPair{kk, T.VAot{a1, a2}} <> t))) : Bool}, hw)
+    case T.VPair{+kk, T.VPair{+a1, +a2}} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VPair{kk, T.VPair{a1, a2}} <> t), zz),
+        List.append(&2, T.Val, ff, T.VPair{kk, T.VPair{a1, a2}} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff,
+        rtabs(T.VPair{kk, T.VPair{a1, a2}} <> t))) : Bool}, hw)
+    case T.VStr{+a1} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VStr{a1} <> t), zz), List.append(&2,
+        T.Val, ff, T.VStr{a1} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(T.VStr{a1} <> t))) : Bool},
+        hw)
+    case T.VSpan{+a1, +a2} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VSpan{a1, a2} <> t), zz), List.append(&2,
+        T.Val, ff, T.VSpan{a1, a2} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(T.VSpan{a1,
+        a2} <> t))) : Bool}, hw)
+    case T.VInt{+a1, +a2} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VInt{a1, a2} <> t), zz), List.append(&2,
+        T.Val, ff, T.VInt{a1, a2} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(T.VInt{a1,
+        a2} <> t))) : Bool}, hw)
+    case T.VFlo{+a1, +a2} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VFlo{a1, a2} <> t), zz), List.append(&2,
+        T.Val, ff, T.VFlo{a1, a2} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(T.VFlo{a1,
+        a2} <> t))) : Bool}, hw)
+    case T.VBool{+a1} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VBool{a1} <> t), zz), List.append(&2,
+        T.Val, ff, T.VBool{a1} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(T.VBool{a1} <> t))) : Bool},
+        hw)
+    case T.VWhen{+a1} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VWhen{a1} <> t), zz), List.append(&2,
+        T.Val, ff, T.VWhen{a1} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(T.VWhen{a1} <> t))) : Bool},
+        hw)
+    case T.VArr{+a1} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VArr{a1} <> t), zz), List.append(&2,
+        T.Val, ff, T.VArr{a1} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(T.VArr{a1} <> t))) : Bool},
+        hw)
+    case T.VInl{+a1} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VInl{a1} <> t), zz), List.append(&2,
+        T.Val, ff, T.VInl{a1} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(T.VInl{a1} <> t))) : Bool},
+        hw)
+    case T.VHead{+a1, +a2} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VHead{a1, a2} <> t), zz), List.append(&2,
+        T.Val, ff, T.VHead{a1, a2} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(T.VHead{a1,
+        a2} <> t))) : Bool}, hw)
+    case T.VAot{+a1, +a2} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VAot{a1, a2} <> t), zz), List.append(&2,
+        T.Val, ff, T.VAot{a1, a2} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(T.VAot{a1,
+        a2} <> t))) : Bool}, hw)
+    case T.VAots{+a1, +a2} <> +t:
+      Eq.bit.absurd(&2, {Laws.same.go(List.append(&2, T.Val, Laws.canon.keys(T.VAots{a1, a2} <> t), zz), List.append(&2,
+        T.Val, ff, T.VAots{a1, a2} <> t)) == Laws.same.go(zz, List.append(&2, T.Val, ff, rtabs(T.VAots{a1,
+        a2} <> t))) : Bool}, hw)
+
+# a table's tables, reordered, against them as they are (md false), or an
+# array's elements, reordered, against them as they are (md true): each
+# compares its rows, reordered, against them as they are
+def st.at(md: Bool, +hp: String) -> T.WfAt:
+  match md:
+    case False{}:
+      T.WfRows{hp}
+    case True{}:
+      T.WfElems{hp}
+
+# what st compares
+def st.l(md: Bool, +xs: List<&2, T.Val>, +hp: String) -> List<&2, T.Val>:
+  match md:
+    case False{}:
+      Laws.canon.tabs(xs)
+    case True{}:
+      Laws.canon.go(xs, Laws.CElems{hp})
+
+# and against what
+def st.r(md: Bool, +xs: List<&2, T.Val>) -> List<&2, T.Val>:
+  match md:
+    case False{}:
+      rtabs(xs)
+    case True{}:
+      xs
+
+# a table's rows, reordered, against them as they are
+def st(
+  xs: List<&2, T.Val>,
+  md: Bool,
+  +hp: String,
+  +hw: {T.wf.go(xs, st.at(md, hp)) == True{} : Bool}
+) -> {Laws.same.go(st.l(md, xs, hp), st.r(md, xs)) == True{} : Bool}:
+  match xs md:
+    case [] False{}:
+      {==}
+    case [] True{}:
+      {==}
+    case T.VPair{+kk, T.VHead{+p, +r}} <> +t False{}:
+      +hin = {wt.more(Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk))), _u => T.wf.then(T.wf.go(r,
+        T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t,
+        T.WfRows{hp})) == True{} : Bool}}
+      +hwr = {wt.ok(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp}), hin) : {T.wf.go(r, T.WfRows{p}) == True{}
+        : Bool}}
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VHead{p, Laws.canon.rows(r)}} <> Laws.canon.tabs(t),
+        T.VPair{kk, T.VHead{p, r}} <> rtabs(t)), Laws.same.pair(Laws.Picked{T.VHead{p, r}, rtabs(t)},
+        ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(Laws.canon.rows(r), ws)),
+        rr => Laws.same.go(Laws.canon.tabs(t), rr)), True{},
+        Equal.cong(Laws.Pick, Bool, pk2 => Laws.same.pair(pk2, ww => Laws.same.box(Laws.KHead{}, ww,
+          ws => Laws.same.go(Laws.canon.rows(r), ws)), rr => Laws.same.go(Laws.canon.tabs(t), rr)),
+          Laws.pick(T.VPair{kk, T.VHead{p, r}} <> rtabs(t), kk), Laws.Picked{T.VHead{p, r}, rtabs(t)},
+          pick.self(kk, T.VHead{p, r}, rtabs(t))),
+        at.tt(Laws.same.go(Laws.canon.rows(r), r), _u => Laws.same.go(Laws.canon.tabs(t), rtabs(t)),
+          Equal.trans(Bool, Laws.same.go(Laws.canon.rows(r), r), Laws.same.go(Laws.canon.tabs(r), rtabs(r)), True{},
+            pk(r, p, Laws.canon.tabs(r), [], hwr, wf.selfs(r, T.WfRows{p}, hwr), cv.fr.nil(Laws.canon.keys(r))),
+            st(r, False{}, p, hwr)),
+          st(t, False{}, hp, wt.more(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))))
+    case T.VPair{+kk, T.VAots{+p, +es}} <> +t False{}:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, es)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
+        T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(es, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})), hw)
+        : {T.wf.then(T.wf.go(es, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VAots{p, Laws.canon.go(es, Laws.CElems{p})}} <> Laws.canon.tabs(t),
+        T.VPair{kk, T.VAots{p, es}} <> rtabs(t)), Laws.same.pair(Laws.Picked{T.VAots{p, es}, rtabs(t)},
+        ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(Laws.canon.go(es, Laws.CElems{p}), ws)),
+        rr => Laws.same.go(Laws.canon.tabs(t), rr)), True{},
+        Equal.cong(Laws.Pick, Bool, pk2 => Laws.same.pair(pk2, ww => Laws.same.box(Laws.KAots{}, ww,
+          ws => Laws.same.go(Laws.canon.go(es, Laws.CElems{p}), ws)), rr => Laws.same.go(Laws.canon.tabs(t), rr)),
+          Laws.pick(T.VPair{kk, T.VAots{p, es}} <> rtabs(t), kk), Laws.Picked{T.VAots{p, es}, rtabs(t)},
+          pick.self(kk, T.VAots{p, es}, rtabs(t))),
+        at.tt(Laws.same.go(Laws.canon.go(es, Laws.CElems{p}), es), _u => Laws.same.go(Laws.canon.tabs(t), rtabs(t)),
+          st(es, True{}, p, wt.ok(T.wf.go(es, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin)),
+          st(t, False{}, hp, wt.more(T.wf.go(es, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))))
+    case T.VPair{+kk, T.VStr{+a1}} <> +t False{}:
+      st(t, False{}, hp, wt.more(Bool.and(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw))
+    case T.VPair{+kk, T.VSpan{+a1, +a2}} <> +t False{}:
+      st(t, False{}, hp, wt.more(Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+        hw))
+    case T.VPair{+kk, T.VInt{+a1, +a2}} <> +t False{}:
+      st(t, False{}, hp, wt.more(Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+        hw))
+    case T.VPair{+kk, T.VFlo{+a1, +a2}} <> +t False{}:
+      st(t, False{}, hp, wt.more(Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+        hw))
+    case T.VPair{+kk, T.VBool{+a1}} <> +t False{}:
+      st(t, False{}, hp, wt.more(Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw))
+    case T.VPair{+kk, T.VWhen{+a1}} <> +t False{}:
+      st(t, False{}, hp, wt.more(Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}), hw))
+    case T.VPair{+kk, T.VArr{+a1}} <> +t False{}:
+      st(t, False{}, hp, wt.more(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
+        _u => T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp})), hw)))
+    case T.VPair{+kk, T.VInl{+a1}} <> +t False{}:
+      st(t, False{}, hp, wt.more(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
+        _u => T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp})), hw)))
+    case T.VPair{+kk, T.VAot{+a1, +a2}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VPair{kk, T.VAot{a1, a2}} <> t, hp), st.r(False{}, T.VPair{kk,
+        T.VAot{a1, a2}} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VPair{+a1, +a2}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VPair{kk, T.VPair{a1, a2}} <> t, hp), st.r(False{}, T.VPair{kk,
+        T.VPair{a1, a2}} <> t)) == True{} : Bool}, hw)
+    case T.VStr{+a1} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VStr{a1} <> t, hp), st.r(False{},
+        T.VStr{a1} <> t)) == True{} : Bool}, hw)
+    case T.VSpan{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VSpan{a1, a2} <> t, hp), st.r(False{}, T.VSpan{a1,
+        a2} <> t)) == True{} : Bool}, hw)
+    case T.VInt{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VInt{a1, a2} <> t, hp), st.r(False{}, T.VInt{a1,
+        a2} <> t)) == True{} : Bool}, hw)
+    case T.VFlo{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VFlo{a1, a2} <> t, hp), st.r(False{}, T.VFlo{a1,
+        a2} <> t)) == True{} : Bool}, hw)
+    case T.VBool{+a1} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VBool{a1} <> t, hp), st.r(False{},
+        T.VBool{a1} <> t)) == True{} : Bool}, hw)
+    case T.VWhen{+a1} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VWhen{a1} <> t, hp), st.r(False{},
+        T.VWhen{a1} <> t)) == True{} : Bool}, hw)
+    case T.VArr{+a1} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VArr{a1} <> t, hp), st.r(False{},
+        T.VArr{a1} <> t)) == True{} : Bool}, hw)
+    case T.VInl{+a1} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VInl{a1} <> t, hp), st.r(False{},
+        T.VInl{a1} <> t)) == True{} : Bool}, hw)
+    case T.VHead{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VHead{a1, a2} <> t, hp), st.r(False{}, T.VHead{a1,
+        a2} <> t)) == True{} : Bool}, hw)
+    case T.VAot{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VAot{a1, a2} <> t, hp), st.r(False{}, T.VAot{a1,
+        a2} <> t)) == True{} : Bool}, hw)
+    case T.VAots{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(False{}, T.VAots{a1, a2} <> t, hp), st.r(False{}, T.VAots{a1,
+        a2} <> t)) == True{} : Bool}, hw)
+    case T.VAot{+q, +r} <> +t True{}:
+      +hin = {wt.more(T.str.eq(q, hp), _u => T.wf.then(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp})), hw)
+        : {T.wf.then(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp})) == True{} : Bool}}
+      +hwr = {wt.ok(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp}), hin) : {T.wf.go(r, T.WfRows{q}) == True{}
+        : Bool}}
+      at.tt(Laws.same.go(Laws.canon.rows(r), r), _u => Laws.same.go(Laws.canon.go(t, Laws.CElems{hp}), t),
+        Equal.trans(Bool, Laws.same.go(Laws.canon.rows(r), r), Laws.same.go(Laws.canon.tabs(r), rtabs(r)), True{},
+            pk(r, q, Laws.canon.tabs(r), [], hwr, wf.selfs(r, T.WfRows{q}, hwr), cv.fr.nil(Laws.canon.keys(r))),
+            st(r, False{}, q, hwr)),
+        st(t, True{}, hp, wt.more(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp}), hin)))
+    case T.VStr{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VStr{a1} <> t, hp), st.r(True{},
+        T.VStr{a1} <> t)) == True{} : Bool}, hw)
+    case T.VSpan{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VSpan{a1, a2} <> t, hp), st.r(True{}, T.VSpan{a1,
+        a2} <> t)) == True{} : Bool}, hw)
+    case T.VInt{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VInt{a1, a2} <> t, hp), st.r(True{}, T.VInt{a1,
+        a2} <> t)) == True{} : Bool}, hw)
+    case T.VFlo{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VFlo{a1, a2} <> t, hp), st.r(True{}, T.VFlo{a1,
+        a2} <> t)) == True{} : Bool}, hw)
+    case T.VBool{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VBool{a1} <> t, hp), st.r(True{},
+        T.VBool{a1} <> t)) == True{} : Bool}, hw)
+    case T.VWhen{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VWhen{a1} <> t, hp), st.r(True{},
+        T.VWhen{a1} <> t)) == True{} : Bool}, hw)
+    case T.VArr{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VArr{a1} <> t, hp), st.r(True{},
+        T.VArr{a1} <> t)) == True{} : Bool}, hw)
+    case T.VInl{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VInl{a1} <> t, hp), st.r(True{},
+        T.VInl{a1} <> t)) == True{} : Bool}, hw)
+    case T.VHead{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VHead{a1, a2} <> t, hp), st.r(True{}, T.VHead{a1,
+        a2} <> t)) == True{} : Bool}, hw)
+    case T.VAots{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VAots{a1, a2} <> t, hp), st.r(True{}, T.VAots{a1,
+        a2} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VStr{+b1}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VPair{a1, T.VStr{b1}} <> t, hp), st.r(True{}, T.VPair{a1,
+        T.VStr{b1}} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VSpan{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VPair{a1, T.VSpan{b1, b2}} <> t, hp), st.r(True{}, T.VPair{a1,
+        T.VSpan{b1, b2}} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VInt{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VPair{a1, T.VInt{b1, b2}} <> t, hp), st.r(True{}, T.VPair{a1,
+        T.VInt{b1, b2}} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VFlo{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VPair{a1, T.VFlo{b1, b2}} <> t, hp), st.r(True{}, T.VPair{a1,
+        T.VFlo{b1, b2}} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VBool{+b1}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VPair{a1, T.VBool{b1}} <> t, hp), st.r(True{}, T.VPair{a1,
+        T.VBool{b1}} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VWhen{+b1}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VPair{a1, T.VWhen{b1}} <> t, hp), st.r(True{}, T.VPair{a1,
+        T.VWhen{b1}} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VArr{+b1}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VPair{a1, T.VArr{b1}} <> t, hp), st.r(True{}, T.VPair{a1,
+        T.VArr{b1}} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VInl{+b1}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VPair{a1, T.VInl{b1}} <> t, hp), st.r(True{}, T.VPair{a1,
+        T.VInl{b1}} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VHead{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VPair{a1, T.VHead{b1, b2}} <> t, hp), st.r(True{}, T.VPair{a1,
+        T.VHead{b1, b2}} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VAot{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VPair{a1, T.VAot{b1, b2}} <> t, hp), st.r(True{}, T.VPair{a1,
+        T.VAot{b1, b2}} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VAots{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VPair{a1, T.VAots{b1, b2}} <> t, hp), st.r(True{}, T.VPair{a1,
+        T.VAots{b1, b2}} <> t)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VPair{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(st.l(True{}, T.VPair{a1, T.VPair{b1, b2}} <> t, hp), st.r(True{}, T.VPair{a1,
+        T.VPair{b1, b2}} <> t)) == True{} : Bool}, hw)
+
+# a table's rows as they are against them reordered (md false), or an
+# array's elements (md true)
+def s2.r(md: Bool, +xs: List<&2, T.Val>, +hp: String) -> List<&2, T.Val>:
+  match md:
+    case False{}:
+      Laws.canon.rows(xs)
+    case True{}:
+      Laws.canon.go(xs, Laws.CElems{hp})
+
+# each pair picks its own, reordered, and an element meets its own
+def s2(
+  xs: List<&2, T.Val>,
+  md: Bool,
+  +hp: String,
+  +hw: {T.wf.go(xs, st.at(md, hp)) == True{} : Bool},
+  +hs: {selfs(xs) == True{} : Bool}
+) -> {Laws.same.go(xs, s2.r(md, xs, hp)) == True{} : Bool}:
+  match xs md:
+    case [] False{}:
+      {==}
+    case [] True{}:
+      {==}
+    case T.VPair{+kk, T.VHead{+p, +r}} <> +t False{}:
+      +hin = {wt.more(Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk))), _u => T.wf.then(T.wf.go(r,
+        T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp})), hw) : {T.wf.then(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t,
+        T.WfRows{hp})) == True{} : Bool}}
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.left(T.wf.key(kk, t), T.str.eq(p,
+        T.tree.pre(hp, kk)), wt.ok(Bool.and(T.wf.key(kk, t), T.str.eq(p, T.tree.pre(hp, kk))),
+        _u => T.wf.then(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp})), hw))) : {T.wf.fresh(T.get(t,
+        kk)) == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VHead{p, r}} <> t, List.append(&2, T.Val, Laws.canon.keys(t),
+        T.VPair{kk, T.VHead{p, Laws.canon.rows(r)}} <> Laws.canon.tabs(t))),
+        Laws.same.pair(Laws.Picked{T.VHead{p, Laws.canon.rows(r)}, List.append(&2, T.Val, Laws.canon.keys(t),
+          Laws.canon.tabs(t))}, ww => Laws.same.box(Laws.KHead{}, ww, ws => Laws.same.go(r, ws)),
+          rr => Laws.same.go(t, rr)), True{},
+        Equal.cong(Laws.Pick, Bool, pk2 => Laws.same.pair(pk2, ww => Laws.same.box(Laws.KHead{}, ww,
+          ws => Laws.same.go(r, ws)),
+          rr => Laws.same.go(t, rr)), Laws.pick(List.append(&2, T.Val, Laws.canon.keys(t), T.VPair{kk, T.VHead{p,
+            Laws.canon.rows(r)}} <> Laws.canon.tabs(t)), kk), Laws.Picked{T.VHead{p, Laws.canon.rows(r)},
+            List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))},
+          pk.af(Laws.canon.keys(t), kk, T.VHead{p, Laws.canon.rows(r)}, Laws.canon.tabs(t), fr.keys(t, kk, fr))),
+        at.tt(Laws.same.go(r, Laws.canon.rows(r)), _u => Laws.same.go(t, List.append(&2, T.Val, Laws.canon.keys(t),
+          Laws.canon.tabs(t))), s2(r, False{}, p, wt.ok(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp}), hin),
+          wf.selfs(r, T.WfRows{p}, wt.ok(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp}), hin))),
+          s2(t, False{}, hp, wt.more(T.wf.go(r, T.WfRows{p}), _v => T.wf.go(t, T.WfRows{hp}), hin),
+            Eq.and.right(Laws.same.go(
+            T.VPair{kk, T.VHead{p, r}} <> [], T.VPair{kk, T.VHead{p, r}} <> []), selfs(t), hs))))
+    case T.VPair{+kk, T.VAots{+p, +r}} <> +t False{}:
+      +hin = {wt.more(Bool.and(Bool.not(List.is_empty(&2, T.Val, r)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
+        T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(r, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})),
+        hw) : {T.wf.then(T.wf.go(r, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})) == True{} : Bool}}
+      +fr = {Eq.and.right(T.wf.text(kk), T.wf.fresh(T.get(t, kk)), Eq.and.left(T.wf.key(kk, t), T.str.eq(p,
+        T.tree.pre(hp, kk)), Eq.and.right(Bool.not(List.is_empty(&2, T.Val, r)), Bool.and(T.wf.key(kk, t), T.str.eq(p,
+        T.tree.pre(hp, kk))), wt.ok(Bool.and(Bool.not(List.is_empty(&2, T.Val, r)), Bool.and(T.wf.key(kk, t),
+        T.str.eq(p, T.tree.pre(hp, kk)))), _u => T.wf.then(T.wf.go(r, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp})),
+        hw)))) : {T.wf.fresh(T.get(t, kk)) == True{} : Bool}}
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VAots{p, r}} <> t, List.append(&2, T.Val, Laws.canon.keys(t),
+        T.VPair{kk, T.VAots{p, Laws.canon.go(r, Laws.CElems{p})}} <> Laws.canon.tabs(t))),
+        Laws.same.pair(Laws.Picked{T.VAots{p, Laws.canon.go(r, Laws.CElems{p})}, List.append(&2, T.Val,
+          Laws.canon.keys(t), Laws.canon.tabs(t))}, ww => Laws.same.box(Laws.KAots{}, ww, ws => Laws.same.go(r, ws)),
+          rr => Laws.same.go(t, rr)), True{},
+        Equal.cong(Laws.Pick, Bool, pk2 => Laws.same.pair(pk2, ww => Laws.same.box(Laws.KAots{}, ww,
+          ws => Laws.same.go(r, ws)),
+          rr => Laws.same.go(t, rr)), Laws.pick(List.append(&2, T.Val, Laws.canon.keys(t), T.VPair{kk, T.VAots{p,
+            Laws.canon.go(r, Laws.CElems{p})}} <> Laws.canon.tabs(t)), kk), Laws.Picked{T.VAots{p, Laws.canon.go(r,
+            Laws.CElems{p})}, List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))},
+          pk.af(Laws.canon.keys(t), kk, T.VAots{p, Laws.canon.go(r, Laws.CElems{p})}, Laws.canon.tabs(t), fr.keys(t, kk,
+            fr))),
+        at.tt(Laws.same.go(r, Laws.canon.go(r, Laws.CElems{p})), _u => Laws.same.go(t, List.append(&2, T.Val,
+          Laws.canon.keys(t), Laws.canon.tabs(t))), s2(r, True{}, p, wt.ok(T.wf.go(r, T.WfElems{p}), _v => T.wf.go(t,
+          T.WfRows{hp}), hin), wf.selfs(r, T.WfElems{p}, wt.ok(T.wf.go(r, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}),
+          hin))),
+          s2(t, False{}, hp, wt.more(T.wf.go(r, T.WfElems{p}), _v => T.wf.go(t, T.WfRows{hp}), hin),
+            Eq.and.right(Laws.same.go(
+            T.VPair{kk, T.VAots{p, r}} <> [], T.VPair{kk, T.VAots{p, r}} <> []), selfs(t), hs))))
+    case T.VPair{+kk, T.VStr{+a1}} <> +t False{}:
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VStr{a1}} <> t, T.VPair{kk, T.VStr{a1}} <> List.append(&2, T.Val,
+        Laws.canon.keys(t), Laws.canon.tabs(t))),
+        Bool.and(Laws.same.go(T.VPair{kk, T.VStr{a1}} <> [], T.VPair{kk, T.VStr{a1}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)))), True{},
+        hc.p(kk, T.VStr{a1}, t, List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+        cv.and2(Laws.same.go(T.VPair{kk, T.VStr{a1}} <> [], T.VPair{kk, T.VStr{a1}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+          Eq.and.left(Laws.same.go(T.VPair{kk, T.VStr{a1}} <> [], T.VPair{kk, T.VStr{a1}} <> []), selfs(t), hs),
+          s2(t, False{}, hp, wt.more(Bool.and(T.wf.atom(T.VStr{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+            hw), Eq.and.right(Laws.same.go(T.VPair{kk, T.VStr{a1}} <> [], T.VPair{kk, T.VStr{a1}} <> []), selfs(t),
+            hs))))
+    case T.VPair{+kk, T.VSpan{+a1, +a2}} <> +t False{}:
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> t, T.VPair{kk, T.VSpan{a1, a2}} <> List.append(&2,
+        T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+        Bool.and(Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> [], T.VPair{kk, T.VSpan{a1, a2}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)))), True{},
+        hc.p(kk, T.VSpan{a1, a2}, t, List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+        cv.and2(Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> [], T.VPair{kk, T.VSpan{a1, a2}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+          Eq.and.left(Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> [], T.VPair{kk, T.VSpan{a1, a2}} <> []), selfs(t),
+            hs),
+          s2(t, False{}, hp, wt.more(Bool.and(T.wf.atom(T.VSpan{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t,
+            T.WfRows{hp}), hw), Eq.and.right(Laws.same.go(T.VPair{kk, T.VSpan{a1, a2}} <> [], T.VPair{kk, T.VSpan{a1,
+            a2}} <> []), selfs(t), hs))))
+    case T.VPair{+kk, T.VInt{+a1, +a2}} <> +t False{}:
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> t, T.VPair{kk, T.VInt{a1, a2}} <> List.append(&2,
+        T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+        Bool.and(Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> [], T.VPair{kk, T.VInt{a1, a2}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)))), True{},
+        hc.p(kk, T.VInt{a1, a2}, t, List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+        cv.and2(Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> [], T.VPair{kk, T.VInt{a1, a2}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+          Eq.and.left(Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> [], T.VPair{kk, T.VInt{a1, a2}} <> []), selfs(t), hs),
+          s2(t, False{}, hp, wt.more(Bool.and(T.wf.atom(T.VInt{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t,
+            T.WfRows{hp}), hw), Eq.and.right(Laws.same.go(T.VPair{kk, T.VInt{a1, a2}} <> [], T.VPair{kk, T.VInt{a1,
+            a2}} <> []), selfs(t), hs))))
+    case T.VPair{+kk, T.VFlo{+a1, +a2}} <> +t False{}:
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> t, T.VPair{kk, T.VFlo{a1, a2}} <> List.append(&2,
+        T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+        Bool.and(Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> [], T.VPair{kk, T.VFlo{a1, a2}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)))), True{},
+        hc.p(kk, T.VFlo{a1, a2}, t, List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+        cv.and2(Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> [], T.VPair{kk, T.VFlo{a1, a2}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+          Eq.and.left(Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> [], T.VPair{kk, T.VFlo{a1, a2}} <> []), selfs(t), hs),
+          s2(t, False{}, hp, wt.more(Bool.and(T.wf.atom(T.VFlo{a1, a2}), T.wf.key(kk, t)), _u => T.wf.go(t,
+            T.WfRows{hp}), hw), Eq.and.right(Laws.same.go(T.VPair{kk, T.VFlo{a1, a2}} <> [], T.VPair{kk, T.VFlo{a1,
+            a2}} <> []), selfs(t), hs))))
+    case T.VPair{+kk, T.VBool{+a1}} <> +t False{}:
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VBool{a1}} <> t, T.VPair{kk, T.VBool{a1}} <> List.append(&2, T.Val,
+        Laws.canon.keys(t), Laws.canon.tabs(t))),
+        Bool.and(Laws.same.go(T.VPair{kk, T.VBool{a1}} <> [], T.VPair{kk, T.VBool{a1}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)))), True{},
+        hc.p(kk, T.VBool{a1}, t, List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+        cv.and2(Laws.same.go(T.VPair{kk, T.VBool{a1}} <> [], T.VPair{kk, T.VBool{a1}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+          Eq.and.left(Laws.same.go(T.VPair{kk, T.VBool{a1}} <> [], T.VPair{kk, T.VBool{a1}} <> []), selfs(t), hs),
+          s2(t, False{}, hp, wt.more(Bool.and(T.wf.atom(T.VBool{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+            hw), Eq.and.right(Laws.same.go(T.VPair{kk, T.VBool{a1}} <> [], T.VPair{kk, T.VBool{a1}} <> []), selfs(t),
+            hs))))
+    case T.VPair{+kk, T.VWhen{+a1}} <> +t False{}:
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> t, T.VPair{kk, T.VWhen{a1}} <> List.append(&2, T.Val,
+        Laws.canon.keys(t), Laws.canon.tabs(t))),
+        Bool.and(Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> [], T.VPair{kk, T.VWhen{a1}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)))), True{},
+        hc.p(kk, T.VWhen{a1}, t, List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+        cv.and2(Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> [], T.VPair{kk, T.VWhen{a1}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+          Eq.and.left(Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> [], T.VPair{kk, T.VWhen{a1}} <> []), selfs(t), hs),
+          s2(t, False{}, hp, wt.more(Bool.and(T.wf.atom(T.VWhen{a1}), T.wf.key(kk, t)), _u => T.wf.go(t, T.WfRows{hp}),
+            hw), Eq.and.right(Laws.same.go(T.VPair{kk, T.VWhen{a1}} <> [], T.VPair{kk, T.VWhen{a1}} <> []), selfs(t),
+            hs))))
+    case T.VPair{+kk, T.VArr{+a1}} <> +t False{}:
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VArr{a1}} <> t, T.VPair{kk, T.VArr{a1}} <> List.append(&2, T.Val,
+        Laws.canon.keys(t), Laws.canon.tabs(t))),
+        Bool.and(Laws.same.go(T.VPair{kk, T.VArr{a1}} <> [], T.VPair{kk, T.VArr{a1}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)))), True{},
+        hc.p(kk, T.VArr{a1}, t, List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+        cv.and2(Laws.same.go(T.VPair{kk, T.VArr{a1}} <> [], T.VPair{kk, T.VArr{a1}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+          Eq.and.left(Laws.same.go(T.VPair{kk, T.VArr{a1}} <> [], T.VPair{kk, T.VArr{a1}} <> []), selfs(t), hs),
+          s2(t, False{}, hp, wt.more(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
+            _u => T.wf.then(T.wf.go(a1, T.WfItems{}), _v => T.wf.go(t, T.WfRows{hp})), hw)),
+            Eq.and.right(Laws.same.go(T.VPair{kk, T.VArr{a1}} <> [], T.VPair{kk, T.VArr{a1}} <> []), selfs(t), hs))))
+    case T.VPair{+kk, T.VInl{+a1}} <> +t False{}:
+      Equal.trans(Bool, Laws.same.go(T.VPair{kk, T.VInl{a1}} <> t, T.VPair{kk, T.VInl{a1}} <> List.append(&2, T.Val,
+        Laws.canon.keys(t), Laws.canon.tabs(t))),
+        Bool.and(Laws.same.go(T.VPair{kk, T.VInl{a1}} <> [], T.VPair{kk, T.VInl{a1}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t)))), True{},
+        hc.p(kk, T.VInl{a1}, t, List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+        cv.and2(Laws.same.go(T.VPair{kk, T.VInl{a1}} <> [], T.VPair{kk, T.VInl{a1}} <> []), Laws.same.go(t,
+          List.append(&2, T.Val, Laws.canon.keys(t), Laws.canon.tabs(t))),
+          Eq.and.left(Laws.same.go(T.VPair{kk, T.VInl{a1}} <> [], T.VPair{kk, T.VInl{a1}} <> []), selfs(t), hs),
+          s2(t, False{}, hp, wt.more(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp}), wt.more(T.wf.key(kk, t),
+            _u => T.wf.then(T.wf.go(a1, T.WfInl{}), _v => T.wf.go(t, T.WfRows{hp})), hw)),
+            Eq.and.right(Laws.same.go(T.VPair{kk, T.VInl{a1}} <> [], T.VPair{kk, T.VInl{a1}} <> []), selfs(t), hs))))
+    case T.VPair{+kk, T.VAot{+a1, +a2}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{kk, T.VAot{a1, a2}} <> t, s2.r(False{}, T.VPair{kk, T.VAot{a1, a2}} <> t,
+        hp)) == True{} : Bool}, hw)
+    case T.VPair{+kk, T.VPair{+a1, +a2}} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{kk, T.VPair{a1, a2}} <> t, s2.r(False{}, T.VPair{kk, T.VPair{a1,
+        a2}} <> t, hp)) == True{} : Bool}, hw)
+    case T.VStr{+a1} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VStr{a1} <> t, s2.r(False{}, T.VStr{a1} <> t, hp)) == True{} : Bool}, hw)
+    case T.VSpan{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VSpan{a1, a2} <> t, s2.r(False{}, T.VSpan{a1, a2} <> t, hp)) == True{} : Bool},
+        hw)
+    case T.VInt{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VInt{a1, a2} <> t, s2.r(False{}, T.VInt{a1, a2} <> t, hp)) == True{} : Bool},
+        hw)
+    case T.VFlo{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VFlo{a1, a2} <> t, s2.r(False{}, T.VFlo{a1, a2} <> t, hp)) == True{} : Bool},
+        hw)
+    case T.VBool{+a1} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VBool{a1} <> t, s2.r(False{}, T.VBool{a1} <> t, hp)) == True{} : Bool}, hw)
+    case T.VWhen{+a1} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VWhen{a1} <> t, s2.r(False{}, T.VWhen{a1} <> t, hp)) == True{} : Bool}, hw)
+    case T.VArr{+a1} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VArr{a1} <> t, s2.r(False{}, T.VArr{a1} <> t, hp)) == True{} : Bool}, hw)
+    case T.VInl{+a1} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VInl{a1} <> t, s2.r(False{}, T.VInl{a1} <> t, hp)) == True{} : Bool}, hw)
+    case T.VHead{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VHead{a1, a2} <> t, s2.r(False{}, T.VHead{a1, a2} <> t, hp)) == True{} : Bool},
+        hw)
+    case T.VAot{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VAot{a1, a2} <> t, s2.r(False{}, T.VAot{a1, a2} <> t, hp)) == True{} : Bool},
+        hw)
+    case T.VAots{+a1, +a2} <> +t False{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VAots{a1, a2} <> t, s2.r(False{}, T.VAots{a1, a2} <> t, hp)) == True{} : Bool},
+        hw)
+    case T.VAot{+q, +r} <> +t True{}:
+      +hin = {wt.more(T.str.eq(q, hp), _u => T.wf.then(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp})), hw)
+        : {T.wf.then(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp})) == True{} : Bool}}
+      +hwr = {wt.ok(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp}), hin) : {T.wf.go(r, T.WfRows{q}) == True{}
+        : Bool}}
+      at.tt(Laws.same.go(r, Laws.canon.rows(r)), _u => Laws.same.go(t, Laws.canon.go(t, Laws.CElems{hp})),
+        s2(r, False{}, q, hwr, wf.selfs(r, T.WfRows{q}, hwr)),
+        s2(t, True{}, hp, wt.more(T.wf.go(r, T.WfRows{q}), _v => T.wf.go(t, T.WfElems{hp}), hin),
+          Eq.and.right(Laws.same.go(T.VAot{q, r} <> [], T.VAot{q, r} <> []), selfs(t), hs)))
+    case T.VStr{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VStr{a1} <> t, s2.r(True{}, T.VStr{a1} <> t, hp)) == True{} : Bool}, hw)
+    case T.VSpan{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VSpan{a1, a2} <> t, s2.r(True{}, T.VSpan{a1, a2} <> t, hp)) == True{} : Bool},
+        hw)
+    case T.VInt{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VInt{a1, a2} <> t, s2.r(True{}, T.VInt{a1, a2} <> t, hp)) == True{} : Bool}, hw)
+    case T.VFlo{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VFlo{a1, a2} <> t, s2.r(True{}, T.VFlo{a1, a2} <> t, hp)) == True{} : Bool}, hw)
+    case T.VBool{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VBool{a1} <> t, s2.r(True{}, T.VBool{a1} <> t, hp)) == True{} : Bool}, hw)
+    case T.VWhen{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VWhen{a1} <> t, s2.r(True{}, T.VWhen{a1} <> t, hp)) == True{} : Bool}, hw)
+    case T.VArr{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VArr{a1} <> t, s2.r(True{}, T.VArr{a1} <> t, hp)) == True{} : Bool}, hw)
+    case T.VInl{+a1} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VInl{a1} <> t, s2.r(True{}, T.VInl{a1} <> t, hp)) == True{} : Bool}, hw)
+    case T.VHead{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VHead{a1, a2} <> t, s2.r(True{}, T.VHead{a1, a2} <> t, hp)) == True{} : Bool},
+        hw)
+    case T.VAots{+a1, +a2} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VAots{a1, a2} <> t, s2.r(True{}, T.VAots{a1, a2} <> t, hp)) == True{} : Bool},
+        hw)
+    case T.VPair{+a1, T.VStr{+b1}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{a1, T.VStr{b1}} <> t, s2.r(True{}, T.VPair{a1, T.VStr{b1}} <> t,
+        hp)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VSpan{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{a1, T.VSpan{b1, b2}} <> t, s2.r(True{}, T.VPair{a1, T.VSpan{b1, b2}} <> t,
+        hp)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VInt{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{a1, T.VInt{b1, b2}} <> t, s2.r(True{}, T.VPair{a1, T.VInt{b1, b2}} <> t,
+        hp)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VFlo{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{a1, T.VFlo{b1, b2}} <> t, s2.r(True{}, T.VPair{a1, T.VFlo{b1, b2}} <> t,
+        hp)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VBool{+b1}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{a1, T.VBool{b1}} <> t, s2.r(True{}, T.VPair{a1, T.VBool{b1}} <> t,
+        hp)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VWhen{+b1}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{a1, T.VWhen{b1}} <> t, s2.r(True{}, T.VPair{a1, T.VWhen{b1}} <> t,
+        hp)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VArr{+b1}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{a1, T.VArr{b1}} <> t, s2.r(True{}, T.VPair{a1, T.VArr{b1}} <> t,
+        hp)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VInl{+b1}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{a1, T.VInl{b1}} <> t, s2.r(True{}, T.VPair{a1, T.VInl{b1}} <> t,
+        hp)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VHead{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{a1, T.VHead{b1, b2}} <> t, s2.r(True{}, T.VPair{a1, T.VHead{b1, b2}} <> t,
+        hp)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VAot{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{a1, T.VAot{b1, b2}} <> t, s2.r(True{}, T.VPair{a1, T.VAot{b1, b2}} <> t,
+        hp)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VAots{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{a1, T.VAots{b1, b2}} <> t, s2.r(True{}, T.VPair{a1, T.VAots{b1, b2}} <> t,
+        hp)) == True{} : Bool}, hw)
+    case T.VPair{+a1, T.VPair{+b1, +b2}} <> +t True{}:
+      Eq.bit.absurd(&2, {Laws.same.go(T.VPair{a1, T.VPair{b1, b2}} <> t, s2.r(True{}, T.VPair{a1, T.VPair{b1, b2}} <> t,
+        hp)) == True{} : Bool}, hw)
+
+# a well-formed document is the same as canon of it
+def cs.same(
+  +ee: String,
+  +xs: List<&2, T.Val>,
+  +hw: {T.wf.go(xs, T.WfRows{""}) == True{} : Bool}
+) -> {Laws.same(Laws.canon(T.Doc{ee, xs}), T.Doc{ee, xs}) == True{} : Bool}:
+  +cr = {Laws.canon.rows(xs) : List<&2, T.Val>}
+  and.tt(Laws.same.go(Laws.own.rows(cr), xs), Laws.same.go(xs, Laws.own.rows(cr)),
+    Equal.trans(Bool, Laws.same.go(Laws.own.rows(cr), xs), Laws.same.go(cr, xs), True{}, own.l(cr, xs),
+      Equal.trans(Bool, Laws.same.go(cr, xs), Laws.same.go(Laws.canon.tabs(xs), rtabs(xs)), True{},
+        pk(xs, "", Laws.canon.tabs(xs), [], hw, wf.selfs(xs, T.WfRows{""}, hw), cv.fr.nil(Laws.canon.keys(xs))),
+        st(xs, False{}, "", hw))),
+    Equal.trans(Bool, Laws.same.go(xs, Laws.own.rows(cr)), Laws.same.go(xs, cr), True{}, own.r(xs, cr),
+      s2(xs, False{}, "", hw, wf.selfs(xs, T.WfRows{""}, hw))))
+
+
+# TOML-RT-1. The document induction reads render's text back as canon of the
+# document, once each string's and table path's bound is read off the bound
+# on the whole text; canon is the same as the document; and own changes
+# neither the error nor what same compares.
+
+def Laws.render_parse_canon(d, w, h_s):
+  match d:
+    case T.Doc{+ee, +xs}:
+      ex.canon(ee, xs, w, sd.doc(ee, xs, w, h_s))
+
+def Laws.canon_same(d, w):
+  match d:
+    case T.Doc{+ee, +xs}:
+      cs.same(ee, xs, w)
+
+# own keeps the error
+def own.bad(dd: T.Doc) -> {T.bad(Laws.own(dd)) == T.bad(dd) : String}:
+  match dd:
+    case T.Doc{_b, _r}:
+      {==}
+
+# same compares a document as own reads it
+def own.same(dd: T.Doc, +d0: T.Doc) -> {Laws.same(dd, d0) == Laws.same(Laws.own(dd), d0) : Bool}:
+  match dd d0:
+    case T.Doc{_b1, +r1} T.Doc{_b2, +r2}:
+      Equal.sym(Bool, Bool.and(Laws.same.go(Laws.own.rows(r1), r2), Laws.same.go(r2, Laws.own.rows(r1))),
+        Bool.and(Laws.same.go(r1, r2), Laws.same.go(r2, r1)),
+        Equal.trans(Bool, Bool.and(Laws.same.go(Laws.own.rows(r1), r2), Laws.same.go(r2, Laws.own.rows(r1))),
+          Bool.and(Laws.same.go(r1, r2), Laws.same.go(r2, Laws.own.rows(r1))),
+          Bool.and(Laws.same.go(r1, r2), Laws.same.go(r2, r1)),
+          Equal.cong(Bool, Bool, xx => Bool.and(xx, Laws.same.go(r2, Laws.own.rows(r1))),
+            Laws.same.go(Laws.own.rows(r1),
+            r2), Laws.same.go(r1, r2), own.l(r1, r2)),
+          Equal.cong(Bool, Bool, yy => Bool.and(Laws.same.go(r1, r2), yy), Laws.same.go(r2, Laws.own.rows(r1)),
+            Laws.same.go(r2, r1), own.r(r2, r1))))
+
+def Laws.render_parse(d, w, h_s):
+  match d:
+    case T.Doc{+ee, +xs}:
+      +d0 = {T.Doc{ee, xs} : T.Doc}
+      +pd = {T.parse(T.render(d0)) : T.Doc}
+      +ex = {ex.canon(ee, xs, w, sd.doc(ee, xs, w, h_s)) : {Laws.own(pd) == Laws.canon(d0) : T.Doc}}
+      and.tt(String.is_empty(T.bad(pd)), Laws.same(pd, d0),
+        Equal.trans(Bool, String.is_empty(T.bad(pd)), String.is_empty(T.bad(Laws.own(pd))), True{},
+          Equal.cong(String, Bool, ss => String.is_empty(ss), T.bad(pd), T.bad(Laws.own(pd)),
+            Equal.sym(String, T.bad(Laws.own(pd)), T.bad(pd), own.bad(pd))),
+          Equal.cong(T.Doc, Bool, dd => String.is_empty(T.bad(dd)), Laws.own(pd), Laws.canon(d0), ex)),
+        Equal.trans(Bool, Laws.same(pd, d0), Laws.same(Laws.own(pd), d0), True{}, own.same(pd, d0),
+          Equal.trans(Bool, Laws.same(Laws.own(pd), d0), Laws.same(Laws.canon(d0), d0), True{},
+            Equal.cong(T.Doc, Bool, dd => Laws.same(dd, d0), Laws.own(pd), Laws.canon(d0), ex), cs.same(ee, xs, w))))
