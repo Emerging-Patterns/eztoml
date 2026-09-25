@@ -16693,3 +16693,415 @@ def Laws.scalar_reads_back(v, w, fx, rest):
     case T.VPair{nm, vv}:
       Eq.bit.absurd(&2, {Laws.from_val(fx, String.append(T.render.atom(T.VPair{nm, vv}), SCon{'\n', rest}))
         == Laws.after_val(fx, T.VPair{nm, vv}, rest) : T.Doc}, w)
+
+# WP-K3: keys however they are written. A literal quoted segment is read one
+# character at a time in the segment's state (LKeyQ for a key, LHeadQ for a
+# header, as WP0's qs family takes it by the bit hd) with qkind QLit: every
+# character but the apostrophe is pushed as it is, and back never moves, so
+# unlike qs these lemmas are plain equations.
+
+# a scanner inside a literal quoted segment, its characters so far reversed
+# in buf
+def ql(
+  hd: Bool,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  arrtab: Bool,
+  back: T.Lex,
+  buf: List<&2, Char>
+) -> T.St:
+  T.St{"", rows, heads, here, parts, buf, qs.lex(hd), back, T.QLit{}, [], T.HNone{}, 0, 0,
+    arrtab, False{}}
+
+# a character read from a literal segment is pushed
+def ql.Step(
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>
+) -> Type:
+  {T.doc.scan(ql(hd, rw, hs, he, ps, ab, back, buf), Chr{uu})
+    == T.MScan{ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf)} : T.Mode}
+
+# a quotation mark, a backslash and a tab: their steps compute
+def ql.s34(
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>
+) -> ql.Step(34, hd, rw, hs, he, ps, ab, back, buf):
+  match hd:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+# a backslash
+def ql.s92(
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>
+) -> ql.Step(92, hd, rw, hs, he, ps, ab, back, buf):
+  match hd:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+# a tab
+def ql.s9(
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>
+) -> ql.Step(9, hd, rw, hs, he, ps, ab, back, buf):
+  match hd:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+# the fast step of a character in a literal segment is the segment's full step
+def ql.fast(
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>
+) -> {T.read.fast(ql(hd, rw, hs, he, ps, ab, back, buf), Chr{uu}) == T.read.once2(T.lex.kq.go(
+  U32.is_eq(uu, 39), U32.is_eq(uu, 92), False{}, Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)),
+  ql(hd, rw, hs, he, ps, ab, back, buf), Chr{uu}, qs.close(hd), qs.lex(hd))) : T.St}:
+  match hd:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+# a character that is no control is pushed: str.bad passes it
+def ql.char(
+  ctl: Bool,
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  hc: {ctl == False{} : Bool}
+) -> {T.read.once2(T.lex.kq.char.go(T.str.bad.go(ctl, U32.is_eq(uu, 9),
+  Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), False{}), ql(hd, rw, hs, he, ps, ab, back, buf),
+  Chr{uu}, qs.lex(hd))) == ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf) : T.St}:
+  match ctl:
+    case False{}:
+      {==}
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.char.go(T.str.bad.go(True{}, U32.is_eq(uu, 9),
+        Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), False{}), ql(hd, rw, hs, he, ps, ab, back,
+        buf), Chr{uu}, qs.lex(hd))) == ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf) : T.St}, hc)
+
+# a character that is no apostrophe, no backslash and no newline is no closer
+# and no backslash
+def ql.go(
+  quote: Bool,
+  bs: Bool,
+  nl: Bool,
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  hq: {quote == False{} : Bool},
+  hb: {bs == False{} : Bool},
+  hn: {nl == False{} : Bool},
+  hc: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
+) -> {T.read.once2(T.lex.kq.go(quote, bs, False{}, nl, ql(hd, rw, hs, he, ps, ab, back, buf), Chr{uu},
+  qs.close(hd), qs.lex(hd))) == ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf) : T.St}:
+  match quote:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(True{}, bs, False{}, nl, ql(hd, rw, hs, he, ps, ab,
+        back, buf), Chr{uu}, qs.close(hd), qs.lex(hd))) == ql(hd, rw, hs, he, ps, ab, back,
+        Chr{uu} <> buf) : T.St}, hq)
+    case False{}:
+      match bs:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(False{}, True{}, False{}, nl, ql(hd, rw, hs, he,
+            ps, ab, back, buf), Chr{uu}, qs.close(hd), qs.lex(hd))) == ql(hd, rw, hs, he, ps, ab,
+            back, Chr{uu} <> buf) : T.St}, hb)
+        case False{}:
+          match nl:
+            case True{}:
+              Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(False{}, False{}, False{}, True{}, ql(hd,
+                rw, hs, he, ps, ab, back, buf), Chr{uu}, qs.close(hd), qs.lex(hd))) == ql(hd, rw, hs,
+                he, ps, ab, back, Chr{uu} <> buf) : T.St}, hn)
+            case False{}:
+              ql.char(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), uu, hd, rw, hs, he, ps, ab,
+                back, buf, hc)
+
+# the fast step pushes a character
+def ql.Fast(
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>
+) -> Type:
+  {T.read.fast(ql(hd, rw, hs, he, ps, ab, back, buf), Chr{uu})
+    == ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf) : T.St}
+
+# the scan mode sends such a character to the fast step
+def ql.q(
+  dq: Bool,
+  sq: Bool,
+  cr: Bool,
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  hq: {dq == False{} : Bool},
+  hs1: {sq == False{} : Bool},
+  hr: {cr == False{} : Bool},
+  fast: ql.Fast(uu, hd, rw, hs, he, ps, ab, back, buf)
+) -> {T.doc.scan.q(dq, sq, cr, ql(hd, rw, hs, he, ps, ab, back, buf), Chr{uu})
+  == T.MScan{ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf)} : T.Mode}:
+  match dq:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.doc.scan.q(True{}, sq, cr, ql(hd, rw, hs, he, ps, ab, back, buf), Chr{uu})
+        == T.MScan{ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf)} : T.Mode}, hq)
+    case False{}:
+      match sq:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.doc.scan.q(False{}, True{}, cr, ql(hd, rw, hs, he, ps, ab, back, buf),
+            Chr{uu}) == T.MScan{ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf)} : T.Mode}, hs1)
+        case False{}:
+          match cr:
+            case True{}:
+              Eq.bit.absurd2(&2, {T.doc.scan.q(False{}, False{}, True{}, ql(hd, rw, hs, he, ps, ab,
+                back, buf), Chr{uu}) == T.MScan{ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf)}
+                : T.Mode}, hr)
+            case False{}:
+              Equal.cong(T.St, T.Mode, st => T.MScan{st},
+                T.read.fast(ql(hd, rw, hs, he, ps, ab, back, buf), Chr{uu}),
+                ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf), fast)
+
+# a literal character is no apostrophe
+def lit.q(
+  q39: Bool,
+  ctl: Bool,
+  t9: Bool,
+  e: {Bool.not(Bool.or(q39, Bool.and(ctl, Bool.not(t9)))) == True{} : Bool}
+) -> {q39 == False{} : Bool}:
+  match q39:
+    case True{}:
+      Eq.bit.absurd(&2, {True{} == False{} : Bool}, e)
+    case False{}:
+      {==}
+
+# and a literal character that is no tab is no control
+def lit.c(
+  q39: Bool,
+  ctl: Bool,
+  t9: Bool,
+  e9: {t9 == False{} : Bool},
+  e: {Bool.not(Bool.or(q39, Bool.and(ctl, Bool.not(t9)))) == True{} : Bool}
+) -> {ctl == False{} : Bool}:
+  match q39:
+    case True{}:
+      Eq.bit.absurd(&2, {ctl == False{} : Bool}, e)
+    case False{}:
+      match ctl:
+        case False{}:
+          {==}
+        case True{}:
+          match t9:
+            case True{}:
+              Eq.bit.absurd2(&2, {True{} == False{} : Bool}, e9)
+            case False{}:
+              Eq.bit.absurd(&2, {True{} == False{} : Bool}, e)
+
+# any other literal character goes through the dispatch and is pushed
+def ql.gen(
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +e9: {U32.is_eq(uu, 9) == False{} : Bool},
+  +el: {Laws.lit.char(Chr{uu}) == True{} : Bool}
+) -> ql.Step(uu, hd, rw, hs, he, ps, ab, back, buf):
+  +e39 = {lit.q(U32.is_eq(uu, 39), Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), U32.is_eq(uu, 9),
+    el) : {U32.is_eq(uu, 39) == False{} : Bool}}
+  +ec = {lit.c(U32.is_eq(uu, 39), Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), U32.is_eq(uu, 9),
+    e9, el) : {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}}
+  +e10 = {ctl.off(uu, 10, ec, {==}) : {U32.is_eq(uu, 10) == False{} : Bool}}
+  +e13 = {ctl.off(uu, 13, ec, {==}) : {U32.is_eq(uu, 13) == False{} : Bool}}
+  ql.q(U32.is_eq(uu, 34), U32.is_eq(uu, 39), U32.is_eq(uu, 13), uu, hd, rw, hs, he, ps, ab, back, buf,
+    e34, e39, e13,
+    Equal.trans(T.St, T.read.fast(ql(hd, rw, hs, he, ps, ab, back, buf), Chr{uu}),
+      T.read.once2(T.lex.kq.go(U32.is_eq(uu, 39), U32.is_eq(uu, 92), False{},
+        Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), ql(hd, rw, hs, he, ps, ab, back, buf), Chr{uu},
+        qs.close(hd), qs.lex(hd))),
+      ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf),
+      ql.fast(uu, hd, rw, hs, he, ps, ab, back, buf),
+      ql.go(U32.is_eq(uu, 39), U32.is_eq(uu, 92), Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), uu, hd,
+        rw, hs, he, ps, ab, back, buf, e39, e92, or.ff(U32.is_eq(uu, 10), U32.is_eq(uu, 13), e10, e13),
+        ec)))
+
+# one code point k that the test found: its step is the character's
+def ql.is(
+  +uu: U32,
+  +kk: U32,
+  ee: {U32.is_eq(uu, kk) == True{} : Bool},
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  at: ql.Step(kk, hd, rw, hs, he, ps, ab, back, buf)
+) -> ql.Step(uu, hd, rw, hs, he, ps, ab, back, buf):
+  eu = Equal.cong(Char, U32, cc => Char.to_u32(cc), Chr{uu}, Chr{kk}, Eq.u32_eq(uu, kk, ee))
+  %Equal.sym(U32, uu, kk, eu) : ql.Step(_, hd, rw, hs, he, ps, ab, back, buf)
+  at
+
+# every literal character: a quotation mark, a backslash, a tab, or another
+def ql.split(
+  +uu: U32,
+  d34: Bool,
+  b92: Bool,
+  t9: Bool,
+  e34: {U32.is_eq(uu, 34) == d34 : Bool},
+  e92: {U32.is_eq(uu, 92) == b92 : Bool},
+  e9: {U32.is_eq(uu, 9) == t9 : Bool},
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  el: {Laws.lit.char(Chr{uu}) == True{} : Bool}
+) -> ql.Step(uu, hd, rw, hs, he, ps, ab, back, buf):
+  match d34:
+    case True{}:
+      ql.is(uu, 34, e34, hd, rw, hs, he, ps, ab, back, buf, ql.s34(hd, rw, hs, he, ps, ab, back, buf))
+    case False{}:
+      match b92:
+        case True{}:
+          ql.is(uu, 92, e92, hd, rw, hs, he, ps, ab, back, buf, ql.s92(hd, rw, hs, he, ps, ab, back, buf))
+        case False{}:
+          match t9:
+            case True{}:
+              ql.is(uu, 9, e9, hd, rw, hs, he, ps, ab, back, buf, ql.s9(hd, rw, hs, he, ps, ab, back,
+                buf))
+            case False{}:
+              ql.gen(uu, hd, rw, hs, he, ps, ab, back, buf, e34, e92, e9, el)
+
+# one character of a literal segment
+def ql.one(
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  el: {Laws.lit.char(Chr{uu}) == True{} : Bool}
+) -> ql.Step(uu, hd, rw, hs, he, ps, ab, back, buf):
+  ql.split(uu, U32.is_eq(uu, 34), U32.is_eq(uu, 92), U32.is_eq(uu, 9), {==}, {==}, {==}, hd, rw, hs,
+    he, ps, ab, back, buf, el)
+
+# every character of a literal text is pushed, whatever follows it
+def ql.body(
+  ss: String,
+  +rr: String,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  +ee: {Laws.lit.text(ss) == True{} : Bool}
+) -> {T.doc.read(String.append(ss, rr), T.MScan{ql(hd, rw, hs, he, ps, ab, back, buf)})
+  == T.doc.read(rr, T.MScan{ql(hd, rw, hs, he, ps, ab, back, rev.onto(ss, buf))}) : T.Doc}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+uu}:
+          Equal.trans(T.Doc,
+            T.doc.read(String.append(tt, rr), T.doc.scan(ql(hd, rw, hs, he, ps, ab, back, buf), Chr{uu})),
+            T.doc.read(String.append(tt, rr), T.MScan{ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf)}),
+            T.doc.read(rr, T.MScan{ql(hd, rw, hs, he, ps, ab, back, rev.onto(tt, Chr{uu} <> buf))}),
+            Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, rr), md),
+              T.doc.scan(ql(hd, rw, hs, he, ps, ab, back, buf), Chr{uu}),
+              T.MScan{ql(hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf)},
+              ql.one(uu, hd, rw, hs, he, ps, ab, back, buf,
+                Eq.and.left(Laws.lit.char(Chr{uu}), Laws.lit.text(tt), ee))),
+            ql.body(tt, rr, hd, rw, hs, he, ps, ab, back, Chr{uu} <> buf,
+              Eq.and.right(Laws.lit.char(Chr{uu}), Laws.lit.text(tt), ee)))
+
+def Laws.literal_key_reads_back(s, e):
+  Equal.trans(T.Doc,
+    T.doc.read(String.append(s, "' = 1"), T.MScan{ql(False{}, [], [], [], [], False{}, T.LTop{}, [])}),
+    T.doc.read("' = 1", T.MScan{ql(False{}, [], [], [], [], False{}, T.LTop{}, rev.onto(s, []))}),
+    T.Doc{"", [T.VPair{s, T.VInt{T.Plus{}, "1"}}]},
+    ql.body(s, "' = 1", False{}, [], [], [], [], False{}, T.LTop{}, [], e),
+    Equal.trans(T.Doc,
+      T.doc.read("' = 1", T.MScan{ql(False{}, [], [], [], [], False{}, T.LTop{}, rev.onto(s, []))}),
+      kq.doc(rev.onto(s, [])),
+      T.Doc{"", [T.VPair{s, T.VInt{T.Plus{}, "1"}}]},
+      {==},
+      kq.name(s)))

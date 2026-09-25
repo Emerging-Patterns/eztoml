@@ -2372,3 +2372,34 @@ law scalar_reads_back:
   for +fx: Vf
   for +rest: String
   {from_val(fx, String.append(T.render.atom(v), SCon{'\n', rest})) == after_val(fx, v, rest) : T.Doc}
+
+# WP-K3: a key's name is its characters however it is written. A key segment
+# is bare, a basic string (written as key writes one, escapes decoded) or a
+# literal string (its characters as they are, no escapes); a dotted key is
+# segments joined by dots, with blank space allowed around each dot; the
+# segments of a header are spelled the same way. The laws below read each
+# spelling back as its characters, put a dotted key's value under the nested
+# tables its segments name, and find it with at.
+
+# a character a literal string may hold: any but the apostrophe and the
+# controls other than tab (toml.abnf literal-char)
+def lit.char(+cc: Char) -> Bool:
+  Bool.not(Bool.or(Char.is_eq(cc, '\''), Bool.and(is_ctl(cc), Bool.not(Char.is_eq(cc, '\t')))))
+
+# a text a literal string may hold
+def lit.text(ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      True{}
+    case SCon{+hh, tt}:
+      Bool.and(lit.char(hh), lit.text(tt))
+
+# LAW: a literal key reads back as its characters: for every text s a
+# literal string can hold, 's' followed by " = 1" parses with no error to
+# one pair, named s, holding the integer 1
+# TOML-KEY-3
+law literal_key_reads_back:
+  for +s: String
+  for e: {lit.text(s) == True{} : Bool}
+  {T.parse(SCon{'\'', String.append(s, "' = 1")})
+    == T.Doc{"", [T.VPair{s, T.VInt{T.Plus{}, "1"}}]} : T.Doc}
