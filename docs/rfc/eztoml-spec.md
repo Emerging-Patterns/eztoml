@@ -111,8 +111,8 @@ Keeping a float's spelling and an integer's digits, rather than converting, is a
 
 | ID | Requirement | Level | Status |
 | :---- | :---- | :---- | :---- |
-| TOML-RT-1 | For every document `d` with `wf(d)` whose rendered text `render(d)` is shorter than 2^32 characters: `bad(parse(render(d)))` is `""`, and `parse(render(d))` is `same` as `d` | Proved | pending |
-| TOML-RT-2 | For every text `t` of Unicode scalar values, shorter than 2^32 characters and with `render(parse(t))` shorter than 2^32 characters, with `bad(parse(t)) == ""`: `parse(render(parse(t)))` is `same` as `parse(t)`, and `render` of it is `render(parse(t))` | Proved | pending |
+| TOML-RT-1 | For every document `d` with `wf(d)` whose rendered text `render(d)` is shorter than 2^32 characters: `bad(parse(render(d)))` is `""`, and `parse(render(d))` is `same` as `d` | Proved | proved |
+| TOML-RT-2 | For every text `t` of Unicode scalar values, shorter than 2^32 characters and with `render(parse(t))` shorter than 2^32 characters, with `bad(parse(t)) == ""`: `parse(render(parse(t)))` is `same` as `parse(t)`, and `render` of it is `render(parse(t))` | Proved | proved |
 | TOML-RT-3 | For every text `t` of Unicode scalar values shorter than 2^32 characters with `bad(parse(t)) == ""`, `wf(parse(t))` holds | Proved | proved |
 
 Verdicts: TOML-RT-1 cannot be judged until `wf` exists. It holds for every parsed document we rendered (203 of 203, and about 43,000 fuzzed). TOML-RT-2 holds on every valid input we tried, and fails only after an invalid one was accepted: `a = 0_0.5` renders `a = 00.5`, which does not parse (R-I6). It holds once I6 is fixed. TOML-RT-3 holds on every input we tried, including headers that need quotes (`["x\ny"]`, `[a."b.c"]`, `[[""]]`).

@@ -31,7 +31,7 @@ A tag may name a proved or a pending requirement, never a Trusted one or an ID n
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
 | TOML-RT-1 | For every document `d` with `wf(d)` whose rendered text `render(d)` is shorter than 2^32 characters: `bad(parse(render(d)))` is `""`, and `parse(render(d))` is `same` as `d` | Proved | proved | LAWS.bend render_parse; LAWS.bend render_parse_canon; LAWS.bend canon_same |
-| TOML-RT-2 | For every text `t` of Unicode scalar values, shorter than 2^32 characters and with `render(parse(t))` shorter than 2^32 characters, with `bad(parse(t)) == ""`: `parse(render(parse(t)))` is `same` as `parse(t)`, and `render` of it is `render(parse(t))` | Proved | pending |  |
+| TOML-RT-2 | For every text `t` of Unicode scalar values, shorter than 2^32 characters and with `render(parse(t))` shorter than 2^32 characters, with `bad(parse(t)) == ""`: `parse(render(parse(t)))` is `same` as `parse(t)`, and `render` of it is `render(parse(t))` | Proved | proved | LAWS.bend parse_render_parse |
 | TOML-RT-3 | For every text `t` of Unicode scalar values shorter than 2^32 characters with `bad(parse(t)) == ""`, `wf(parse(t))` holds | Proved | proved | LAWS.bend gd_start; LAWS.bend gd_walk; LAWS.bend gd_header_steps; LAWS.bend gd_key_steps; LAWS.bend gd_seal; LAWS.bend gd_fin; LAWS.bend gd_take; LAWS.bend gd_value_steps; LAWS.bend gd_word; LAWS.bend gd_bare_steps; LAWS.bend gd_fast_step; LAWS.bend gd_held; LAWS.bend gd_span_wf; LAWS.bend gd_mode_step; LAWS.bend gd_next; LAWS.bend gd_read; LAWS.bend parse_wf |
 
 ### TOML v1.0.0 texts (TOML-TEXT)
@@ -77,7 +77,7 @@ A tag may name a proved or a pending requirement, never a Trusted one or an ID n
 
 ## Left to prove
 
-TOML-RT-1, TOML-RT-3, TOML-KEY-1, TOML-KEY-2, TOML-GET-1, TOML-GET-2, TOML-READ-1 and TOML-STR-2 are proved; every other row is pending. For the pending rows that name laws already:
+TOML-RT-1, TOML-RT-2, TOML-RT-3, TOML-KEY-1, TOML-KEY-2, TOML-GET-1, TOML-GET-2, TOML-READ-1 and TOML-STR-2 are proved; every other row is pending. For the pending rows that name laws already:
 
 | Row | Proved so far | Missing |
 | :---- | :---- | :---- |
