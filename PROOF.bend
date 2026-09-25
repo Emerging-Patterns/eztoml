@@ -4165,52 +4165,8 @@ def Laws.esc_r(c, h):
   %ec : {Laws.esc(_) == "\\r" : String}
   {==}
 
-# The other controls. A code point below 32 has zeros above its five low bits,
-# so the thirty-two of them can be taken one at a time; U+007F is one more.
-
-# a word of n zero bits
-def zw(nn: Nat) -> Word(nn):
-  match nn:
-    case 0n:
-      WNil{}
-    case 1n+pp:
-      WCon{False{}, zw(pp)}
-
-# against a 0 bit, a word is below exactly when the bits above are
-def lt_fin_f(cc: Cmp, aa: Bool) -> {Cmp.is_lt(Word.cmp.fin(aa, False{}, cc)) == Cmp.is_lt(cc) : Bool}:
-  match cc:
-    case LT{}:
-      {==}
-    case GT{}:
-      {==}
-    case EQ{}:
-      match aa:
-        case False{}:
-          {==}
-        case True{}:
-          {==}
-
-# a word is never below zero
-def zw_nlt(nn: Nat, ww: Word(nn)) -> {Cmp.is_lt(Word.cmp(nn, ww, zw(nn))) == False{} : Bool}:
-  match nn:
-    case 0n:
-      match ww:
-        case WNil{}:
-          {==}
-    case 1n+(+pp):
-      match ww:
-        case WCon{bb, +tt}:
-          Equal.trans(Bool, Cmp.is_lt(Word.cmp.fin(bb, False{}, Word.cmp(pp, tt, zw(pp)))),
-            Cmp.is_lt(Word.cmp(pp, tt, zw(pp))), False{}, lt_fin_f(Word.cmp(pp, tt, zw(pp)), bb), zw_nlt(pp, tt))
-
-# below a word whose low bit is 0, the bits above are below
-def lt_up(
-  aa: Bool,
-  cc: Cmp,
-  h_lt: {Cmp.is_lt(Word.cmp.fin(aa, False{}, cc)) == True{} : Bool}
-) -> {Cmp.is_lt(cc) == True{} : Bool}:
-  Equal.trans(Bool, Cmp.is_lt(cc), Cmp.is_lt(Word.cmp.fin(aa, False{}, cc)), True{},
-    Equal.sym(Bool, Cmp.is_lt(Word.cmp.fin(aa, False{}, cc)), Cmp.is_lt(cc), lt_fin_f(cc, aa)), h_lt)
+# WP0: the other controls, one at a time through Eq.ctl.all: the five with
+# short escapes are ruled out by their hypotheses, and the others compute.
 
 # what esc_ctl says of a code point
 def ctl.eq(+uu: U32) -> Type:
@@ -4222,178 +4178,49 @@ def ctl.goal(+uu: U32) -> Type:
   {Chr{uu} != '\u{8}' : Char} -> {Chr{uu} != '\t' : Char} -> {Chr{uu} != '\n' : Char} ->
     {Chr{uu} != '\u{c}' : Char} -> {Chr{uu} != '\r' : Char} -> ctl.eq(uu)
 
-# the controls below U+0020, one at a time: the five with short escapes are
-# ruled out by their hypotheses, and the others compute
-def ctl5(
-  b0: Bool,
-  b1: Bool,
-  b2: Bool,
-  b3: Bool,
-  b4: Bool
-) -> ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{}, zw(26n)}}}}}}}):
-  match b0 b1 b2 b3 b4:
-    case False{} False{} False{} False{} False{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} False{} False{} False{} False{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} True{} False{} False{} False{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} True{} False{} False{} False{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} False{} True{} False{} False{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} False{} True{} False{} False{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} True{} True{} False{} False{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} True{} True{} False{} False{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} False{} False{} True{} False{}:
-      hb => _ht => _hn => _hf => _hr =>
-        Eq.bit.gone(&1, ctl.eq(U32{WCon{False{}, WCon{False{}, WCon{False{}, WCon{True{}, WCon{False{}, WCon{False{},
-          zw(26n)}}}}}}}), hb({==}))
-    case True{} False{} False{} True{} False{}:
-      _hb => ht => _hn => _hf => _hr =>
-        Eq.bit.gone(&1, ctl.eq(U32{WCon{True{}, WCon{False{}, WCon{False{}, WCon{True{}, WCon{False{}, WCon{False{},
-          zw(26n)}}}}}}}), ht({==}))
-    case False{} True{} False{} True{} False{}:
-      _hb => _ht => hn => _hf => _hr =>
-        Eq.bit.gone(&1, ctl.eq(U32{WCon{False{}, WCon{True{}, WCon{False{}, WCon{True{}, WCon{False{}, WCon{False{},
-          zw(26n)}}}}}}}), hn({==}))
-    case True{} True{} False{} True{} False{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} False{} True{} True{} False{}:
-      _hb => _ht => _hn => hf => _hr =>
-        Eq.bit.gone(&1, ctl.eq(U32{WCon{False{}, WCon{False{}, WCon{True{}, WCon{True{}, WCon{False{}, WCon{False{},
-          zw(26n)}}}}}}}), hf({==}))
-    case True{} False{} True{} True{} False{}:
-      _hb => _ht => _hn => _hf => hr =>
-        Eq.bit.gone(&1, ctl.eq(U32{WCon{True{}, WCon{False{}, WCon{True{}, WCon{True{}, WCon{False{}, WCon{False{},
-          zw(26n)}}}}}}}), hr({==}))
-    case False{} True{} True{} True{} False{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} True{} True{} True{} False{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} False{} False{} False{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} False{} False{} False{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} True{} False{} False{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} True{} False{} False{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} False{} True{} False{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} False{} True{} False{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} True{} True{} False{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} True{} True{} False{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} False{} False{} True{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} False{} False{} True{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} True{} False{} True{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} True{} False{} True{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} False{} True{} True{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} False{} True{} True{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case False{} True{} True{} True{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-    case True{} True{} True{} True{} True{}:
-      _hb => _ht => _hn => _hf => _hr => {==}
-
-# the bits above the fifth are zero and the fifth is 0, else the code point
-# is not below 32
-def ctl.at(
-  cc: Cmp,
-  b5: Bool,
-  +b0: Bool,
-  +b1: Bool,
-  +b2: Bool,
-  +b3: Bool,
-  +b4: Bool,
-  +rest: Word(26n),
-  ec: {Word.cmp(26n, rest, zw(26n)) == cc : Cmp},
-  h_lt: {Cmp.is_lt(Word.cmp.fin(b5, True{}, cc)) == True{} : Bool}
-) -> ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, rest}}}}}}}):
-  match cc:
-    case LT{}:
-      Eq.bit.gone(&1, ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, rest}}}}}}}),
-        Eq.bit.clash2(Equal.trans(Bool, True{}, Cmp.is_lt(Word.cmp(26n, rest, zw(26n))), False{},
-          Equal.sym(Bool, Cmp.is_lt(Word.cmp(26n, rest, zw(26n))), True{},
-            Equal.cong(Cmp, Bool, xx => Cmp.is_lt(xx), Word.cmp(26n, rest, zw(26n)), LT{}, ec)),
-          zw_nlt(26n, rest))))
-    case GT{}:
-      match b5:
-        case False{}:
-          Eq.bit.absurd(&1, ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{}, rest}}}}}}}),
-            h_lt)
-        case True{}:
-          Eq.bit.absurd(&1, ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{True{}, rest}}}}}}}),
-            h_lt)
-    case EQ{}:
-      match b5:
-        case True{}:
-          Eq.bit.absurd(&1, ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{True{}, rest}}}}}}}),
-            h_lt)
-        case False{}:
-          er = Equal.sym(Word(26n), rest, zw(26n), Eq.word_eq(26n, rest, zw(26n), ec))
-          %er : ctl.goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{}, _}}}}}}})
-          ctl5(b0, b1, b2, b3, b4)
-
-# a control below U+0020
-def ctl.lt(
-  uu: U32,
-  h_lt: {U32.is_lt(uu, 32) == True{} : Bool}
-) -> ctl.goal(uu):
-  match uu:
-    case U32{WCon{+b0, WCon{+b1, WCon{+b2, WCon{+b3, WCon{+b4, WCon{+b5, +rest}}}}}}}:
-      +c5 = Word.cmp.fin(b5, True{}, Word.cmp(26n, rest, zw(26n)))
-      +c4 = Word.cmp.fin(b4, False{}, c5)
-      +c3 = Word.cmp.fin(b3, False{}, c4)
-      +c2 = Word.cmp.fin(b2, False{}, c3)
-      +c1 = Word.cmp.fin(b1, False{}, c2)
-      h5 = lt_up(b4, c5, lt_up(b3, c4, lt_up(b2, c3, lt_up(b1, c2, lt_up(b0, c1, h_lt)))))
-      ctl.at(Word.cmp(26n, rest, zw(26n)), b5, b0, b1, b2, b3, b4, rest, {==}, h5)
-
-# U+007F
-def ctl.del(
-  +uu: U32,
-  ee: {U32.is_eq(uu, 127) == True{} : Bool}
-) -> ctl.goal(uu):
-  eu = Equal.cong(Char, U32, cc => Char.to_u32(cc), Chr{uu}, Chr{127}, Eq.u32_eq(uu, 127, ee))
-  %Equal.sym(U32, uu, 127, eu) : ctl.goal(_)
-  _hb => _ht => _hn => _hf => _hr => {==}
-
-# a control is below U+0020 or is U+007F
-def ctl.split(
-  +uu: U32,
-  lt: Bool,
-  eq: Bool,
-  elt: {U32.is_lt(uu, 32) == lt : Bool},
-  eeq: {U32.is_eq(uu, 127) == eq : Bool},
-  eo: {Bool.or(lt, eq) == True{} : Bool}
-) -> ctl.goal(uu):
-  match lt:
-    case True{}:
-      ctl.lt(uu, elt)
-    case False{}:
-      match eq:
-        case True{}:
-          ctl.del(uu, eeq)
-        case False{}:
-          Eq.bit.absurd(&1, ctl.goal(uu), eo)
-
 # every other control is \u00 and two lowercase hex digits
 def Laws.esc_ctl(c, h_c, h_b, h_t, h_n, h_f, h_r):
   match c:
     case Chr{+uu}:
-      ctl.split(uu, U32.is_lt(uu, 32), U32.is_eq(uu, 127), {==}, {==}, h_c)(h_b, h_t, h_n, h_f, h_r)
+      Eq.ctl.all(kk => ctl.goal(kk), uu, h_c,
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        hb => _ht => _hn => _hf => _hr =>
+          Eq.bit.gone(&1, ctl.eq(8), hb({==})),
+        _hb => ht => _hn => _hf => _hr =>
+          Eq.bit.gone(&1, ctl.eq(9), ht({==})),
+        _hb => _ht => hn => _hf => _hr =>
+          Eq.bit.gone(&1, ctl.eq(10), hn({==})),
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => hf => _hr =>
+          Eq.bit.gone(&1, ctl.eq(12), hf({==})),
+        _hb => _ht => _hn => _hf => hr =>
+          Eq.bit.gone(&1, ctl.eq(13), hr({==})),
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==},
+        _hb => _ht => _hn => _hf => _hr => {==})(h_b, h_t, h_n, h_f, h_r)
 
 # Every other character. Each test basic.cls makes answers False.
 
@@ -5618,7 +5445,8 @@ def Laws.header_blank_waits_for_segment(
 # scanner is back in LKeyQ with that character pushed onto its buffer; only
 # where an escape last returned it (back) differs, and nothing after the key
 # reads that. A per-character step takes the rest of the walk as a function
-# of back, so no lemma has to name it.
+# of back, so no lemma has to name it. The per-character lemmas are WP0's
+# quoted-segment family (qs, below), taken at a key's state.
 
 # a scanner inside the first quoted key of a document, its characters so far
 # reversed in buf
@@ -5629,19 +5457,6 @@ def kq(back: T.Lex, buf: List<&2, Char>) -> T.St:
 # the document of one pair named by a buffer, holding the integer 1
 def kq.doc(buf: List<&2, Char>) -> T.Doc:
   T.Doc{"", [T.VPair{T.buf.str.go(buf, ""), T.VInt{T.Plus{}, "1"}}]}
-
-# one character's escape read from a quoted key, then the rest of the text: the
-# rest is read with the character pushed, from wherever the escape left back
-def kq.Goal(
-  +uu: U32,
-  +back: T.Lex,
-  +buf: List<&2, Char>,
-  +rest: String,
-  +goal: T.Doc
-) -> Type:
-  (@bk: T.Lex -> {T.doc.read(rest, T.MScan{kq(bk, Chr{uu} <> buf)}) == goal : T.Doc}) ->
-    {T.doc.read(String.append(Laws.esc(Chr{uu}), rest), T.MScan{kq(back, buf)}) == goal
-      : T.Doc}
 
 # an `or` of two bits that each answered False
 def or.ff(
@@ -5656,93 +5471,250 @@ def or.ff(
     case False{}:
       eb
 
+# WP0: the quoted-segment family. A basic quoted segment is read the same
+# way in a key (LKeyQ, with LKeyE and LKeyU for its escapes) and in a header
+# (LHeadQ, with LHeadE and LHeadU); only the state each character returns to
+# differs, and the state after the closing quote. The lemmas below take which
+# one as a bit hd, and every field a quoted segment leaves alone as a
+# parameter, so key_reads_back reads its key with them at hd = False and a
+# header proof reads a segment with them at hd = True. Those fields are rw
+# (the rows), hs (heads), he (here), ps (parts), sk (the stack) and ab
+# (arrtab).
+
+# the state inside a basic quoted segment: a key's, or a header's when hd
+def qs.lex(hd: Bool) -> T.Lex:
+  match hd:
+    case False{}:
+      T.LKeyQ{}
+    case True{}:
+      T.LHeadQ{}
+
+# the state after the segment's closing quote
+def qs.close(hd: Bool) -> T.Lex:
+  match hd:
+    case False{}:
+      T.LAfter{}
+    case True{}:
+      T.LHeadGap{}
+
+# a scanner inside a basic quoted segment, its characters so far reversed in
+# buf, and back wherever the last escape left it
+def qs(
+  hd: Bool,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  parts: List<&2, String>,
+  stack: List<&2, T.Ctx>,
+  arrtab: Bool,
+  back: T.Lex,
+  buf: List<&2, Char>
+) -> T.St:
+  T.St{"", rows, heads, here, parts, buf, qs.lex(hd), back, T.QBasic{}, stack, T.HNone{},
+    0, 0, arrtab, False{}}
+
+# one character's escape read from a quoted segment, then the rest of the
+# text: the rest is read with the character pushed, from wherever the escape
+# left back
+def qs.Goal(
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc
+) -> Type:
+  (@bk: T.Lex -> {T.doc.read(rest, T.MScan{qs(hd, rw, hs, he, ps, sk, ab, bk, Chr{uu} <> buf)}) == goal
+    : T.Doc}) ->
+    {T.doc.read(String.append(Laws.esc(Chr{uu}), rest), T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, buf)})
+      == goal : T.Doc}
+
+# the fast step of a character in a quoted segment is the segment's full step
+def qs.fast(
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>
+) -> {T.read.fast(qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu}) == T.read.once2(T.lex.kq.go(U32.is_eq(uu, 34),
+  U32.is_eq(uu, 92), True{}, Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)),
+  qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu}, qs.close(hd), qs.lex(hd))) : T.St}:
+  match hd:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+# a quoted segment's state is no quote that opens a string
+def qs.wrap(
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>
+) -> {T.doc.wrap(qs(hd, rw, hs, he, ps, sk, ab, back, buf)) == T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, buf)}
+  : T.Mode}:
+  match hd:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
 # a character that is no control is pushed: str.bad passes it
-def kq.char(
+def qs.char(
   ctl: Bool,
   +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
   +back: T.Lex,
   +buf: List<&2, Char>,
   hc: {ctl == False{} : Bool}
 ) -> {T.read.once2(T.lex.kq.char.go(T.str.bad.go(ctl, U32.is_eq(uu, 9),
-  Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), False{}), kq(back, buf), Chr{uu},
-  T.LKeyQ{})) == kq(back, Chr{uu} <> buf) : T.St}:
+  Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), False{}), qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu},
+  qs.lex(hd))) == qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf) : T.St}:
   match ctl:
     case False{}:
       {==}
     case True{}:
       Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.char.go(T.str.bad.go(True{},
         U32.is_eq(uu, 9), Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), False{}),
-        kq(back, buf), Chr{uu}, T.LKeyQ{})) == kq(back, Chr{uu} <> buf) : T.St}, hc)
+        qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu}, qs.lex(hd)))
+        == qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf) : T.St}, hc)
 
 # a character that is no quote, no backslash and no newline is no closer and
 # no escape
-def kq.go(
+def qs.go(
   quote: Bool,
   bs: Bool,
   nl: Bool,
   +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
   +back: T.Lex,
   +buf: List<&2, Char>,
   hq: {quote == False{} : Bool},
   hb: {bs == False{} : Bool},
   hn: {nl == False{} : Bool},
   hc: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool}
-) -> {T.read.once2(T.lex.kq.go(quote, bs, True{}, nl, kq(back, buf), Chr{uu}, T.LAfter{},
-  T.LKeyQ{})) == kq(back, Chr{uu} <> buf) : T.St}:
+) -> {T.read.once2(T.lex.kq.go(quote, bs, True{}, nl, qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu},
+  qs.close(hd), qs.lex(hd))) == qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf) : T.St}:
   match quote:
     case True{}:
-      Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(True{}, bs, True{}, nl, kq(back, buf),
-        Chr{uu}, T.LAfter{}, T.LKeyQ{})) == kq(back, Chr{uu} <> buf) : T.St}, hq)
+      Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(True{}, bs, True{}, nl,
+        qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu}, qs.close(hd), qs.lex(hd)))
+        == qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf) : T.St}, hq)
     case False{}:
       match bs:
         case True{}:
           Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(False{}, True{}, True{}, nl,
-            kq(back, buf), Chr{uu}, T.LAfter{}, T.LKeyQ{})) == kq(back, Chr{uu} <> buf)
-            : T.St}, hb)
+            qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu}, qs.close(hd), qs.lex(hd)))
+            == qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf) : T.St}, hb)
         case False{}:
           match nl:
             case True{}:
               Eq.bit.absurd2(&2, {T.read.once2(T.lex.kq.go(False{}, False{}, True{}, True{},
-                kq(back, buf), Chr{uu}, T.LAfter{}, T.LKeyQ{})) == kq(back, Chr{uu} <> buf)
-                : T.St}, hn)
+                qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu}, qs.close(hd), qs.lex(hd)))
+                == qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf) : T.St}, hn)
             case False{}:
-              kq.char(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), uu, back, buf, hc)
+              qs.char(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), uu, hd, rw, hs, he, ps, sk, ab, back, buf,
+                hc)
+
+# the fast step pushes a character
+def qs.Fast(
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +back: T.Lex,
+  +buf: List<&2, Char>
+) -> Type:
+  {T.read.fast(qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu})
+    == qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf) : T.St}
 
 # the doc.scan dispatch sends such a character to the fast step, and an
-# apostrophe comes back from doc.wrap in LKeyQ
-def kq.q(
+# apostrophe comes back from doc.wrap in the segment's state
+def qs.q(
   dq: Bool,
   sq: Bool,
   cr: Bool,
   +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
   +back: T.Lex,
   +buf: List<&2, Char>,
   hq: {dq == False{} : Bool},
   hr: {cr == False{} : Bool},
-  fast: {T.read.fast(kq(back, buf), Chr{uu}) == kq(back, Chr{uu} <> buf) : T.St}
-) -> {T.doc.scan.q(dq, sq, cr, kq(back, buf), Chr{uu}) == T.MScan{kq(back, Chr{uu} <> buf)}
-  : T.Mode}:
+  fast: qs.Fast(uu, hd, rw, hs, he, ps, sk, ab, back, buf)
+) -> {T.doc.scan.q(dq, sq, cr, qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu})
+  == T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf)} : T.Mode}:
   match dq:
     case True{}:
-      Eq.bit.absurd2(&2, {T.doc.scan.q(True{}, sq, cr, kq(back, buf), Chr{uu})
-        == T.MScan{kq(back, Chr{uu} <> buf)} : T.Mode}, hq)
+      Eq.bit.absurd2(&2, {T.doc.scan.q(True{}, sq, cr, qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu})
+        == T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf)} : T.Mode}, hq)
     case False{}:
       match sq:
         case True{}:
-          Equal.cong(T.St, T.Mode, st => T.doc.wrap(st), T.read.fast(kq(back, buf), Chr{uu}),
-            kq(back, Chr{uu} <> buf), fast)
+          Equal.trans(T.Mode, T.doc.wrap(T.read.fast(qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu})),
+            T.doc.wrap(qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf)),
+            T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf)},
+            Equal.cong(T.St, T.Mode, st => T.doc.wrap(st),
+              T.read.fast(qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu}),
+              qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf), fast),
+            qs.wrap(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf))
         case False{}:
           match cr:
             case True{}:
-              Eq.bit.absurd2(&2, {T.doc.scan.q(False{}, False{}, True{}, kq(back, buf), Chr{uu})
-                == T.MScan{kq(back, Chr{uu} <> buf)} : T.Mode}, hr)
+              Eq.bit.absurd2(&2, {T.doc.scan.q(False{}, False{}, True{}, qs(hd, rw, hs, he, ps, sk, ab, back, buf),
+                Chr{uu}) == T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf)} : T.Mode}, hr)
             case False{}:
-              Equal.cong(T.St, T.Mode, st => T.MScan{st}, T.read.fast(kq(back, buf), Chr{uu}),
-                kq(back, Chr{uu} <> buf), fast)
+              Equal.cong(T.St, T.Mode, st => T.MScan{st},
+                T.read.fast(qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu}),
+                qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf), fast)
 
 # a character written as itself is pushed, and back stays where it was
-def kq.plain(
+def qs.plain(
   +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
   +back: T.Lex,
   +buf: List<&2, Char>,
   +rest: String,
@@ -5750,214 +5722,191 @@ def kq.plain(
   +e34: {U32.is_eq(uu, 34) == False{} : Bool},
   +e92: {U32.is_eq(uu, 92) == False{} : Bool},
   +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool},
-  ih: @bk: T.Lex -> {T.doc.read(rest, T.MScan{kq(bk, Chr{uu} <> buf)}) == goal : T.Doc}
-) -> {T.doc.read(String.append(Laws.esc(Chr{uu}), rest), T.MScan{kq(back, buf)}) == goal
-  : T.Doc}:
+  ih: @bk: T.Lex -> {T.doc.read(rest, T.MScan{qs(hd, rw, hs, he, ps, sk, ab, bk, Chr{uu} <> buf)}) == goal : T.Doc}
+) -> {T.doc.read(String.append(Laws.esc(Chr{uu}), rest), T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, buf)})
+  == goal : T.Doc}:
   +e10 = {ctl.off(uu, 10, ec, {==}) : {U32.is_eq(uu, 10) == False{} : Bool}}
   +e13 = {ctl.off(uu, 13, ec, {==}) : {U32.is_eq(uu, 13) == False{} : Bool}}
   ek = cls.plain(uu, ctl.off(uu, 8, ec, {==}), ctl.off(uu, 9, ec, {==}), e10,
     ctl.off(uu, 12, ec, {==}), e13, e34, e92, ec)
   %Equal.sym(T.BK, T.basic.cls(uu), T.BKCh{}, ek) : {T.doc.read(String.append(
     String.from_list(List.reverse(&2, Char, T.basic.disp(_, Chr{uu}, uu, []))), rest),
-    T.MScan{kq(back, buf)}) == goal : T.Doc}
+    T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, buf)}) == goal : T.Doc}
   Equal.trans(T.Doc,
-    T.doc.read(rest, T.doc.scan(kq(back, buf), Chr{uu})),
-    T.doc.read(rest, T.MScan{kq(back, Chr{uu} <> buf)}),
+    T.doc.read(rest, T.doc.scan(qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu})),
+    T.doc.read(rest, T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf)}),
     goal,
-    Equal.cong(T.Mode, T.Doc, md => T.doc.read(rest, md), T.doc.scan(kq(back, buf), Chr{uu}),
-      T.MScan{kq(back, Chr{uu} <> buf)},
-      kq.q(U32.is_eq(uu, 34), U32.is_eq(uu, 39), U32.is_eq(uu, 13), uu, back, buf, e34, e13,
-        kq.go(U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_eq(uu, 10),
-          U32.is_eq(uu, 13)), uu, back, buf, e34, e92, or.ff(U32.is_eq(uu, 10),
-          U32.is_eq(uu, 13), e10, e13), ec))),
+    Equal.cong(T.Mode, T.Doc, md => T.doc.read(rest, md),
+      T.doc.scan(qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu}),
+      T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf)},
+      qs.q(U32.is_eq(uu, 34), U32.is_eq(uu, 39), U32.is_eq(uu, 13), uu, hd, rw, hs, he, ps, sk, ab, back, buf, e34,
+        e13, Equal.trans(T.St, T.read.fast(qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu}),
+          T.read.once2(T.lex.kq.go(U32.is_eq(uu, 34), U32.is_eq(uu, 92), True{},
+            Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), qs(hd, rw, hs, he, ps, sk, ab, back, buf), Chr{uu},
+            qs.close(hd), qs.lex(hd))),
+          qs(hd, rw, hs, he, ps, sk, ab, back, Chr{uu} <> buf),
+          qs.fast(uu, hd, rw, hs, he, ps, sk, ab, back, buf),
+          qs.go(U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_eq(uu, 10),
+            U32.is_eq(uu, 13)), uu, hd, rw, hs, he, ps, sk, ab, back, buf, e34, e92, or.ff(U32.is_eq(uu, 10),
+            U32.is_eq(uu, 13), e10, e13), ec)))),
     ih(back))
 
-# the controls below U+0020, one at a time: each escape reads back by
-# computation, and leaves back at LKeyQ
-def kq.c5(
-  b0: Bool,
-  b1: Bool,
-  b2: Bool,
-  b3: Bool,
-  b4: Bool,
+# a quotation mark: its escape reads back by computation, and leaves back at
+# the segment's state
+def qs.q34(
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
   +back: T.Lex,
   +buf: List<&2, Char>,
   +rest: String,
   +goal: T.Doc
-) -> kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{}, zw(26n)}}}}}}},
-  back, buf, rest, goal):
-  match b0 b1 b2 b3 b4:
-    case False{} False{} False{} False{} False{}:
+) -> qs.Goal(34, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal):
+  match hd:
+    case False{}:
       ih => ih(T.LKeyQ{})
-    case True{} False{} False{} False{} False{}:
-      ih => ih(T.LKeyQ{})
-    case False{} True{} False{} False{} False{}:
-      ih => ih(T.LKeyQ{})
-    case True{} True{} False{} False{} False{}:
-      ih => ih(T.LKeyQ{})
-    case False{} False{} True{} False{} False{}:
-      ih => ih(T.LKeyQ{})
-    case True{} False{} True{} False{} False{}:
-      ih => ih(T.LKeyQ{})
-    case False{} True{} True{} False{} False{}:
-      ih => ih(T.LKeyQ{})
-    case True{} True{} True{} False{} False{}:
-      ih => ih(T.LKeyQ{})
-    case False{} False{} False{} True{} False{}:
-      ih => ih(T.LKeyQ{})
-    case True{} False{} False{} True{} False{}:
-      ih => ih(T.LKeyQ{})
-    case False{} True{} False{} True{} False{}:
-      ih => ih(T.LKeyQ{})
-    case True{} True{} False{} True{} False{}:
-      ih => ih(T.LKeyQ{})
-    case False{} False{} True{} True{} False{}:
-      ih => ih(T.LKeyQ{})
-    case True{} False{} True{} True{} False{}:
-      ih => ih(T.LKeyQ{})
-    case False{} True{} True{} True{} False{}:
-      ih => ih(T.LKeyQ{})
-    case True{} True{} True{} True{} False{}:
-      ih => ih(T.LKeyQ{})
-    case False{} False{} False{} False{} True{}:
-      ih => ih(T.LKeyQ{})
-    case True{} False{} False{} False{} True{}:
-      ih => ih(T.LKeyQ{})
-    case False{} True{} False{} False{} True{}:
-      ih => ih(T.LKeyQ{})
-    case True{} True{} False{} False{} True{}:
-      ih => ih(T.LKeyQ{})
-    case False{} False{} True{} False{} True{}:
-      ih => ih(T.LKeyQ{})
-    case True{} False{} True{} False{} True{}:
-      ih => ih(T.LKeyQ{})
-    case False{} True{} True{} False{} True{}:
-      ih => ih(T.LKeyQ{})
-    case True{} True{} True{} False{} True{}:
-      ih => ih(T.LKeyQ{})
-    case False{} False{} False{} True{} True{}:
-      ih => ih(T.LKeyQ{})
-    case True{} False{} False{} True{} True{}:
-      ih => ih(T.LKeyQ{})
-    case False{} True{} False{} True{} True{}:
-      ih => ih(T.LKeyQ{})
-    case True{} True{} False{} True{} True{}:
-      ih => ih(T.LKeyQ{})
-    case False{} False{} True{} True{} True{}:
-      ih => ih(T.LKeyQ{})
-    case True{} False{} True{} True{} True{}:
-      ih => ih(T.LKeyQ{})
-    case False{} True{} True{} True{} True{}:
-      ih => ih(T.LKeyQ{})
-    case True{} True{} True{} True{} True{}:
-      ih => ih(T.LKeyQ{})
+    case True{}:
+      ih => ih(T.LHeadQ{})
 
-# the bits above the fifth are zero and the fifth is 0, else the code point
-# is not below 32 (as ctl.at)
-def kq.at(
-  cc: Cmp,
-  b5: Bool,
-  +b0: Bool,
-  +b1: Bool,
-  +b2: Bool,
-  +b3: Bool,
-  +b4: Bool,
-  +hi: Word(26n),
-  ec: {Word.cmp(26n, hi, zw(26n)) == cc : Cmp},
-  h_lt: {Cmp.is_lt(Word.cmp.fin(b5, True{}, cc)) == True{} : Bool},
+# and a backslash
+def qs.q92(
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
   +back: T.Lex,
   +buf: List<&2, Char>,
   +rest: String,
   +goal: T.Doc
-) -> kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5, hi}}}}}}}, back, buf,
-  rest, goal):
-  match cc:
-    case LT{}:
-      Eq.bit.gone(&1, kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{b5,
-        hi}}}}}}}, back, buf, rest, goal),
-        Eq.bit.clash2(Equal.trans(Bool, True{}, Cmp.is_lt(Word.cmp(26n, hi, zw(26n))), False{},
-          Equal.sym(Bool, Cmp.is_lt(Word.cmp(26n, hi, zw(26n))), True{},
-            Equal.cong(Cmp, Bool, xx => Cmp.is_lt(xx), Word.cmp(26n, hi, zw(26n)), LT{}, ec)),
-          zw_nlt(26n, hi))))
-    case GT{}:
-      match b5:
-        case False{}:
-          Eq.bit.absurd(&1, kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4,
-            WCon{False{}, hi}}}}}}}, back, buf, rest, goal), h_lt)
-        case True{}:
-          Eq.bit.absurd(&1, kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4,
-            WCon{True{}, hi}}}}}}}, back, buf, rest, goal), h_lt)
-    case EQ{}:
-      match b5:
-        case True{}:
-          Eq.bit.absurd(&1, kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4,
-            WCon{True{}, hi}}}}}}}, back, buf, rest, goal), h_lt)
-        case False{}:
-          er = Equal.sym(Word(26n), hi, zw(26n), Eq.word_eq(26n, hi, zw(26n), ec))
-          %er : kq.Goal(U32{WCon{b0, WCon{b1, WCon{b2, WCon{b3, WCon{b4, WCon{False{},
-            _}}}}}}}, back, buf, rest, goal)
-          kq.c5(b0, b1, b2, b3, b4, back, buf, rest, goal)
+) -> qs.Goal(92, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal):
+  match hd:
+    case False{}:
+      ih => ih(T.LKeyQ{})
+    case True{}:
+      ih => ih(T.LHeadQ{})
 
-# a control below U+0020
-def kq.lt(
-  uu: U32,
-  h_lt: {U32.is_lt(uu, 32) == True{} : Bool},
-  +back: T.Lex,
-  +buf: List<&2, Char>,
-  +rest: String,
-  +goal: T.Doc
-) -> kq.Goal(uu, back, buf, rest, goal):
-  match uu:
-    case U32{WCon{+b0, WCon{+b1, WCon{+b2, WCon{+b3, WCon{+b4, WCon{+b5, +hi}}}}}}}:
-      +c5 = Word.cmp.fin(b5, True{}, Word.cmp(26n, hi, zw(26n)))
-      +c4 = Word.cmp.fin(b4, False{}, c5)
-      +c3 = Word.cmp.fin(b3, False{}, c4)
-      +c2 = Word.cmp.fin(b2, False{}, c3)
-      +c1 = Word.cmp.fin(b1, False{}, c2)
-      h5 = lt_up(b4, c5, lt_up(b3, c4, lt_up(b2, c3, lt_up(b1, c2, lt_up(b0, c1, h_lt)))))
-      kq.at(Word.cmp(26n, hi, zw(26n)), b5, b0, b1, b2, b3, b4, hi, {==}, h5, back, buf, rest,
-        goal)
-
-# one code point k that the test found: the escape reads back by computation
-def kq.is(
+# a control: each of the thirty-three escapes reads back by computation, and
+# leaves back at the segment's state
+def qs.ctl(
   +uu: U32,
-  +kk: U32,
-  ee: {U32.is_eq(uu, kk) == True{} : Bool},
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
   +back: T.Lex,
   +buf: List<&2, Char>,
   +rest: String,
   +goal: T.Doc,
-  at: kq.Goal(kk, back, buf, rest, goal)
-) -> kq.Goal(uu, back, buf, rest, goal):
-  eu = Equal.cong(Char, U32, cc => Char.to_u32(cc), Chr{uu}, Chr{kk}, Eq.u32_eq(uu, kk, ee))
-  %Equal.sym(U32, uu, kk, eu) : kq.Goal(_, back, buf, rest, goal)
-  at
+  h_c: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == True{} : Bool}
+) -> qs.Goal(uu, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal):
+  match hd:
+    case False{}:
+      Eq.ctl.all(kk => qs.Goal(kk, False{}, rw, hs, he, ps, sk, ab, back, buf, rest, goal), uu,
+        h_c,
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}),
+        ih => ih(T.LKeyQ{}))
+    case True{}:
+      Eq.ctl.all(kk => qs.Goal(kk, True{}, rw, hs, he, ps, sk, ab, back, buf, rest, goal), uu,
+        h_c,
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}),
+        ih => ih(T.LHeadQ{}))
 
-# a control is below U+0020 or is U+007F
-def kq.ctl(
+# one code point k that the test found: its answer answers for the character
+def qs.is(
   +uu: U32,
-  lt: Bool,
-  eq: Bool,
-  elt: {U32.is_lt(uu, 32) == lt : Bool},
-  eeq: {U32.is_eq(uu, 127) == eq : Bool},
-  eo: {Bool.or(lt, eq) == True{} : Bool},
+  +kk: U32,
+  ee: {U32.is_eq(uu, kk) == True{} : Bool},
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
   +back: T.Lex,
   +buf: List<&2, Char>,
   +rest: String,
-  +goal: T.Doc
-) -> kq.Goal(uu, back, buf, rest, goal):
-  match lt:
-    case True{}:
-      kq.lt(uu, elt, back, buf, rest, goal)
-    case False{}:
-      match eq:
-        case True{}:
-          kq.is(uu, 127, eeq, back, buf, rest, goal, ih => ih(T.LKeyQ{}))
-        case False{}:
-          Eq.bit.absurd(&1, kq.Goal(uu, back, buf, rest, goal), eo)
+  +goal: T.Doc,
+  at: qs.Goal(kk, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal)
+) -> qs.Goal(uu, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal):
+  eu = Equal.cong(Char, U32, cc => Char.to_u32(cc), Chr{uu}, Chr{kk}, Eq.u32_eq(uu, kk, ee))
+  %Equal.sym(U32, uu, kk, eu) : qs.Goal(_, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal)
+  at
 
 # every character: a quote, a backslash, a control, or one written as itself
-def kq.split(
+def qs.split(
   +uu: U32,
   q34: Bool,
   b92: Bool,
@@ -5965,63 +5914,101 @@ def kq.split(
   +e34: {U32.is_eq(uu, 34) == q34 : Bool},
   +e92: {U32.is_eq(uu, 92) == b92 : Bool},
   +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == ctl : Bool},
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
   +back: T.Lex,
   +buf: List<&2, Char>,
   +rest: String,
   +goal: T.Doc
-) -> kq.Goal(uu, back, buf, rest, goal):
+) -> qs.Goal(uu, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal):
   match q34:
     case True{}:
-      kq.is(uu, 34, e34, back, buf, rest, goal, ih => ih(T.LKeyQ{}))
+      qs.is(uu, 34, e34, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal,
+        qs.q34(hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal))
     case False{}:
       match b92:
         case True{}:
-          kq.is(uu, 92, e92, back, buf, rest, goal, ih => ih(T.LKeyQ{}))
+          qs.is(uu, 92, e92, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal,
+            qs.q92(hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal))
         case False{}:
           match ctl:
             case True{}:
-              kq.ctl(uu, U32.is_lt(uu, 32), U32.is_eq(uu, 127), {==}, {==}, ec, back, buf,
-                rest, goal)
+              qs.ctl(uu, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal, ec)
             case False{}:
-              ih => kq.plain(uu, back, buf, rest, goal, e34, e92, ec, ih)
+              ih => qs.plain(uu, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal, e34, e92, ec, ih)
 
-# one character of a quoted key
-def kq.one(
+# one character of a quoted segment
+def qs.one(
   +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
   +back: T.Lex,
   +buf: List<&2, Char>,
   +rest: String,
   +goal: T.Doc
-) -> kq.Goal(uu, back, buf, rest, goal):
-  kq.split(uu, U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_lt(uu, 32),
-    U32.is_eq(uu, 127)), {==}, {==}, {==}, back, buf, rest, goal)
+) -> qs.Goal(uu, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal):
+  qs.split(uu, U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_lt(uu, 32),
+    U32.is_eq(uu, 127)), {==}, {==}, {==}, hd, rw, hs, he, ps, sk, ab, back, buf, rest, goal)
 
-# every character of a name, as escs writes it, then the closing quote and
-# " = 1": the document is one pair named by the buffer
-def kq.body(
+# every character of a name, as escs writes it, read from a quoted segment:
+# the rest is read with the name's characters pushed, from wherever the last
+# escape left back
+def qs.escs(
   ss: String,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
   +back: T.Lex,
-  +buf: List<&2, Char>
-) -> {T.doc.read(String.append(Laws.escs(ss), "\" = 1"), T.MScan{kq(back, buf)})
-  == kq.doc(rev.onto(ss, buf)) : T.Doc}:
+  +buf: List<&2, Char>,
+  +rest: String,
+  +goal: T.Doc,
+  ih: @bk: T.Lex -> {T.doc.read(rest, T.MScan{qs(hd, rw, hs, he, ps, sk, ab, bk, rev.onto(ss, buf))}) == goal : T.Doc}
+) -> {T.doc.read(String.append(Laws.escs(ss), rest), T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, buf)}) == goal
+  : T.Doc}:
   match ss:
     case SNil{}:
-      {==}
+      ih(back)
     case SCon{hh, +tt}:
       match hh:
         case Chr{+uu}:
           Equal.trans(T.Doc,
-            T.doc.read(String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)),
-              "\" = 1"), T.MScan{kq(back, buf)}),
-            T.doc.read(String.append(Laws.esc(Chr{uu}), String.append(Laws.escs(tt),
-              "\" = 1")), T.MScan{kq(back, buf)}),
-            kq.doc(rev.onto(tt, Chr{uu} <> buf)),
-            Equal.cong(String, T.Doc, xs => T.doc.read(xs, T.MScan{kq(back, buf)}),
-              String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), "\" = 1"),
-              String.append(Laws.esc(Chr{uu}), String.append(Laws.escs(tt), "\" = 1")),
-              Eq.append_assoc(Laws.esc(Chr{uu}), Laws.escs(tt), "\" = 1")),
-            kq.one(uu, back, buf, String.append(Laws.escs(tt), "\" = 1"),
-              kq.doc(rev.onto(tt, Chr{uu} <> buf)))(bk => kq.body(tt, bk, Chr{uu} <> buf)))
+            T.doc.read(String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), rest),
+              T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, buf)}),
+            T.doc.read(String.append(Laws.esc(Chr{uu}), String.append(Laws.escs(tt), rest)),
+              T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, buf)}),
+            goal,
+            Equal.cong(String, T.Doc, xs => T.doc.read(xs, T.MScan{qs(hd, rw, hs, he, ps, sk, ab, back, buf)}),
+              String.append(String.append(Laws.esc(Chr{uu}), Laws.escs(tt)), rest),
+              String.append(Laws.esc(Chr{uu}), String.append(Laws.escs(tt), rest)),
+              Eq.append_assoc(Laws.esc(Chr{uu}), Laws.escs(tt), rest)),
+            qs.one(uu, hd, rw, hs, he, ps, sk, ab, back, buf, String.append(Laws.escs(tt), rest), goal)(
+              bk => qs.escs(tt, hd, rw, hs, he, ps, sk, ab, bk, Chr{uu} <> buf, rest, goal, ih)))
+
+# every character of a name, as escs writes it, then the closing quote and
+# " = 1": the document is one pair named by the buffer, whatever the last
+# escape left in back
+def kq.body(
+  +ss: String,
+  +back: T.Lex,
+  +buf: List<&2, Char>
+) -> {T.doc.read(String.append(Laws.escs(ss), "\" = 1"), T.MScan{kq(back, buf)})
+  == kq.doc(rev.onto(ss, buf)) : T.Doc}:
+  qs.escs(ss, False{}, [], [], [], [], [], False{}, back, buf, "\" = 1",
+    kq.doc(rev.onto(ss, buf)), _bk => {==})
 
 # a buffer of a name's characters names the pair by the name
 def kq.name(
