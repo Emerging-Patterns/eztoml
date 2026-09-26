@@ -6914,3 +6914,62 @@ law float_not_date_time:
   for +cs: List<&2, Char>
   for +h: {abnf.float(cs) == True{} : Bool}
   {abnf.date_time(cs) == False{} : Bool}
+
+# WP-T1
+#
+# Datetime words, exact in both directions (docs/rfc/eztoml-grammar-proofs.md,
+# WP-T1). word.val gives a datetime exactly when the word matches one of
+# toml.abnf's four date-time rules (abnf.date_time) with every field within
+# RFC 3339's ranges (prose.date_time_in_range), and the datetime is the one
+# the word denotes (g.val). The laws are over any list of characters, so they
+# cover a lowercase t or z, a space between the date and the time (the scan
+# keeps it in the word after a date-shaped buffer, the LDate state), a
+# fraction of any length, Z or a numeric offset, and every word no rule
+# matches. The lift over parse is WP-V's.
+
+# a value compared with a datetime: the datetime it holds, or none
+def t1.val_when(vv: T.Val, ww: T.When) -> Bool:
+  match vv:
+    case T.VWhen{when}:
+      when.eq(ww, when)
+    case _:
+      False{}
+
+# a bare word's outcome compared with a datetime: true when the word reads as
+# that datetime, and false when it reads as another value, another datetime
+# or no value
+def t1.got_when(gg: T.Got, ww: T.When) -> Bool:
+  match gg:
+    case T.GotVal{vv}:
+      t1.val_when(vv, ww)
+    case T.GotBad{_why}:
+      False{}
+
+# LAW: a bare word reads as a datetime exactly when it matches one of
+# toml.abnf's four date-time rules (offset-date-time, local-date-time,
+# local-date, local-time: T, t or a space between date and time, Z, z or a
+# numeric offset, a fraction of any length) with every field within RFC
+# 3339's ranges, and the datetime it reads as is the one the word denotes
+# TOML-TIME-1
+law date_time_word:
+  for +cs: List<&2, Char>
+  for +w: T.When
+  {t1.got_when(T.word.val(cs), w) == Bool.and(g.ok.val(GvDateTime{cs}, RVal{}), g.val(GvDateTime{cs}, T.VWhen{w}))
+    : Bool}
+
+# LAW: a bare word that matches a date-time rule within the ranges reads as
+# the datetime it denotes
+# TOML-TIME-1
+law date_time_word_read:
+  for +cs: List<&2, Char>
+  for +h: {g.ok.val(GvDateTime{cs}, RVal{}) == True{} : Bool}
+  {T.word.val(cs) == T.GotVal{T.VWhen{g.dt.when(cs)}} : T.Got}
+
+# LAW: render writes every well-formed datetime as a word that matches a
+# date-time rule within the ranges and denotes that datetime
+# TOML-TIME-1
+law date_time_render:
+  for +w: T.When
+  for +h: {T.wf.when(w) == True{} : Bool}
+  {Bool.and(g.ok.val(GvDateTime{String.to_list(T.render.atom(T.VWhen{w}))}, RVal{}),
+    g.val(GvDateTime{String.to_list(T.render.atom(T.VWhen{w}))}, T.VWhen{w})) == True{} : Bool}
