@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.6.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.5.0...v0.6.0) (2026-09-26)
+
+
+### Features
+
+* **laws:** TOML-KEY-3, keys in any spelling read back from every key position ([#52](https://github.com/Emerging-Patterns/eztoml/issues/52)) ([630fe66](https://github.com/Emerging-Patterns/eztoml/commit/630fe661341a23ccae1156e3f3a730cd08afcfc1))
+* **laws:** WP-A chunk 1, an error stays, and headers and comments read as replay ([#67](https://github.com/Emerging-Patterns/eztoml/issues/67)) ([bbd3366](https://github.com/Emerging-Patterns/eztoml/commit/bbd3366c86ec3f2be0039a83692d8c17bb96fdeb))
+* **laws:** WP-A, every short derivation parses to its replay ([#68](https://github.com/Emerging-Patterns/eztoml/issues/68)) ([65237e0](https://github.com/Emerging-Patterns/eztoml/commit/65237e0008ec2357a49a70ddac56f085de6e7523))
+* **laws:** WP-G, toml.abnf transcribed as the grammar relation ([#60](https://github.com/Emerging-Patterns/eztoml/issues/60)) ([152cb83](https://github.com/Emerging-Patterns/eztoml/commit/152cb839ef260db1226a1c1e288b41647abd1d9c))
+* **laws:** WP-N1, integer, float and boolean words exact in both directions ([#64](https://github.com/Emerging-Patterns/eztoml/issues/64)) ([5de5b3c](https://github.com/Emerging-Patterns/eztoml/commit/5de5b3cef61b64855caa33be842e123d900c369d))
+* **laws:** WP-S1, strings of every form read as the text they denote; TOML-STR-1 proved ([#63](https://github.com/Emerging-Patterns/eztoml/issues/63)) ([8e28146](https://github.com/Emerging-Patterns/eztoml/commit/8e2814692ea31bd2ca395bc71655eef403c7d479))
+* **laws:** WP-T1, datetime words exact in both directions ([#61](https://github.com/Emerging-Patterns/eztoml/issues/61)) ([f28b8d5](https://github.com/Emerging-Patterns/eztoml/commit/f28b8d590c96d7a5bfc2c93041c5e9c3c20e5c31))
+* **laws:** WP-V, bare words read over parse; TOML-NUM-1, NUM-2 and TIME-1 proved ([#66](https://github.com/Emerging-Patterns/eztoml/issues/66)) ([a5cb83e](https://github.com/Emerging-Patterns/eztoml/commit/a5cb83e6c0d0e8619ac273ea78914057e31b9056))
+* **proof:** an induction over parse for any invariant of the scanner's state ([#55](https://github.com/Emerging-Patterns/eztoml/issues/55)) ([d981c82](https://github.com/Emerging-Patterns/eztoml/commit/d981c82bf52d5afb79531541ca0c575a07440527))
+* **proof:** TOML-KEY-3 proved, a key is found where it is put ([#56](https://github.com/Emerging-Patterns/eztoml/issues/56)) ([65756da](https://github.com/Emerging-Patterns/eztoml/commit/65756da4fdd955085f634c65b2e6b83ed2c5cc54))
+* **proof:** WP-R spike, TEXT-1's refusal direction over the header and key states ([#62](https://github.com/Emerging-Patterns/eztoml/issues/62)) ([b129c22](https://github.com/Emerging-Patterns/eztoml/commit/b129c22404b6092707bf194bf767bcde0db0ade8))
+
+
+### Bug Fixes
+
+* a tab between a date and a time no longer reads as a datetime ([#65](https://github.com/Emerging-Patterns/eztoml/issues/65)) ([d0eda6a](https://github.com/Emerging-Patterns/eztoml/commit/d0eda6adf201790c0cfce3d09ceb7ffd9f221b88))
+
 ## [0.5.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.4.0...v0.5.0) (2026-09-25)
 
 
