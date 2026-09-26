@@ -47,6 +47,12 @@ bin/demo.bin
 
 `nix build` builds the same fixture to `result/bin/demo`.
 
+`parse` takes text, not bytes. Bend's `File.read` replaces each invalid UTF-8
+byte with U+FFFD rather than rejecting it, and U+FFFD is valid in a comment or
+a string, so `parse` reads such a file as the valid text it has become. When
+invalid bytes must be refused, check the file as UTF-8 before `parse`
+(TOML-TRUST-3).
+
 ## Guarantees
 
 [SPEC.md](SPEC.md) lists every behavior eztoml guarantees, against [TOML v1.0.0](https://toml.io/en/v1.0.0) and [toml.abnf](https://github.com/toml-lang/toml/blob/1.0.0/toml.abnf), each either proved by a quantified law in `LAWS.bend` or named as a trusted assumption. A row marked pending is not guaranteed yet. `nix flake check` runs the proof gate (`bend PROOF.bend` must print exactly `All terms check.` first) and bolt, whose `trace` rule checks that SPEC.md and the laws agree. The headline is the round trip: a document `render` writes reads back as the same document (TOML-RT-1).

@@ -265,5 +265,6 @@ Decided with the REVIEW items. Each lands as its own change, with master's resul
 - Indexing into arrays and arrays of tables in `at`.
 - Errors with a position: every library in the comparison says where a document went wrong.
 - TOML v1.1.
+- A byte-level entry point that decodes UTF-8 and refuses invalid bytes, with its own row, since Bend's `File.read` replaces an invalid byte with U+FFFD rather than rejecting it (grammar plan, REVIEW-G8).
 - Headers computed from keys (see Abandoned Ideas).
 - ez's EZ-DOC-1 and EZ-LED-4 resting on TOML-RT-1, and ez's `lockable`/`renderable` restrictions for v0.1.0 lifted.
