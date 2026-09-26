@@ -7312,6 +7312,24 @@ def r1.gp.key(buf: List<&2, Char>, stack: List<&2, T.Ctx>) -> List<&2, R1Fr>:
     case _b <> _bs:
       RfKBare{} <> (RfKAfter{} <> r1.vend(stack))
 
+# LAfter's: the rest of a keyval's key, with nothing buffered; a state with
+# a character buffered is one no step reaches
+def r1.gp.aft(buf: List<&2, Char>, stack: List<&2, T.Ctx>) -> List<&2, R1Fr>:
+  match buf:
+    case []:
+      RfKAfter{} <> r1.vend(stack)
+    case _b <> _bs:
+      [RfAny{}]
+
+# LVal's: ws and a value, with nothing buffered; a state with a character
+# buffered is one no step reaches
+def r1.gp.val(buf: List<&2, Char>, stack: List<&2, T.Ctx>) -> List<&2, R1Fr>:
+  match buf:
+    case []:
+      RfVal{} <> r1.after(stack)
+    case _b <> _bs:
+      [RfAny{}]
+
 # the position of a scanner state's lex state and the fields it reads: at
 # the top level or after an expression, with no frame open; in a comment; in
 # a header's key (ending in r1.hend) or a keyval's key (ending in r1.vend):
@@ -7355,7 +7373,7 @@ def r1.gp0(
     case T.LKeyDot{}:
       RfWs{} <> (RfKSeg{} <> (RfKAfter{} <> r1.vend(stack)))
     case T.LAfter{}:
-      RfKAfter{} <> r1.vend(stack)
+      r1.gp.aft(buf, stack)
     case T.LKeyQ{}:
       r1.gp.q(qkind, r1.vend(stack))
     case T.LKeyE{}:
@@ -7363,7 +7381,7 @@ def r1.gp0(
     case T.LKeyU{}:
       r1.gp.u(qkind, r1.vend(stack), uni, left)
     case T.LVal{}:
-      RfVal{} <> r1.after(stack)
+      r1.gp.val(buf, stack)
     case T.LSink{}:
       [RfAny{}]
     case _l:

@@ -69877,7 +69877,6 @@ def r1.af.go(
   +hs: List<&2, String>,
   +he: List<&2, String>,
   +pt: List<&2, String>,
-  +bf: List<&2, Char>,
   +bk: T.Lex,
   +qk: T.QKind,
   +sk: List<&2, T.Ctx>,
@@ -69885,39 +69884,39 @@ def r1.af.go(
   +lf: U32,
   +at: Bool,
   +tt: String,
-  en: sr.N(tt, r1.afM(sp, dot, eq, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
-  ih: r1.CC(r1.afM(sp, dot, eq, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
-) -> Laws.r1.C(T.MScan{r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  en: sr.N(tt, r1.afM(sp, dot, eq, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.afM(sp, dot, eq, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SAft(bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
   match sp:
     case True{}:
       r1.x.vws(cc, tt, Laws.RfVal{} <> Laws.r1.after(sk), r1.spws(cc, esp), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
-        T.ch.sp(xx), esp, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at), tt, ih))
+        T.ch.sp(xx), esp, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, [], T.LAfter{}, bk, qk, sk, un, lf, at), tt, ih))
     case False{}:
       match dot:
         case True{}:
           r1.at(cc, '.', edt, Laws.RfKAfter{} <> Laws.r1.vend(sk), tt, r1.x.dot(tt, Laws.r1.vend(sk), r1.kk(qq, lit, cr,
-            cc, eqq, elt, ecr, xx => Char.is_eq(xx, '.'), edt, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf,
+            cc, eqq, elt, ecr, xx => Char.is_eq(xx, '.'), edt, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, [],
             T.LKeyDot{}, bk, qk, sk, un, lf, at), tt, ih)))
         case False{}:
           match eq:
             case True{}:
               r1.at(cc, '=', eeq, Laws.RfKAfter{} <> Laws.r1.vend(sk), tt, r1.x.eq(tt, Laws.r1.after(sk), r1.kk(qq, lit,
-                cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '='), eeq, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf,
+                cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '='), eeq, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, [],
                 T.LVal{}, bk, qk, sk, un, lf, at), tt, ih)))
             case False{}:
               match hash:
                 case True{}:
-                  r1.no(r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.kk(qq, lit, cr, cc, eqq,
+                  r1.no(r1.SAft(bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at), cc, tt, r1.kk(qq, lit, cr, cc, eqq,
                     elt, ecr, xx => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==}, T.read.once2(T.com.enter(r1.SAft(bd, rw,
-                    hs, he, pt, bf, bk, qk, sk, un, lf, at), T.LAfter{})), tt, ih))
+                    hs, he, pt, [], bk, qk, sk, un, lf, at), T.LAfter{})), tt, ih))
                 case False{}:
                   match nl:
                     case True{}:
-                      r1.no(r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw,
-                        hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, 'n', "ewline in key", tt, en))
+                      r1.no(r1.SAft(bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw,
+                        hs, he, pt, [], T.LAfter{}, bk, qk, sk, un, lf, at, 'n', "ewline in key", tt, en))
                     case False{}:
-                      r1.no(r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw,
-                        hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, 'i', "nvalid key", tt, en))
+                      r1.no(r1.SAft(bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw,
+                        hs, he, pt, [], T.LAfter{}, bk, qk, sk, un, lf, at, 'i', "nvalid key", tt, en))
 
 # WP-R: LAfter's obligation, for every character
 def r1.ob.after(
@@ -69926,7 +69925,7 @@ def r1.ob.after(
   +hs: List<&2, String>,
   +he: List<&2, String>,
   +pt: List<&2, String>,
-  +bf: List<&2, Char>,
+  bf: List<&2, Char>,
   +bk: T.Lex,
   +qk: T.QKind,
   +sk: List<&2, T.Ctx>,
@@ -69936,9 +69935,13 @@ def r1.ob.after(
   +cc: Char,
   +tt: String
 ) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, cc, tt):
-  _ec => en => ih => r1.af.go(T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc, '#'), T.ch.nl(cc),
-    Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, {==},
-    {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt, en, ih)
+  match bf:
+    case []:
+      _ec => en => ih => r1.af.go(T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc, '#'),
+        T.ch.nl(cc), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==},
+        {==}, {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, tt, en, ih)
+    case _b <> _bs:
+      _ec => _en => _ih => Unit{}
 
 # LKeyDot's state
 def r1.SKDot(
