@@ -7610,3 +7610,65 @@ law string_parses_as_denoted_in_inline_table:
   for es: {short(String.append(k, String.append(" = {v = ", g.str.text(st, "}\n")))) == True{} : Bool}
   {own(T.parse(String.append(k, String.append(" = {v = ", g.str.text(st, "}\n")))))
     == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VStr{g.str.chars(st)}}]}}]} : T.Doc}
+
+# WP-N1
+#
+# The integer, float and boolean words, exact in both directions
+# (docs/rfc/eztoml-grammar-proofs.md, WP-N1): word.val reads a bare word as a
+# value of one of these kinds exactly when the word matches that kind's rule
+# of toml.abnf (an integer within signed 64 bits, as prose.int_in_range
+# says), and the value is the one g.val says the word denotes. Each law holds
+# for every value, so a word with no rule of the kind reads as no value of
+# it.
+
+# whether a bare word's reading is the integer vv: vv's sign and digits are
+# the reading's
+def n1.got.int(gg: T.Got, vv: T.Val) -> Bool:
+  match gg vv:
+    case T.GotVal{T.VInt{s1, d1}} T.VInt{s2, d2}:
+      Bool.and(sign.eq(s2, s1), String.eq(d2, d1))
+    case _g _v:
+      False{}
+
+# whether a bare word's reading is the float vv: vv's sign and spelling are
+# the reading's
+def n1.got.flo(gg: T.Got, vv: T.Val) -> Bool:
+  match gg vv:
+    case T.GotVal{T.VFlo{s1, t1}} T.VFlo{s2, t2}:
+      Bool.and(sign.eq(s2, s1), String.eq(t2, t1))
+    case _g _v:
+      False{}
+
+# whether a bare word's reading is the boolean vv: vv's bit is the reading's
+def n1.got.bool(gg: T.Got, vv: T.Val) -> Bool:
+  match gg vv:
+    case T.GotVal{T.VBool{b1}} T.VBool{b2}:
+      bit.eq(b2, b1)
+    case _g _v:
+      False{}
+
+# LAW: a bare word reads as the integer v exactly when it matches toml.abnf's
+# integer rule, lies within signed 64 bits, and denotes v: its sign, and its
+# value's decimal digits with no leading zero
+# TOML-NUM-1
+law integer_word_exact:
+  for +cs: List<&2, Char>
+  for +v: T.Val
+  {n1.got.int(T.word.val(cs), v) == Bool.and(Bool.and(abnf.integer(cs), prose.int_in_range(cs)),
+    g.val(GvInteger{cs}, v)) : Bool}
+
+# LAW: a bare word reads as the float v exactly when it matches toml.abnf's
+# float rule and denotes v: its sign, and its spelling with the sign and
+# every underscore removed
+# TOML-NUM-2
+law float_word_exact:
+  for +cs: List<&2, Char>
+  for +v: T.Val
+  {n1.got.flo(T.word.val(cs), v) == Bool.and(abnf.float(cs), g.val(GvFloat{cs}, v)) : Bool}
+
+# LAW: a bare word reads as the boolean v exactly when it matches toml.abnf's
+# boolean rule and denotes v: true for true, false for false
+law boolean_word_exact:
+  for +cs: List<&2, Char>
+  for +v: T.Val
+  {n1.got.bool(T.word.val(cs), v) == Bool.and(abnf.boolean(cs), g.val(GvBoolean{cs}, v)) : Bool}
