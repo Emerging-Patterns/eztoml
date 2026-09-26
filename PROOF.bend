@@ -69877,7 +69877,6 @@ def r1.af.go(
   +hs: List<&2, String>,
   +he: List<&2, String>,
   +pt: List<&2, String>,
-  +bf: List<&2, Char>,
   +bk: T.Lex,
   +qk: T.QKind,
   +sk: List<&2, T.Ctx>,
@@ -69885,39 +69884,39 @@ def r1.af.go(
   +lf: U32,
   +at: Bool,
   +tt: String,
-  en: sr.N(tt, r1.afM(sp, dot, eq, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
-  ih: r1.CC(r1.afM(sp, dot, eq, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
-) -> Laws.r1.C(T.MScan{r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  en: sr.N(tt, r1.afM(sp, dot, eq, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.afM(sp, dot, eq, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SAft(bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
   match sp:
     case True{}:
       r1.x.vws(cc, tt, Laws.RfVal{} <> Laws.r1.after(sk), r1.spws(cc, esp), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
-        T.ch.sp(xx), esp, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at), tt, ih))
+        T.ch.sp(xx), esp, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, [], T.LAfter{}, bk, qk, sk, un, lf, at), tt, ih))
     case False{}:
       match dot:
         case True{}:
           r1.at(cc, '.', edt, Laws.RfKAfter{} <> Laws.r1.vend(sk), tt, r1.x.dot(tt, Laws.r1.vend(sk), r1.kk(qq, lit, cr,
-            cc, eqq, elt, ecr, xx => Char.is_eq(xx, '.'), edt, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf,
+            cc, eqq, elt, ecr, xx => Char.is_eq(xx, '.'), edt, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, [],
             T.LKeyDot{}, bk, qk, sk, un, lf, at), tt, ih)))
         case False{}:
           match eq:
             case True{}:
               r1.at(cc, '=', eeq, Laws.RfKAfter{} <> Laws.r1.vend(sk), tt, r1.x.eq(tt, Laws.r1.after(sk), r1.kk(qq, lit,
-                cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '='), eeq, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf,
+                cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '='), eeq, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, [],
                 T.LVal{}, bk, qk, sk, un, lf, at), tt, ih)))
             case False{}:
               match hash:
                 case True{}:
-                  r1.no(r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.kk(qq, lit, cr, cc, eqq,
+                  r1.no(r1.SAft(bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at), cc, tt, r1.kk(qq, lit, cr, cc, eqq,
                     elt, ecr, xx => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==}, T.read.once2(T.com.enter(r1.SAft(bd, rw,
-                    hs, he, pt, bf, bk, qk, sk, un, lf, at), T.LAfter{})), tt, ih))
+                    hs, he, pt, [], bk, qk, sk, un, lf, at), T.LAfter{})), tt, ih))
                 case False{}:
                   match nl:
                     case True{}:
-                      r1.no(r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw,
-                        hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, 'n', "ewline in key", tt, en))
+                      r1.no(r1.SAft(bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw,
+                        hs, he, pt, [], T.LAfter{}, bk, qk, sk, un, lf, at, 'n', "ewline in key", tt, en))
                     case False{}:
-                      r1.no(r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw,
-                        hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, 'i', "nvalid key", tt, en))
+                      r1.no(r1.SAft(bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw,
+                        hs, he, pt, [], T.LAfter{}, bk, qk, sk, un, lf, at, 'i', "nvalid key", tt, en))
 
 # WP-R: LAfter's obligation, for every character
 def r1.ob.after(
@@ -69926,7 +69925,7 @@ def r1.ob.after(
   +hs: List<&2, String>,
   +he: List<&2, String>,
   +pt: List<&2, String>,
-  +bf: List<&2, Char>,
+  bf: List<&2, Char>,
   +bk: T.Lex,
   +qk: T.QKind,
   +sk: List<&2, T.Ctx>,
@@ -69936,9 +69935,13 @@ def r1.ob.after(
   +cc: Char,
   +tt: String
 ) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, cc, tt):
-  _ec => en => ih => r1.af.go(T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc, '#'), T.ch.nl(cc),
-    Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, {==},
-    {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt, en, ih)
+  match bf:
+    case []:
+      _ec => en => ih => r1.af.go(T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc, '#'),
+        T.ch.nl(cc), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==},
+        {==}, {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, tt, en, ih)
+    case _b <> _bs:
+      _ec => _en => _ih => Unit{}
 
 # LKeyDot's state
 def r1.SKDot(
@@ -104202,3 +104205,6549 @@ def Laws.text_reads_as_replay(d, ok, es):
                     ap.nb.lines(rest, Eq.and.right(Laws.g.ok.expr(first), Laws.g.ok.lines(rest), ok))))), aq.go(rest,
                       first, [], [], [], T.LTop{}, T.QBasic{}, 0, 0, Eq.and.left(Laws.g.ok.expr(first),
                         Laws.g.ok.lines(rest), ok), Eq.and.right(Laws.g.ok.expr(first), Laws.g.ok.lines(rest), ok), es))
+
+# WP-R (continued)
+#
+# TOML-TEXT-1's refusal direction over every state (docs/rfc/eztoml-grammar-
+# proofs.md, WP-R): each state's obligation over LAWS.bend's r2.gp. The
+# spike's thirteen obligations carry over through r2.up and r2.dn, since r2
+# gives each of their states the spike's position; the value states' are
+# proved here: LTop, LLine and a comment's (over the spike's frames, then
+# carried), LVal, LArr, LArrC, LInl, LInlK, LInlC, LBare, LDate and LSink,
+# and the modes after a carriage return, with a held character and at the
+# first character. The string states are WP-R's next chunk.
+# a completion of the spike's frames is one of them as r2's
+def r2.up(
+  fs: List<&2, Laws.R1Fr>,
+  +text: String,
+  hh: Laws.r1.fill(fs, text)
+) -> Laws.r2.fill(Laws.r2.lift(fs), text):
+  match fs:
+    case []:
+      hh
+    case fr <> rest:
+      match fr:
+        case Laws.RfAny{}:
+          hh
+        case Laws.RfNone{}:
+          hh
+        case Laws.RfLater{}:
+          hh
+        case Laws.RfBom{}:
+          r2.up(rest, Laws.bom.drop(text), hh)
+        case Laws.RfTop{}:
+          (+ex, (+ls, (+rr, (e1, (e2, hr))))) = hh
+          (ex, (ls, (rr, (e1, (e2, r2.up(rest, rr, hr))))))
+        case Laws.RfLines{}:
+          (+ls, (+rr, (e1, (e2, hr)))) = hh
+          (ls, (rr, (e1, (e2, r2.up(rest, rr, hr)))))
+        case Laws.RfLineEnd{}:
+          (+ww, (+cm, (+rr, (e1, (e2, hr))))) = hh
+          (ww, (cm, (rr, (e1, (e2, r2.up(rest, rr, hr))))))
+        case Laws.RfComment{}:
+          (+bd, (+rr, (e1, (e2, hr)))) = hh
+          (bd, (rr, (e1, (e2, r2.up(rest, rr, hr)))))
+        case Laws.RfHOpen{+arr}:
+          (+tb, (+rr, (e1, (e2, hr)))) = hh
+          (tb, (rr, (e1, (e2, r2.up(rest, rr, hr)))))
+        case Laws.RfHClose{+arr}:
+          (+ww, (+rr, (e1, (e2, hr)))) = hh
+          (ww, (rr, (e1, (e2, r2.up(rest, rr, hr)))))
+        case Laws.RfRBr{}:
+          (+rr, (e1, hr)) = hh
+          (rr, (e1, r2.up(rest, rr, hr)))
+        case Laws.RfWs{}:
+          (+ww, (+rr, (e1, (e2, hr)))) = hh
+          (ww, (rr, (e1, (e2, r2.up(rest, rr, hr)))))
+        case Laws.RfKSeg{}:
+          (+sg, (+rr, (e1, (e2, hr)))) = hh
+          (sg, (rr, (e1, (e2, r2.up(rest, rr, hr)))))
+        case Laws.RfKBare{}:
+          (+ss, (+rr, (e1, (e2, hr)))) = hh
+          (ss, (rr, (e1, (e2, r2.up(rest, rr, hr)))))
+        case Laws.RfKAfter{}:
+          (+ds, (+rr, (e1, (e2, hr)))) = hh
+          (ds, (rr, (e1, (e2, r2.up(rest, rr, hr)))))
+        case Laws.RfEq{}:
+          (+ww, (+rr, (e1, (e2, hr)))) = hh
+          (ww, (rr, (e1, (e2, r2.up(rest, rr, hr)))))
+        case Laws.RfKBasic{}:
+          (+pl, (+rr, (e1, (e2, hr)))) = hh
+          (pl, (rr, (e1, (e2, r2.up(rest, rr, hr)))))
+        case Laws.RfKLit{}:
+          (+ss, (+rr, (e1, (e2, hr)))) = hh
+          (ss, (rr, (e1, (e2, r2.up(rest, rr, hr)))))
+        case Laws.RfKEsc{}:
+          (+pp, (+pl, (+rr, (e1, (e2, hr))))) = hh
+          (pp, (pl, (rr, (e1, (e2, r2.up(rest, rr, hr))))))
+        case Laws.RfKUni{+uni, +left}:
+          (+hs, (+pl, (+rr, (e1, (e2, hr))))) = hh
+          (hs, (pl, (rr, (e1, (e2, r2.up(rest, rr, hr))))))
+        case Laws.RfVal{}:
+          (+ww, (+vv, (+rr, (e1, (e2, hr))))) = hh
+          (ww, (vv, (rr, (e1, (e2, r2.up(rest, rr, hr))))))
+        case Laws.RfArrAfter{}:
+          (+wb, (+at, (+wn, (+rr, (e1, (e2, hr)))))) = hh
+          (wb, (at, (wn, (rr, (e1, (e2, r2.up(rest, rr, hr)))))))
+        case Laws.RfInlAfter{}:
+          (+it, (+ww, (+rr, (e1, (e2, hr))))) = hh
+          (it, (ww, (rr, (e1, (e2, r2.up(rest, rr, hr))))))
+
+# and back
+def r2.dn(
+  fs: List<&2, Laws.R1Fr>,
+  +text: String,
+  hh: Laws.r2.fill(Laws.r2.lift(fs), text)
+) -> Laws.r1.fill(fs, text):
+  match fs:
+    case []:
+      hh
+    case fr <> rest:
+      match fr:
+        case Laws.RfAny{}:
+          hh
+        case Laws.RfNone{}:
+          hh
+        case Laws.RfLater{}:
+          hh
+        case Laws.RfBom{}:
+          r2.dn(rest, Laws.bom.drop(text), hh)
+        case Laws.RfTop{}:
+          (+ex, (+ls, (+rr, (e1, (e2, hr))))) = hh
+          (ex, (ls, (rr, (e1, (e2, r2.dn(rest, rr, hr))))))
+        case Laws.RfLines{}:
+          (+ls, (+rr, (e1, (e2, hr)))) = hh
+          (ls, (rr, (e1, (e2, r2.dn(rest, rr, hr)))))
+        case Laws.RfLineEnd{}:
+          (+ww, (+cm, (+rr, (e1, (e2, hr))))) = hh
+          (ww, (cm, (rr, (e1, (e2, r2.dn(rest, rr, hr))))))
+        case Laws.RfComment{}:
+          (+bd, (+rr, (e1, (e2, hr)))) = hh
+          (bd, (rr, (e1, (e2, r2.dn(rest, rr, hr)))))
+        case Laws.RfHOpen{+arr}:
+          (+tb, (+rr, (e1, (e2, hr)))) = hh
+          (tb, (rr, (e1, (e2, r2.dn(rest, rr, hr)))))
+        case Laws.RfHClose{+arr}:
+          (+ww, (+rr, (e1, (e2, hr)))) = hh
+          (ww, (rr, (e1, (e2, r2.dn(rest, rr, hr)))))
+        case Laws.RfRBr{}:
+          (+rr, (e1, hr)) = hh
+          (rr, (e1, r2.dn(rest, rr, hr)))
+        case Laws.RfWs{}:
+          (+ww, (+rr, (e1, (e2, hr)))) = hh
+          (ww, (rr, (e1, (e2, r2.dn(rest, rr, hr)))))
+        case Laws.RfKSeg{}:
+          (+sg, (+rr, (e1, (e2, hr)))) = hh
+          (sg, (rr, (e1, (e2, r2.dn(rest, rr, hr)))))
+        case Laws.RfKBare{}:
+          (+ss, (+rr, (e1, (e2, hr)))) = hh
+          (ss, (rr, (e1, (e2, r2.dn(rest, rr, hr)))))
+        case Laws.RfKAfter{}:
+          (+ds, (+rr, (e1, (e2, hr)))) = hh
+          (ds, (rr, (e1, (e2, r2.dn(rest, rr, hr)))))
+        case Laws.RfEq{}:
+          (+ww, (+rr, (e1, (e2, hr)))) = hh
+          (ww, (rr, (e1, (e2, r2.dn(rest, rr, hr)))))
+        case Laws.RfKBasic{}:
+          (+pl, (+rr, (e1, (e2, hr)))) = hh
+          (pl, (rr, (e1, (e2, r2.dn(rest, rr, hr)))))
+        case Laws.RfKLit{}:
+          (+ss, (+rr, (e1, (e2, hr)))) = hh
+          (ss, (rr, (e1, (e2, r2.dn(rest, rr, hr)))))
+        case Laws.RfKEsc{}:
+          (+pp, (+pl, (+rr, (e1, (e2, hr))))) = hh
+          (pp, (pl, (rr, (e1, (e2, r2.dn(rest, rr, hr))))))
+        case Laws.RfKUni{+uni, +left}:
+          (+hs, (+pl, (+rr, (e1, (e2, hr))))) = hh
+          (hs, (pl, (rr, (e1, (e2, r2.dn(rest, rr, hr))))))
+        case Laws.RfVal{}:
+          (+ww, (+vv, (+rr, (e1, (e2, hr))))) = hh
+          (ww, (vv, (rr, (e1, (e2, r2.dn(rest, rr, hr))))))
+        case Laws.RfArrAfter{}:
+          (+wb, (+at, (+wn, (+rr, (e1, (e2, hr)))))) = hh
+          (wb, (at, (wn, (rr, (e1, (e2, r2.dn(rest, rr, hr)))))))
+        case Laws.RfInlAfter{}:
+          (+it, (+ww, (+rr, (e1, (e2, hr))))) = hh
+          (it, (ww, (rr, (e1, (e2, r2.dn(rest, rr, hr))))))
+
+# a comment's position as r2 gives it gives the spike's
+def r2.dn.com(
+  bf: List<&2, Char>,
+  bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +text: String,
+  h: Laws.r2.fill(Laws.r2.gp.com(bf, bk, sk), text)
+) -> Laws.r1.fill(Laws.r1.gp.com(bk, sk), text):
+  match bk:
+    case T.LTop{}:
+      r2.dn(Laws.r1.gp.com(T.LTop{}, sk), text, h)
+    case T.LLine{}:
+      r2.dn(Laws.r1.gp.com(T.LLine{}, sk), text, h)
+    case T.LKey{}:
+      r2.dn(Laws.r1.gp.com(T.LKey{}, sk), text, h)
+    case T.LKeyDot{}:
+      r2.dn(Laws.r1.gp.com(T.LKeyDot{}, sk), text, h)
+    case T.LAfter{}:
+      r2.dn(Laws.r1.gp.com(T.LAfter{}, sk), text, h)
+    case T.LKeyQ{}:
+      r2.dn(Laws.r1.gp.com(T.LKeyQ{}, sk), text, h)
+    case T.LKeyE{}:
+      r2.dn(Laws.r1.gp.com(T.LKeyE{}, sk), text, h)
+    case T.LKeyU{}:
+      r2.dn(Laws.r1.gp.com(T.LKeyU{}, sk), text, h)
+    case T.LVal{}:
+      Unit{}
+    case T.LQ{}:
+      r2.dn(Laws.r1.gp.com(T.LQ{}, sk), text, h)
+    case T.LQ2{}:
+      r2.dn(Laws.r1.gp.com(T.LQ2{}, sk), text, h)
+    case T.LStr{}:
+      r2.dn(Laws.r1.gp.com(T.LStr{}, sk), text, h)
+    case T.LEsc{}:
+      r2.dn(Laws.r1.gp.com(T.LEsc{}, sk), text, h)
+    case T.LUni{}:
+      r2.dn(Laws.r1.gp.com(T.LUni{}, sk), text, h)
+    case T.LFold{}:
+      r2.dn(Laws.r1.gp.com(T.LFold{}, sk), text, h)
+    case T.LMq{}:
+      r2.dn(Laws.r1.gp.com(T.LMq{}, sk), text, h)
+    case T.LMqEnd{}:
+      r2.dn(Laws.r1.gp.com(T.LMqEnd{}, sk), text, h)
+    case T.LTrim{}:
+      r2.dn(Laws.r1.gp.com(T.LTrim{}, sk), text, h)
+    case T.LTrim2{}:
+      r2.dn(Laws.r1.gp.com(T.LTrim2{}, sk), text, h)
+    case T.LBare{}:
+      r2.dn(Laws.r1.gp.com(T.LBare{}, sk), text, h)
+    case T.LDate{}:
+      r2.dn(Laws.r1.gp.com(T.LDate{}, sk), text, h)
+    case T.LCom{}:
+      r2.dn(Laws.r1.gp.com(T.LCom{}, sk), text, h)
+    case T.LHead{}:
+      r2.dn(Laws.r1.gp.com(T.LHead{}, sk), text, h)
+    case T.LHeadGap{}:
+      r2.dn(Laws.r1.gp.com(T.LHeadGap{}, sk), text, h)
+    case T.LHeadDot{}:
+      r2.dn(Laws.r1.gp.com(T.LHeadDot{}, sk), text, h)
+    case T.LHeadQ{}:
+      r2.dn(Laws.r1.gp.com(T.LHeadQ{}, sk), text, h)
+    case T.LHeadE{}:
+      r2.dn(Laws.r1.gp.com(T.LHeadE{}, sk), text, h)
+    case T.LHeadU{}:
+      r2.dn(Laws.r1.gp.com(T.LHeadU{}, sk), text, h)
+    case T.LHeadR{}:
+      r2.dn(Laws.r1.gp.com(T.LHeadR{}, sk), text, h)
+    case T.LArr{}:
+      Unit{}
+    case T.LArrC{}:
+      Unit{}
+    case T.LInl{}:
+      Unit{}
+    case T.LInlK{}:
+      Unit{}
+    case T.LInlC{}:
+      Unit{}
+    case T.LSink{}:
+      r2.dn(Laws.r1.gp.com(T.LSink{}, sk), text, h)
+
+# a lex state's position as r2 gives it gives the spike's: the two agree on
+# every state the spike placed, and the spike claims nothing of the others
+def r2.dn.lex(
+  lx: T.Lex,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +text: String,
+  h: Laws.r2.fill(Laws.r2.gp0(lx, bk, qk, sk, pt, bf, un, lf, at), text)
+) -> Laws.r1.fill(Laws.r1.gp0(lx, bk, qk, sk, pt, bf, un, lf, at), text):
+  match lx:
+    case T.LTop{}:
+      r2.dn(Laws.r1.gp0(T.LTop{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LLine{}:
+      r2.dn(Laws.r1.gp0(T.LLine{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LKey{}:
+      r2.dn(Laws.r1.gp0(T.LKey{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LKeyDot{}:
+      r2.dn(Laws.r1.gp0(T.LKeyDot{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LAfter{}:
+      r2.dn(Laws.r1.gp0(T.LAfter{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LKeyQ{}:
+      r2.dn(Laws.r1.gp0(T.LKeyQ{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LKeyE{}:
+      r2.dn(Laws.r1.gp0(T.LKeyE{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LKeyU{}:
+      r2.dn(Laws.r1.gp0(T.LKeyU{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LVal{}:
+      r2.dn(Laws.r1.gp0(T.LVal{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LQ{}:
+      Unit{}
+    case T.LQ2{}:
+      Unit{}
+    case T.LStr{}:
+      Unit{}
+    case T.LEsc{}:
+      Unit{}
+    case T.LUni{}:
+      Unit{}
+    case T.LFold{}:
+      Unit{}
+    case T.LMq{}:
+      Unit{}
+    case T.LMqEnd{}:
+      Unit{}
+    case T.LTrim{}:
+      Unit{}
+    case T.LTrim2{}:
+      Unit{}
+    case T.LBare{}:
+      Unit{}
+    case T.LDate{}:
+      Unit{}
+    case T.LCom{}:
+      r2.dn.com(bf, bk, sk, text, h)
+    case T.LHead{}:
+      r2.dn(Laws.r1.gp0(T.LHead{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LHeadGap{}:
+      r2.dn(Laws.r1.gp0(T.LHeadGap{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LHeadDot{}:
+      r2.dn(Laws.r1.gp0(T.LHeadDot{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LHeadQ{}:
+      r2.dn(Laws.r1.gp0(T.LHeadQ{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LHeadE{}:
+      r2.dn(Laws.r1.gp0(T.LHeadE{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LHeadU{}:
+      r2.dn(Laws.r1.gp0(T.LHeadU{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LHeadR{}:
+      r2.dn(Laws.r1.gp0(T.LHeadR{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+    case T.LArr{}:
+      Unit{}
+    case T.LArrC{}:
+      Unit{}
+    case T.LInl{}:
+      Unit{}
+    case T.LInlK{}:
+      Unit{}
+    case T.LInlC{}:
+      Unit{}
+    case T.LSink{}:
+      r2.dn(Laws.r1.gp0(T.LSink{}, bk, qk, sk, pt, bf, un, lf, at), text, h)
+
+# and with a held character, where both claim nothing
+def r2.dn.hold(
+  ho: T.Hold,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +text: String,
+  h: Laws.r2.fill(Laws.r2.gp.hold(ho, lx, bk, qk, sk, pt, bf, un, lf, at), text)
+) -> Laws.r1.fill(Laws.r1.gp.hold(ho, lx, bk, qk, sk, pt, bf, un, lf, at), text):
+  match ho:
+    case T.HChar{_c}:
+      Unit{}
+    case T.HNone{}:
+      r2.dn.lex(lx, bk, qk, sk, pt, bf, un, lf, at, text, h)
+
+# and at the first character
+def r2.dn.lead(
+  ld: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ho: T.Hold,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +text: String,
+  h: Laws.r2.fill(Laws.r2.gp(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, ho, un, lf, at, ld}), text)
+) -> Laws.r1.fill(Laws.r1.gp(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, ho, un, lf, at, ld}), text):
+  match ld:
+    case True{}:
+      r2.dn(Laws.r1.gp.lead(lx, sk, ho), text, h)
+    case False{}:
+      r2.dn.hold(ho, lx, bk, qk, sk, pt, bf, un, lf, at, text, h)
+
+# a state's position as r2 gives it gives the spike's
+def r2.dn.st(st: T.St, +text: String, h: Laws.r2.fill(Laws.r2.gp(st), text)) -> Laws.r1.fill(Laws.r1.gp(st), text):
+  match st:
+    case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +ho, +un, +lf, +at, +ld}:
+      r2.dn.lead(ld, bd, rw, hs, he, ho, lx, bk, qk, sk, pt, bf, un, lf, at, text, h)
+
+# a mode's completion as r2 gives it gives the spike's
+def r2.dn.C(mode: T.Mode, +text: String, h: Laws.r2.C(mode, text)) -> Laws.r1.C(mode, text):
+  match mode:
+    case T.MScan{+st}:
+      r2.dn.st(st, text, h)
+    case T.MCr{+st}:
+      (+uu, (e1, hr)) = h
+      (uu, (e1, r2.dn.st(T.read.fast(st, '\n'), uu, hr)))
+    case T.MOpen{_ba, _qq, _qk, _bd, _rw, _hs, _he, _pt, _bf, _bk, _sk, _un, _lf, _at}:
+      Unit{}
+    case T.MEat{_ba, _qq, _ct, _nn, _bd, _rw, _hs, _he, _pt, _qk, _sk, _un, _lf, _at}:
+      Unit{}
+
+# the step's obligation for a state the fast step reads, at one lex state,
+# for a character that is a Unicode scalar value, over r2's positions
+def r2.Ob(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> Type:
+  {T.wf.char(cc) == True{} : Bool} ->
+    sr.N(tt, sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc))) ->
+    Laws.r2.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)), tt) ->
+    Laws.r2.C(T.MScan{sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)}, SCon{cc, tt})
+
+
+# LHead's obligation, the spike's carried over
+def r2.ob.head(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LHead{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LHead{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.head(bd, rw, hs,
+    he, pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LHead{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+# LHeadGap's obligation, the spike's carried over
+def r2.ob.gap(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LHeadGap{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LHeadGap{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.gap(bd, rw, hs,
+    he, pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LHeadGap{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+# LHeadDot's obligation, the spike's carried over
+def r2.ob.hdot(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LHeadDot{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LHeadDot{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.hdot(bd, rw,
+    hs, he, pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LHeadDot{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+# LHeadR's obligation, the spike's carried over
+def r2.ob.hr(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LHeadR{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LHeadR{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.hr(bd, rw, hs,
+    he, pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LHeadR{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+# LHeadQ's obligation, the spike's carried over
+def r2.ob.hq(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LHeadQ{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LHeadQ{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.hq(bd, rw, hs,
+    he, pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LHeadQ{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+# LHeadE's obligation, the spike's carried over
+def r2.ob.he(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LHeadE{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LHeadE{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.he(bd, rw, hs,
+    he, pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LHeadE{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+# LHeadU's obligation, the spike's carried over
+def r2.ob.hu(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LHeadU{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LHeadU{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.hu(bd, rw, hs,
+    he, pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LHeadU{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+# LKey's obligation, the spike's carried over
+def r2.ob.key(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LKey{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.key(bd, rw, hs, he,
+    pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LKey{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+# LKeyDot's obligation, the spike's carried over
+def r2.ob.kdot(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LKeyDot{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LKeyDot{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.kdot(bd, rw, hs,
+    he, pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LKeyDot{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+# LAfter's obligation, the spike's carried over
+def r2.ob.after(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LAfter{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.after(bd, rw, hs,
+    he, pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LAfter{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+# LKeyQ's obligation, the spike's carried over
+def r2.ob.kq(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LKeyQ{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LKeyQ{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.kq(bd, rw, hs, he,
+    pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LKeyQ{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+# LKeyE's obligation, the spike's carried over
+def r2.ob.ke(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LKeyE{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LKeyE{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.ke(bd, rw, hs, he,
+    pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LKeyE{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+# LKeyU's obligation, the spike's carried over
+def r2.ob.ku(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LKeyU{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LKeyU{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r1.ob.ku(bd, rw, hs, he,
+    pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LKeyU{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+
+# The kit of the value states. First the characters a comment keeps: a
+# character no control and past U+001F is non-eol and no U+007F, and so is
+# a tab.
+
+# a comment character past the controls: at most U+007F, or non-ascii
+def r2.cm.hi(
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 127) == cc : Cmp},
+  +g32: {U32.is_ge(uu, 32) == True{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.non_eol(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      r1.orr(U32.is_eq(uu, 9), Bool.or(Laws.abnf.range(uu, 32, 127), Laws.abnf.non_ascii(Chr{uu})),
+        r1.orl(Laws.abnf.range(uu, 32, 127), Laws.abnf.non_ascii(Chr{uu}), gd.tt(U32.is_ge(uu, 32), U32.is_le(uu, 127),
+        g32, r1.lec(uu, 127, LT{}, ec, {==}))))
+    case EQ{}:
+      r1.orr(U32.is_eq(uu, 9), Bool.or(Laws.abnf.range(uu, 32, 127), Laws.abnf.non_ascii(Chr{uu})),
+        r1.orl(Laws.abnf.range(uu, 32, 127), Laws.abnf.non_ascii(Chr{uu}), gd.tt(U32.is_ge(uu, 32), U32.is_le(uu, 127),
+        g32, r1.lec(uu, 127, EQ{}, ec, {==}))))
+    case GT{}:
+      r1.orr(U32.is_eq(uu, 9), Bool.or(Laws.abnf.range(uu, 32, 127), Laws.abnf.non_ascii(Chr{uu})),
+        r1.orr(Laws.abnf.range(uu, 32, 127), Laws.abnf.non_ascii(Chr{uu}), r1.na(uu, r1.ge(U32.cmp(uu, 128), r1.up(uu,
+        r1.bits(127), {==}, ec)), ok)))
+
+# a character a comment keeps that is no control
+def r2.cm.nc(
+  +uu: U32,
+  +ect: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Bool.and(Laws.abnf.non_eol(Chr{uu}), Laws.prose.comment_char(Chr{uu})) == True{} : Bool}:
+  gd.tt(Laws.abnf.non_eol(Chr{uu}), Laws.prose.comment_char(Chr{uu}), r2.cm.hi(uu, U32.cmp(uu, 127), {==},
+    r1.ge(U32.cmp(uu, 32), Eq.or.left_false(U32.is_lt(uu, 32), U32.is_eq(uu, 127), ect)), ok),
+    Equal.cong(Bool, Bool, xx => Bool.not(xx), U32.is_eq(uu, 127), False{}, Eq.or.right_false(U32.is_lt(uu, 32),
+    U32.is_eq(uu, 127), ect)))
+
+# a tab
+def r2.cm.tab(
+  +uu: U32,
+  etb: {U32.is_eq(uu, 9) == True{} : Bool}
+) -> {Bool.and(Laws.abnf.non_eol(Chr{uu}), Laws.prose.comment_char(Chr{uu})) == True{} : Bool}:
+  vl.chs(ch => {Bool.and(Laws.abnf.non_eol(ch), Laws.prose.comment_char(ch)) == True{} : Bool}, Chr{uu}, Chr{9},
+    Eq.u32_eq(uu, 9, etb), {==})
+
+# a character that is a newline and no carriage return is a line feed
+def r2.lf.go(
+  aa: Bool,
+  bb: Bool,
+  +uu: U32,
+  ea: {U32.is_eq(uu, 10) == aa : Bool},
+  enl: {Bool.or(aa, bb) == True{} : Bool},
+  ecr: {bb == False{} : Bool}
+) -> {U32.is_eq(uu, 10) == True{} : Bool}:
+  match aa:
+    case True{}:
+      ea
+    case False{}:
+      match bb:
+        case True{}:
+          Eq.bit.absurd2(&2, {U32.is_eq(uu, 10) == True{} : Bool}, ecr)
+        case False{}:
+          Eq.bit.absurd(&2, {U32.is_eq(uu, 10) == True{} : Bool}, enl)
+
+# the same, of a character
+def r2.lf(
+  +cc: Char,
+  enl: {T.ch.nl(cc) == True{} : Bool},
+  ecr: {U32.is_eq(Char.to_u32(cc), 13) == False{} : Bool}
+) -> {Char.is_eq(cc, '\n') == True{} : Bool}:
+  match cc:
+    case Chr{+uu}:
+      r2.lf.go(U32.is_eq(uu, 10), U32.is_eq(uu, 13), uu, {==}, enl, ecr)
+
+# a character that is no quote or apostrophe leaves sr.K's other tests
+def r2.kq(
+  qq: Bool,
+  lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  pp: Char -> Bool,
+  +yes: {pp(cc) == True{} : Bool},
+  n1: {pp('"') == False{} : Bool},
+  n2: {pp('\'') == False{} : Bool},
+  +xx: T.St,
+  +tt: String,
+  hh: Laws.r2.C(sr.K(qq, lit, cr, xx), tt)
+) -> Laws.r2.C(sr.K(False{}, False{}, cr, xx), tt):
+  match qq:
+    case True{}:
+      Eq.bit.gone(&1, Laws.r2.C(sr.K(False{}, False{}, cr, xx), tt), Eq.refute_char(cc, '"', pp, eqq, yes, n1))
+    case False{}:
+      match lit:
+        case True{}:
+          Eq.bit.gone(&1, Laws.r2.C(sr.K(False{}, False{}, cr, xx), tt), Eq.refute_char(cc, '\'', pp, elt, yes, n2))
+        case False{}:
+          hh
+
+# and so do the three tests of a character that is none of them
+def r2.kk(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  pp: Char -> Bool,
+  +yes: {pp(cc) == True{} : Bool},
+  n1: {pp('"') == False{} : Bool},
+  n2: {pp('\'') == False{} : Bool},
+  n3: {pp(Chr{13}) == False{} : Bool},
+  +xx: T.St,
+  +tt: String,
+  hh: Laws.r2.C(sr.K(qq, lit, cr, xx), tt)
+) -> Laws.r2.C(T.MScan{xx}, tt):
+  match cr:
+    case True{}:
+      Eq.bit.gone(&1, Laws.r2.C(T.MScan{xx}, tt), Eq.refute_char(cc, Chr{13}, pp, r1.creq(cc, ecr), yes, n3))
+    case False{}:
+      r2.kq(qq, lit, False{}, cc, eqq, elt, pp, yes, n1, n2, xx, tt, hh)
+
+# nothing completes a position no text completes
+def r2.no(+st: T.St, +cc: Char, +tt: String, ee: Empty) -> Laws.r2.C(T.MScan{st}, SCon{cc, tt}):
+  Eq.bit.gone(&1, Laws.r2.C(T.MScan{st}, SCon{cc, tt}), ee)
+
+# a completion of the text after a character k is one of the text after cc,
+# when cc is k
+def r2.at(
+  +cc: Char,
+  +kk: Char,
+  ee: {Char.is_eq(cc, kk) == True{} : Bool},
+  fs: List<&2, Laws.R2Fr>,
+  +tt: String,
+  hh: Laws.r2.fill(fs, SCon{kk, tt})
+) -> Laws.r2.fill(fs, SCon{cc, tt}):
+  %Equal.sym(Char, cc, kk, Eq.char_eq_true(cc, kk, ee)) : Laws.r2.fill(fs, SCon{_, tt})
+  hh
+
+# a comment character extends the rest of a comment
+def r2.x.cm(
+  +cc: Char,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  +hc: {Bool.and(Laws.abnf.non_eol(cc), Laws.prose.comment_char(cc)) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfComment{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfComment{} <> rest, SCon{cc, tt}):
+  (+bd, (+rr, (e1, (+e2, hr)))) = hh
+  (SCon{cc, bd}, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, String.append(bd, rr), e1),
+    (gd.tt(Bool.and(Laws.abnf.non_eol(cc), Laws.abnf.comment(bd)), Bool.and(Laws.prose.comment_char(cc),
+    Laws.prose.comment_chars(bd)), gd.tt(Laws.abnf.non_eol(cc), Laws.abnf.comment(bd), gd.l(Laws.abnf.non_eol(cc),
+    Laws.prose.comment_char(cc), hc), gd.l(Laws.abnf.comment(bd), Laws.prose.comment_chars(bd), e2)),
+    gd.tt(Laws.prose.comment_char(cc), Laws.prose.comment_chars(bd), gd.r(Laws.abnf.non_eol(cc),
+    Laws.prose.comment_char(cc), hc), gd.r(Laws.abnf.comment(bd), Laws.prose.comment_chars(bd), e2))), hr))))
+
+# Texts spelled over the spike's frames: blank space before an expression or
+# a line's end, a newline before an expression, a comment, a table and a
+# keyval as an expression.
+
+# rewrite the text a completion is of
+def r2.rw1(
+  fs: List<&2, Laws.R1Fr>,
+  +aa: String,
+  +bb: String,
+  ee: {aa == bb : String},
+  hh: Laws.r1.fill(fs, bb)
+) -> Laws.r1.fill(fs, aa):
+  %Equal.sym(String, aa, bb, ee) : Laws.r1.fill(fs, _)
+  hh
+
+# and over r2's frames
+def r2.rw2(
+  fs: List<&2, Laws.R2Fr>,
+  +aa: String,
+  +bb: String,
+  ee: {aa == bb : String},
+  hh: Laws.r2.fill(fs, bb)
+) -> Laws.r2.fill(fs, aa):
+  %Equal.sym(String, aa, bb, ee) : Laws.r2.fill(fs, _)
+  hh
+
+# a blank space character is no newline
+def r2.spnl.go(
+  aa: Bool,
+  +uu: U32,
+  ea: {U32.is_eq(uu, 32) == aa : Bool},
+  esp: {Bool.or(aa, U32.is_eq(uu, 9)) == True{} : Bool}
+) -> {T.ch.nl(Chr{uu}) == False{} : Bool}:
+  match aa:
+    case True{}:
+      vl.chs(ch => {T.ch.nl(ch) == False{} : Bool}, Chr{uu}, Chr{32}, Eq.u32_eq(uu, 32, ea), {==})
+    case False{}:
+      vl.chs(ch => {T.ch.nl(ch) == False{} : Bool}, Chr{uu}, Chr{9}, Eq.u32_eq(uu, 9, esp), {==})
+
+# the same, of a character
+def r2.spnl(+cc: Char, esp: {T.ch.sp(cc) == True{} : Bool}) -> {T.ch.nl(cc) == False{} : Bool}:
+  match cc:
+    case Chr{+uu}:
+      r2.spnl.go(U32.is_eq(uu, 32), uu, {==}, esp)
+
+# a newline is no blank space
+def r2.nlsp(+cc: Char, esp: {T.ch.sp(cc) == True{} : Bool}, enl: {T.ch.nl(cc) == True{} : Bool}) -> Empty:
+  Eq.bit.clash2(Equal.trans(Bool, True{}, T.ch.nl(cc), False{}, Equal.sym(Bool, T.ch.nl(cc), True{}, enl),
+    r2.spnl(cc, esp)))
+
+# a newline is no quote or apostrophe, over the spike's positions
+def r2.kq1(
+  qq: Bool,
+  lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  pp: Char -> Bool,
+  +yes: {pp(cc) == True{} : Bool},
+  n1: {pp('"') == False{} : Bool},
+  n2: {pp('\'') == False{} : Bool},
+  +xx: T.St,
+  +tt: String,
+  hh: Laws.r1.C(sr.K(qq, lit, cr, xx), tt)
+) -> Laws.r1.C(sr.K(False{}, False{}, cr, xx), tt):
+  match qq:
+    case True{}:
+      Eq.bit.gone(&1, Laws.r1.C(sr.K(False{}, False{}, cr, xx), tt), Eq.refute_char(cc, '"', pp, eqq, yes, n1))
+    case False{}:
+      match lit:
+        case True{}:
+          Eq.bit.gone(&1, Laws.r1.C(sr.K(False{}, False{}, cr, xx), tt), Eq.refute_char(cc, '\'', pp, elt, yes, n2))
+        case False{}:
+          hh
+
+# a wschar before an expression
+def r2.xws(+cc: Char, ex: Laws.GExpr) -> Laws.GExpr:
+  match ex:
+    case Laws.GxBlank{w1, cm}:
+      Laws.GxBlank{SCon{cc, w1}, cm}
+    case Laws.GxKeyval{w1, kv, w2, cm}:
+      Laws.GxKeyval{SCon{cc, w1}, kv, w2, cm}
+    case Laws.GxTable{w1, tb, w2, cm}:
+      Laws.GxTable{SCon{cc, w1}, tb, w2, cm}
+
+# its text
+def r2.xws.txt(
+  +cc: Char,
+  ex: Laws.GExpr,
+  +tl: String
+) -> {Laws.g.expr.text(r2.xws(cc, ex), tl) == SCon{cc, Laws.g.expr.text(ex, tl)} : String}:
+  match ex:
+    case Laws.GxBlank{_w1, _cm}:
+      {==}
+    case Laws.GxKeyval{_w1, _kv, _w2, _cm}:
+      {==}
+    case Laws.GxTable{_w1, _tb, _w2, _cm}:
+      {==}
+
+# a wschar and the rest of a ws, with what follows them
+def r2.ws3(
+  +cc: Char,
+  +ww: String,
+  +rr: Bool,
+  +ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  +eo: {Bool.and(Laws.abnf.ws(ww), rr) == True{} : Bool}
+) -> {Bool.and(Bool.and(Laws.abnf.wschar(cc), Laws.abnf.ws(ww)), rr) == True{} : Bool}:
+  gd.tt(Bool.and(Laws.abnf.wschar(cc), Laws.abnf.ws(ww)), rr, gd.tt(Laws.abnf.wschar(cc), Laws.abnf.ws(ww), ew,
+    gd.l(Laws.abnf.ws(ww), rr, eo)), gd.r(Laws.abnf.ws(ww), rr, eo))
+
+# and its rules
+def r2.xws.ok(
+  +cc: Char,
+  ex: Laws.GExpr,
+  +ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  +eo: {Laws.g.ok.expr(ex) == True{} : Bool}
+) -> {Laws.g.ok.expr(r2.xws(cc, ex)) == True{} : Bool}:
+  match ex:
+    case Laws.GxBlank{+w1, +cm}:
+      r2.ws3(cc, w1, Laws.g.ok.com(cm), ew, eo)
+    case Laws.GxKeyval{+w1, +kv, +w2, +cm}:
+      r2.ws3(cc, w1, Bool.and(Laws.g.ok.val(kv, Laws.RKeyval{}), Bool.and(Laws.abnf.ws(w2), Laws.g.ok.com(cm))), ew, eo)
+    case Laws.GxTable{+w1, +tb, +w2, +cm}:
+      r2.ws3(cc, w1, Bool.and(Laws.g.ok.table(tb), Bool.and(Laws.abnf.ws(w2), Laws.g.ok.com(cm))), ew, eo)
+
+# a wschar before a line's expressions
+def r2.top.ws(
+  +cc: Char,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  +ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfTop{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfTop{} <> rest, SCon{cc, tt}):
+  (+ex, (+ls, (+rr, (e1, (+e2, hr))))) = hh
+  (r2.xws(cc, ex), (ls, (rr, (Equal.trans(String, SCon{cc, tt}, SCon{cc, Laws.g.expr.text(ex, Laws.g.lines.text(ls,
+    rr))}, Laws.g.expr.text(r2.xws(cc, ex), Laws.g.lines.text(ls, rr)), Equal.cong(String, String, xx => SCon{cc, xx},
+    tt, Laws.g.expr.text(ex, Laws.g.lines.text(ls, rr)), e1), Equal.sym(String, Laws.g.expr.text(r2.xws(cc, ex),
+    Laws.g.lines.text(ls, rr)), SCon{cc, Laws.g.expr.text(ex, Laws.g.lines.text(ls, rr))}, r2.xws.txt(cc, ex,
+    Laws.g.lines.text(ls, rr)))), (gd.tt(Laws.g.ok.expr(r2.xws(cc, ex)), Laws.g.ok.lines(ls), r2.xws.ok(cc, ex, ew,
+    gd.l(Laws.g.ok.expr(ex), Laws.g.ok.lines(ls), e2)), gd.r(Laws.g.ok.expr(ex), Laws.g.ok.lines(ls), e2)), hr)))))
+
+# a newline, then a line's expressions: a blank expression before them
+def r2.top.nl(
+  +nl: String,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  +en: {Laws.abnf.newline(nl) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfTop{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfTop{} <> rest, String.append(nl, tt)):
+  (+ex, (+ls, (+rr, (e1, (+e2, hr))))) = hh
+  (Laws.GxBlank{"", Laws.GcNone{}}, (Laws.GLine{nl, ex} <> ls, (rr, (Equal.cong(String, String, xx =>
+    String.append(nl, xx), tt, Laws.g.expr.text(ex, Laws.g.lines.text(ls, rr)), e1), (gd.tt(Laws.abnf.newline(nl),
+    Bool.and(Laws.g.ok.expr(ex), Laws.g.ok.lines(ls)), en, e2), hr)))))
+
+# and the lines after an expression
+def r2.lines.nl(
+  +nl: String,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  +en: {Laws.abnf.newline(nl) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfTop{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfLines{} <> rest, String.append(nl, tt)):
+  (+ex, (+ls, (+rr, (e1, (+e2, hr))))) = hh
+  (Laws.GLine{nl, ex} <> ls, (rr, (Equal.cong(String, String, xx => String.append(nl, xx), tt, Laws.g.expr.text(ex,
+    Laws.g.lines.text(ls, rr)), e1), (gd.tt(Laws.abnf.newline(nl), Bool.and(Laws.g.ok.expr(ex), Laws.g.ok.lines(ls)),
+    en, e2), hr))))
+
+# a line's end with nothing on it
+def r2.le.none(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(rest, tt)
+) -> Laws.r1.fill(Laws.RfLineEnd{} <> rest, tt):
+  ("", (Laws.GcNone{}, (tt, ({==}, ({==}, hh)))))
+
+# a wschar at a line's end
+def r2.le.ws(
+  +cc: Char,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  +ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfLineEnd{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfLineEnd{} <> rest, SCon{cc, tt}):
+  (+ww, (+cm, (+rr, (e1, (+e2, hr))))) = hh
+  (SCon{cc, ww}, (cm, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, String.append(ww, Laws.g.com.text(cm,
+    rr)), e1), (r2.ws3(cc, ww, Laws.g.ok.com(cm), ew, e2), hr)))))
+
+# a comment at a line's end
+def r2.le.cm(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfComment{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfLineEnd{} <> rest, SCon{'#', tt}):
+  (+bd, (+rr, (e1, (e2, hr)))) = hh
+  ("", (Laws.GcSome{bd}, (rr, (Equal.cong(String, String, xx => SCon{'#', xx}, tt, String.append(bd, rr), e1), (e2,
+    hr)))))
+
+# a comment ended: the newline that ends it is the lines'
+def r2.cm.end(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfLines{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfComment{} <> (Laws.RfLines{} <> rest), tt):
+  ("", (tt, ({==}, ({==}, hh))))
+
+# a comment as a blank expression
+def r2.top.cm(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfComment{} <> (Laws.RfLines{} <> rest), tt)
+) -> Laws.r1.fill(Laws.RfTop{} <> rest, SCon{'#', tt}):
+  (+bd, (+u1, (e1, (+e2, (+ls, (+u2, (e3, (+e4, hr)))))))) = hh
+  (Laws.GxBlank{"", Laws.GcSome{bd}}, (ls, (u2, (Equal.cong(String, String, xx => SCon{'#', xx}, tt,
+    String.append(bd, Laws.g.lines.text(ls, u2)), Equal.trans(String, tt, String.append(bd, u1), String.append(bd,
+    Laws.g.lines.text(ls, u2)), e1, Equal.cong(String, String, xx => String.append(bd, xx), u1, Laws.g.lines.text(ls,
+    u2), e3))), (gd.tt(Laws.g.ok.com(Laws.GcSome{bd}), Laws.g.ok.lines(ls), e2, e4), hr)))))
+
+# a table header as an expression
+def r2.top.tb(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfHOpen{False{}} <> (Laws.RfLineEnd{} <> (Laws.RfLines{} <> rest)), tt)
+) -> Laws.r1.fill(Laws.RfTop{} <> rest, SCon{'[', tt}):
+  (+tb, (+u1, (e1, (+e2, (+ww, (+cm, (+u2, (e3, (+e4, (+ls, (+u3, (e5, (+e6, hr))))))))))))) = hh
+  (Laws.GxTable{"", tb, ww, cm}, (ls, (u3, (Equal.trans(String, SCon{'[', tt}, Laws.g.table.text(tb, u1),
+    Laws.g.table.text(tb, String.append(ww, Laws.g.com.text(cm, Laws.g.lines.text(ls, u3)))), e1, Equal.cong(String,
+    String, xx => Laws.g.table.text(tb, xx), u1, String.append(ww, Laws.g.com.text(cm, Laws.g.lines.text(ls, u3))),
+    Equal.trans(String, u1, String.append(ww, Laws.g.com.text(cm, u2)), String.append(ww, Laws.g.com.text(cm,
+    Laws.g.lines.text(ls, u3))), e3, Equal.cong(String, String, xx => String.append(ww, Laws.g.com.text(cm, xx)), u2,
+    Laws.g.lines.text(ls, u3), e5)))), (gd.tt(Bool.and(Laws.g.ok.table(tb), Bool.and(Laws.abnf.ws(ww),
+    Laws.g.ok.com(cm))), Laws.g.ok.lines(ls), gd.tt(Laws.g.ok.table(tb), Bool.and(Laws.abnf.ws(ww), Laws.g.ok.com(cm)),
+    e2, e4), e6), hr)))))
+
+# a keyval read, then the rest completing the frames under it
+def r2.KV(rest: List<&2, Laws.R1Fr>, +text: String) -> Type:
+  &kv: Laws.GVal -> &rr: String -> ({text == Laws.g.val.text(kv, rr) : String} &
+    ({Laws.g.ok.val(kv, Laws.RKeyval{}) == True{} : Bool} & Laws.r1.fill(rest, rr)))
+
+# the text of a keyval from its parts
+def r2.kv.txt(
+  +text: String,
+  +sg: Laws.KSeg,
+  +ds: List<&2, Laws.GDotSep>,
+  +w1: String,
+  +w2: String,
+  +vv: Laws.GVal,
+  +u1: String,
+  +u2: String,
+  +u3: String,
+  +u4: String,
+  e1: {text == Laws.k3.seg.text(sg, u1) : String},
+  e3: {u1 == Laws.g.dots.text(ds, u2) : String},
+  e5: {u2 == String.append(w1, SCon{'=', u3}) : String},
+  e7: {u3 == String.append(w2, Laws.g.val.text(vv, u4)) : String}
+) -> {text == Laws.g.val.text(Laws.GKeyval{r1.mkkey(sg, ds), w1, w2, vv}, u4) : String}:
+  +tl = {String.append(w1, SCon{'=', String.append(w2, Laws.g.val.text(vv, u4))}) : String}
+  +e57 = {Equal.trans(String, u2, String.append(w1, SCon{'=', u3}), tl, e5, Equal.cong(String, String, xx =>
+    String.append(w1, SCon{'=', xx}), u3, String.append(w2, Laws.g.val.text(vv, u4)), e7)) : {u2 == tl : String}}
+  +e35 = {Equal.trans(String, u1, Laws.g.dots.text(ds, u2), Laws.g.dots.text(ds, tl), e3, Equal.cong(String, String,
+    xx => Laws.g.dots.text(ds, xx), u2, tl, e57)) : {u1 == Laws.g.dots.text(ds, tl) : String}}
+  Equal.trans(String, text, Laws.k3.seg.text(sg, Laws.g.dots.text(ds, tl)), Laws.g.key.text(r1.mkkey(sg, ds), tl),
+    Equal.trans(String, text, Laws.k3.seg.text(sg, u1), Laws.k3.seg.text(sg, Laws.g.dots.text(ds, tl)), e1,
+    Equal.cong(String, String, xx => Laws.k3.seg.text(sg, xx), u1, Laws.g.dots.text(ds, tl), e35)),
+    Equal.sym(String, Laws.g.key.text(r1.mkkey(sg, ds), tl), Laws.k3.seg.text(sg, Laws.g.dots.text(ds, tl)),
+    r1.mkkey.txt(sg, ds, tl)))
+
+# a key's first segment, its dot-seps, keyval-sep and value are a keyval
+def r2.kv(
+  +text: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfKSeg{} <> (Laws.RfKAfter{} <> (Laws.RfEq{} <> (Laws.RfVal{} <> rest))), text)
+) -> r2.KV(rest, text):
+  (+sg, (+u1, (e1, (+e2, (+ds, (+u2, (e3, (+e4, (+w1, (+u3, (e5, (+e6, (+w2, (+vv, (+u4, (e7, (+e8,
+    hr))))))))))))))))) = hh
+  (Laws.GKeyval{r1.mkkey(sg, ds), w1, w2, vv}, (u4, (r2.kv.txt(text, sg, ds, w1, w2, vv, u1, u2, u3, u4, e1, e3, e5,
+    e7), (gd.tt(Laws.g.ok.key(r1.mkkey(sg, ds)), Bool.and(Laws.abnf.ws(w1), Bool.and(Laws.abnf.ws(w2),
+    Laws.g.ok.val(vv, Laws.RVal{}))), r1.mkkey.ok(sg, ds, e2, e4), gd.tt(Laws.abnf.ws(w1), Bool.and(Laws.abnf.ws(w2),
+    Laws.g.ok.val(vv, Laws.RVal{})), e6, e8)), hr))))
+
+# a keyval as an expression
+def r2.top.kv(
+  +text: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: r2.KV(Laws.RfLineEnd{} <> (Laws.RfLines{} <> rest), text)
+) -> Laws.r1.fill(Laws.RfTop{} <> rest, text):
+  (+kv, (+u1, (e1, (+e2, (+ww, (+cm, (+u2, (e3, (+e4, (+ls, (+u3, (e5, (+e6, hr))))))))))))) = hh
+  (Laws.GxKeyval{"", kv, ww, cm}, (ls, (u3, (Equal.trans(String, text, Laws.g.val.text(kv, u1), Laws.g.val.text(kv,
+    String.append(ww, Laws.g.com.text(cm, Laws.g.lines.text(ls, u3)))), e1, Equal.cong(String, String, xx =>
+    Laws.g.val.text(kv, xx), u1, String.append(ww, Laws.g.com.text(cm, Laws.g.lines.text(ls, u3))),
+    Equal.trans(String, u1, String.append(ww, Laws.g.com.text(cm, u2)), String.append(ww, Laws.g.com.text(cm,
+    Laws.g.lines.text(ls, u3))), e3, Equal.cong(String, String, xx => String.append(ww, Laws.g.com.text(cm, xx)), u2,
+    Laws.g.lines.text(ls, u3), e5)))), (gd.tt(Bool.and(Laws.g.ok.val(kv, Laws.RKeyval{}), Bool.and(Laws.abnf.ws(ww),
+    Laws.g.ok.com(cm))), Laws.g.ok.lines(ls), gd.tt(Laws.g.ok.val(kv, Laws.RKeyval{}), Bool.and(Laws.abnf.ws(ww),
+    Laws.g.ok.com(cm)), e2, e4), e6), hr)))))
+
+# LTop: the lines of a document, with no frame open. Its obligation is over
+# the spike's positions and carried over as theirs are.
+
+# the state
+def r2.STop(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, [], un, lf, at)
+
+# the mode its step gives
+def r2.tpM(
+  +sp: Bool,
+  +nl: Bool,
+  +hash: Bool,
+  +br: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +bare: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.top.go(sp, nl, hash, br, qq, lit, bare, r2.STop(bd, rw, hs, he, pt, bf, bk, qk,
+    un, lf, at), cc)))
+
+# a carriage return at the top level, and the line feed after it
+def r2.tp.cr(
+  +cc: Char,
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  hh: Laws.r1.C(T.MCr{r2.STop(bd, rw, hs, he, pt, bf, bk, qk, un, lf, at)}, tt)
+) -> Laws.r1.fill([Laws.RfTop{}], SCon{cc, tt}):
+  (+uu, (e1, hr)) = hh
+  r1.at(cc, Chr{13}, r1.creq(cc, ecr), [Laws.RfTop{}], tt, r2.rw1([Laws.RfTop{}], SCon{Chr{13}, tt}, SCon{Chr{13},
+    SCon{'\n', uu}}, Equal.cong(String, String, xx => SCon{Chr{13}, xx}, tt, SCon{'\n', uu}, e1),
+    r2.top.nl(SCon{Chr{13}, SCon{'\n', SNil{}}}, uu, [], {==}, hr)))
+
+# a newline at the top level: a line feed, or a carriage return and one
+def r2.tp.nl(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == True{} : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  ih: Laws.r1.C(sr.K(qq, lit, cr, r2.STop(bd, rw, hs, he, pt, bf, bk, qk, un, lf, at)), tt)
+) -> Laws.r1.fill([Laws.RfTop{}], SCon{cc, tt}):
+  match cr:
+    case True{}:
+      r2.tp.cr(cc, ecr, bd, rw, hs, he, pt, bf, bk, qk, un, lf, at, tt, r2.kq1(qq, lit, True{}, cc, eqq, elt, xx =>
+        T.ch.nl(xx), enl, {==}, {==}, r2.STop(bd, rw, hs, he, pt, bf, bk, qk, un, lf, at), tt, ih))
+    case False{}:
+      r1.at(cc, '\n', r2.lf(cc, enl, ecr), [Laws.RfTop{}], tt, r2.top.nl(SCon{'\n', SNil{}}, tt, [], {==},
+        r2.kq1(qq, lit, False{}, cc, eqq, elt, xx => T.ch.nl(xx), enl, {==}, {==}, r2.STop(bd, rw, hs, he, pt, bf, bk,
+        qk, un, lf, at), tt, ih)))
+
+# LTop's dispatch, one test at a time
+def r2.tp.go(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  br: Bool,
+  qq: Bool,
+  lit: Bool,
+  bare: Bool,
+  cr: Bool,
+  +cc: Char,
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +ehs: {Char.is_eq(cc, '#') == hash : Bool},
+  +ebr: {Char.is_eq(cc, '[') == br : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +eba: {T.bare.at(cc) == bare : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.tpM(sp, nl, hash, br, qq, lit, bare, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, un, lf, at)),
+  ih: Laws.r1.C(r2.tpM(sp, nl, hash, br, qq, lit, bare, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, un, lf, at), tt)
+) -> Laws.r1.fill([Laws.RfTop{}], SCon{cc, tt}):
+  match sp:
+    case True{}:
+      r2.top.ws(cc, tt, [], r1.spws(cc, esp), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx), esp, {==}, {==},
+        {==}, r2.STop(bd, rw, hs, he, pt, bf, bk, qk, un, lf, at), tt, ih))
+    case False{}:
+      match nl:
+        case True{}:
+          r2.tp.nl(qq, lit, cr, cc, enl, eqq, elt, ecr, bd, rw, hs, he, pt, bf, bk, qk, un, lf, at, tt, ih)
+        case False{}:
+          match hash:
+            case True{}:
+              r1.at(cc, '#', ehs, [Laws.RfTop{}], tt, r2.top.cm(tt, [], r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
+                Char.is_eq(xx, '#'), ehs, {==}, {==}, {==}, T.read.once2(T.com.enter(r2.STop(bd, rw, hs, he, pt, bf, bk,
+                qk, un, lf, at), T.LTop{})), tt, ih)))
+            case False{}:
+              match br:
+                case True{}:
+                  r1.at(cc, '[', ebr, [Laws.RfTop{}], tt, r2.top.tb(tt, [], r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
+                    Char.is_eq(xx, '['), ebr, {==}, {==}, {==}, T.read.once2(T.lex.bracket(r2.STop(bd, rw, hs, he, pt,
+                    bf, bk, qk, un, lf, at))), tt, ih)))
+                case False{}:
+                  match qq:
+                    case True{}:
+                      r1.at(cc, '"', eqq, [Laws.RfTop{}], tt, r2.top.kv(SCon{'"', tt}, [], r2.kv(SCon{'"', tt},
+                        Laws.r1.eol(), r1.x.segbasic(tt, Laws.RfKAfter{} <> Laws.r1.vend([]), ih))))
+                    case False{}:
+                      match lit:
+                        case True{}:
+                          r1.at(cc, '\'', elt, [Laws.RfTop{}], tt, r2.top.kv(SCon{'\'', tt}, [], r2.kv(SCon{'\'', tt},
+                            Laws.r1.eol(), r1.x.seglit(tt, Laws.RfKAfter{} <> Laws.r1.vend([]), ih))))
+                        case False{}:
+                          match bare:
+                            case True{}:
+                              r2.top.kv(SCon{cc, tt}, [], r2.kv(SCon{cc, tt}, Laws.r1.eol(), r1.x.segbare(cc, tt,
+                                Laws.RfKAfter{} <> Laws.r1.vend([]), r1.ukc(cc, eba), r1.kk(False{}, False{}, cr, cc,
+                                eqq, elt, ecr, xx => T.bare.at(xx), eba, {==}, {==}, {==}, T.read.once2(T.st.push(
+                                r2.STop(bd, rw, hs, he, pt, bf, bk, qk, un, lf, at), cc, T.LKey{})), tt, ih))))
+                            case False{}:
+                              Eq.bit.gone(&1, Laws.r1.fill([Laws.RfTop{}], SCon{cc, tt}), r1.bad(False{}, False{}, cr,
+                                bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, [], un, lf, at, 'i', "nvalid key", tt, en))
+
+# LTop's obligation over the spike's positions, for every character
+def r2.ob1.top(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at, cc, tt):
+  match sk:
+    case []:
+      _ec => en => ih => r2.tp.go(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '['), Char.is_eq(cc,
+        '"'), Char.is_eq(cc, '\''), T.bare.at(cc), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==},
+        {==}, {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk, un, lf, at, tt, en, ih)
+    case _s <> _ss:
+      _ec => _en => _ih => Unit{}
+
+# LTop's obligation, over r2's positions
+def r2.ob.top(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LTop{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r2.ob1.top(bd, rw, hs,
+    he, pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LTop{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+
+# LLine and a comment at the top level or after an expression: a line's end
+# and the lines after it. Their obligations are over the spike's positions.
+
+# a completion of a mode is one of a mode equal to it
+def r2.cast1(
+  m1: T.Mode,
+  m2: T.Mode,
+  +tt: String,
+  ee: {m1 == m2 : T.Mode},
+  hh: Laws.r1.C(m1, tt)
+) -> Laws.r1.C(m2, tt):
+  %ee : Laws.r1.C(_, tt)
+  hh
+
+# a character a test holds of and one it does not are not equal
+def r2.ne.go(
+  bb: Bool,
+  +cc: Char,
+  +kk: Char,
+  eb: {Char.is_eq(cc, kk) == bb : Bool},
+  pp: Char -> Bool,
+  +yes: {pp(cc) == True{} : Bool},
+  no: {pp(kk) == False{} : Bool}
+) -> {Char.is_eq(cc, kk) == False{} : Bool}:
+  match bb:
+    case True{}:
+      Eq.bit.gone(&2, {Char.is_eq(cc, kk) == False{} : Bool}, Eq.refute_char(cc, kk, pp, eb, yes, no))
+    case False{}:
+      eb
+
+# the same, from the test
+def r2.ne(
+  +cc: Char,
+  +kk: Char,
+  pp: Char -> Bool,
+  +yes: {pp(cc) == True{} : Bool},
+  no: {pp(kk) == False{} : Bool}
+) -> {Char.is_eq(cc, kk) == False{} : Bool}:
+  r2.ne.go(Char.is_eq(cc, kk), cc, kk, {==}, pp, yes, no)
+
+# LTop's step on a newline leaves it as it is
+def r2.tgo.nl(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  br: Bool,
+  qq: Bool,
+  lit: Bool,
+  bare: Bool,
+  +st: T.St,
+  +cc: Char,
+  esp: {sp == False{} : Bool},
+  enl: {nl == True{} : Bool}
+) -> {T.lex.top.go(sp, nl, hash, br, qq, lit, bare, st, cc) == st : T.St}:
+  match sp:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.lex.top.go(True{}, nl, hash, br, qq, lit, bare, st, cc) == st : T.St}, esp)
+    case False{}:
+      match nl:
+        case True{}:
+          {==}
+        case False{}:
+          Eq.bit.absurd(&2, {T.lex.top.go(False{}, False{}, hash, br, qq, lit, bare, st, cc) == st : T.St}, enl)
+
+# and LLine's moves it to LTop
+def r2.lgo.nl(
+  sp: Bool,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  esp: {sp == False{} : Bool},
+  ehs: {hash == False{} : Bool},
+  enl: {nl == True{} : Bool}
+) -> {T.lex.line.go(sp, hash, nl, st, cc) == T.st.lex(st, T.LTop{}) : T.St}:
+  match sp:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.lex.line.go(True{}, hash, nl, st, cc) == T.st.lex(st, T.LTop{}) : T.St}, esp)
+    case False{}:
+      match hash:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.lex.line.go(False{}, True{}, nl, st, cc) == T.st.lex(st, T.LTop{}) : T.St}, ehs)
+        case False{}:
+          match nl:
+            case True{}:
+              {==}
+            case False{}:
+              Eq.bit.absurd(&2, {T.lex.line.go(False{}, False{}, False{}, st, cc) == T.st.lex(st, T.LTop{}) : T.St},
+                enl)
+
+# a carriage return and a line feed, then a line's expressions
+def r2.nl.cr(
+  +cc: Char,
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  hh: Laws.r1.C(T.MCr{r2.STop(bd, rw, hs, he, pt, bf, bk, qk, un, lf, at)}, tt)
+) -> Laws.r1.fill([Laws.RfLines{}], SCon{cc, tt}):
+  (+uu, (e1, hr)) = hh
+  r1.at(cc, Chr{13}, r1.creq(cc, ecr), [Laws.RfLines{}], tt, r2.rw1([Laws.RfLines{}], SCon{Chr{13}, tt}, SCon{Chr{13},
+    SCon{'\n', uu}}, Equal.cong(String, String, xx => SCon{Chr{13}, xx}, tt, SCon{'\n', uu}, e1),
+    r2.lines.nl(SCon{Chr{13}, SCon{'\n', SNil{}}}, uu, [], {==}, hr)))
+
+# a newline, then a line's expressions, from the state at the top level it
+# leaves
+def r2.nl.lines(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == True{} : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  ih: Laws.r1.C(sr.K(qq, lit, cr, r2.STop(bd, rw, hs, he, pt, bf, bk, qk, un, lf, at)), tt)
+) -> Laws.r1.fill([Laws.RfLines{}], SCon{cc, tt}):
+  match cr:
+    case True{}:
+      r2.nl.cr(cc, ecr, bd, rw, hs, he, pt, bf, bk, qk, un, lf, at, tt, r2.kq1(qq, lit, True{}, cc, eqq, elt, xx =>
+        T.ch.nl(xx), enl, {==}, {==}, r2.STop(bd, rw, hs, he, pt, bf, bk, qk, un, lf, at), tt, ih))
+    case False{}:
+      r1.at(cc, '\n', r2.lf(cc, enl, ecr), [Laws.RfLines{}], tt, r2.lines.nl(SCon{'\n', SNil{}}, tt, [], {==},
+        r2.kq1(qq, lit, False{}, cc, eqq, elt, xx => T.ch.nl(xx), enl, {==}, {==}, r2.STop(bd, rw, hs, he, pt, bf, bk,
+        qk, un, lf, at), tt, ih)))
+
+# LLine's state
+def r2.SLine(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LLine{}, bk, qk, [], un, lf, at)
+
+# the mode its step gives
+def r2.lnM(
+  +sp: Bool,
+  +hash: Bool,
+  +nl: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.line.go(sp, hash, nl, r2.SLine(bd, rw, hs, he, pt, bf, bk, qk, un, lf, at),
+    cc)))
+
+# LLine's dispatch, one test at a time
+def r2.ln.go(
+  sp: Bool,
+  hash: Bool,
+  nl: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +ehs: {Char.is_eq(cc, '#') == hash : Bool},
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.lnM(sp, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, un, lf, at)),
+  ih: Laws.r1.C(r2.lnM(sp, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, un, lf, at), tt)
+) -> Laws.r1.fill(Laws.r1.eol(), SCon{cc, tt}):
+  match sp:
+    case True{}:
+      r2.le.ws(cc, tt, [Laws.RfLines{}], r1.spws(cc, esp), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx), esp,
+        {==}, {==}, {==}, r2.SLine(bd, rw, hs, he, pt, bf, bk, qk, un, lf, at), tt, ih))
+    case False{}:
+      match hash:
+        case True{}:
+          r1.at(cc, '#', ehs, Laws.r1.eol(), tt, r2.le.cm(tt, [Laws.RfLines{}], r1.kk(qq, lit, cr, cc, eqq, elt, ecr,
+            xx => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==}, T.read.once2(T.com.enter(r2.SLine(bd, rw, hs, he, pt, bf,
+            bk, qk, un, lf, at), T.LLine{})), tt, ih)))
+        case False{}:
+          match nl:
+            case True{}:
+              r2.le.none(SCon{cc, tt}, [Laws.RfLines{}], r2.nl.lines(qq, lit, cr, cc, enl, eqq, elt, ecr, bd, rw, hs,
+                he, pt, bf, bk, qk, un, lf, at, tt, ih))
+            case False{}:
+              Eq.bit.gone(&1, Laws.r1.fill(Laws.r1.eol(), SCon{cc, tt}), r1.bad(qq, lit, cr, bd, rw, hs, he, pt, bf,
+                T.LLine{}, bk, qk, [], un, lf, at, 'n', "ewline required", tt, en))
+
+# LLine's obligation over the spike's positions, for every character
+def r2.ob1.line(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LLine{}, bk, qk, sk, un, lf, at, cc, tt):
+  match sk:
+    case []:
+      _ec => en => ih => r2.ln.go(T.ch.sp(cc), Char.is_eq(cc, '#'), T.ch.nl(cc), Char.is_eq(cc, '"'), Char.is_eq(cc,
+        '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk,
+        un, lf, at, tt, en, ih)
+    case _s <> _ss:
+      _ec => _en => _ih => Unit{}
+
+# LLine's obligation, over r2's positions
+def r2.ob.line(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LLine{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.up(Laws.r1.gp0(T.LLine{}, bk, qk, sk, pt, bf, un, lf, at), SCon{cc, tt}, r2.ob1.line(bd, rw, hs,
+    he, pt, bf, bk, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf,
+    T.LLine{}, bk, qk, sk, un, lf, at, cc)), tt, ih)))
+
+
+# A comment at the top level or after an expression: its characters, and
+# the newline that ends it, which the state it returns to reads.
+
+# a newline is no blank space
+def r2.nsp.go(
+  bb: Bool,
+  +cc: Char,
+  eb: {T.ch.sp(cc) == bb : Bool},
+  +enl: {T.ch.nl(cc) == True{} : Bool}
+) -> {T.ch.sp(cc) == False{} : Bool}:
+  match bb:
+    case True{}:
+      Eq.bit.gone(&2, {T.ch.sp(cc) == False{} : Bool}, r2.nlsp(cc, eb, enl))
+    case False{}:
+      eb
+
+# the same, from the test
+def r2.nsp(+cc: Char, +enl: {T.ch.nl(cc) == True{} : Bool}) -> {T.ch.sp(cc) == False{} : Bool}:
+  r2.nsp.go(T.ch.sp(cc), cc, {==}, enl)
+
+# a comment's state, returning to lx
+def r2.SCom(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bk: T.Lex
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk, [], un, lf, at)
+
+# the mode its step gives
+def r2.cmM(
+  +nl: Bool,
+  +ctl: Bool,
+  +tab: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bk: T.Lex
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.com.go(nl, ctl, tab, r2.SCom(bd, rw, hs, he, pt, bf, qk, un, lf, at, bk), cc)))
+
+# a character the comment keeps leaves the state as it is: it is no
+# carriage return, and a quote opens nothing in a comment
+def r2.cm.stay(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == False{} : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bk: T.Lex,
+  +tt: String,
+  hh: Laws.r1.C(sr.K(qq, lit, cr, r2.SCom(bd, rw, hs, he, pt, bf, qk, un, lf, at, bk)), tt)
+) -> Laws.r1.C(T.MScan{r2.SCom(bd, rw, hs, he, pt, bf, qk, un, lf, at, bk)}, tt):
+  match qq:
+    case True{}:
+      hh
+    case False{}:
+      match lit:
+        case True{}:
+          hh
+        case False{}:
+          match cr:
+            case True{}:
+              Eq.bit.gone(&1, Laws.r1.C(T.MScan{r2.SCom(bd, rw, hs, he, pt, bf, qk, un, lf, at, bk)}, tt),
+                Eq.refute_char(cc, Chr{13}, xx => Bool.not(T.ch.nl(xx)), r1.creq(cc, ecr), Equal.cong(Bool, Bool, xx =>
+                Bool.not(xx), T.ch.nl(cc), False{}, enl), {==}))
+            case False{}:
+              hh
+
+# a comment character by the scanner's tests: no control, or a tab
+def r2.cm.c(
+  ctl: Bool,
+  tab: Bool,
+  +cc: Char,
+  ect: {T.ch.ctl(cc) == ctl : Bool},
+  etb: {U32.is_eq(Char.to_u32(cc), 9) == tab : Bool},
+  ok: {T.wf.char(cc) == True{} : Bool},
+  keep: {Bool.or(Bool.not(ctl), tab) == True{} : Bool}
+) -> {Bool.and(Laws.abnf.non_eol(cc), Laws.prose.comment_char(cc)) == True{} : Bool}:
+  match ctl:
+    case False{}:
+      match cc:
+        case Chr{+uu}:
+          r2.cm.nc(uu, ect, ok)
+    case True{}:
+      match tab:
+        case True{}:
+          match cc:
+            case Chr{+uu}:
+              r2.cm.tab(uu, etb)
+        case False{}:
+          Eq.bit.absurd(&2, {Bool.and(Laws.abnf.non_eol(cc), Laws.prose.comment_char(cc)) == True{} : Bool}, keep)
+
+# the newline that ends a comment returning to LTop leaves the state at the
+# top level
+def r2.cm.nl.top(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == True{} : Bool}
+) -> {T.read.once2(T.lex.com.nl(r2.SCom(bd, rw, hs, he, pt, bf, qk, un, lf, at, T.LTop{}), cc)) == r2.STop(bd, rw, hs,
+  he, pt, bf, T.LTop{}, qk, un, lf, at) : T.St}:
+  r2.tgo.nl(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '['), Char.is_eq(cc, '"'), Char.is_eq(cc,
+    '\''), T.bare.at(cc), r2.STop(bd, rw, hs, he, pt, bf, T.LTop{}, qk, un, lf, at), cc, r2.nsp(cc, enl), enl)
+
+# a comment returning to LTop: its dispatch
+def r2.cm.go.top(
+  nl: Bool,
+  ctl: Bool,
+  tab: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +ect: {T.ch.ctl(cc) == ctl : Bool},
+  +etb: {U32.is_eq(Char.to_u32(cc), 9) == tab : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +eok: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.cmM(nl, ctl, tab, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, qk, un, lf, at, T.LTop{})),
+  ih: Laws.r1.C(r2.cmM(nl, ctl, tab, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, qk, un, lf, at, T.LTop{}), tt)
+) -> Laws.r1.fill([Laws.RfComment{}, Laws.RfLines{}], SCon{cc, tt}):
+  match nl:
+    case False{}:
+      match ctl:
+        case False{}:
+          r2.x.cm(cc, tt, [Laws.RfLines{}], r2.cm.c(False{}, tab, cc, ect, etb, eok, {==}), r2.cm.stay(qq, lit, cr,
+            cc, enl, ecr, bd, rw, hs, he, pt, bf, qk, un, lf, at, T.LTop{}, tt, ih))
+        case True{}:
+          match tab:
+            case True{}:
+              r2.x.cm(cc, tt, [Laws.RfLines{}], r2.cm.c(True{}, True{}, cc, ect, etb, eok, {==}), r2.cm.stay(qq, lit,
+                cr, cc, enl, ecr, bd, rw, hs, he, pt, bf, qk, un, lf, at, T.LTop{}, tt, ih))
+            case False{}:
+              Eq.bit.gone(&1, Laws.r1.fill([Laws.RfComment{}, Laws.RfLines{}], SCon{cc, tt}), r1.bad(qq, lit, cr, bd,
+                rw, hs, he, pt, bf, T.LCom{}, T.LTop{}, qk, [], un, lf, at, 'i', "nvalid control in comment", tt,
+                en))
+    case True{}:
+      r2.cm.end(SCon{cc, tt}, [], r2.nl.lines(qq, lit, cr, cc, enl, eqq, elt, ecr, bd, rw, hs, he, pt, bf, T.LTop{}, qk,
+        un, lf, at, tt, r2.cast1(sr.K(qq, lit, cr, T.read.once2(T.lex.com.nl(r2.SCom(bd, rw, hs, he, pt, bf, qk, un, lf,
+        at, T.LTop{}), cc))), sr.K(qq, lit, cr, r2.STop(bd, rw, hs, he, pt, bf, T.LTop{}, qk, un, lf, at)), tt,
+        Equal.cong(T.St, T.Mode, xx => sr.K(qq, lit, cr, xx), T.read.once2(T.lex.com.nl(r2.SCom(bd, rw, hs, he, pt, bf,
+        qk, un, lf, at, T.LTop{}), cc)), r2.STop(bd, rw, hs, he, pt, bf, T.LTop{}, qk, un, lf, at), r2.cm.nl.top(bd, rw,
+        hs, he, pt, bf, qk, un, lf, at, cc, enl)), ih)))
+
+# the newline that ends a comment returning to LLine leaves the state at the
+# top level
+def r2.cm.nl.line(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == True{} : Bool}
+) -> {T.read.once2(T.lex.com.nl(r2.SCom(bd, rw, hs, he, pt, bf, qk, un, lf, at, T.LLine{}), cc)) == r2.STop(bd, rw, hs,
+  he, pt, bf, T.LLine{}, qk, un, lf, at) : T.St}:
+  r2.lgo.nl(T.ch.sp(cc), Char.is_eq(cc, '#'), T.ch.nl(cc), sip.S(bd, rw, hs, he, pt, bf, T.LLine{},
+    T.LLine{}, qk, [], un, lf, at), cc, r2.nsp(cc, enl), r2.ne(cc, '#', xx => T.ch.nl(xx), enl, {==}), enl)
+
+# a comment returning to LLine: its dispatch
+def r2.cm.go.line(
+  nl: Bool,
+  ctl: Bool,
+  tab: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +ect: {T.ch.ctl(cc) == ctl : Bool},
+  +etb: {U32.is_eq(Char.to_u32(cc), 9) == tab : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +eok: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.cmM(nl, ctl, tab, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, qk, un, lf, at, T.LLine{})),
+  ih: Laws.r1.C(r2.cmM(nl, ctl, tab, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, qk, un, lf, at, T.LLine{}), tt)
+) -> Laws.r1.fill([Laws.RfComment{}, Laws.RfLines{}], SCon{cc, tt}):
+  match nl:
+    case False{}:
+      match ctl:
+        case False{}:
+          r2.x.cm(cc, tt, [Laws.RfLines{}], r2.cm.c(False{}, tab, cc, ect, etb, eok, {==}), r2.cm.stay(qq, lit, cr,
+            cc, enl, ecr, bd, rw, hs, he, pt, bf, qk, un, lf, at, T.LLine{}, tt, ih))
+        case True{}:
+          match tab:
+            case True{}:
+              r2.x.cm(cc, tt, [Laws.RfLines{}], r2.cm.c(True{}, True{}, cc, ect, etb, eok, {==}), r2.cm.stay(qq, lit,
+                cr, cc, enl, ecr, bd, rw, hs, he, pt, bf, qk, un, lf, at, T.LLine{}, tt, ih))
+            case False{}:
+              Eq.bit.gone(&1, Laws.r1.fill([Laws.RfComment{}, Laws.RfLines{}], SCon{cc, tt}), r1.bad(qq, lit, cr, bd,
+                rw, hs, he, pt, bf, T.LCom{}, T.LLine{}, qk, [], un, lf, at, 'i', "nvalid control in comment", tt,
+                en))
+    case True{}:
+      r2.cm.end(SCon{cc, tt}, [], r2.nl.lines(qq, lit, cr, cc, enl, eqq, elt, ecr, bd, rw, hs, he, pt, bf, T.LLine{},
+        qk, un, lf, at, tt, r2.cast1(sr.K(qq, lit, cr, T.read.once2(T.lex.com.nl(r2.SCom(bd, rw, hs, he, pt, bf, qk, un,
+        lf, at, T.LLine{}), cc))), sr.K(qq, lit, cr, r2.STop(bd, rw, hs, he, pt, bf, T.LLine{}, qk, un, lf, at)), tt,
+        Equal.cong(T.St, T.Mode, xx => sr.K(qq, lit, cr, xx), T.read.once2(T.lex.com.nl(r2.SCom(bd, rw, hs, he, pt, bf,
+        qk, un, lf, at, T.LLine{}), cc)), r2.STop(bd, rw, hs, he, pt, bf, T.LLine{}, qk, un, lf, at), r2.cm.nl.line(bd,
+        rw, hs, he, pt, bf, qk, un, lf, at, cc, enl)), ih)))
+
+# a comment returning to LTop: its obligation over the spike's positions,
+# for every character
+def r2.ob1.com.top(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LCom{}, T.LTop{}, qk, sk, un, lf, at, cc, tt):
+  match sk:
+    case []:
+      ec => en => ih => r2.cm.go.top(T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), Char.is_eq(cc, '"'),
+        Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, {==}, ec, bd, rw, hs,
+        he, pt, bf, qk, un, lf, at, tt, en, ih)
+    case _s <> _ss:
+      _ec => _en => _ih => Unit{}
+
+# a comment returning to LLine: its obligation over the spike's positions,
+# for every character
+def r2.ob1.com.line(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LCom{}, T.LLine{}, qk, sk, un, lf, at, cc, tt):
+  match sk:
+    case []:
+      ec => en => ih => r2.cm.go.line(T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), Char.is_eq(cc, '"'),
+        Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, {==}, ec, bd, rw, hs,
+        he, pt, bf, qk, un, lf, at, tt, en, ih)
+    case _s <> _ss:
+      _ec => _en => _ih => Unit{}
+
+
+# A value placed: the state take.top leaves has the position of what comes
+# after a value in the frames it is in (r2.aft), whether the value went to
+# the root, an array or an inline table, and whether the walk failed.
+
+# the state a value placed at the root leaves
+def r2.vt.root(
+  end: T.End,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +text: String,
+  hh: Laws.r2.fill(Laws.r2.gp(T.read.once2(T.take.root(end, he, bk, qk, un, lf, at, False{}))), text)
+) -> Laws.r2.fill(Laws.r2.aft([]), text):
+  match end:
+    case T.End{_v, _b, _h}:
+      hh
+
+# and one placed in an inline table
+def r2.vt.inl(
+  end: T.End,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +rest: List<&2, T.Ctx>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +text: String,
+  hh: Laws.r2.fill(Laws.r2.gp(T.read.once2(T.take.inl(end, rw, hs, he, ps, rest, bk, qk, un, lf, at, False{}))), text)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfInlAfter{}} <> Laws.r2.aft(rest), text):
+  match end:
+    case T.End{_i, _b, _h}:
+      hh
+
+# a value placed, wherever it went
+def r2.vt(
+  sk: List<&2, T.Ctx>,
+  +vv: T.Val,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +text: String,
+  hh: Laws.r2.fill(Laws.r2.gp(T.read.once2(T.take.top(sk, vv, bd, rw, hs, he, pt, bk, qk, un, lf, at, False{}))), text)
+) -> Laws.r2.fill(Laws.r2.aft(sk), text):
+  match sk:
+    case []:
+      r2.vt.root(T.tree.walk(T.path.cat(he, pt), T.Tw{rw, T.JPut{vv}, [], bd, "", hs, False{}}, T.path.len(he, 0)), he,
+        bk, qk, un, lf, at, text, hh)
+    case T.CArr{_i, _s, _a} <> _r:
+      hh
+    case T.CInl{+inl, +saved, +ah} <> +rest:
+      r2.vt.inl(T.tree.walk(List.reverse(&2, String, pt), T.Tw{inl, T.JPut{vv}, [], bd, "", [], True{}}, 0), rw, hs,
+        ah, saved, rest, bk, qk, un, lf, at, text, hh)
+
+# ws-comment-newline: one piece before the rest, as text
+def r2.wcn.cons(
+  ww: Laws.GWcn,
+  +wb: List<&2, Laws.GWcn>,
+  +tl: String
+) -> {Laws.g.wcn.text([ww], Laws.g.wcn.text(wb, tl)) == Laws.g.wcn.text(ww <> wb, tl) : String}:
+  match ww:
+    case Laws.GwWschar{_c}:
+      {==}
+    case Laws.GwNewline{_m, _n}:
+      {==}
+
+# and by its rules
+def r2.wcn.okc(
+  ww: Laws.GWcn,
+  +wb: List<&2, Laws.GWcn>,
+  +ew: {Laws.g.ok.wcn([ww]) == True{} : Bool},
+  +eb: {Laws.g.ok.wcn(wb) == True{} : Bool}
+) -> {Laws.g.ok.wcn(ww <> wb) == True{} : Bool}:
+  match ww:
+    case Laws.GwWschar{+c1}:
+      gd.tt(Laws.abnf.wschar(c1), Laws.g.ok.wcn(wb), gd.l(Laws.abnf.wschar(c1), True{}, ew), eb)
+    case Laws.GwNewline{+cm, +nl}:
+      gd.tt(Laws.g.ok.com(cm), Bool.and(Laws.abnf.newline(nl), Laws.g.ok.wcn(wb)), gd.l(Laws.g.ok.com(cm),
+        Bool.and(Laws.abnf.newline(nl), True{}), ew), gd.tt(Laws.abnf.newline(nl), Laws.g.ok.wcn(wb),
+        gd.l(Laws.abnf.newline(nl), True{}, gd.r(Laws.g.ok.com(cm), Bool.and(Laws.abnf.newline(nl), True{}), ew)), eb))
+
+# a ws-comment-newline piece before what follows an array's item
+def r2.aa.cons(
+  +ww: Laws.GWcn,
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  +ew: {Laws.g.ok.wcn([ww]) == True{} : Bool},
+  hh: Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, Laws.g.wcn.text([ww], tt)):
+  (+wb, (+at, (+wn, (+rr, (e1, (+e2, hr)))))) = hh
+  (ww <> wb, (at, (wn, (rr, (Equal.trans(String, Laws.g.wcn.text([ww], tt), Laws.g.wcn.text([ww], Laws.g.wcn.text(wb,
+    Laws.r1.atail.text(at, Laws.g.wcn.text(wn, SCon{']', rr})))), Laws.g.wcn.text(ww <> wb, Laws.r1.atail.text(at,
+    Laws.g.wcn.text(wn, SCon{']', rr}))), Equal.cong(String, String, xx => Laws.g.wcn.text([ww], xx), tt,
+    Laws.g.wcn.text(wb, Laws.r1.atail.text(at, Laws.g.wcn.text(wn, SCon{']', rr}))), e1), r2.wcn.cons(ww, wb,
+    Laws.r1.atail.text(at, Laws.g.wcn.text(wn, SCon{']', rr})))), (gd.tt(Laws.g.ok.wcn(ww <> wb),
+    Bool.and(Laws.r1.atail.ok(at), Laws.g.ok.wcn(wn)), r2.wcn.okc(ww, wb, ew, gd.l(Laws.g.ok.wcn(wb),
+    Bool.and(Laws.r1.atail.ok(at), Laws.g.ok.wcn(wn)), e2)), gd.r(Laws.g.ok.wcn(wb), Bool.and(Laws.r1.atail.ok(at),
+    Laws.g.ok.wcn(wn)), e2)), hr))))))
+
+# an array's ] after an item
+def r2.aa.close(
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{']', tt}):
+  ([], (Laws.RaEnd{False{}}, ([], (tt, ({==}, ({==}, hh))))))
+
+# a comma after an item: the array after it, or its end
+def r2.aa.comma.go(
+  gv: Laws.GVal,
+  +tt: String,
+  +rr: String,
+  +rest: List<&2, Laws.R2Fr>,
+  e1: {tt == Laws.r2.arr.rest(gv, rr) : String},
+  +e2: {Bool.and(Laws.r2.is.arr(gv), Laws.g.ok.val(gv, Laws.RVal{})) == True{} : Bool},
+  hr: Laws.r2.fill(rest, rr)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}):
+  match gv:
+    case Laws.GvArrayEmpty{+wn}:
+      ([], (Laws.RaEnd{True{}}, (wn, (rr, (Equal.cong(String, String, xx => SCon{',', xx}, tt, Laws.g.wcn.text(wn,
+        SCon{']', rr}), e1), (e2, hr))))))
+    case Laws.GvArray{+vals, +wn}:
+      ([], (Laws.RaMore{vals}, (wn, (rr, (Equal.cong(String, String, xx => SCon{',', xx}, tt, Laws.g.val.text(vals,
+        Laws.g.wcn.text(wn, SCon{']', rr})), e1), (e2, hr))))))
+    case Laws.GvString{_s}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}), e2)
+    case Laws.GvBoolean{_c}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}), e2)
+    case Laws.GvInlineTableEmpty{_a, _b}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}), e2)
+    case Laws.GvInlineTable{_a, _k, _b}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}), e2)
+    case Laws.GvDateTime{_c}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}), e2)
+    case Laws.GvFloat{_c}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}), e2)
+    case Laws.GvInteger{_c}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}), e2)
+    case Laws.GArrayValues{_a, _v, _b, _r}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}), e2)
+    case Laws.GArrayValuesLast{_a, _v, _b, _s}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}), e2)
+    case Laws.GInlineTableKeyvals{_k, _a, _b, _r}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}), e2)
+    case Laws.GInlineTableKeyvalsLast{_k}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}), e2)
+    case Laws.GKeyval{_k, _a, _b, _v}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}), e2)
+
+# the same, with the completion taken apart
+def r2.aa.comma(
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2Arr{} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{',', tt}):
+  (+gv, (+rr, (e1, (+e2, hr)))) = hh
+  r2.aa.comma.go(gv, tt, rr, rest, e1, e2, hr)
+
+# a comment and its newline after an item
+def r2.aa.cm(
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2Old{Laws.RfComment{}} <> (Laws.R2Nl{} <> (Laws.R2Old{Laws.RfArrAfter{}} <> rest)), tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{'#', tt}):
+  (+bd, (+u1, (e1, (+e2, (+nl, (+u2, (e3, (+e4, h2)))))))) = hh
+  r2.rw2(Laws.R2Old{Laws.RfArrAfter{}} <> rest, SCon{'#', tt}, Laws.g.wcn.text([Laws.GwNewline{Laws.GcSome{bd}, nl}],
+    u2), Equal.cong(String, String, xx => SCon{'#', xx}, tt, String.append(bd, String.append(nl, u2)),
+    Equal.trans(String, tt, String.append(bd, u1), String.append(bd, String.append(nl, u2)), e1, Equal.cong(String,
+    String, xx => String.append(bd, xx), u1, String.append(nl, u2), e3))), r2.aa.cons(Laws.GwNewline{Laws.GcSome{bd},
+    nl}, u2, rest, gd.tt(Laws.g.ok.com(Laws.GcSome{bd}), Bool.and(Laws.abnf.newline(nl), True{}), e2,
+    gd.tt(Laws.abnf.newline(nl), True{}, e4, {==})), h2))
+
+# LArrC: after an array's item, before its comma or ]. Blank space, a
+# newline and a comment are the ws-comment-newline after the item; a comma
+# leaves the array's rest to LArr; ] closes it and places it.
+
+# the state
+def r2.SAc(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, [], T.LArrC{}, bk, qk, T.CArr{i0, p0, h0} <> rs, un, lf, at)
+
+# the mode its step gives
+def r2.acM(
+  +sp: Bool,
+  +nl: Bool,
+  +hash: Bool,
+  +comma: Bool,
+  +end: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.arrc.go(sp, nl, hash, comma, end, r2.SAc(bd, rw, hs, he, pt, bk, qk, i0, p0, h0,
+    rs, un, lf, at), cc)))
+
+# a carriage return after an item, and the line feed after it
+def r2.ac.cr(
+  +cc: Char,
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  hh: Laws.r2.C(T.MCr{r2.SAc(bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at)}, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs), SCon{cc, tt}):
+  (+uu, (e1, hr)) = hh
+  r2.at(cc, Chr{13}, r1.creq(cc, ecr), Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs), tt,
+    r2.rw2(Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs), SCon{Chr{13}, tt}, SCon{Chr{13}, SCon{'\n', uu}},
+    Equal.cong(String, String, xx => SCon{Chr{13}, xx}, tt, SCon{'\n', uu}, e1),
+    r2.aa.cons(Laws.GwNewline{Laws.GcNone{}, SCon{Chr{13}, SCon{'\n', SNil{}}}}, uu, Laws.r2.aft(rs), {==}, hr)))
+
+# the type of r2.ac.go's en
+def r2.acN(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  cc: Char,
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  pt: List<&2, String>,
+  bk: T.Lex,
+  qk: T.QKind,
+  i0: List<&2, T.Val>,
+  p0: List<&2, String>,
+  h0: List<&2, String>,
+  rs: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  at: Bool,
+  tt: String
+) -> Type:
+  sr.N(tt, r2.acM(sp, nl, hash, comma, end, qq, lit, cr, cc, bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf,
+    at))
+
+# the type of r2.ac.go's ih
+def r2.acH(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  cc: Char,
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  pt: List<&2, String>,
+  bk: T.Lex,
+  qk: T.QKind,
+  i0: List<&2, T.Val>,
+  p0: List<&2, String>,
+  h0: List<&2, String>,
+  rs: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  at: Bool,
+  tt: String
+) -> Type:
+  Laws.r2.C(r2.acM(sp, nl, hash, comma, end, qq, lit, cr, cc, bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf,
+    at), tt)
+
+# LArrC's dispatch, one test at a time
+def r2.ac.go(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +ehs: {Char.is_eq(cc, '#') == hash : Bool},
+  +ecm: {Char.is_eq(cc, ',') == comma : Bool},
+  +een: {Char.is_eq(cc, ']') == end : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: r2.acN(sp, nl, hash, comma, end, qq, lit, cr, cc, bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at, tt),
+  ih: r2.acH(sp, nl, hash, comma, end, qq, lit, cr, cc, bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs), SCon{cc, tt}):
+  match sp:
+    case True{}:
+      r2.aa.cons(Laws.GwWschar{cc}, tt, Laws.r2.aft(rs), gd.tt(Laws.abnf.wschar(cc), True{}, r1.spws(cc, esp), {==}),
+        r2.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx), esp, {==}, {==}, {==}, r2.SAc(bd, rw, hs, he, pt, bk,
+        qk, i0, p0, h0, rs, un, lf, at), tt, ih))
+    case False{}:
+      match nl:
+        case True{}:
+          match cr:
+            case True{}:
+              r2.ac.cr(cc, ecr, bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at, tt, r2.kq(qq, lit, True{}, cc,
+                eqq, elt, xx => T.ch.nl(xx), enl, {==}, {==}, r2.SAc(bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf,
+                at), tt, ih))
+            case False{}:
+              r2.at(cc, '\n', r2.lf(cc, enl, ecr), Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs), tt,
+                r2.aa.cons(Laws.GwNewline{Laws.GcNone{}, SCon{'\n', SNil{}}}, tt, Laws.r2.aft(rs), {==}, r2.kq(qq,
+                lit, False{}, cc, eqq, elt, xx => T.ch.nl(xx), enl, {==}, {==}, r2.SAc(bd, rw, hs, he, pt, bk, qk, i0,
+                p0, h0, rs, un, lf, at), tt, ih)))
+        case False{}:
+          match hash:
+            case True{}:
+              r2.at(cc, '#', ehs, Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs), tt, r2.aa.cm(tt, Laws.r2.aft(rs),
+                r2.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==},
+                T.read.once2(T.com.enter(r2.SAc(bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at), T.LArrC{})),
+                tt, ih)))
+            case False{}:
+              match comma:
+                case True{}:
+                  r2.at(cc, ',', ecm, Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs), tt, r2.aa.comma(tt,
+                    Laws.r2.aft(rs), r2.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, ','), ecm, {==}, {==},
+                    {==}, T.read.once2(T.st.lex(r2.SAc(bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at),
+                    T.LArr{})), tt, ih)))
+                case False{}:
+                  match end:
+                    case True{}:
+                      r2.at(cc, ']', een, Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs), tt, r2.aa.close(tt,
+                        Laws.r2.aft(rs), r2.vt(rs, T.VArr{List.reverse(&2, T.Val, i0)}, bd, rw, hs, h0, p0, bk, qk, un,
+                        lf, at, tt, r2.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, ']'), een, {==}, {==},
+                        {==}, T.read.once2(T.arr.close(r2.SAc(bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at))),
+                        tt, ih))))
+                    case False{}:
+                      Eq.bit.gone(&1, Laws.r2.fill(Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs), SCon{cc, tt}),
+                        r1.bad(qq, lit, cr, bd, rw, hs, he, pt, [], T.LArrC{}, bk, qk, T.CArr{i0, p0, h0} <> rs, un, lf,
+                        at, 'i', "nvalid array", tt, en))
+
+# LArrC's obligation, for every character
+def r2.ob.arrc(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LArrC{}, bk, qk, sk, un, lf, at, cc, tt):
+  match bf sk:
+    case Nil{} T.CArr{+i0, +p0, +h0} <> +rs:
+      _ec => en => ih => r2.ac.go(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc,
+        ']'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==},
+        {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at, tt, en, ih)
+    case Nil{} T.CInl{_i, _p, _h} <> _r:
+      _ec => _en => _ih => Unit{}
+    case Nil{} Nil{}:
+      _ec => _en => _ih => Unit{}
+    case _b <> _bs _s:
+      _ec => _en => _ih => Unit{}
+
+# An inline table's keyvals: a keyval, then what the spike's RfInlAfter
+# says follows it in the table, is inline-table-keyvals, then ws and }.
+
+# inline-table-keyvals from a keyval and what follows it
+def r2.kvs(kv: Laws.GVal, it: Laws.R1ITail) -> Laws.GVal:
+  match it:
+    case Laws.RiEnd{}:
+      Laws.GInlineTableKeyvalsLast{kv}
+    case Laws.RiMore{w1, w2, ks}:
+      Laws.GInlineTableKeyvals{kv, w1, w2, ks}
+
+# its text
+def r2.kvs.txt(
+  +kv: Laws.GVal,
+  it: Laws.R1ITail,
+  +tl: String
+) -> {Laws.g.val.text(kv, Laws.r1.itail.text(it, tl)) == Laws.g.val.text(r2.kvs(kv, it), tl) : String}:
+  match it:
+    case Laws.RiEnd{}:
+      {==}
+    case Laws.RiMore{_w1, _w2, _ks}:
+      {==}
+
+# and its rules
+def r2.kvs.ok(
+  +kv: Laws.GVal,
+  it: Laws.R1ITail,
+  +ek: {Laws.g.ok.val(kv, Laws.RKeyval{}) == True{} : Bool},
+  +ei: {Laws.r1.itail.ok(it) == True{} : Bool}
+) -> {Laws.g.ok.val(r2.kvs(kv, it), Laws.RInlineTableKeyvals{}) == True{} : Bool}:
+  match it:
+    case Laws.RiEnd{}:
+      ek
+    case Laws.RiMore{+w1, +w2, +ks}:
+      gd.tt(Laws.g.ok.val(kv, Laws.RKeyval{}), Bool.and(Laws.abnf.ws(w1), Bool.and(Laws.abnf.ws(w2),
+        Laws.g.ok.val(ks, Laws.RInlineTableKeyvals{}))), ek, ei)
+
+# an inline table's keyvals, then ws, }, and the frames under the table
+def r2.KI(rs: List<&2, T.Ctx>, +text: String) -> Type:
+  &kvs: Laws.GVal -> &ww: String -> &rr: String -> ({text == Laws.g.val.text(kvs, String.append(ww, SCon{Chr{125},
+    rr})) : String} & ({Bool.and(Laws.g.ok.val(kvs, Laws.RInlineTableKeyvals{}), Laws.abnf.ws(ww)) == True{} : Bool} &
+    Laws.r2.fill(Laws.r2.aft(rs), rr)))
+
+# a keyval, then its rest in the table
+def r2.ki.go(
+  +text: String,
+  +rs: List<&2, T.Ctx>,
+  +kv: Laws.GVal,
+  +u1: String,
+  e1: {text == Laws.g.val.text(kv, u1) : String},
+  +e2: {Laws.g.ok.val(kv, Laws.RKeyval{}) == True{} : Bool},
+  hi: Laws.r1.fill(Laws.RfInlAfter{} <> Laws.r1.after(rs), u1)
+) -> r2.KI(rs, text):
+  (+it, (+ww, (+rr, (e3, (+e4, hr))))) = hi
+  (r2.kvs(kv, it), (ww, (rr, (Equal.trans(String, text, Laws.g.val.text(kv, Laws.r1.itail.text(it, String.append(ww,
+    SCon{Chr{125}, rr}))), Laws.g.val.text(r2.kvs(kv, it), String.append(ww, SCon{Chr{125}, rr})), Equal.trans(String,
+    text, Laws.g.val.text(kv, u1), Laws.g.val.text(kv, Laws.r1.itail.text(it, String.append(ww, SCon{Chr{125}, rr}))),
+    e1, Equal.cong(String, String, xx => Laws.g.val.text(kv, xx), u1, Laws.r1.itail.text(it, String.append(ww,
+    SCon{Chr{125}, rr})), e3)), r2.kvs.txt(kv, it, String.append(ww, SCon{Chr{125}, rr}))),
+    (gd.tt(Laws.g.ok.val(r2.kvs(kv, it), Laws.RInlineTableKeyvals{}), Laws.abnf.ws(ww), r2.kvs.ok(kv, it, e2,
+    gd.l(Laws.r1.itail.ok(it), Laws.abnf.ws(ww), e4)), gd.r(Laws.r1.itail.ok(it), Laws.abnf.ws(ww), e4)),
+    r2.up(Laws.r1.after(rs), rr, hr))))))
+
+# the same, from the keyval taken apart
+def r2.ki.x(
+  +text: String,
+  +rs: List<&2, T.Ctx>,
+  hh: r2.KV(Laws.RfInlAfter{} <> Laws.r1.after(rs), text)
+) -> r2.KI(rs, text):
+  (+kv, (+u1, (e1, (+e2, hi)))) = hh
+  r2.ki.go(text, rs, kv, u1, e1, e2, hi)
+
+# a key's frames in an inline table, from its first segment on
+def r2.KF(rs: List<&2, T.Ctx>, +text: String) -> Type:
+  Laws.r1.fill(Laws.RfKSeg{} <> (Laws.RfKAfter{} <> (Laws.RfEq{} <> (Laws.RfVal{} <> (Laws.RfInlAfter{} <>
+    Laws.r1.after(rs))))), text)
+
+# a key read in an inline table: the table's keyvals
+def r2.ki(
+  +text: String,
+  +rs: List<&2, T.Ctx>,
+  hh: r2.KF(rs, text)
+) -> r2.KI(rs, text):
+  r2.ki.x(text, rs, r2.kv(text, Laws.RfInlAfter{} <> Laws.r1.after(rs), hh))
+
+
+# The inline-table states. LInl waits after { for a key or }, LInlK after a
+# comma for a key, LInlC after a keyval's value for a comma or }. A key's
+# first character leaves the key's reading to the spike's key states, whose
+# positions end in RfInlAfter; a comment is doomed, as is a newline.
+
+# a state in an inline table
+def r2.SI(
+  +lx: T.Lex,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, T.CInl{r0, p0, h0} <> rs, un, lf, at)
+
+# a key's state as it starts: no parts and nothing buffered
+def r2.SK0(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.St:
+  sip.S(bd, rw, hs, he, [], [], T.LKey{}, bk, qk, T.CInl{r0, p0, h0} <> rs, un, lf, at)
+
+# the mode a key's bare first character gives
+def r2.ksbM(
+  +ba: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.key.bare(ba, r2.SK0(bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf, at), cc)))
+
+# a key's first character that is no quote: a bare one, else refused
+def r2.ks.bare(
+  ba: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +eba: {T.bare.at(cc) == ba : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.ksbM(ba, qq, lit, cr, cc, bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf, at)),
+  ih: Laws.r2.C(r2.ksbM(ba, qq, lit, cr, cc, bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf, at), tt)
+) -> r2.KI(rs, SCon{cc, tt}):
+  match ba:
+    case True{}:
+      r2.ki(SCon{cc, tt}, rs, r1.x.segbare(cc, tt, Laws.RfKAfter{} <> Laws.r1.vend(T.CInl{r0, p0, h0} <> rs), r1.ukc(cc,
+        eba), r2.dn(Laws.RfKBare{} <> (Laws.RfKAfter{} <> Laws.r1.vend(T.CInl{r0, p0, h0} <> rs)), tt, r2.kk(qq, lit,
+        cr, cc, eqq, elt, ecr, xx => T.bare.at(xx), eba, {==}, {==}, {==}, T.read.once2(T.st.push(r2.SK0(bd, rw, hs, he,
+        bk, qk, r0, p0, h0, rs, un, lf, at), cc, T.LKey{})), tt, ih))))
+    case False{}:
+      Eq.bit.gone(&1, r2.KI(rs, SCon{cc, tt}), r1.bad(qq, lit, cr, bd, rw, hs, he, [], [], T.LKey{}, bk, qk, T.CInl{r0,
+        p0, h0} <> rs, un, lf, at, 'i', "nvalid key", tt, en))
+
+# the mode an apostrophe, or a bare first character, gives
+def r2.kslM(
+  +l2: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.key.lit(l2, r2.SK0(bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf, at), cc)))
+
+# an apostrophe's mode is the scan of the key's quoted state
+def r2.ks.litK(
+  qq: Bool,
+  lit: Bool,
+  +cr: Bool,
+  +el: {lit == True{} : Bool},
+  +st: T.St,
+  +tt: String,
+  hh: Laws.r2.C(sr.K(qq, lit, cr, st), tt)
+) -> Laws.r2.C(T.doc.wrap(st), tt):
+  match qq:
+    case True{}:
+      hh
+    case False{}:
+      match lit:
+        case True{}:
+          hh
+        case False{}:
+          Eq.bit.absurd(&1, Laws.r2.C(T.doc.wrap(st), tt), el)
+
+# a key's first character that is no quotation mark
+def r2.ks.lit(
+  l2: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +el2: {Char.is_eq(cc, '\'') == l2 : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.kslM(l2, qq, lit, cr, cc, bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf, at)),
+  ih: Laws.r2.C(r2.kslM(l2, qq, lit, cr, cc, bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf, at), tt)
+) -> r2.KI(rs, SCon{cc, tt}):
+  match l2:
+    case True{}:
+      vl.chs(ch => r2.KI(rs, SCon{ch, tt}), cc, '\'', Eq.char_eq_true(cc, '\'', el2), r2.ki(SCon{'\'', tt}, rs,
+        r1.x.seglit(tt, Laws.RfKAfter{} <> Laws.r1.vend(T.CInl{r0, p0, h0} <> rs), r2.dn(Laws.RfKLit{} <>
+        (Laws.RfKAfter{} <> Laws.r1.vend(T.CInl{r0, p0, h0} <> rs)), tt, r2.ks.litK(qq, lit, cr, Equal.trans(Bool, lit,
+        Char.is_eq(cc, '\''), True{}, Equal.sym(Bool, Char.is_eq(cc, '\''), lit, elt), el2),
+        T.read.once2(T.lex.qkey(r2.SK0(bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf, at), T.QLit{}, T.LKeyQ{})), tt,
+        ih)))))
+    case False{}:
+      r2.ks.bare(T.bare.at(cc), qq, lit, cr, cc, {==}, eqq, elt, ecr, bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf,
+        at, tt, en, ih)
+
+# the mode a key's first character gives
+def r2.ksM(
+  +q2: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.key.q(q2, r2.SK0(bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf, at), cc)))
+
+# a quotation mark's mode is the scan of the key's quoted state
+def r2.ks.qK(
+  qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +eq: {qq == True{} : Bool},
+  +st: T.St,
+  +tt: String,
+  hh: Laws.r2.C(sr.K(qq, lit, cr, st), tt)
+) -> Laws.r2.C(T.doc.wrap(st), tt):
+  match qq:
+    case True{}:
+      hh
+    case False{}:
+      Eq.bit.absurd(&1, Laws.r2.C(T.doc.wrap(st), tt), eq)
+
+# a key's first character in an inline table: the table's keyvals
+def r2.ks.go(
+  q2: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +eq2: {Char.is_eq(cc, '"') == q2 : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.ksM(q2, qq, lit, cr, cc, bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf, at)),
+  ih: Laws.r2.C(r2.ksM(q2, qq, lit, cr, cc, bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf, at), tt)
+) -> r2.KI(rs, SCon{cc, tt}):
+  match q2:
+    case True{}:
+      vl.chs(ch => r2.KI(rs, SCon{ch, tt}), cc, '"', Eq.char_eq_true(cc, '"', eq2), r2.ki(SCon{'"', tt}, rs,
+        r1.x.segbasic(tt, Laws.RfKAfter{} <> Laws.r1.vend(T.CInl{r0, p0, h0} <> rs), r2.dn(Laws.RfKBasic{} <>
+        (Laws.RfKAfter{} <> Laws.r1.vend(T.CInl{r0, p0, h0} <> rs)), tt, r2.ks.qK(qq, lit, cr, Equal.trans(Bool, qq,
+        Char.is_eq(cc, '"'), True{}, Equal.sym(Bool, Char.is_eq(cc, '"'), qq, eqq), eq2),
+        T.read.once2(T.lex.qkey(r2.SK0(bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf, at), T.QBasic{}, T.LKeyQ{})), tt,
+        ih)))))
+    case False{}:
+      r2.ks.lit(Char.is_eq(cc, '\''), qq, lit, cr, cc, {==}, eqq, elt, ecr, bd, rw, hs, he, bk, qk, r0, p0, h0, rs, un,
+        lf, at, tt, en, ih)
+
+# a wschar after an inline table's {
+def r2.inl.ws.go(
+  gv: Laws.GVal,
+  +cc: Char,
+  +tt: String,
+  +rr: String,
+  +rest: List<&2, Laws.R2Fr>,
+  +ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  e1: {tt == Laws.r2.inl.rest(gv, rr) : String},
+  +e2: {Bool.and(Laws.r2.is.inl(gv), Laws.g.ok.val(gv, Laws.RVal{})) == True{} : Bool},
+  hr: Laws.r2.fill(rest, rr)
+) -> Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}):
+  match gv:
+    case Laws.GvInlineTableEmpty{+w1, +w2}:
+      (Laws.GvInlineTableEmpty{SCon{cc, w1}, w2}, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt,
+        String.append(w1, String.append(w2, SCon{Chr{125}, rr})), e1), (r2.ws3(cc, w1, Laws.abnf.ws(w2), ew, e2), hr))))
+    case Laws.GvInlineTable{+w1, +kvs, +w2}:
+      (Laws.GvInlineTable{SCon{cc, w1}, kvs, w2}, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt,
+        String.append(w1, Laws.g.val.text(kvs, String.append(w2, SCon{Chr{125}, rr}))), e1), (r2.ws3(cc, w1,
+        Bool.and(Laws.g.ok.val(kvs, Laws.RInlineTableKeyvals{}), Laws.abnf.ws(w2)), ew, e2), hr))))
+    case Laws.GvString{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}), e2)
+    case Laws.GvBoolean{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}), e2)
+    case Laws.GvArrayEmpty{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}), e2)
+    case Laws.GvArray{_x0, _x1}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}), e2)
+    case Laws.GvDateTime{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}), e2)
+    case Laws.GvFloat{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}), e2)
+    case Laws.GvInteger{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}), e2)
+    case Laws.GArrayValues{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}), e2)
+    case Laws.GArrayValuesLast{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}), e2)
+    case Laws.GInlineTableKeyvals{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}), e2)
+    case Laws.GInlineTableKeyvalsLast{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}), e2)
+    case Laws.GKeyval{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}), e2)
+
+# the same, with the completion taken apart
+def r2.inl.ws(
+  +cc: Char,
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  +ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  hh: Laws.r2.fill(Laws.R2Inl{} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{cc, tt}):
+  (+gv, (+rr, (e1, (+e2, hr)))) = hh
+  r2.inl.ws.go(gv, cc, tt, rr, rest, ew, e1, e2, hr)
+
+# an empty inline table's }
+def r2.inl.close(
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(rest, tt)
+) -> Laws.r2.fill(Laws.R2Inl{} <> rest, SCon{Chr{125}, tt}):
+  (Laws.GvInlineTableEmpty{"", ""}, (tt, ({==}, ({==}, hh))))
+
+# an inline table's keyvals after its {
+def r2.inl.kv(
+  +text: String,
+  +rs: List<&2, T.Ctx>,
+  hh: r2.KI(rs, text)
+) -> Laws.r2.fill(Laws.R2Inl{} <> Laws.r2.aft(rs), text):
+  (+kvs, (+ww, (+rr, (e1, (e2, hr))))) = hh
+  (Laws.GvInlineTable{"", kvs, ww}, (rr, (e1, (e2, hr))))
+
+# and after a comma
+def r2.inlk.kv(
+  +text: String,
+  +rs: List<&2, T.Ctx>,
+  hh: r2.KI(rs, text)
+) -> Laws.r2.fill(Laws.R2InlK{} <> Laws.r2.aft(rs), text):
+  (+kvs, (+ww, (+rr, (e1, (e2, hr))))) = hh
+  ("", (kvs, (ww, (rr, (e1, (e2, hr))))))
+
+# a wschar after an inline table's comma
+def r2.inlk.ws(
+  +cc: Char,
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  +ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  hh: Laws.r2.fill(Laws.R2InlK{} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2InlK{} <> rest, SCon{cc, tt}):
+  (+w2, (+kvs, (+ww, (+rr, (e1, (+e2, hr)))))) = hh
+  (SCon{cc, w2}, (kvs, (ww, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, String.append(w2,
+    Laws.g.val.text(kvs, String.append(ww, SCon{Chr{125}, rr}))), e1), (r2.ws3(cc, w2, Bool.and(Laws.g.ok.val(kvs,
+    Laws.RInlineTableKeyvals{}), Laws.abnf.ws(ww)), ew, e2), hr))))))
+
+# a wschar after a keyval in an inline table
+def r2.ia.ws.go(
+  it: Laws.R1ITail,
+  +cc: Char,
+  +ww: String,
+  +rr: String,
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  +ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  e1: {tt == Laws.r1.itail.text(it, String.append(ww, SCon{Chr{125}, rr})) : String},
+  +e2: {Bool.and(Laws.r1.itail.ok(it), Laws.abnf.ws(ww)) == True{} : Bool},
+  hr: Laws.r2.fill(rest, rr)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfInlAfter{}} <> rest, SCon{cc, tt}):
+  match it:
+    case Laws.RiEnd{}:
+      (Laws.RiEnd{}, (SCon{cc, ww}, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, String.append(ww,
+        SCon{Chr{125}, rr}), e1), (gd.tt(Laws.abnf.wschar(cc), Laws.abnf.ws(ww), ew, e2), hr)))))
+    case Laws.RiMore{+w1, +w2, +ks}:
+      (Laws.RiMore{SCon{cc, w1}, w2, ks}, (ww, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt,
+        String.append(w1, SCon{',', String.append(w2, Laws.g.val.text(ks, String.append(ww, SCon{Chr{125}, rr})))}),
+        e1), (gd.tt(Bool.and(Bool.and(Laws.abnf.wschar(cc), Laws.abnf.ws(w1)), Bool.and(Laws.abnf.ws(w2),
+        Laws.g.ok.val(ks, Laws.RInlineTableKeyvals{}))), Laws.abnf.ws(ww), r2.ws3(cc, w1, Bool.and(Laws.abnf.ws(w2),
+        Laws.g.ok.val(ks, Laws.RInlineTableKeyvals{})), ew, gd.l(Bool.and(Laws.abnf.ws(w1), Bool.and(Laws.abnf.ws(w2),
+        Laws.g.ok.val(ks, Laws.RInlineTableKeyvals{}))), Laws.abnf.ws(ww), e2)), gd.r(Bool.and(Laws.abnf.ws(w1),
+        Bool.and(Laws.abnf.ws(w2), Laws.g.ok.val(ks, Laws.RInlineTableKeyvals{}))), Laws.abnf.ws(ww), e2)), hr)))))
+
+# the same, with the completion taken apart
+def r2.ia.ws(
+  +cc: Char,
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  +ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  hh: Laws.r2.fill(Laws.R2Old{Laws.RfInlAfter{}} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfInlAfter{}} <> rest, SCon{cc, tt}):
+  (+it, (+ww, (+rr, (e1, (+e2, hr))))) = hh
+  r2.ia.ws.go(it, cc, ww, rr, tt, rest, ew, e1, e2, hr)
+
+# a comma after a keyval: the table's keyvals after it
+def r2.ia.comma(
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2InlK{} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfInlAfter{}} <> rest, SCon{',', tt}):
+  (+w2, (+kvs, (+ww, (+rr, (e1, (+e2, hr)))))) = hh
+  (Laws.RiMore{"", w2, kvs}, (ww, (rr, (Equal.cong(String, String, xx => SCon{',', xx}, tt, String.append(w2,
+    Laws.g.val.text(kvs, String.append(ww, SCon{Chr{125}, rr}))), e1), (gd.tt(Bool.and(Laws.abnf.ws(w2),
+    Laws.g.ok.val(kvs, Laws.RInlineTableKeyvals{})), Laws.abnf.ws(ww), gd.tt(Laws.abnf.ws(w2), Laws.g.ok.val(kvs,
+    Laws.RInlineTableKeyvals{}), gd.l(Laws.abnf.ws(w2), Bool.and(Laws.g.ok.val(kvs, Laws.RInlineTableKeyvals{}),
+    Laws.abnf.ws(ww)), e2), gd.l(Laws.g.ok.val(kvs, Laws.RInlineTableKeyvals{}), Laws.abnf.ws(ww),
+    gd.r(Laws.abnf.ws(w2), Bool.and(Laws.g.ok.val(kvs, Laws.RInlineTableKeyvals{}), Laws.abnf.ws(ww)), e2))),
+    gd.r(Laws.g.ok.val(kvs, Laws.RInlineTableKeyvals{}), Laws.abnf.ws(ww), gd.r(Laws.abnf.ws(w2),
+    Bool.and(Laws.g.ok.val(kvs, Laws.RInlineTableKeyvals{}), Laws.abnf.ws(ww)), e2))), hr)))))
+
+# a } after a keyval
+def r2.ia.close(
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfInlAfter{}} <> rest, SCon{Chr{125}, tt}):
+  (Laws.RiEnd{}, ("", (tt, ({==}, ({==}, hh)))))
+
+
+# the mode LInl's step gives
+def r2.ilM(
+  +sp: Bool,
+  +hash: Bool,
+  +end: Bool,
+  +nl: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.inl.go(sp, hash, end, nl, r2.SI(T.LInl{}, bd, rw, hs, he, pt, bf, bk, qk, r0, p0,
+    h0, rs, un, lf, at), cc)))
+
+# the type of r2.il.go's ih
+def r2.T.il.go.ih(
+  sp: Bool,
+  hash: Bool,
+  end: Bool,
+  nl: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  cc: Char,
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  bk: T.Lex,
+  qk: T.QKind,
+  r0: List<&2, T.Val>,
+  p0: List<&2, String>,
+  h0: List<&2, String>,
+  rs: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  at: Bool,
+  tt: String
+) -> Type:
+  Laws.r2.C(r2.ilM(sp, hash, end, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at),
+    tt)
+
+# LInl's dispatch, one test at a time
+def r2.il.go(
+  sp: Bool,
+  hash: Bool,
+  end: Bool,
+  nl: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +ehs: {Char.is_eq(cc, '#') == hash : Bool},
+  +een: {Char.is_eq(cc, '}') == end : Bool},
+  +_enl: {T.ch.nl(cc) == nl : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.ilM(sp, hash, end, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at)),
+  ih: r2.T.il.go.ih(sp, hash, end, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at, tt)
+) -> Laws.r2.fill(Laws.R2Inl{} <> Laws.r2.aft(rs), SCon{cc, tt}):
+  match sp:
+    case True{}:
+      r2.inl.ws(cc, tt, Laws.r2.aft(rs), r1.spws(cc, esp), r2.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx), esp,
+        {==}, {==}, {==}, r2.SI(T.LInl{}, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at), tt, ih))
+    case False{}:
+      match hash:
+        case True{}:
+          Eq.bit.gone(&1, Laws.r2.fill(Laws.R2Inl{} <> Laws.r2.aft(rs), SCon{cc, tt}), r2.kk(qq, lit, cr, cc, eqq, elt,
+            ecr, xx => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==}, T.read.once2(T.com.enter(r2.SI(T.LInl{}, bd, rw, hs,
+            he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at), T.LInl{})), tt, ih))
+        case False{}:
+          match end:
+            case True{}:
+              r2.at(cc, '}', een, Laws.R2Inl{} <> Laws.r2.aft(rs), tt, r2.inl.close(tt, Laws.r2.aft(rs), r2.vt(rs,
+                T.VInl{T.inl.seal(r0)}, bd, rw, hs, h0, p0, bk, qk, un, lf, at, tt, r2.kk(qq, lit, cr, cc, eqq, elt,
+                ecr, xx => Char.is_eq(xx, '}'), een, {==}, {==}, {==}, T.read.once2(T.inl.close(r2.SI(T.LInl{}, bd, rw,
+                hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at))), tt, ih))))
+            case False{}:
+              match nl:
+                case True{}:
+                  Eq.bit.gone(&1, Laws.r2.fill(Laws.R2Inl{} <> Laws.r2.aft(rs), SCon{cc, tt}), r1.bad(qq, lit, cr, bd,
+                    rw, hs, he, pt, bf, T.LInl{}, bk, qk, T.CInl{r0, p0, h0} <> rs, un, lf, at, 'n',
+                    "ewline in inline table", tt, en))
+                case False{}:
+                  r2.inl.kv(SCon{cc, tt}, rs, r2.ks.go(Char.is_eq(cc, '"'), qq, lit, cr, cc, {==}, eqq, elt, ecr, bd,
+                    rw, hs, he, bk, qk, r0, p0, h0, rs, un, lf, at, tt, en, ih))
+
+# LInl's obligation, for every character
+def r2.ob.inl(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LInl{}, bk, qk, sk, un, lf, at, cc, tt):
+  match sk:
+    case T.CInl{+r0, +p0, +h0} <> +rs:
+      _ec => en => ih => r2.il.go(T.ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '}'), T.ch.nl(cc), Char.is_eq(cc,
+        '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, {==}, {==}, bd,
+        rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at, tt, en, ih)
+    case T.CArr{_i, _p, _h} <> _r:
+      _ec => _en => _ih => Unit{}
+    case []:
+      _ec => _en => _ih => Unit{}
+
+# the mode LInlK's step gives
+def r2.ikM(
+  +sp: Bool,
+  +hash: Bool,
+  +nl: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.inlk.go(sp, hash, nl, r2.SI(T.LInlK{}, bd, rw, hs, he, pt, bf, bk, qk, r0, p0,
+    h0, rs, un, lf, at), cc)))
+
+# LInlK's dispatch, one test at a time
+def r2.ik.go(
+  sp: Bool,
+  hash: Bool,
+  nl: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +ehs: {Char.is_eq(cc, '#') == hash : Bool},
+  +_enl: {T.ch.nl(cc) == nl : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.ikM(sp, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at)),
+  ih: Laws.r2.C(r2.ikM(sp, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at), tt)
+) -> Laws.r2.fill(Laws.R2InlK{} <> Laws.r2.aft(rs), SCon{cc, tt}):
+  match sp:
+    case True{}:
+      r2.inlk.ws(cc, tt, Laws.r2.aft(rs), r1.spws(cc, esp), r2.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx),
+        esp, {==}, {==}, {==}, r2.SI(T.LInlK{}, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at), tt, ih))
+    case False{}:
+      match hash:
+        case True{}:
+          Eq.bit.gone(&1, Laws.r2.fill(Laws.R2InlK{} <> Laws.r2.aft(rs), SCon{cc, tt}), r2.kk(qq, lit, cr, cc, eqq, elt,
+            ecr, xx => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==}, T.read.once2(T.com.enter(r2.SI(T.LInlK{}, bd, rw, hs,
+            he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at), T.LInlK{})), tt, ih))
+        case False{}:
+          match nl:
+            case True{}:
+              Eq.bit.gone(&1, Laws.r2.fill(Laws.R2InlK{} <> Laws.r2.aft(rs), SCon{cc, tt}), r1.bad(qq, lit, cr, bd, rw,
+                hs, he, pt, bf, T.LInlK{}, bk, qk, T.CInl{r0, p0, h0} <> rs, un, lf, at, 'n', "ewline in inline table",
+                tt, en))
+            case False{}:
+              r2.inlk.kv(SCon{cc, tt}, rs, r2.ks.go(Char.is_eq(cc, '"'), qq, lit, cr, cc, {==}, eqq, elt, ecr, bd, rw,
+                hs, he, bk, qk, r0, p0, h0, rs, un, lf, at, tt, en, ih))
+
+# LInlK's obligation, for every character
+def r2.ob.inlk(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LInlK{}, bk, qk, sk, un, lf, at, cc, tt):
+  match sk:
+    case T.CInl{+r0, +p0, +h0} <> +rs:
+      _ec => en => ih => r2.ik.go(T.ch.sp(cc), Char.is_eq(cc, '#'), T.ch.nl(cc), Char.is_eq(cc, '"'), Char.is_eq(cc,
+        '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk,
+        r0, p0, h0, rs, un, lf, at, tt, en, ih)
+    case T.CArr{_i, _p, _h} <> _r:
+      _ec => _en => _ih => Unit{}
+    case []:
+      _ec => _en => _ih => Unit{}
+
+# the mode LInlC's step gives
+def r2.icM(
+  +sp: Bool,
+  +hash: Bool,
+  +comma: Bool,
+  +end: Bool,
+  +nl: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.inlc.go(sp, hash, comma, end, nl, r2.SI(T.LInlC{}, bd, rw, hs, he, pt, bf, bk,
+    qk, r0, p0, h0, rs, un, lf, at), cc)))
+
+# the type of r2.ic.go's en
+def r2.icN(
+  sp: Bool,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  nl: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  cc: Char,
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  bk: T.Lex,
+  qk: T.QKind,
+  r0: List<&2, T.Val>,
+  p0: List<&2, String>,
+  h0: List<&2, String>,
+  rs: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  at: Bool,
+  tt: String
+) -> Type:
+  sr.N(tt, r2.icM(sp, hash, comma, end, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf,
+    at))
+
+# the type of r2.ic.go's ih
+def r2.icH(
+  sp: Bool,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  nl: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  cc: Char,
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  bk: T.Lex,
+  qk: T.QKind,
+  r0: List<&2, T.Val>,
+  p0: List<&2, String>,
+  h0: List<&2, String>,
+  rs: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  at: Bool,
+  tt: String
+) -> Type:
+  Laws.r2.C(r2.icM(sp, hash, comma, end, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un,
+    lf, at), tt)
+
+# LInlC's dispatch, one test at a time
+def r2.ic.go(
+  sp: Bool,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  nl: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +ehs: {Char.is_eq(cc, '#') == hash : Bool},
+  +ecm: {Char.is_eq(cc, ',') == comma : Bool},
+  +een: {Char.is_eq(cc, '}') == end : Bool},
+  +_enl: {T.ch.nl(cc) == nl : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +r0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: r2.icN(sp, hash, comma, end, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at, tt),
+  ih: r2.icH(sp, hash, comma, end, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfInlAfter{}} <> Laws.r2.aft(rs), SCon{cc, tt}):
+  match sp:
+    case True{}:
+      r2.ia.ws(cc, tt, Laws.r2.aft(rs), r1.spws(cc, esp), r2.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx), esp,
+        {==}, {==}, {==}, r2.SI(T.LInlC{}, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at), tt, ih))
+    case False{}:
+      match hash:
+        case True{}:
+          Eq.bit.gone(&1, Laws.r2.fill(Laws.R2Old{Laws.RfInlAfter{}} <> Laws.r2.aft(rs), SCon{cc, tt}), r2.kk(qq, lit,
+            cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==},
+            T.read.once2(T.com.enter(r2.SI(T.LInlC{}, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at),
+            T.LInlC{})), tt, ih))
+        case False{}:
+          match comma:
+            case True{}:
+              r2.at(cc, ',', ecm, Laws.R2Old{Laws.RfInlAfter{}} <> Laws.r2.aft(rs), tt, r2.ia.comma(tt, Laws.r2.aft(rs),
+                r2.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, ','), ecm, {==}, {==}, {==},
+                T.read.once2(T.st.lex(r2.SI(T.LInlC{}, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at),
+                T.LInlK{})), tt, ih)))
+            case False{}:
+              match end:
+                case True{}:
+                  r2.at(cc, '}', een, Laws.R2Old{Laws.RfInlAfter{}} <> Laws.r2.aft(rs), tt, r2.ia.close(tt,
+                    Laws.r2.aft(rs), r2.vt(rs, T.VInl{T.inl.seal(r0)}, bd, rw, hs, h0, p0, bk, qk, un, lf, at, tt,
+                    r2.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '}'), een, {==}, {==}, {==},
+                    T.read.once2(T.inl.close(r2.SI(T.LInlC{}, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf,
+                    at))), tt, ih))))
+                case False{}:
+                  match nl:
+                    case True{}:
+                      Eq.bit.gone(&1, Laws.r2.fill(Laws.R2Old{Laws.RfInlAfter{}} <> Laws.r2.aft(rs), SCon{cc, tt}),
+                        r1.bad(qq, lit, cr, bd, rw, hs, he, pt, bf, T.LInlC{}, bk, qk, T.CInl{r0, p0, h0} <> rs, un, lf,
+                        at, 'n', "ewline in inline table", tt, en))
+                    case False{}:
+                      Eq.bit.gone(&1, Laws.r2.fill(Laws.R2Old{Laws.RfInlAfter{}} <> Laws.r2.aft(rs), SCon{cc, tt}),
+                        r1.bad(qq, lit, cr, bd, rw, hs, he, pt, bf, T.LInlC{}, bk, qk, T.CInl{r0, p0, h0} <> rs, un, lf,
+                        at, 'i', "nvalid inline table", tt, en))
+
+# LInlC's obligation, for every character
+def r2.ob.inlc(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LInlC{}, bk, qk, sk, un, lf, at, cc, tt):
+  match sk:
+    case T.CInl{+r0, +p0, +h0} <> +rs:
+      _ec => en => ih => r2.ic.go(T.ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, '}'),
+        T.ch.nl(cc), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==},
+        {==}, {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk, r0, p0, h0, rs, un, lf, at, tt, en, ih)
+    case T.CArr{_i, _p, _h} <> _r:
+      _ec => _en => _ih => Unit{}
+    case []:
+      _ec => _en => _ih => Unit{}
+
+
+# LVal: ws and a value after a keyval's =, or an array's item. Its
+# position is the spike's (RfVal); the value's first character opens a
+# string, an array, an inline table or a bare word, whose positions are r2's.
+
+# a character that is no newline and no quote leaves the scan mode
+def r2.ncr(
+  cr: Bool,
+  +cc: Char,
+  ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +enl: {T.ch.nl(cc) == False{} : Bool},
+  +xx: T.St,
+  +tt: String,
+  hh: Laws.r2.C(sr.K(False{}, False{}, cr, xx), tt)
+) -> Laws.r2.C(T.MScan{xx}, tt):
+  match cr:
+    case True{}:
+      Eq.bit.gone(&1, Laws.r2.C(T.MScan{xx}, tt), Eq.refute_char(cc, Chr{13}, yy => Bool.not(T.ch.nl(yy)),
+        r1.creq(cc, ecr), Equal.cong(Bool, Bool, yy => Bool.not(yy), T.ch.nl(cc), False{}, enl), {==}))
+    case False{}:
+      hh
+
+# a wschar before a value
+def r2.val.ws(
+  +cc: Char,
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  +ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  hh: Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{cc, tt}):
+  (+ww, (+vv, (+rr, (e1, (+e2, hr))))) = hh
+  (SCon{cc, ww}, (vv, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, String.append(ww, Laws.g.val.text(vv,
+    rr)), e1), (r2.ws3(cc, ww, Laws.g.ok.val(vv, Laws.RVal{}), ew, e2), hr)))))
+
+# a basic string as the value, after its first quote
+def r2.val.bs.go(
+  st: Laws.GString,
+  +tt: String,
+  +rr: String,
+  +rest: List<&2, Laws.R2Fr>,
+  e1: {tt == Laws.r2.s.rest(Laws.SK1{}, st, rr) : String},
+  +e2: {Bool.and(Laws.r2.s.fit(Laws.SK1{}, True{}, st), Laws.g.ok.str(st)) == True{} : Bool},
+  hr: Laws.r2.fill(rest, rr)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'"', tt}):
+  match st:
+    case Laws.GsMlBasic{+nl, +body}:
+      ("", (Laws.GvString{Laws.GsMlBasic{nl, body}}, (rr, (Equal.cong(String, String, xx => SCon{'"', xx}, tt,
+        Laws.r2.s.rest(Laws.SK1{}, Laws.GsMlBasic{nl, body}, rr), e1), (e2, hr)))))
+    case Laws.GsBasic{+pl}:
+      ("", (Laws.GvString{Laws.GsBasic{pl}}, (rr, (Equal.cong(String, String, xx => SCon{'"', xx}, tt,
+        Laws.r2.s.rest(Laws.SK1{}, Laws.GsBasic{pl}, rr), e1), (e2, hr)))))
+    case Laws.GsMlLiteral{_nl, _b}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'"', tt}), e2)
+    case Laws.GsLiteral{_t}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'"', tt}), e2)
+
+# the same, with the completion taken apart
+def r2.val.bs(
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2Str{Laws.SK1{}, True{}} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'"', tt}):
+  (+st, (+rr, (e1, (+e2, hr)))) = hh
+  r2.val.bs.go(st, tt, rr, rest, e1, e2, hr)
+
+# a literal string as the value, after its first apostrophe
+def r2.val.ls.go(
+  st: Laws.GString,
+  +tt: String,
+  +rr: String,
+  +rest: List<&2, Laws.R2Fr>,
+  e1: {tt == Laws.r2.s.rest(Laws.SK1{}, st, rr) : String},
+  +e2: {Bool.and(Laws.r2.s.fit(Laws.SK1{}, False{}, st), Laws.g.ok.str(st)) == True{} : Bool},
+  hr: Laws.r2.fill(rest, rr)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'\'', tt}):
+  match st:
+    case Laws.GsMlBasic{_nl, _b}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'\'', tt}), e2)
+    case Laws.GsBasic{_p}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'\'', tt}), e2)
+    case Laws.GsMlLiteral{+nl, +body}:
+      ("", (Laws.GvString{Laws.GsMlLiteral{nl, body}}, (rr, (Equal.cong(String, String, xx => SCon{'\'', xx}, tt,
+        Laws.r2.s.rest(Laws.SK1{}, Laws.GsMlLiteral{nl, body}, rr), e1), (e2, hr)))))
+    case Laws.GsLiteral{+tx}:
+      ("", (Laws.GvString{Laws.GsLiteral{tx}}, (rr, (Equal.cong(String, String, xx => SCon{'\'', xx}, tt,
+        Laws.r2.s.rest(Laws.SK1{}, Laws.GsLiteral{tx}, rr), e1), (e2, hr)))))
+
+# the same, with the completion taken apart
+def r2.val.ls(
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2Str{Laws.SK1{}, False{}} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'\'', tt}):
+  (+st, (+rr, (e1, (+e2, hr)))) = hh
+  r2.val.ls.go(st, tt, rr, rest, e1, e2, hr)
+
+# an array as the value, after its [
+def r2.val.ar.go(
+  gv: Laws.GVal,
+  +tt: String,
+  +rr: String,
+  +rest: List<&2, Laws.R2Fr>,
+  e1: {tt == Laws.r2.arr.rest(gv, rr) : String},
+  +e2: {Bool.and(Laws.r2.is.arr(gv), Laws.g.ok.val(gv, Laws.RVal{})) == True{} : Bool},
+  hr: Laws.r2.fill(rest, rr)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}):
+  match gv:
+    case Laws.GvArrayEmpty{+wn}:
+      ("", (Laws.GvArrayEmpty{wn}, (rr, (Equal.cong(String, String, xx => SCon{'[', xx}, tt,
+        Laws.r2.arr.rest(Laws.GvArrayEmpty{wn}, rr), e1), (e2, hr)))))
+    case Laws.GvArray{+vals, +wn}:
+      ("", (Laws.GvArray{vals, wn}, (rr, (Equal.cong(String, String, xx => SCon{'[', xx}, tt,
+        Laws.r2.arr.rest(Laws.GvArray{vals, wn}, rr), e1), (e2, hr)))))
+    case Laws.GvString{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}), e2)
+    case Laws.GvBoolean{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}), e2)
+    case Laws.GvInlineTableEmpty{_x0, _x1}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}), e2)
+    case Laws.GvInlineTable{_x0, _x1, _x2}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}), e2)
+    case Laws.GvDateTime{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}), e2)
+    case Laws.GvFloat{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}), e2)
+    case Laws.GvInteger{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}), e2)
+    case Laws.GArrayValues{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}), e2)
+    case Laws.GArrayValuesLast{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}), e2)
+    case Laws.GInlineTableKeyvals{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}), e2)
+    case Laws.GInlineTableKeyvalsLast{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}), e2)
+    case Laws.GKeyval{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}), e2)
+
+# the same, with the completion taken apart
+def r2.val.ar(
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2Arr{} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'[', tt}):
+  (+gv, (+rr, (e1, (+e2, hr)))) = hh
+  r2.val.ar.go(gv, tt, rr, rest, e1, e2, hr)
+
+# an inline table as the value, after its {
+def r2.val.it.go(
+  gv: Laws.GVal,
+  +tt: String,
+  +rr: String,
+  +rest: List<&2, Laws.R2Fr>,
+  e1: {tt == Laws.r2.inl.rest(gv, rr) : String},
+  +e2: {Bool.and(Laws.r2.is.inl(gv), Laws.g.ok.val(gv, Laws.RVal{})) == True{} : Bool},
+  hr: Laws.r2.fill(rest, rr)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}):
+  match gv:
+    case Laws.GvInlineTableEmpty{+w1, +w2}:
+      ("", (Laws.GvInlineTableEmpty{w1, w2}, (rr, (Equal.cong(String, String, xx => SCon{'{', xx}, tt,
+        Laws.r2.inl.rest(Laws.GvInlineTableEmpty{w1, w2}, rr), e1), (e2, hr)))))
+    case Laws.GvInlineTable{+w1, +kvs, +w2}:
+      ("", (Laws.GvInlineTable{w1, kvs, w2}, (rr, (Equal.cong(String, String, xx => SCon{'{', xx}, tt,
+        Laws.r2.inl.rest(Laws.GvInlineTable{w1, kvs, w2}, rr), e1), (e2, hr)))))
+    case Laws.GvString{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}), e2)
+    case Laws.GvBoolean{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}), e2)
+    case Laws.GvArrayEmpty{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}), e2)
+    case Laws.GvArray{_x0, _x1}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}), e2)
+    case Laws.GvDateTime{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}), e2)
+    case Laws.GvFloat{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}), e2)
+    case Laws.GvInteger{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}), e2)
+    case Laws.GArrayValues{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}), e2)
+    case Laws.GArrayValuesLast{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}), e2)
+    case Laws.GInlineTableKeyvals{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}), e2)
+    case Laws.GInlineTableKeyvalsLast{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}), e2)
+    case Laws.GKeyval{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}), e2)
+
+# the same, with the completion taken apart
+def r2.val.it(
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2Inl{} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{'{', tt}):
+  (+gv, (+rr, (e1, (+e2, hr)))) = hh
+  r2.val.it.go(gv, tt, rr, rest, e1, e2, hr)
+
+# a bare word's value node spells the word
+def r2.wgv.txt.go(
+  bo: Bool,
+  dt: Bool,
+  fl: Bool,
+  +cs: List<&2, Char>,
+  +tl: String
+) -> {Laws.g.val.text(Laws.r2.wgv.pick(bo, dt, fl, cs), tl) == String.append(String.from_list(cs), tl) : String}:
+  match bo:
+    case True{}:
+      {==}
+    case False{}:
+      match dt:
+        case True{}:
+          {==}
+        case False{}:
+          match fl:
+            case True{}:
+              {==}
+            case False{}:
+              {==}
+
+# and matches its rule
+def r2.wgv.ok.go(
+  bo: Bool,
+  dt: Bool,
+  fl: Bool,
+  +cs: List<&2, Char>,
+  eb: {Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}) == bo : Bool},
+  ed: {Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}) == dt : Bool},
+  ef: {Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}) == fl : Bool},
+  +ok: {Bool.or(bo, Bool.or(dt, Bool.or(fl, Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{})))) == True{} : Bool}
+) -> {Laws.g.ok.val(Laws.r2.wgv.pick(bo, dt, fl, cs), Laws.RVal{}) == True{} : Bool}:
+  match bo:
+    case True{}:
+      eb
+    case False{}:
+      match dt:
+        case True{}:
+          ed
+        case False{}:
+          match fl:
+            case True{}:
+              ef
+            case False{}:
+              ok
+
+# a bare word as the value
+def r2.val.wd(
+  +cc: Char,
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2Word{[cc]} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> rest, SCon{cc, tt}):
+  (+ww, (+rr, (e1, (+e2, hr)))) = hh
+  ("", (Laws.r2.wgv(cc <> ww), (rr, (Equal.trans(String, SCon{cc, tt}, String.append(String.from_list(cc <> ww), rr),
+    Laws.g.val.text(Laws.r2.wgv(cc <> ww), rr), Equal.cong(String, String, xx => SCon{cc, xx}, tt,
+    String.append(String.from_list(ww), rr), e1), Equal.sym(String, Laws.g.val.text(Laws.r2.wgv(cc <> ww), rr),
+    String.append(String.from_list(cc <> ww), rr), r2.wgv.txt.go(Laws.g.ok.val(Laws.GvBoolean{cc <> ww}, Laws.RVal{}),
+    Laws.g.ok.val(Laws.GvDateTime{cc <> ww}, Laws.RVal{}), Laws.g.ok.val(Laws.GvFloat{cc <> ww}, Laws.RVal{}), cc <> ww,
+    rr))), (r2.wgv.ok.go(Laws.g.ok.val(Laws.GvBoolean{cc <> ww}, Laws.RVal{}), Laws.g.ok.val(Laws.GvDateTime{cc <> ww},
+    Laws.RVal{}), Laws.g.ok.val(Laws.GvFloat{cc <> ww}, Laws.RVal{}), cc <> ww, {==}, {==}, {==}, e2), hr)))))
+
+# the type of r2.val.nlbad's en
+def r2.T.val.nlbad.en(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  cc: Char,
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  pt: List<&2, String>,
+  bk: T.Lex,
+  qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  at: Bool,
+  tt: String
+) -> Type:
+  sr.N(tt, sr.K(qq, lit, cr, T.read.once2(T.lex.val.nl2(sip.S(bd, rw, hs, he, pt, [], T.LVal{}, bk, qk, sk, un, lf,
+    at), cc))))
+
+# a newline before a value is refused
+def r2.val.nlbad(
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: r2.T.val.nlbad.en(qq, lit, cr, cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, tt)
+) -> Empty:
+  match sk:
+    case []:
+      r1.bad(qq, lit, cr, bd, rw, hs, he, pt, [], T.LVal{}, bk, qk, [], un, lf, at, 'n', "ewline before value", tt, en)
+    case T.CArr{+i0, +p0, +h0} <> +rs:
+      r1.bad(qq, lit, cr, bd, rw, hs, he, pt, [], T.LVal{}, bk, qk, T.CArr{i0, p0, h0} <> rs, un, lf, at, 'n',
+        "ewline before value", tt, en)
+    case T.CInl{+r0, +p0, +h0} <> +rs:
+      r1.bad(qq, lit, cr, bd, rw, hs, he, pt, [], T.LVal{}, bk, qk, T.CInl{r0, p0, h0} <> rs, un, lf, at, 'n',
+        "ewline in inline table", tt, en)
+
+
+# the state waiting for a value, with nothing buffered
+def r2.SVal(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, [], T.LVal{}, bk, qk, sk, un, lf, at)
+
+# the mode LVal's step gives
+def r2.vaM(
+  +sp: Bool,
+  +nl: Bool,
+  +hash: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +br: Bool,
+  +inl: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.val.go(sp, nl, hash, qq, lit, br, inl, r2.SVal(bd, rw, hs, he, pt, bk, qk, sk,
+    un, lf, at), cc)))
+
+# LVal's dispatch, one test at a time
+def r2.va.go(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  br: Bool,
+  inl: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +ehs: {Char.is_eq(cc, '#') == hash : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ebr: {Char.is_eq(cc, '[') == br : Bool},
+  +eil: {Char.is_eq(cc, '{') == inl : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.vaM(sp, nl, hash, qq, lit, br, inl, cr, cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at)),
+  ih: Laws.r2.C(r2.vaM(sp, nl, hash, qq, lit, br, inl, cr, cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> Laws.r2.aft(sk), SCon{cc, tt}):
+  match sp:
+    case True{}:
+      r2.val.ws(cc, tt, Laws.r2.aft(sk), r1.spws(cc, esp), r2.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx), esp,
+        {==}, {==}, {==}, r2.SVal(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at), tt, ih))
+    case False{}:
+      match nl:
+        case True{}:
+          Eq.bit.gone(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> Laws.r2.aft(sk), SCon{cc, tt}), r2.val.nlbad(qq, lit,
+            cr, cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, tt, en))
+        case False{}:
+          match hash:
+            case True{}:
+              Eq.bit.gone(&1, Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> Laws.r2.aft(sk), SCon{cc, tt}), r2.kk(qq, lit,
+                cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==},
+                T.read.once2(T.com.enter(r2.SVal(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at), T.LVal{})), tt, ih))
+            case False{}:
+              match qq:
+                case True{}:
+                  r2.at(cc, '"', eqq, Laws.R2Old{Laws.RfVal{}} <> Laws.r2.aft(sk), tt, r2.val.bs(tt, Laws.r2.aft(sk),
+                    ih))
+                case False{}:
+                  match lit:
+                    case True{}:
+                      r2.at(cc, '\'', elt, Laws.R2Old{Laws.RfVal{}} <> Laws.r2.aft(sk), tt, r2.val.ls(tt,
+                        Laws.r2.aft(sk), ih))
+                    case False{}:
+                      match br:
+                        case True{}:
+                          r2.at(cc, '[', ebr, Laws.R2Old{Laws.RfVal{}} <> Laws.r2.aft(sk), tt, r2.val.ar(tt,
+                            Laws.r2.aft(sk), r2.ncr(cr, cc, ecr, enl, T.read.once2(T.lex.array(r2.SVal(bd, rw, hs, he,
+                            pt, bk, qk, sk, un, lf, at))), tt, ih)))
+                        case False{}:
+                          match inl:
+                            case True{}:
+                              r2.at(cc, '{', eil, Laws.R2Old{Laws.RfVal{}} <> Laws.r2.aft(sk), tt, r2.val.it(tt,
+                                Laws.r2.aft(sk), r2.ncr(cr, cc, ecr, enl, T.read.once2(T.lex.inline(r2.SVal(bd, rw, hs,
+                                he, pt, bk, qk, sk, un, lf, at))), tt, ih)))
+                            case False{}:
+                              r2.val.wd(cc, tt, Laws.r2.aft(sk), r2.ncr(cr, cc, ecr, enl,
+                                T.read.once2(T.st.push(r2.SVal(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at), cc,
+                                T.LBare{})), tt, ih))
+
+# LVal's obligation, for every character: a state with a character
+# buffered is one no step reaches
+def r2.ob.val(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LVal{}, bk, qk, sk, un, lf, at, cc, tt):
+  match bf:
+    case []:
+      _ec => en => ih => r2.va.go(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc,
+        '\''), Char.is_eq(cc, '['), Char.is_eq(cc, '{'), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==},
+        {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, tt, en, ih)
+    case _b <> _bs:
+      _ec => _en => _ih => Unit{}
+
+
+# LArr: an array after its [ or a comma. Blank space, newlines and comments
+# are ws-comment-newline before the next item or the ]; any other character
+# is the item's first, read again as LVal reads it.
+
+# blank space, as ws-comment-newline
+def r2.ws2wcn(ww: String) -> List<&2, Laws.GWcn>:
+  match ww:
+    case SNil{}:
+      []
+    case SCon{hh, tt}:
+      Laws.GwWschar{hh} <> r2.ws2wcn(tt)
+
+# spells the blank space
+def r2.ws2wcn.txt(ww: String, +tl: String) -> {Laws.g.wcn.text(r2.ws2wcn(ww), tl) == String.append(ww, tl) : String}:
+  match ww:
+    case SNil{}:
+      {==}
+    case SCon{+hh, +tt}:
+      Equal.cong(String, String, xx => SCon{hh, xx}, Laws.g.wcn.text(r2.ws2wcn(tt), tl), String.append(tt, tl),
+        r2.ws2wcn.txt(tt, tl))
+
+# and matches ws-comment-newline
+def r2.ws2wcn.ok(ww: String, +ew: {Laws.abnf.ws(ww) == True{} : Bool}) -> {Laws.g.ok.wcn(r2.ws2wcn(ww)) == True{} :
+  Bool}:
+  match ww:
+    case SNil{}:
+      {==}
+    case SCon{+hh, +tt}:
+      gd.tt(Laws.abnf.wschar(hh), Laws.g.ok.wcn(r2.ws2wcn(tt)), gd.l(Laws.abnf.wschar(hh), Laws.abnf.ws(tt), ew),
+        r2.ws2wcn.ok(tt, gd.r(Laws.abnf.wschar(hh), Laws.abnf.ws(tt), ew)))
+
+# array-values from an item, its ws-comment-newlines and what follows it
+def r2.av(wa: List<&2, Laws.GWcn>, vv: Laws.GVal, wb: List<&2, Laws.GWcn>, at: Laws.R1ATail) -> Laws.GVal:
+  match at:
+    case Laws.RaEnd{sep}:
+      Laws.GArrayValuesLast{wa, vv, wb, sep}
+    case Laws.RaMore{vs}:
+      Laws.GArrayValues{wa, vv, wb, vs}
+
+# their text
+def r2.av.txt(
+  +wa: List<&2, Laws.GWcn>,
+  +vv: Laws.GVal,
+  +wb: List<&2, Laws.GWcn>,
+  at: Laws.R1ATail,
+  +tl: String
+) -> {Laws.g.val.text(r2.av(wa, vv, wb, at), tl) == Laws.g.wcn.text(wa, Laws.g.val.text(vv, Laws.g.wcn.text(wb,
+  Laws.r1.atail.text(at, tl)))) : String}:
+  match at:
+    case Laws.RaEnd{_s}:
+      {==}
+    case Laws.RaMore{_v}:
+      {==}
+
+# and rules
+def r2.av.ok(
+  +wa: List<&2, Laws.GWcn>,
+  +vv: Laws.GVal,
+  +wb: List<&2, Laws.GWcn>,
+  at: Laws.R1ATail,
+  +ea: {Laws.g.ok.wcn(wa) == True{} : Bool},
+  +ev: {Laws.g.ok.val(vv, Laws.RVal{}) == True{} : Bool},
+  +eb: {Laws.g.ok.wcn(wb) == True{} : Bool},
+  +et: {Laws.r1.atail.ok(at) == True{} : Bool}
+) -> {Laws.g.ok.val(r2.av(wa, vv, wb, at), Laws.RArrayValues{}) == True{} : Bool}:
+  match at:
+    case Laws.RaEnd{+sep}:
+      gd.tt(Laws.g.ok.wcn(wa), Bool.and(Laws.g.ok.val(vv, Laws.RVal{}), Laws.g.ok.wcn(wb)), ea,
+        gd.tt(Laws.g.ok.val(vv, Laws.RVal{}), Laws.g.ok.wcn(wb), ev, eb))
+    case Laws.RaMore{+vs}:
+      gd.tt(Laws.g.ok.wcn(wa), Bool.and(Laws.g.ok.val(vv, Laws.RVal{}), Bool.and(Laws.g.ok.wcn(wb), Laws.g.ok.val(vs,
+        Laws.RArrayValues{}))), ea, gd.tt(Laws.g.ok.val(vv, Laws.RVal{}), Bool.and(Laws.g.ok.wcn(wb), Laws.g.ok.val(vs,
+        Laws.RArrayValues{})), ev, gd.tt(Laws.g.ok.wcn(wb), Laws.g.ok.val(vs, Laws.RArrayValues{}), eb, et)))
+
+# an item, and what follows it in its array, are the array after its [
+def r2.arr.item(
+  +text: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2Old{Laws.RfVal{}} <> (Laws.R2Old{Laws.RfArrAfter{}} <> rest), text)
+) -> Laws.r2.fill(Laws.R2Arr{} <> rest, text):
+  (+ww, (+vv, (+u1, (e1, (+e2, (+wb, (+at, (+wn, (+u2, (e3, (+e4, hr))))))))))) = hh
+  +tl = {Laws.g.wcn.text(wn, SCon{']', u2}) : String}
+  (Laws.GvArray{r2.av(r2.ws2wcn(ww), vv, wb, at), wn}, (u2, (Equal.trans(String, text, Laws.g.wcn.text(r2.ws2wcn(ww),
+    Laws.g.val.text(vv, Laws.g.wcn.text(wb, Laws.r1.atail.text(at, tl)))), Laws.g.val.text(r2.av(r2.ws2wcn(ww), vv, wb,
+    at), tl), Equal.trans(String, text, String.append(ww, Laws.g.val.text(vv, Laws.g.wcn.text(wb, Laws.r1.atail.text(at,
+    tl)))), Laws.g.wcn.text(r2.ws2wcn(ww), Laws.g.val.text(vv, Laws.g.wcn.text(wb, Laws.r1.atail.text(at, tl)))),
+    Equal.trans(String, text, String.append(ww, Laws.g.val.text(vv, u1)), String.append(ww, Laws.g.val.text(vv,
+    Laws.g.wcn.text(wb, Laws.r1.atail.text(at, tl)))), e1, Equal.cong(String, String, xx => String.append(ww,
+    Laws.g.val.text(vv, xx)), u1, Laws.g.wcn.text(wb, Laws.r1.atail.text(at, tl)), e3)), Equal.sym(String,
+    Laws.g.wcn.text(r2.ws2wcn(ww), Laws.g.val.text(vv, Laws.g.wcn.text(wb, Laws.r1.atail.text(at, tl)))),
+    String.append(ww, Laws.g.val.text(vv, Laws.g.wcn.text(wb, Laws.r1.atail.text(at, tl)))), r2.ws2wcn.txt(ww,
+    Laws.g.val.text(vv, Laws.g.wcn.text(wb, Laws.r1.atail.text(at, tl)))))), Equal.sym(String,
+    Laws.g.val.text(r2.av(r2.ws2wcn(ww), vv, wb, at), tl), Laws.g.wcn.text(r2.ws2wcn(ww), Laws.g.val.text(vv,
+    Laws.g.wcn.text(wb, Laws.r1.atail.text(at, tl)))), r2.av.txt(r2.ws2wcn(ww), vv, wb, at, tl))),
+    (gd.tt(Laws.g.ok.val(r2.av(r2.ws2wcn(ww), vv, wb, at), Laws.RArrayValues{}), Laws.g.ok.wcn(wn),
+    r2.av.ok(r2.ws2wcn(ww), vv, wb, at, r2.ws2wcn.ok(ww, gd.l(Laws.abnf.ws(ww), Laws.g.ok.val(vv, Laws.RVal{}), e2)),
+    gd.r(Laws.abnf.ws(ww), Laws.g.ok.val(vv, Laws.RVal{}), e2), gd.l(Laws.g.ok.wcn(wb), Bool.and(Laws.r1.atail.ok(at),
+    Laws.g.ok.wcn(wn)), e4), gd.l(Laws.r1.atail.ok(at), Laws.g.ok.wcn(wn), gd.r(Laws.g.ok.wcn(wb),
+    Bool.and(Laws.r1.atail.ok(at), Laws.g.ok.wcn(wn)), e4))), gd.r(Laws.r1.atail.ok(at), Laws.g.ok.wcn(wn),
+    gd.r(Laws.g.ok.wcn(wb), Bool.and(Laws.r1.atail.ok(at), Laws.g.ok.wcn(wn)), e4))), hr))))
+
+# a ws-comment-newline piece before an array's items
+def r2.arr.cons.vs(
+  vals: Laws.GVal,
+  +ww: Laws.GWcn,
+  +wn: List<&2, Laws.GWcn>,
+  +tt: String,
+  +rr: String,
+  +rest: List<&2, Laws.R2Fr>,
+  +ew: {Laws.g.ok.wcn([ww]) == True{} : Bool},
+  e1: {tt == Laws.g.val.text(vals, Laws.g.wcn.text(wn, SCon{']', rr})) : String},
+  +e2: {Bool.and(Laws.g.ok.val(vals, Laws.RArrayValues{}), Laws.g.ok.wcn(wn)) == True{} : Bool},
+  hr: Laws.r2.fill(rest, rr)
+) -> Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)):
+  match vals:
+    case Laws.GArrayValues{+wa, +vv, +wb, +vs}:
+      +tl = {Laws.g.val.text(vv, Laws.g.wcn.text(wb, SCon{',', Laws.g.val.text(vs, Laws.g.wcn.text(wn, SCon{']',
+        rr}))})) : String}
+      (Laws.GvArray{Laws.GArrayValues{ww <> wa, vv, wb, vs}, wn}, (rr, (Equal.trans(String, Laws.g.wcn.text([ww], tt),
+        Laws.g.wcn.text([ww], Laws.g.wcn.text(wa, tl)), Laws.g.wcn.text(ww <> wa, tl), Equal.cong(String, String, xx =>
+        Laws.g.wcn.text([ww], xx), tt, Laws.g.wcn.text(wa, tl), e1), r2.wcn.cons(ww, wa, tl)),
+        (gd.tt(Laws.g.ok.val(Laws.GArrayValues{ww <> wa, vv, wb, vs}, Laws.RArrayValues{}), Laws.g.ok.wcn(wn),
+        gd.tt(Laws.g.ok.wcn(ww <> wa), Bool.and(Laws.g.ok.val(vv, Laws.RVal{}), Bool.and(Laws.g.ok.wcn(wb),
+        Laws.g.ok.val(vs, Laws.RArrayValues{}))), r2.wcn.okc(ww, wa, ew, gd.l(Laws.g.ok.wcn(wa),
+        Bool.and(Laws.g.ok.val(vv, Laws.RVal{}), Bool.and(Laws.g.ok.wcn(wb), Laws.g.ok.val(vs, Laws.RArrayValues{}))),
+        gd.l(Laws.g.ok.val(Laws.GArrayValues{wa, vv, wb, vs}, Laws.RArrayValues{}), Laws.g.ok.wcn(wn), e2))),
+        gd.r(Laws.g.ok.wcn(wa), Bool.and(Laws.g.ok.val(vv, Laws.RVal{}), Bool.and(Laws.g.ok.wcn(wb), Laws.g.ok.val(vs,
+        Laws.RArrayValues{}))), gd.l(Laws.g.ok.val(Laws.GArrayValues{wa, vv, wb, vs}, Laws.RArrayValues{}),
+        Laws.g.ok.wcn(wn), e2))), gd.r(Laws.g.ok.val(Laws.GArrayValues{wa, vv, wb, vs}, Laws.RArrayValues{}),
+        Laws.g.ok.wcn(wn), e2)), hr))))
+    case Laws.GArrayValuesLast{+wa, +vv, +wb, +sep}:
+      +tl = {Laws.g.val.text(vv, Laws.g.wcn.text(wb, Laws.g.sep.text(sep, Laws.g.wcn.text(wn, SCon{']', rr})))) :
+        String}
+      (Laws.GvArray{Laws.GArrayValuesLast{ww <> wa, vv, wb, sep}, wn}, (rr, (Equal.trans(String, Laws.g.wcn.text([ww],
+        tt), Laws.g.wcn.text([ww], Laws.g.wcn.text(wa, tl)), Laws.g.wcn.text(ww <> wa, tl), Equal.cong(String, String,
+        xx => Laws.g.wcn.text([ww], xx), tt, Laws.g.wcn.text(wa, tl), e1), r2.wcn.cons(ww, wa, tl)),
+        (gd.tt(Laws.g.ok.val(Laws.GArrayValuesLast{ww <> wa, vv, wb, sep}, Laws.RArrayValues{}), Laws.g.ok.wcn(wn),
+        gd.tt(Laws.g.ok.wcn(ww <> wa), Bool.and(Laws.g.ok.val(vv, Laws.RVal{}), Laws.g.ok.wcn(wb)), r2.wcn.okc(ww, wa,
+        ew, gd.l(Laws.g.ok.wcn(wa), Bool.and(Laws.g.ok.val(vv, Laws.RVal{}), Laws.g.ok.wcn(wb)),
+        gd.l(Laws.g.ok.val(Laws.GArrayValuesLast{wa, vv, wb, sep}, Laws.RArrayValues{}), Laws.g.ok.wcn(wn), e2))),
+        gd.r(Laws.g.ok.wcn(wa), Bool.and(Laws.g.ok.val(vv, Laws.RVal{}), Laws.g.ok.wcn(wb)),
+        gd.l(Laws.g.ok.val(Laws.GArrayValuesLast{wa, vv, wb, sep}, Laws.RArrayValues{}), Laws.g.ok.wcn(wn), e2))),
+        gd.r(Laws.g.ok.val(Laws.GArrayValuesLast{wa, vv, wb, sep}, Laws.RArrayValues{}), Laws.g.ok.wcn(wn), e2)), hr))))
+    case Laws.GvString{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvBoolean{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvArrayEmpty{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvArray{_x0, _x1}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvInlineTableEmpty{_x0, _x1}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvInlineTable{_x0, _x1, _x2}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvDateTime{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvFloat{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvInteger{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GInlineTableKeyvals{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GInlineTableKeyvalsLast{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GKeyval{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+
+# the same, over the array after its [
+def r2.arr.cons.go(
+  gv: Laws.GVal,
+  +ww: Laws.GWcn,
+  +tt: String,
+  +rr: String,
+  +rest: List<&2, Laws.R2Fr>,
+  +ew: {Laws.g.ok.wcn([ww]) == True{} : Bool},
+  e1: {tt == Laws.r2.arr.rest(gv, rr) : String},
+  +e2: {Bool.and(Laws.r2.is.arr(gv), Laws.g.ok.val(gv, Laws.RVal{})) == True{} : Bool},
+  hr: Laws.r2.fill(rest, rr)
+) -> Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)):
+  match gv:
+    case Laws.GvArrayEmpty{+wn}:
+      (Laws.GvArrayEmpty{ww <> wn}, (rr, (Equal.trans(String, Laws.g.wcn.text([ww], tt), Laws.g.wcn.text([ww],
+        Laws.g.wcn.text(wn, SCon{']', rr})), Laws.g.wcn.text(ww <> wn, SCon{']', rr}), Equal.cong(String, String, xx =>
+        Laws.g.wcn.text([ww], xx), tt, Laws.g.wcn.text(wn, SCon{']', rr}), e1), r2.wcn.cons(ww, wn, SCon{']', rr})),
+        (r2.wcn.okc(ww, wn, ew, e2), hr))))
+    case Laws.GvArray{+vals, +wn}:
+      r2.arr.cons.vs(vals, ww, wn, tt, rr, rest, ew, e1, e2, hr)
+    case Laws.GvString{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvBoolean{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvInlineTableEmpty{_x0, _x1}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvInlineTable{_x0, _x1, _x2}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvDateTime{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvFloat{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GvInteger{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GArrayValues{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GArrayValuesLast{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GInlineTableKeyvals{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GInlineTableKeyvalsLast{_x0}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+    case Laws.GKeyval{_x0, _x1, _x2, _x3}:
+      Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)), e2)
+
+# a ws-comment-newline piece after an array's [ or comma
+def r2.arr.cons(
+  +ww: Laws.GWcn,
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  +ew: {Laws.g.ok.wcn([ww]) == True{} : Bool},
+  hh: Laws.r2.fill(Laws.R2Arr{} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Arr{} <> rest, Laws.g.wcn.text([ww], tt)):
+  (+gv, (+rr, (e1, (+e2, hr)))) = hh
+  r2.arr.cons.go(gv, ww, tt, rr, rest, ew, e1, e2, hr)
+
+# an array's ] with no item before it
+def r2.arr.close(
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(rest, tt)
+) -> Laws.r2.fill(Laws.R2Arr{} <> rest, SCon{']', tt}):
+  (Laws.GvArrayEmpty{[]}, (tt, ({==}, ({==}, hh))))
+
+# a comment and its newline after an array's [ or comma
+def r2.arr.cm(
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2Old{Laws.RfComment{}} <> (Laws.R2Nl{} <> (Laws.R2Arr{} <> rest)), tt)
+) -> Laws.r2.fill(Laws.R2Arr{} <> rest, SCon{'#', tt}):
+  (+bd, (+u1, (e1, (+e2, (+nl, (+u2, (e3, (+e4, h2)))))))) = hh
+  r2.rw2(Laws.R2Arr{} <> rest, SCon{'#', tt}, Laws.g.wcn.text([Laws.GwNewline{Laws.GcSome{bd}, nl}], u2),
+    Equal.cong(String, String, xx => SCon{'#', xx}, tt, String.append(bd, String.append(nl, u2)), Equal.trans(String,
+    tt, String.append(bd, u1), String.append(bd, String.append(nl, u2)), e1, Equal.cong(String, String, xx =>
+    String.append(bd, xx), u1, String.append(nl, u2), e3))), r2.arr.cons(Laws.GwNewline{Laws.GcSome{bd}, nl}, u2, rest,
+    gd.tt(Laws.g.ok.com(Laws.GcSome{bd}), Bool.and(Laws.abnf.newline(nl), True{}), e2, gd.tt(Laws.abnf.newline(nl),
+    True{}, e4, {==})), h2))
+
+# the state of an array after its [ or a comma
+def r2.SArr(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, [], T.LArr{}, bk, qk, T.CArr{i0, p0, h0} <> rs, un, lf, at)
+
+# the mode LArr's step gives
+def r2.arM(
+  +sp: Bool,
+  +nl: Bool,
+  +hash: Bool,
+  +end: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.arr.go(sp, nl, hash, end, r2.SArr(bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un,
+    lf, at), cc)))
+
+# a completion of a mode is one of a mode equal to it
+def r2.cast2(
+  m1: T.Mode,
+  m2: T.Mode,
+  +tt: String,
+  ee: {m1 == m2 : T.Mode},
+  hh: Laws.r2.C(m1, tt)
+) -> Laws.r2.C(m2, tt):
+  %ee : Laws.r2.C(_, tt)
+  hh
+
+# LVal's step holds nothing
+def r2.o2v(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  qq: Bool,
+  lit: Bool,
+  br: Bool,
+  inl: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +_bk: T.Lex,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> {T.read.once2(T.lex.val.go(sp, nl, hash, qq, lit, br, inl, r2.SVal(bd, rw, hs, he, pt, T.LVal{}, qk, T.CArr{i0, p0,
+  h0} <> rs, un, lf, at), cc)) == T.lex.val.go(sp, nl, hash, qq, lit, br, inl, r2.SVal(bd, rw, hs, he, pt, T.LVal{}, qk,
+  T.CArr{i0, p0, h0} <> rs, un, lf, at), cc) : T.St}:
+  match sp:
+    case True{}:
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          {==}
+        case False{}:
+          match hash:
+            case True{}:
+              {==}
+            case False{}:
+              match qq:
+                case True{}:
+                  {==}
+                case False{}:
+                  match lit:
+                    case True{}:
+                      {==}
+                    case False{}:
+                      match br:
+                        case True{}:
+                          {==}
+                        case False{}:
+                          match inl:
+                            case True{}:
+                              {==}
+                            case False{}:
+                              {==}
+
+# the mode an array's item's first character gives is LVal's
+def r2.ar.E(
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> {sr.K(qq, lit, cr, T.lex.val.go(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc,
+  '\''), Char.is_eq(cc, '['), Char.is_eq(cc, '{'), r2.SVal(bd, rw, hs, he, pt, T.LVal{}, qk, T.CArr{i0, p0, h0} <> rs,
+  un, lf, at), cc)) == r2.vaM(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+  Char.is_eq(cc, '['), Char.is_eq(cc, '{'), cr, cc, bd, rw, hs, he, pt, T.LVal{}, qk, T.CArr{i0, p0, h0} <> rs, un, lf,
+  at) : T.Mode}:
+  +xx = {T.lex.val.go(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+    Char.is_eq(cc, '['), Char.is_eq(cc, '{'), r2.SVal(bd, rw, hs, he, pt, T.LVal{}, qk, T.CArr{i0, p0, h0} <> rs, un,
+    lf, at), cc) : T.St}
+  Equal.trans(T.Mode, sr.K(qq, lit, cr, xx), sr.K(qq, lit, cr, T.read.once2(xx)), sr.K(Char.is_eq(cc, '"'),
+    Char.is_eq(cc, '\''), cr, T.read.once2(xx)), Equal.cong(T.St, T.Mode, yy => sr.K(qq, lit, cr, yy), xx,
+    T.read.once2(xx), Equal.sym(T.St, T.read.once2(xx), xx, r2.o2v(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'),
+    Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '['), Char.is_eq(cc, '{'), cc, bd, rw, hs, he, pt, bk, qk,
+    i0, p0, h0, rs, un, lf, at))), Equal.trans(T.Mode, sr.K(qq, lit, cr, T.read.once2(xx)), sr.K(Char.is_eq(cc, '"'),
+    lit, cr, T.read.once2(xx)), sr.K(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), cr, T.read.once2(xx)), Equal.cong(Bool,
+    T.Mode, bb => sr.K(bb, lit, cr, T.read.once2(xx)), qq, Char.is_eq(cc, '"'), Equal.sym(Bool, Char.is_eq(cc, '"'), qq,
+    eqq)), Equal.cong(Bool, T.Mode, bb => sr.K(Char.is_eq(cc, '"'), bb, cr, T.read.once2(xx)), lit, Char.is_eq(cc,
+    '\''), Equal.sym(Bool, Char.is_eq(cc, '\''), lit, elt))))
+
+
+# a carriage return after an array's [ or comma, and the line feed after it
+def r2.ar.cr(
+  +cc: Char,
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  hh: Laws.r2.C(T.MCr{r2.SArr(bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at)}, tt)
+) -> Laws.r2.fill(Laws.R2Arr{} <> Laws.r2.aft(rs), SCon{cc, tt}):
+  (+uu, (e1, hr)) = hh
+  r2.at(cc, Chr{13}, r1.creq(cc, ecr), Laws.R2Arr{} <> Laws.r2.aft(rs), tt, r2.rw2(Laws.R2Arr{} <> Laws.r2.aft(rs),
+    SCon{Chr{13}, tt}, SCon{Chr{13}, SCon{'\n', uu}}, Equal.cong(String, String, xx => SCon{Chr{13}, xx}, tt, SCon{'\n',
+    uu}, e1), r2.arr.cons(Laws.GwNewline{Laws.GcNone{}, SCon{Chr{13}, SCon{'\n', SNil{}}}}, uu, Laws.r2.aft(rs), {==},
+    hr)))
+
+# LArr's dispatch, one test at a time
+def r2.ar.go(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  end: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +ehs: {Char.is_eq(cc, '#') == hash : Bool},
+  +een: {Char.is_eq(cc, ']') == end : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.arM(sp, nl, hash, end, qq, lit, cr, cc, bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at)),
+  ih: Laws.r2.C(r2.arM(sp, nl, hash, end, qq, lit, cr, cc, bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at), tt)
+) -> Laws.r2.fill(Laws.R2Arr{} <> Laws.r2.aft(rs), SCon{cc, tt}):
+  match sp:
+    case True{}:
+      r2.arr.cons(Laws.GwWschar{cc}, tt, Laws.r2.aft(rs), gd.tt(Laws.abnf.wschar(cc), True{}, r1.spws(cc, esp), {==}),
+        r2.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx), esp, {==}, {==}, {==}, r2.SArr(bd, rw, hs, he, pt, bk,
+        qk, i0, p0, h0, rs, un, lf, at), tt, ih))
+    case False{}:
+      match nl:
+        case True{}:
+          match cr:
+            case True{}:
+              r2.ar.cr(cc, ecr, bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at, tt, r2.kq(qq, lit, True{}, cc,
+                eqq, elt, xx => T.ch.nl(xx), enl, {==}, {==}, r2.SArr(bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un,
+                lf, at), tt, ih))
+            case False{}:
+              r2.at(cc, '\n', r2.lf(cc, enl, ecr), Laws.R2Arr{} <> Laws.r2.aft(rs), tt,
+                r2.arr.cons(Laws.GwNewline{Laws.GcNone{}, SCon{'\n', SNil{}}}, tt, Laws.r2.aft(rs), {==}, r2.kq(qq, lit,
+                False{}, cc, eqq, elt, xx => T.ch.nl(xx), enl, {==}, {==}, r2.SArr(bd, rw, hs, he, pt, bk, qk, i0, p0,
+                h0, rs, un, lf, at), tt, ih)))
+        case False{}:
+          match hash:
+            case True{}:
+              r2.at(cc, '#', ehs, Laws.R2Arr{} <> Laws.r2.aft(rs), tt, r2.arr.cm(tt, Laws.r2.aft(rs), r2.kk(qq, lit, cr,
+                cc, eqq, elt, ecr, xx => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==},
+                T.read.once2(T.com.enter(r2.SArr(bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at), T.LArr{})),
+                tt, ih)))
+            case False{}:
+              match end:
+                case True{}:
+                  r2.at(cc, ']', een, Laws.R2Arr{} <> Laws.r2.aft(rs), tt, r2.arr.close(tt, Laws.r2.aft(rs), r2.vt(rs,
+                    T.VArr{List.reverse(&2, T.Val, i0)}, bd, rw, hs, h0, p0, bk, qk, un, lf, at, tt, r2.kk(qq, lit, cr,
+                    cc, eqq, elt, ecr, xx => Char.is_eq(xx, ']'), een, {==}, {==}, {==},
+                    T.read.once2(T.arr.close(r2.SArr(bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at))), tt,
+                    ih))))
+                case False{}:
+                  r2.arr.item(SCon{cc, tt}, Laws.r2.aft(rs), r2.va.go(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'),
+                    Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '['), Char.is_eq(cc, '{'), cr, cc, {==},
+                    {==}, {==}, {==}, {==}, {==}, {==}, ecr, bd, rw, hs, he, pt, T.LVal{}, qk, T.CArr{i0, p0, h0} <> rs,
+                    un, lf, at, tt, sr.ncast(sr.K(qq, lit, cr, T.lex.val.go(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc,
+                    '#'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '['), Char.is_eq(cc, '{'),
+                    r2.SVal(bd, rw, hs, he, pt, T.LVal{}, qk, T.CArr{i0, p0, h0} <> rs, un, lf, at), cc)),
+                    r2.vaM(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+                    Char.is_eq(cc, '['), Char.is_eq(cc, '{'), cr, cc, bd, rw, hs, he, pt, T.LVal{}, qk, T.CArr{i0, p0,
+                    h0} <> rs, un, lf, at), tt, r2.ar.E(qq, lit, cr, cc, eqq, elt, bd, rw, hs, he, pt, bk, qk, i0, p0,
+                    h0, rs, un, lf, at), en), r2.cast2(sr.K(qq, lit, cr, T.lex.val.go(T.ch.sp(cc), T.ch.nl(cc),
+                    Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '['), Char.is_eq(cc,
+                    '{'), r2.SVal(bd, rw, hs, he, pt, T.LVal{}, qk, T.CArr{i0, p0, h0} <> rs, un, lf, at), cc)),
+                    r2.vaM(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+                    Char.is_eq(cc, '['), Char.is_eq(cc, '{'), cr, cc, bd, rw, hs, he, pt, T.LVal{}, qk, T.CArr{i0, p0,
+                    h0} <> rs, un, lf, at), tt, r2.ar.E(qq, lit, cr, cc, eqq, elt, bd, rw, hs, he, pt, bk, qk, i0, p0,
+                    h0, rs, un, lf, at), ih)))
+
+# LArr's obligation, for every character: a state with a character
+# buffered, or with no array open, is one no step reaches
+def r2.ob.arr(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LArr{}, bk, qk, sk, un, lf, at, cc, tt):
+  match bf sk:
+    case Nil{} T.CArr{+i0, +p0, +h0} <> +rs:
+      _ec => en => ih => r2.ar.go(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ']'), Char.is_eq(cc,
+        '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+        bd, rw, hs, he, pt, bk, qk, i0, p0, h0, rs, un, lf, at, tt, en, ih)
+    case Nil{} T.CInl{_i, _p, _h} <> _r:
+      _ec => _en => _ih => Unit{}
+    case Nil{} Nil{}:
+      _ec => _en => _ih => Unit{}
+    case _b <> _bs _s:
+      _ec => _en => _ih => Unit{}
+
+
+# A comment anywhere else: in an array (LArr, LArrC) its newline is the
+# array's ws-comment-newline; after a keyval's =, in an inline table, in a
+# header or after a key's segment no text completes it, since the newline
+# that ends it is refused; any other back state is one no step leaves.
+
+# what holds of a line feed and of a carriage return holds of a newline
+def r2.nlel.go(
+  -P: Char -> Type,
+  aa: Bool,
+  +uu: U32,
+  ea: {U32.is_eq(uu, 10) == aa : Bool},
+  enl: {Bool.or(aa, U32.is_eq(uu, 13)) == True{} : Bool},
+  pl: P('\n'),
+  pc: P(Chr{13})
+) -> P(Chr{uu}):
+  match aa:
+    case True{}:
+      vl.chs(P, Chr{uu}, '\n', Eq.u32_eq(uu, 10, ea), pl)
+    case False{}:
+      vl.chs(P, Chr{uu}, Chr{13}, Eq.u32_eq(uu, 13, enl), pc)
+
+# the same, of a character
+def r2.nlel(-P: Char -> Type, +cc: Char, enl: {T.ch.nl(cc) == True{} : Bool}, pl: P('\n'), pc: P(Chr{13})) -> P(cc):
+  match cc:
+    case Chr{+uu}:
+      r2.nlel.go(P, U32.is_eq(uu, 10), uu, {==}, enl, pl, pc)
+
+# a comment's state
+def r2.SC(
+  +bk: T.Lex,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk, sk, un, lf, at)
+
+# the mode a comment's step gives
+def r2.cM(
+  +nl: Bool,
+  +ctl: Bool,
+  +tab: Bool,
+  +cc: Char,
+  +bk: T.Lex,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+) -> T.Mode:
+  sr.K(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), T.read.once2(T.lex.com.go(nl, ctl,
+    tab, r2.SC(bk, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), cc)))
+
+# a character the comment keeps leaves it as it is
+def r2.cm.stay2(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == False{} : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bk: T.Lex,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  hh: Laws.r2.C(sr.K(qq, lit, cr, r2.SC(bk, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)), tt)
+) -> Laws.r2.C(T.MScan{r2.SC(bk, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)}, tt):
+  match qq:
+    case True{}:
+      hh
+    case False{}:
+      match lit:
+        case True{}:
+          hh
+        case False{}:
+          match cr:
+            case True{}:
+              Eq.bit.gone(&1, Laws.r2.C(T.MScan{r2.SC(bk, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)}, tt),
+                Eq.refute_char(cc, Chr{13}, xx => Bool.not(T.ch.nl(xx)), r1.creq(cc, ecr), Equal.cong(Bool, Bool, xx =>
+                Bool.not(xx), T.ch.nl(cc), False{}, enl), {==}))
+            case False{}:
+              hh
+
+# a comment character extends the rest of a comment, over r2's frames
+def r2.x.cm2(
+  +cc: Char,
+  +tt: String,
+  +rest: List<&2, Laws.R2Fr>,
+  +hc: {Bool.and(Laws.abnf.non_eol(cc), Laws.prose.comment_char(cc)) == True{} : Bool},
+  hh: Laws.r2.fill(Laws.R2Old{Laws.RfComment{}} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfComment{}} <> rest, SCon{cc, tt}):
+  (+bd, (+rr, (e1, (+e2, hr)))) = hh
+  (SCon{cc, bd}, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, String.append(bd, rr), e1),
+    (gd.tt(Bool.and(Laws.abnf.non_eol(cc), Laws.abnf.comment(bd)), Bool.and(Laws.prose.comment_char(cc),
+    Laws.prose.comment_chars(bd)), gd.tt(Laws.abnf.non_eol(cc), Laws.abnf.comment(bd), gd.l(Laws.abnf.non_eol(cc),
+    Laws.prose.comment_char(cc), hc), gd.l(Laws.abnf.comment(bd), Laws.prose.comment_chars(bd), e2)),
+    gd.tt(Laws.prose.comment_char(cc), Laws.prose.comment_chars(bd), gd.r(Laws.abnf.non_eol(cc),
+    Laws.prose.comment_char(cc), hc), gd.r(Laws.abnf.comment(bd), Laws.prose.comment_chars(bd), e2))), hr))))
+
+# a comment that returns to LInl: the newline that ends it is refused
+def r2.cmd.LInl.nl(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  enl: {T.ch.nl(cc) == True{} : Bool}
+) -> sr.N(tt, r2.cM(True{}, False{}, False{}, cc, T.LInl{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)) -> Empty:
+  r2.nlel(ch => sr.N(tt, sr.K(Char.is_eq(ch, '"'), Char.is_eq(ch, '\''), U32.is_eq(Char.to_u32(ch), 13),
+    T.read.once2(T.lex.com.nl(r2.SC(T.LInl{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), ch)))) -> Empty, cc, enl, en
+    => r1.bad(False{}, False{}, False{}, bd, rw, hs, he, pt, bf, T.LInl{}, T.LInl{}, qk, sk, un, lf, at, 'n',
+    "ewline in inline table", tt, en), en => r1.bad(False{}, False{}, True{}, bd, rw, hs, he, pt, bf, T.LInl{},
+    T.LInl{}, qk, sk, un, lf, at, 'n', "ewline in inline table", tt, en))
+
+# a comment that returns to LInl: no text completes it
+def r2.cmd.LInl(
+  nl: Bool,
+  ctl: Bool,
+  tab: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +_ect: {T.ch.ctl(cc) == ctl : Bool},
+  +_etb: {U32.is_eq(Char.to_u32(cc), 9) == tab : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.cM(nl, ctl, tab, cc, T.LInl{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)),
+  ih: Laws.r2.C(r2.cM(nl, ctl, tab, cc, T.LInl{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), tt)
+) -> Empty:
+  match nl:
+    case True{}:
+      r2.cmd.LInl.nl(bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, cc, tt, enl, en)
+    case False{}:
+      match ctl:
+        case False{}:
+          r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+            T.LInl{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, ih)
+        case True{}:
+          match tab:
+            case True{}:
+              r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+                T.LInl{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, ih)
+            case False{}:
+              r1.bad(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), bd, rw, hs, he, pt,
+                bf, T.LCom{}, T.LInl{}, qk, sk, un, lf, at, 'i', "nvalid control in comment", tt, en)
+
+# a comment that returns to LInlK: the newline that ends it is refused
+def r2.cmd.LInlK.nl(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  enl: {T.ch.nl(cc) == True{} : Bool}
+) -> sr.N(tt, r2.cM(True{}, False{}, False{}, cc, T.LInlK{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)) -> Empty:
+  r2.nlel(ch => sr.N(tt, sr.K(Char.is_eq(ch, '"'), Char.is_eq(ch, '\''), U32.is_eq(Char.to_u32(ch), 13),
+    T.read.once2(T.lex.com.nl(r2.SC(T.LInlK{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), ch)))) -> Empty, cc, enl, en
+    => r1.bad(False{}, False{}, False{}, bd, rw, hs, he, pt, bf, T.LInlK{}, T.LInlK{}, qk, sk, un, lf, at, 'n',
+    "ewline in inline table", tt, en), en => r1.bad(False{}, False{}, True{}, bd, rw, hs, he, pt, bf, T.LInlK{},
+    T.LInlK{}, qk, sk, un, lf, at, 'n', "ewline in inline table", tt, en))
+
+# a comment that returns to LInlK: no text completes it
+def r2.cmd.LInlK(
+  nl: Bool,
+  ctl: Bool,
+  tab: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +_ect: {T.ch.ctl(cc) == ctl : Bool},
+  +_etb: {U32.is_eq(Char.to_u32(cc), 9) == tab : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.cM(nl, ctl, tab, cc, T.LInlK{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)),
+  ih: Laws.r2.C(r2.cM(nl, ctl, tab, cc, T.LInlK{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), tt)
+) -> Empty:
+  match nl:
+    case True{}:
+      r2.cmd.LInlK.nl(bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, cc, tt, enl, en)
+    case False{}:
+      match ctl:
+        case False{}:
+          r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+            T.LInlK{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, ih)
+        case True{}:
+          match tab:
+            case True{}:
+              r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+                T.LInlK{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, ih)
+            case False{}:
+              r1.bad(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), bd, rw, hs, he, pt,
+                bf, T.LCom{}, T.LInlK{}, qk, sk, un, lf, at, 'i', "nvalid control in comment", tt, en)
+
+# a comment that returns to LInlC: the newline that ends it is refused
+def r2.cmd.LInlC.nl(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  enl: {T.ch.nl(cc) == True{} : Bool}
+) -> sr.N(tt, r2.cM(True{}, False{}, False{}, cc, T.LInlC{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)) -> Empty:
+  r2.nlel(ch => sr.N(tt, sr.K(Char.is_eq(ch, '"'), Char.is_eq(ch, '\''), U32.is_eq(Char.to_u32(ch), 13),
+    T.read.once2(T.lex.com.nl(r2.SC(T.LInlC{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), ch)))) -> Empty, cc, enl, en
+    => r1.bad(False{}, False{}, False{}, bd, rw, hs, he, pt, bf, T.LInlC{}, T.LInlC{}, qk, sk, un, lf, at, 'n',
+    "ewline in inline table", tt, en), en => r1.bad(False{}, False{}, True{}, bd, rw, hs, he, pt, bf, T.LInlC{},
+    T.LInlC{}, qk, sk, un, lf, at, 'n', "ewline in inline table", tt, en))
+
+# a comment that returns to LInlC: no text completes it
+def r2.cmd.LInlC(
+  nl: Bool,
+  ctl: Bool,
+  tab: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +_ect: {T.ch.ctl(cc) == ctl : Bool},
+  +_etb: {U32.is_eq(Char.to_u32(cc), 9) == tab : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.cM(nl, ctl, tab, cc, T.LInlC{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)),
+  ih: Laws.r2.C(r2.cM(nl, ctl, tab, cc, T.LInlC{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), tt)
+) -> Empty:
+  match nl:
+    case True{}:
+      r2.cmd.LInlC.nl(bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, cc, tt, enl, en)
+    case False{}:
+      match ctl:
+        case False{}:
+          r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+            T.LInlC{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, ih)
+        case True{}:
+          match tab:
+            case True{}:
+              r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+                T.LInlC{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, ih)
+            case False{}:
+              r1.bad(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), bd, rw, hs, he, pt,
+                bf, T.LCom{}, T.LInlC{}, qk, sk, un, lf, at, 'i', "nvalid control in comment", tt, en)
+
+# a comment that returns to LHead: the newline that ends it is refused
+def r2.cmd.LHead.nl(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  enl: {T.ch.nl(cc) == True{} : Bool}
+) -> sr.N(tt, r2.cM(True{}, False{}, False{}, cc, T.LHead{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)) -> Empty:
+  r2.nlel(ch => sr.N(tt, sr.K(Char.is_eq(ch, '"'), Char.is_eq(ch, '\''), U32.is_eq(Char.to_u32(ch), 13),
+    T.read.once2(T.lex.com.nl(r2.SC(T.LHead{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), ch)))) -> Empty, cc, enl, en
+    => r1.bad(False{}, False{}, False{}, bd, rw, hs, he, pt, bf, T.LHead{}, T.LHead{}, qk, sk, un, lf, at, 'i',
+    "nvalid header", tt, en), en => r1.bad(False{}, False{}, True{}, bd, rw, hs, he, pt, bf, T.LHead{}, T.LHead{}, qk,
+    sk, un, lf, at, 'i', "nvalid header", tt, en))
+
+# a comment that returns to LHead: no text completes it
+def r2.cmd.LHead(
+  nl: Bool,
+  ctl: Bool,
+  tab: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +_ect: {T.ch.ctl(cc) == ctl : Bool},
+  +_etb: {U32.is_eq(Char.to_u32(cc), 9) == tab : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.cM(nl, ctl, tab, cc, T.LHead{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)),
+  ih: Laws.r2.C(r2.cM(nl, ctl, tab, cc, T.LHead{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), tt)
+) -> Empty:
+  match nl:
+    case True{}:
+      r2.cmd.LHead.nl(bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, cc, tt, enl, en)
+    case False{}:
+      match ctl:
+        case False{}:
+          r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+            T.LHead{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, ih)
+        case True{}:
+          match tab:
+            case True{}:
+              r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+                T.LHead{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, ih)
+            case False{}:
+              r1.bad(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), bd, rw, hs, he, pt,
+                bf, T.LCom{}, T.LHead{}, qk, sk, un, lf, at, 'i', "nvalid control in comment", tt, en)
+
+# a comment that returns to LAfter: the newline that ends it is refused
+def r2.cmd.LAfter.nl(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  enl: {T.ch.nl(cc) == True{} : Bool}
+) -> sr.N(tt, r2.cM(True{}, False{}, False{}, cc, T.LAfter{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)) -> Empty:
+  r2.nlel(ch => sr.N(tt, sr.K(Char.is_eq(ch, '"'), Char.is_eq(ch, '\''), U32.is_eq(Char.to_u32(ch), 13),
+    T.read.once2(T.lex.com.nl(r2.SC(T.LAfter{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), ch)))) -> Empty, cc, enl,
+    en => r1.bad(False{}, False{}, False{}, bd, rw, hs, he, pt, bf, T.LAfter{}, T.LAfter{}, qk, sk, un, lf, at, 'n',
+    "ewline in key", tt, en), en => r1.bad(False{}, False{}, True{}, bd, rw, hs, he, pt, bf, T.LAfter{}, T.LAfter{}, qk,
+    sk, un, lf, at, 'n', "ewline in key", tt, en))
+
+# a comment that returns to LAfter: no text completes it
+def r2.cmd.LAfter(
+  nl: Bool,
+  ctl: Bool,
+  tab: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +_ect: {T.ch.ctl(cc) == ctl : Bool},
+  +_etb: {U32.is_eq(Char.to_u32(cc), 9) == tab : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.cM(nl, ctl, tab, cc, T.LAfter{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)),
+  ih: Laws.r2.C(r2.cM(nl, ctl, tab, cc, T.LAfter{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), tt)
+) -> Empty:
+  match nl:
+    case True{}:
+      r2.cmd.LAfter.nl(bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, cc, tt, enl, en)
+    case False{}:
+      match ctl:
+        case False{}:
+          r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+            T.LAfter{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, ih)
+        case True{}:
+          match tab:
+            case True{}:
+              r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+                T.LAfter{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, ih)
+            case False{}:
+              r1.bad(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), bd, rw, hs, he, pt,
+                bf, T.LCom{}, T.LAfter{}, qk, sk, un, lf, at, 'i', "nvalid control in comment", tt, en)
+
+# the type of r2.cmd.LVal.go's en
+def r2.T.cmd.LVal.go.en(
+  cr: Bool,
+  ch: Char,
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  at: Bool,
+  tt: String
+) -> Type:
+  sr.N(tt, sr.K(False{}, False{}, cr, T.lex.val.nl2(sip.S(bd, rw, hs, he, pt, bf, T.LVal{}, T.LVal{}, qk, sk, un,
+    lf, at), ch)))
+
+# a newline read after a comment that returned to LVal is refused
+def r2.cmd.LVal.go(
+  +cr: Bool,
+  +ch: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: r2.T.cmd.LVal.go.en(cr, ch, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt)
+) -> Empty:
+  match sk:
+    case []:
+      r1.bad(False{}, False{}, cr, bd, rw, hs, he, pt, bf, T.LVal{}, T.LVal{}, qk, [], un, lf, at, 'n',
+        "ewline before value", tt, en)
+    case T.CArr{+i0, +p0, +h0} <> +rs:
+      r1.bad(False{}, False{}, cr, bd, rw, hs, he, pt, bf, T.LVal{}, T.LVal{}, qk, T.CArr{i0, p0, h0} <> rs, un, lf, at,
+        'n', "ewline before value", tt, en)
+    case T.CInl{+r0, +p0, +h0} <> +rs:
+      r1.bad(False{}, False{}, cr, bd, rw, hs, he, pt, bf, T.LVal{}, T.LVal{}, qk, T.CInl{r0, p0, h0} <> rs, un, lf, at,
+        'n', "ewline in inline table", tt, en)
+
+# a comment that returns to LVal: the newline that ends it is refused
+def r2.cmd.LVal.nl(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  enl: {T.ch.nl(cc) == True{} : Bool}
+) -> sr.N(tt, r2.cM(True{}, False{}, False{}, cc, T.LVal{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)) -> Empty:
+  r2.nlel(ch => sr.N(tt, sr.K(Char.is_eq(ch, '"'), Char.is_eq(ch, '\''), U32.is_eq(Char.to_u32(ch), 13),
+    T.read.once2(T.lex.com.nl(r2.SC(T.LVal{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), ch)))) -> Empty, cc, enl, en
+    => r2.cmd.LVal.go(False{}, '\n', bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, en), en => r2.cmd.LVal.go(True{},
+    Chr{13}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, en))
+
+# a comment that returns to LVal: no text completes it
+def r2.cmd.LVal(
+  nl: Bool,
+  ctl: Bool,
+  tab: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +_ect: {T.ch.ctl(cc) == ctl : Bool},
+  +_etb: {U32.is_eq(Char.to_u32(cc), 9) == tab : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.cM(nl, ctl, tab, cc, T.LVal{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at)),
+  ih: Laws.r2.C(r2.cM(nl, ctl, tab, cc, T.LVal{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at), tt)
+) -> Empty:
+  match nl:
+    case True{}:
+      r2.cmd.LVal.nl(bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, cc, tt, enl, en)
+    case False{}:
+      match ctl:
+        case False{}:
+          r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+            T.LVal{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, ih)
+        case True{}:
+          match tab:
+            case True{}:
+              r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+                T.LVal{}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, ih)
+            case False{}:
+              r1.bad(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), bd, rw, hs, he, pt,
+                bf, T.LCom{}, T.LVal{}, qk, sk, un, lf, at, 'i', "nvalid control in comment", tt, en)
+
+
+# a comment in an array that returns to LArr: a carriage return and the
+# line feed after it end it
+def r2.cma.LArr.cr(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  hh: Laws.r2.C(T.MCr{sip.S(bd, rw, hs, he, pt, [], T.LArr{}, T.LArr{}, qk, T.CArr{i0, p0, h0} <> rs, un, lf, at)}, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfComment{}} <> (Laws.R2Nl{} <> (Laws.R2Arr{} <> Laws.r2.aft(rs))), SCon{Chr{13},
+  tt}):
+  (+uu, (e1, hr)) = hh
+  ("", (SCon{Chr{13}, tt}, ({==}, ({==}, (SCon{Chr{13}, SCon{'\n', SNil{}}}, (uu, (Equal.cong(String, String, xx =>
+    SCon{Chr{13}, xx}, tt, SCon{'\n', uu}, e1), ({==}, hr))))))))
+
+# a comment in an array that returns to LArr: its dispatch
+def r2.cma.LArr(
+  nl: Bool,
+  ctl: Bool,
+  tab: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +ect: {T.ch.ctl(cc) == ctl : Bool},
+  +etb: {U32.is_eq(Char.to_u32(cc), 9) == tab : Bool},
+  +eok: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.cM(nl, ctl, tab, cc, T.LArr{}, bd, rw, hs, he, pt, [], qk, T.CArr{i0, p0, h0} <> rs, un, lf, at)),
+  ih: Laws.r2.C(r2.cM(nl, ctl, tab, cc, T.LArr{}, bd, rw, hs, he, pt, [], qk, T.CArr{i0, p0, h0} <> rs, un, lf, at), tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfComment{}} <> (Laws.R2Nl{} <> (Laws.R2Arr{} <> Laws.r2.aft(rs))), SCon{cc, tt}):
+  match nl:
+    case True{}:
+      r2.nlel(ch => Laws.r2.C(sr.K(Char.is_eq(ch, '"'), Char.is_eq(ch, '\''), U32.is_eq(Char.to_u32(ch), 13),
+        T.read.once2(T.lex.com.nl(r2.SC(T.LArr{}, bd, rw, hs, he, pt, [], qk, T.CArr{i0, p0, h0} <> rs, un, lf, at),
+        ch))), tt) -> Laws.r2.fill(Laws.R2Old{Laws.RfComment{}} <> (Laws.R2Nl{} <> (Laws.R2Arr{} <> Laws.r2.aft(rs))),
+        SCon{ch, tt}), cc, enl, hh => ("", (SCon{'\n', tt}, ({==}, ({==}, (SCon{'\n', SNil{}}, (tt, ({==}, ({==},
+        hh)))))))), hh => r2.cma.LArr.cr(bd, rw, hs, he, pt, qk, i0, p0, h0, rs, un, lf, at, tt, hh))(ih)
+    case False{}:
+      match ctl:
+        case False{}:
+          r2.x.cm2(cc, tt, Laws.R2Nl{} <> (Laws.R2Arr{} <> Laws.r2.aft(rs)), r2.cm.c(False{}, tab, cc, ect, etb, eok,
+            {==}), r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==},
+            T.LArr{}, bd, rw, hs, he, pt, [], qk, T.CArr{i0, p0, h0} <> rs, un, lf, at, tt, ih))
+        case True{}:
+          match tab:
+            case True{}:
+              r2.x.cm2(cc, tt, Laws.R2Nl{} <> (Laws.R2Arr{} <> Laws.r2.aft(rs)), r2.cm.c(True{}, True{}, cc, ect, etb,
+                eok, {==}), r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc,
+                enl, {==}, T.LArr{}, bd, rw, hs, he, pt, [], qk, T.CArr{i0, p0, h0} <> rs, un, lf, at, tt, ih))
+            case False{}:
+              Eq.bit.gone(&1, Laws.r2.fill(Laws.R2Old{Laws.RfComment{}} <> (Laws.R2Nl{} <> (Laws.R2Arr{} <>
+                Laws.r2.aft(rs))), SCon{cc, tt}), r1.bad(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+                U32.is_eq(Char.to_u32(cc), 13), bd, rw, hs, he, pt, [], T.LCom{}, T.LArr{}, qk, T.CArr{i0, p0, h0} <>
+                rs, un, lf, at, 'i', "nvalid control in comment", tt, en))
+
+# a comment that returns to LArr: its obligation, for every character
+def r2.ob.com.LArr(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LCom{}, T.LArr{}, qk, sk, un, lf, at, cc, tt):
+  match bf sk:
+    case Nil{} T.CArr{+i0, +p0, +h0} <> +rs:
+      ec => en => ih => r2.cma.LArr(T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), cc, {==}, {==}, {==}, ec,
+        bd, rw, hs, he, pt, qk, i0, p0, h0, rs, un, lf, at, tt, en, ih)
+    case Nil{} T.CInl{_i, _p, _h} <> _r:
+      _ec => _en => _ih => Unit{}
+    case Nil{} Nil{}:
+      _ec => _en => _ih => Unit{}
+    case _b <> _bs _s:
+      _ec => _en => _ih => Unit{}
+
+# the type of r2.cma.LArrC.cr's hh
+def r2.T.cma.LArrC.cr.hh(
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  pt: List<&2, String>,
+  qk: T.QKind,
+  i0: List<&2, T.Val>,
+  p0: List<&2, String>,
+  h0: List<&2, String>,
+  rs: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  at: Bool,
+  tt: String
+) -> Type:
+  Laws.r2.C(T.MCr{sip.S(bd, rw, hs, he, pt, [], T.LArrC{}, T.LArrC{}, qk, T.CArr{i0, p0, h0} <> rs, un, lf, at)},
+    tt)
+
+# a comment in an array that returns to LArrC: a carriage return and the
+# line feed after it end it
+def r2.cma.LArrC.cr(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  hh: r2.T.cma.LArrC.cr.hh(bd, rw, hs, he, pt, qk, i0, p0, h0, rs, un, lf, at, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfComment{}} <> (Laws.R2Nl{} <> (Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs))),
+  SCon{Chr{13}, tt}):
+  (+uu, (e1, hr)) = hh
+  ("", (SCon{Chr{13}, tt}, ({==}, ({==}, (SCon{Chr{13}, SCon{'\n', SNil{}}}, (uu, (Equal.cong(String, String, xx =>
+    SCon{Chr{13}, xx}, tt, SCon{'\n', uu}, e1), ({==}, hr))))))))
+
+# the type of r2.cma.LArrC's ih
+def r2.T.cma.LArrC.ih(
+  nl: Bool,
+  ctl: Bool,
+  tab: Bool,
+  cc: Char,
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  pt: List<&2, String>,
+  qk: T.QKind,
+  i0: List<&2, T.Val>,
+  p0: List<&2, String>,
+  h0: List<&2, String>,
+  rs: List<&2, T.Ctx>,
+  un: U32,
+  lf: U32,
+  at: Bool,
+  tt: String
+) -> Type:
+  Laws.r2.C(r2.cM(nl, ctl, tab, cc, T.LArrC{}, bd, rw, hs, he, pt, [], qk, T.CArr{i0, p0, h0} <> rs, un, lf, at),
+    tt)
+
+# a comment in an array that returns to LArrC: its dispatch
+def r2.cma.LArrC(
+  nl: Bool,
+  ctl: Bool,
+  tab: Bool,
+  +cc: Char,
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +ect: {T.ch.ctl(cc) == ctl : Bool},
+  +etb: {U32.is_eq(Char.to_u32(cc), 9) == tab : Bool},
+  +eok: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +i0: List<&2, T.Val>,
+  +p0: List<&2, String>,
+  +h0: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r2.cM(nl, ctl, tab, cc, T.LArrC{}, bd, rw, hs, he, pt, [], qk, T.CArr{i0, p0, h0} <> rs, un, lf, at)),
+  ih: r2.T.cma.LArrC.ih(nl, ctl, tab, cc, bd, rw, hs, he, pt, qk, i0, p0, h0, rs, un, lf, at, tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfComment{}} <> (Laws.R2Nl{} <> (Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs))),
+  SCon{cc, tt}):
+  match nl:
+    case True{}:
+      r2.nlel(ch => Laws.r2.C(sr.K(Char.is_eq(ch, '"'), Char.is_eq(ch, '\''), U32.is_eq(Char.to_u32(ch), 13),
+        T.read.once2(T.lex.com.nl(r2.SC(T.LArrC{}, bd, rw, hs, he, pt, [], qk, T.CArr{i0, p0, h0} <> rs, un, lf, at),
+        ch))), tt) -> Laws.r2.fill(Laws.R2Old{Laws.RfComment{}} <> (Laws.R2Nl{} <> (Laws.R2Old{Laws.RfArrAfter{}} <>
+        Laws.r2.aft(rs))), SCon{ch, tt}), cc, enl, hh => ("", (SCon{'\n', tt}, ({==}, ({==}, (SCon{'\n', SNil{}}, (tt,
+        ({==}, ({==}, hh)))))))), hh => r2.cma.LArrC.cr(bd, rw, hs, he, pt, qk, i0, p0, h0, rs, un, lf, at, tt, hh))(ih)
+    case False{}:
+      match ctl:
+        case False{}:
+          r2.x.cm2(cc, tt, Laws.R2Nl{} <> (Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs)), r2.cm.c(False{}, tab, cc,
+            ect, etb, eok, {==}), r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13),
+            cc, enl, {==}, T.LArrC{}, bd, rw, hs, he, pt, [], qk, T.CArr{i0, p0, h0} <> rs, un, lf, at, tt, ih))
+        case True{}:
+          match tab:
+            case True{}:
+              r2.x.cm2(cc, tt, Laws.R2Nl{} <> (Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs)), r2.cm.c(True{},
+                True{}, cc, ect, etb, eok, {==}), r2.cm.stay2(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+                U32.is_eq(Char.to_u32(cc), 13), cc, enl, {==}, T.LArrC{}, bd, rw, hs, he, pt, [], qk, T.CArr{i0, p0, h0}
+                <> rs, un, lf, at, tt, ih))
+            case False{}:
+              Eq.bit.gone(&1, Laws.r2.fill(Laws.R2Old{Laws.RfComment{}} <> (Laws.R2Nl{} <>
+                (Laws.R2Old{Laws.RfArrAfter{}} <> Laws.r2.aft(rs))), SCon{cc, tt}), r1.bad(Char.is_eq(cc, '"'),
+                Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), bd, rw, hs, he, pt, [], T.LCom{}, T.LArrC{}, qk,
+                T.CArr{i0, p0, h0} <> rs, un, lf, at, 'i', "nvalid control in comment", tt, en))
+
+# a comment that returns to LArrC: its obligation, for every character
+def r2.ob.com.LArrC(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +qk: T.QKind,
+  sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LCom{}, T.LArrC{}, qk, sk, un, lf, at, cc, tt):
+  match bf sk:
+    case Nil{} T.CArr{+i0, +p0, +h0} <> +rs:
+      ec => en => ih => r2.cma.LArrC(T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), cc, {==}, {==}, {==}, ec,
+        bd, rw, hs, he, pt, qk, i0, p0, h0, rs, un, lf, at, tt, en, ih)
+    case Nil{} T.CInl{_i, _p, _h} <> _r:
+      _ec => _en => _ih => Unit{}
+    case Nil{} Nil{}:
+      _ec => _en => _ih => Unit{}
+    case _b <> _bs _s:
+      _ec => _en => _ih => Unit{}
+
+# LCom's obligation, for every back state and character
+def r2.ob.com(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk, sk, un, lf, at, cc, tt):
+  match bk:
+    case T.LTop{}:
+      ec => en => ih => r2.up(Laws.r1.gp0(T.LCom{}, T.LTop{}, qk, sk, pt, bf, un, lf, at), SCon{cc, tt},
+        r2.ob1.com.top(bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc,
+        T.read.fast.old(bd, rw, hs, he, pt, bf, T.LCom{}, T.LTop{}, qk, sk, un, lf, at, cc)), tt, ih)))
+    case T.LLine{}:
+      ec => en => ih => r2.up(Laws.r1.gp0(T.LCom{}, T.LLine{}, qk, sk, pt, bf, un, lf, at), SCon{cc, tt},
+        r2.ob1.com.line(bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, cc, tt, ec, en, r2.dn.C(sr.Kc(cc,
+        T.read.fast.old(bd, rw, hs, he, pt, bf, T.LCom{}, T.LLine{}, qk, sk, un, lf, at, cc)), tt, ih)))
+    case T.LKey{}:
+      _ec => _en => _ih => Unit{}
+    case T.LKeyDot{}:
+      _ec => _en => _ih => Unit{}
+    case T.LAfter{}:
+      _ec => en => ih => Eq.bit.gone(&1, Laws.r2.C(T.MScan{sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, T.LAfter{}, qk, sk,
+        un, lf, at)}, SCon{cc, tt}), r2.cmd.LAfter(T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), cc, {==},
+        {==}, {==}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, en, ih))
+    case T.LKeyQ{}:
+      _ec => _en => _ih => Unit{}
+    case T.LKeyE{}:
+      _ec => _en => _ih => Unit{}
+    case T.LKeyU{}:
+      _ec => _en => _ih => Unit{}
+    case T.LVal{}:
+      _ec => en => ih => Eq.bit.gone(&1, Laws.r2.C(T.MScan{sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, T.LVal{}, qk, sk, un,
+        lf, at)}, SCon{cc, tt}), r2.cmd.LVal(T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), cc, {==}, {==},
+        {==}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, en, ih))
+    case T.LQ{}:
+      _ec => _en => _ih => Unit{}
+    case T.LQ2{}:
+      _ec => _en => _ih => Unit{}
+    case T.LStr{}:
+      _ec => _en => _ih => Unit{}
+    case T.LEsc{}:
+      _ec => _en => _ih => Unit{}
+    case T.LUni{}:
+      _ec => _en => _ih => Unit{}
+    case T.LFold{}:
+      _ec => _en => _ih => Unit{}
+    case T.LMq{}:
+      _ec => _en => _ih => Unit{}
+    case T.LMqEnd{}:
+      _ec => _en => _ih => Unit{}
+    case T.LTrim{}:
+      _ec => _en => _ih => Unit{}
+    case T.LTrim2{}:
+      _ec => _en => _ih => Unit{}
+    case T.LBare{}:
+      _ec => _en => _ih => Unit{}
+    case T.LDate{}:
+      _ec => _en => _ih => Unit{}
+    case T.LCom{}:
+      _ec => _en => _ih => Unit{}
+    case T.LHead{}:
+      _ec => en => ih => Eq.bit.gone(&1, Laws.r2.C(T.MScan{sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, T.LHead{}, qk, sk,
+        un, lf, at)}, SCon{cc, tt}), r2.cmd.LHead(T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), cc, {==},
+        {==}, {==}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, en, ih))
+    case T.LHeadGap{}:
+      _ec => _en => _ih => Unit{}
+    case T.LHeadDot{}:
+      _ec => _en => _ih => Unit{}
+    case T.LHeadQ{}:
+      _ec => _en => _ih => Unit{}
+    case T.LHeadE{}:
+      _ec => _en => _ih => Unit{}
+    case T.LHeadU{}:
+      _ec => _en => _ih => Unit{}
+    case T.LHeadR{}:
+      _ec => _en => _ih => Unit{}
+    case T.LArr{}:
+      r2.ob.com.LArr(bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, cc, tt)
+    case T.LArrC{}:
+      r2.ob.com.LArrC(bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, cc, tt)
+    case T.LInl{}:
+      _ec => en => ih => Eq.bit.gone(&1, Laws.r2.C(T.MScan{sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, T.LInl{}, qk, sk, un,
+        lf, at)}, SCon{cc, tt}), r2.cmd.LInl(T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), cc, {==}, {==},
+        {==}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, en, ih))
+    case T.LInlK{}:
+      _ec => en => ih => Eq.bit.gone(&1, Laws.r2.C(T.MScan{sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, T.LInlK{}, qk, sk,
+        un, lf, at)}, SCon{cc, tt}), r2.cmd.LInlK(T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), cc, {==},
+        {==}, {==}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, en, ih))
+    case T.LInlC{}:
+      _ec => en => ih => Eq.bit.gone(&1, Laws.r2.C(T.MScan{sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, T.LInlC{}, qk, sk,
+        un, lf, at)}, SCon{cc, tt}), r2.cmd.LInlC(T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), cc, {==},
+        {==}, {==}, bd, rw, hs, he, pt, bf, qk, sk, un, lf, at, tt, en, ih))
+    case T.LSink{}:
+      _ec => _en => _ih => Unit{}
+
+
+# Bare words. A word word.val reads is one toml.abnf's bare rules give
+# (WP-N1's and WP-T1's refusal halves, through the exact laws); its end is
+# the after-state's step (WP-V's vl.acc and vl.dacc), and a word it refuses
+# leaves an error.
+
+# a classifier that holds of a word's own value gives the other side of an
+# exact law
+def r2.wok.x(
+  +cs: List<&2, Char>,
+  +vv: T.Val,
+  ff: T.Got -> Bool,
+  +xx: Bool,
+  hv: {T.word.val(cs) == T.GotVal{vv} : T.Got},
+  hh: {ff(T.word.val(cs)) == xx : Bool},
+  hs: {ff(T.GotVal{vv}) == True{} : Bool}
+) -> {xx == True{} : Bool}:
+  Equal.trans(Bool, xx, ff(T.word.val(cs)), True{}, Equal.sym(Bool, ff(T.word.val(cs)), xx, hh), Equal.trans(Bool,
+    ff(T.word.val(cs)), ff(T.GotVal{vv}), True{}, Equal.cong(T.Got, Bool, gg => ff(gg), T.word.val(cs), T.GotVal{vv},
+    hv), hs))
+
+# a word word.val reads is one of the four bare rules, by its value
+def r2.wok.go(
+  vv: T.Val,
+  +cs: List<&2, Char>,
+  +hv: {T.word.val(cs) == T.GotVal{vv} : T.Got}
+) -> {Laws.r2.word.ok(cs) == True{} : Bool}:
+  match vv:
+    case T.VInt{+sg, +ds}:
+      r1.orr(Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}),
+        Bool.or(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}))),
+        r1.orr(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}),
+        Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{})), r1.orr(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}),
+        Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}), gd.l(Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}),
+        Laws.g.val(Laws.GvInteger{cs}, T.VInt{sg, ds}), r2.wok.x(cs, T.VInt{sg, ds}, gg => Laws.n1.got.int(gg,
+        T.VInt{sg, ds}), Bool.and(Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}), Laws.g.val(Laws.GvInteger{cs},
+        T.VInt{sg, ds})), hv, Laws.integer_word_exact(cs, T.VInt{sg, ds}), gd.tt(Laws.sign.eq(sg, sg), String.eq(ds,
+        ds), sign.self(sg), Eq.string_eq_self(ds)))))))
+    case T.VFlo{+sg, +tx}:
+      r1.orr(Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}),
+        Bool.or(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}))),
+        r1.orr(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}),
+        Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{})), r1.orl(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}),
+        Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}), gd.l(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}),
+        Laws.g.val(Laws.GvFloat{cs}, T.VFlo{sg, tx}), r2.wok.x(cs, T.VFlo{sg, tx}, gg => Laws.n1.got.flo(gg, T.VFlo{sg,
+        tx}), Bool.and(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.val(Laws.GvFloat{cs}, T.VFlo{sg, tx})), hv,
+        Laws.float_word_exact(cs, T.VFlo{sg, tx}), gd.tt(Laws.sign.eq(sg, sg), String.eq(tx, tx), sign.self(sg),
+        Eq.string_eq_self(tx)))))))
+    case T.VBool{+bt}:
+      r1.orl(Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}),
+        Bool.or(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}))),
+        gd.l(Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}), Laws.g.val(Laws.GvBoolean{cs}, T.VBool{bt}), r2.wok.x(cs,
+        T.VBool{bt}, gg => Laws.n1.got.bool(gg, T.VBool{bt}), Bool.and(Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}),
+        Laws.g.val(Laws.GvBoolean{cs}, T.VBool{bt})), hv, Laws.boolean_word_exact(cs, T.VBool{bt}), bit.self(bt))))
+    case T.VWhen{+wh}:
+      r1.orr(Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}),
+        Bool.or(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}))),
+        r1.orl(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}),
+        Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{})), gd.l(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}),
+        Laws.g.val(Laws.GvDateTime{cs}, T.VWhen{wh}), r2.wok.x(cs, T.VWhen{wh}, gg => Laws.t1.got_when(gg, wh),
+        Bool.and(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}), Laws.g.val(Laws.GvDateTime{cs}, T.VWhen{wh})), hv,
+        Laws.date_time_word(cs, wh), when.self(wh)))))
+    case T.VStr{+x1}:
+      Eq.bit.absurd(&2, {Laws.r2.word.ok(cs) == True{} : Bool}, vl.sc.of(cs, T.VStr{x1}, hv))
+    case T.VSpan{+x1, +x2}:
+      Eq.bit.absurd(&2, {Laws.r2.word.ok(cs) == True{} : Bool}, vl.sc.of(cs, T.VSpan{x1, x2}, hv))
+    case T.VArr{+x1}:
+      Eq.bit.absurd(&2, {Laws.r2.word.ok(cs) == True{} : Bool}, vl.sc.of(cs, T.VArr{x1}, hv))
+    case T.VInl{+x1}:
+      Eq.bit.absurd(&2, {Laws.r2.word.ok(cs) == True{} : Bool}, vl.sc.of(cs, T.VInl{x1}, hv))
+    case T.VHead{+x1, +x2}:
+      Eq.bit.absurd(&2, {Laws.r2.word.ok(cs) == True{} : Bool}, vl.sc.of(cs, T.VHead{x1, x2}, hv))
+    case T.VAot{+x1, +x2}:
+      Eq.bit.absurd(&2, {Laws.r2.word.ok(cs) == True{} : Bool}, vl.sc.of(cs, T.VAot{x1, x2}, hv))
+    case T.VAots{+x1, +x2}:
+      Eq.bit.absurd(&2, {Laws.r2.word.ok(cs) == True{} : Bool}, vl.sc.of(cs, T.VAots{x1, x2}, hv))
+    case T.VPair{+x1, +x2}:
+      Eq.bit.absurd(&2, {Laws.r2.word.ok(cs) == True{} : Bool}, vl.sc.of(cs, T.VPair{x1, x2}, hv))
+
+# the stack a bare value's fields hold
+def r2.fsk(fx: Laws.Vf) -> List<&2, T.Ctx>:
+  match fx:
+    case Laws.Vf{_b, _r, _h, _e, _p, _k, _q, stack, _u, _l, _a}:
+      stack
+
+# a step's no error and completion, from the fast step's to the full one's
+def r2.ffn(
+  +lx: T.Lex,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  en: sr.N(tt, sr.Kc(cc, T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)))
+) -> sr.N(tt, sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc))):
+  sr.ncast(sr.Kc(cc, T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)), sr.Kc(cc,
+    T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)), tt, Equal.cong(T.St, T.Mode, xx =>
+    sr.Kc(cc, xx), T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc), T.read.fast.old(bd, rw, hs,
+    he, pt, bf, lx, bk, qk, sk, un, lf, at, cc), sr.ff(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)), en)
+
+# and its completion
+def r2.ffi(
+  +lx: T.Lex,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  ih: Laws.r2.C(sr.Kc(cc, T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)), tt)
+) -> Laws.r2.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)), tt):
+  r2.cast2(sr.Kc(cc, T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)), sr.Kc(cc,
+    T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)), tt, Equal.cong(T.St, T.Mode, xx =>
+    sr.Kc(cc, xx), T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc), T.read.fast.old(bd, rw, hs,
+    he, pt, bf, lx, bk, qk, sk, un, lf, at, cc), sr.ff(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)), ih)
+
+# the character after a value placed at the root, by LLine's obligation
+def r2.as.root(
+  end: T.End,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  en: sr.N(tt, sr.Kc(cc, T.read.fast(T.take.root(end, he, bk, qk, un, lf, at, False{}), cc))),
+  ih: Laws.r2.C(sr.Kc(cc, T.read.fast(T.take.root(end, he, bk, qk, un, lf, at, False{}), cc)), tt)
+) -> Laws.r2.fill(Laws.r2.aft([]), SCon{cc, tt}):
+  match end:
+    case T.End{+vs, +bd, +hs}:
+      r2.ob.line(bd, vs, hs, he, [], [], bk, qk, [], un, lf, at, cc, tt, ec, r2.ffn(T.LLine{}, qk, bd, vs, hs, he, [],
+        [], bk, [], un, lf, at, cc, tt, en), r2.ffi(T.LLine{}, qk, bd, vs, hs, he, [], [], bk, [], un, lf, at, cc, tt,
+        ih))
+
+# and after one placed in an inline table, by LInlC's
+def r2.as.inl(
+  end: T.End,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +rs: List<&2, T.Ctx>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  en: sr.N(tt, sr.Kc(cc, T.read.fast(T.take.inl(end, rw, hs, he, ps, rs, bk, qk, un, lf, at, False{}), cc))),
+  ih: Laws.r2.C(sr.Kc(cc, T.read.fast(T.take.inl(end, rw, hs, he, ps, rs, bk, qk, un, lf, at, False{}), cc)), tt)
+) -> Laws.r2.fill(Laws.R2Old{Laws.RfInlAfter{}} <> Laws.r2.aft(rs), SCon{cc, tt}):
+  match end:
+    case T.End{+inl, +bd, _h}:
+      r2.ob.inlc(bd, rw, hs, he, [], [], bk, qk, T.CInl{inl, ps, he} <> rs, un, lf, at, cc, tt, ec, r2.ffn(T.LInlC{},
+        qk, bd, rw, hs, he, [], [], bk, T.CInl{inl, ps, he} <> rs, un, lf, at, cc, tt, en), r2.ffi(T.LInlC{}, qk, bd,
+        rw, hs, he, [], [], bk, T.CInl{inl, ps, he} <> rs, un, lf, at, cc, tt, ih))
+
+# the character after a placed bare value, by the obligation of the state
+# the value leaves
+def r2.aft.step(
+  fx: Laws.Vf,
+  +vv: T.Val,
+  +cc: Char,
+  +tt: String,
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  en: sr.N(tt, sr.Kc(cc, T.read.fast(vl.vt(fx, vv), cc))),
+  ih: Laws.r2.C(sr.Kc(cc, T.read.fast(vl.vt(fx, vv), cc)), tt)
+) -> Laws.r2.fill(Laws.r2.aft(r2.fsk(fx)), SCon{cc, tt}):
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, stack, +uni, +left, +arrtab}:
+      match stack:
+        case []:
+          r2.as.root(T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+            T.path.len(here, 0)), here, back, qkind, uni, left, arrtab, cc, tt, ec, en, ih)
+        case T.CArr{+items, +saved, +ah} <> +rs:
+          r2.ob.arrc(bad, rows, heads, ah, saved, [], back, qkind, T.CArr{vv <> items, saved, ah} <> rs, uni, left,
+            arrtab, cc, tt, ec, r2.ffn(T.LArrC{}, qkind, bad, rows, heads, ah, saved, [], back, T.CArr{vv <> items,
+            saved, ah} <> rs, uni, left, arrtab, cc, tt, en), r2.ffi(T.LArrC{}, qkind, bad, rows, heads, ah, saved, [],
+            back, T.CArr{vv <> items, saved, ah} <> rs, uni, left, arrtab, cc, tt, ih))
+        case T.CInl{+inl, +saved, +ah} <> +rs:
+          r2.as.inl(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0),
+            rows, heads, ah, saved, rs, back, qkind, uni, left, arrtab, cc, tt, ec, en, ih)
+
+# a wschar in front of what follows a value
+def r2.aft.ws(
+  sk: List<&2, T.Ctx>,
+  +cc: Char,
+  +tt: String,
+  +ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  hh: Laws.r2.fill(Laws.r2.aft(sk), tt)
+) -> Laws.r2.fill(Laws.r2.aft(sk), SCon{cc, tt}):
+  match sk:
+    case []:
+      r2.up(Laws.r1.eol(), SCon{cc, tt}, r2.le.ws(cc, tt, [Laws.RfLines{}], ew, r2.dn(Laws.r1.eol(), tt, hh)))
+    case T.CArr{_i, _p, _h} <> +rs:
+      r2.aa.cons(Laws.GwWschar{cc}, tt, Laws.r2.aft(rs), gd.tt(Laws.abnf.wschar(cc), True{}, ew, {==}), hh)
+    case T.CInl{_i, _p, _h} <> +rs:
+      r2.ia.ws(cc, tt, Laws.r2.aft(rs), ew, hh)
+
+# a word refused: the step that ends it fails, whatever state it came from
+def r2.w.bad3(
+  fx: Laws.Vf,
+  +lx: T.Lex,
+  +cc: Char,
+  +hold: Bool,
+  +w0: Char,
+  +ws: String,
+  +tt: String,
+  en: sr.N(tt, sr.Kc(cc, T.read.once2(T.bare.got(T.GotBad{SCon{w0, ws}}, Laws.vst(fx, [], lx), cc, hold))))
+) -> Empty:
+  match fx:
+    case Laws.Vf{+bd, +rw, +hs, +he, +pt, +bk, +qk, +sk, +un, +lf, +at}:
+      r1.bad(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), bd, rw, hs, he, pt, [], lx, bk,
+        qk, sk, un, lf, at, w0, ws, tt, en)
+
+# and a refusal has a reason
+def r2.w.bad2(
+  why: String,
+  +fx: Laws.Vf,
+  +lx: T.Lex,
+  +cc: Char,
+  +hold: Bool,
+  +tt: String,
+  hw: {Bool.not(String.is_empty(why)) == True{} : Bool},
+  en: sr.N(tt, sr.Kc(cc, T.read.once2(T.bare.got(T.GotBad{why}, Laws.vst(fx, [], lx), cc, hold))))
+) -> Empty:
+  match why:
+    case SNil{}:
+      Eq.bit.absurd(&1, Empty, hw)
+    case SCon{+w0, +ws}:
+      r2.w.bad3(fx, lx, cc, hold, w0, ws, tt, en)
+
+# the type of r2.w.bad's rf
+def r2.T.w.bad.rf(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +lx: T.Lex,
+  +cc: Char,
+  hold: Bool
+) -> Type:
+  {T.read.fast(Laws.vst(fx, bb, lx), cc) == T.read.once2(T.bare.got(T.word.val(List.reverse(&2, Char, bb)),
+    Laws.vst(fx, [], lx), cc, hold)) : T.St}
+
+# a word word.val refuses: no text completes it
+def r2.w.bad(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +lx: T.Lex,
+  +cc: Char,
+  +hold: Bool,
+  +why: String,
+  +tt: String,
+  +egg: {T.word.val(List.reverse(&2, Char, bb)) == T.GotBad{why} : T.Got},
+  rf: r2.T.w.bad.rf(fx, bb, lx, cc, hold),
+  en: sr.N(tt, sr.Kc(cc, T.read.fast(Laws.vst(fx, bb, lx), cc)))
+) -> Empty:
+  +e1 = {Equal.trans(T.St, T.read.fast(Laws.vst(fx, bb, lx), cc), T.read.once2(T.bare.got(T.word.val(List.reverse(&2,
+    Char, bb)), Laws.vst(fx, [], lx), cc, hold)), T.read.once2(T.bare.got(T.GotBad{why}, Laws.vst(fx, [], lx), cc,
+    hold)), rf, Equal.cong(T.Got, T.St, gg => T.read.once2(T.bare.got(gg, Laws.vst(fx, [], lx), cc, hold)),
+    T.word.val(List.reverse(&2, Char, bb)), T.GotBad{why}, egg)) : {T.read.fast(Laws.vst(fx, bb, lx), cc) ==
+    T.read.once2(T.bare.got(T.GotBad{why}, Laws.vst(fx, [], lx), cc, hold)) : T.St}}
+  r2.w.bad2(why, fx, lx, cc, hold, tt, Equal.trans(Bool, Bool.not(String.is_empty(why)), Laws.k3.why(T.word.val(
+    List.reverse(&2, Char, bb))), True{}, Equal.cong(T.Got, Bool, gg => Laws.k3.why(gg), T.GotBad{why},
+    T.word.val(List.reverse(&2, Char, bb)), Equal.sym(T.Got, T.word.val(List.reverse(&2, Char, bb)), T.GotBad{why},
+    egg)), Laws.bare_word_refusal_says_why(List.reverse(&2, Char, bb))), sr.ncast(sr.Kc(cc, T.read.fast(Laws.vst(fx,
+    bb, lx), cc)), sr.Kc(cc, T.read.once2(T.bare.got(T.GotBad{why}, Laws.vst(fx, [], lx), cc, hold))), tt,
+    Equal.cong(T.St, T.Mode, xx => sr.Kc(cc, xx), T.read.fast(Laws.vst(fx, bb, lx), cc),
+    T.read.once2(T.bare.got(T.GotBad{why}, Laws.vst(fx, [], lx), cc, hold)), e1), en))
+
+# the state after a word, read from the placed value
+def r2.w.at(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +lx: T.Lex,
+  +vv: T.Val,
+  +cc: Char,
+  +tt: String,
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +ee: {T.read.fast(Laws.vst(fx, bb, lx), cc) == T.read.fast(vl.vt(fx, vv), cc) : T.St},
+  en: sr.N(tt, sr.Kc(cc, T.read.fast(Laws.vst(fx, bb, lx), cc))),
+  ih: Laws.r2.C(sr.Kc(cc, T.read.fast(Laws.vst(fx, bb, lx), cc)), tt)
+) -> Laws.r2.fill(Laws.r2.aft(r2.fsk(fx)), SCon{cc, tt}):
+  r2.aft.step(fx, vv, cc, tt, ec, sr.ncast(sr.Kc(cc, T.read.fast(Laws.vst(fx, bb, lx), cc)), sr.Kc(cc,
+    T.read.fast(vl.vt(fx, vv), cc)), tt, Equal.cong(T.St, T.Mode, xx => sr.Kc(cc, xx), T.read.fast(Laws.vst(fx, bb,
+    lx), cc), T.read.fast(vl.vt(fx, vv), cc), ee), en), r2.cast2(sr.Kc(cc, T.read.fast(Laws.vst(fx, bb, lx), cc)),
+    sr.Kc(cc, T.read.fast(vl.vt(fx, vv), cc)), tt, Equal.cong(T.St, T.Mode, xx => sr.Kc(cc, xx),
+    T.read.fast(Laws.vst(fx, bb, lx), cc), T.read.fast(vl.vt(fx, vv), cc), ee), ih))
+
+# a character a bare word keeps
+def r2.bw.push(
+  +cc: Char,
+  +tt: String,
+  +bf: List<&2, Char>,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2Word{cc <> bf} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Word{bf} <> rest, SCon{cc, tt}):
+  (+ww, (+rr, (e1, (e2, hr)))) = hh
+  (cc <> ww, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, String.append(String.from_list(ww), rr), e1),
+    (e2, hr))))
+
+# a date's space: the word goes on, or it ended before the space
+def r2.bw.date.go(
+  ch: Bool,
+  ww: List<&2, Char>,
+  +tt: String,
+  +rr: String,
+  +bf: List<&2, Char>,
+  +rest: List<&2, Laws.R2Fr>,
+  e1: {tt == String.append(String.from_list(ww), rr) : String},
+  e2: {Laws.r2.dok(ch, bf, ww) == True{} : Bool},
+  hr: Laws.r2.fill(rest, Laws.r2.drr(ch, rr))
+) -> Laws.r2.fill(Laws.R2Word{bf} <> rest, SCon{' ', tt}):
+  match ch:
+    case True{}:
+      (' ' <> ww, (rr, (Equal.cong(String, String, xx => SCon{' ', xx}, tt, String.append(String.from_list(ww), rr),
+        e1), (e2, hr))))
+    case False{}:
+      match ww:
+        case []:
+          ([], (SCon{' ', rr}, (Equal.cong(String, String, xx => SCon{' ', xx}, tt, rr, e1), (e2, hr))))
+        case _w <> _ws:
+          Eq.bit.absurd(&1, Laws.r2.fill(Laws.R2Word{bf} <> rest, SCon{' ', tt}), e2)
+
+# the same, with the completion taken apart
+def r2.bw.date(
+  +tt: String,
+  +bf: List<&2, Char>,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2Date{bf} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Word{bf} <> rest, SCon{' ', tt}):
+  (+ch, (+ww, (+rr, (e1, (e2, hr))))) = hh
+  r2.bw.date.go(ch, ww, tt, rr, bf, rest, e1, e2, hr)
+
+# a bare word ended by cc, whatever word.val gives
+def r2.bw.fin(
+  gg: T.Got,
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +cc: Char,
+  +hold: Bool,
+  +tt: String,
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +egg: {T.word.val(List.reverse(&2, Char, bb)) == gg : T.Got},
+  rf: vl.Rf(fx, bb, cc, hold),
+  eh: @vv: T.Val -> cw.Eh(fx, vv, cc, hold),
+  en: sr.N(tt, sr.Kc(cc, T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc))),
+  ih: Laws.r2.C(sr.Kc(cc, T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc)), tt)
+) -> Laws.r2.fill(Laws.R2Word{bb} <> Laws.r2.aft(r2.fsk(fx)), SCon{cc, tt}):
+  match gg:
+    case T.GotVal{+vv}:
+      ([], (SCon{cc, tt}, ({==}, (r2.wok.go(vv, List.reverse(&2, Char, bb), egg), r2.w.at(fx, bb, T.LBare{}, vv, cc, tt,
+        ec, vl.acc(fx, bb, vv, cc, hold, egg, rf, eh(vv)), en, ih)))))
+    case T.GotBad{+why}:
+      Eq.bit.gone(&1, Laws.r2.fill(Laws.R2Word{bb} <> Laws.r2.aft(r2.fsk(fx)), SCon{cc, tt}), r2.w.bad(fx, bb,
+        T.LBare{}, cc, hold, why, tt, egg, rf, en))
+
+
+# LBare: a bare word begun. A character it keeps is pushed; a date's space
+# waits in LDate; any other delimiter ends the word, which word.val reads,
+# and is the after-state's.
+
+# the obligation a delimiter meets, as a type of the character
+def r2.bw.P(
+  +ch: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String
+) -> Type:
+  {T.wf.char(ch) == True{} : Bool} -> sr.N(tt, sr.Kc(ch, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk,
+    un, lf, at, ch))) -> Laws.r2.C(sr.Kc(ch, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at,
+    ch)), tt) -> Laws.r2.fill(Laws.R2Word{bf} <> Laws.r2.aft(sk), SCon{ch, tt})
+
+# a pushed character leaves the scan mode: it is no delimiter, so no carriage
+# return, and a quote opens nothing in a word
+def r2.bw.st(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +edl: {T.ch.delim(cc) == False{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +b2: List<&2, Char>,
+  +tt: String,
+  hh: Laws.r2.C(sr.K(qq, lit, cr, sip.S(bd, rw, hs, he, pt, b2, T.LBare{}, bk, qk, sk, un, lf, at)), tt)
+) -> Laws.r2.C(T.MScan{sip.S(bd, rw, hs, he, pt, b2, T.LBare{}, bk, qk, sk, un, lf, at)}, tt):
+  match qq:
+    case True{}:
+      hh
+    case False{}:
+      match lit:
+        case True{}:
+          hh
+        case False{}:
+          match cr:
+            case True{}:
+              Eq.bit.gone(&1, Laws.r2.C(T.MScan{sip.S(bd, rw, hs, he, pt, b2, T.LBare{}, bk, qk, sk, un, lf, at)}, tt),
+                Eq.refute_char(cc, Chr{13}, xx => Bool.not(T.ch.delim(xx)), r1.creq(cc, ecr), Equal.cong(Bool, Bool,
+                xx => Bool.not(xx), T.ch.delim(cc), False{}, edl), {==}))
+            case False{}:
+              hh
+
+# a space: a date waits for its time, else the word ends
+def r2.bw.sp(
+  ds: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +eds: {T.date.shaped(bf) == ds : Bool},
+  +tt: String,
+  +ec: {T.wf.char(' ') == True{} : Bool},
+  en: sr.N(tt, sr.Kc(' ', T.read.fast.old(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at, ' '))),
+  ih: Laws.r2.C(sr.Kc(' ', T.read.fast.old(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at, ' ')), tt)
+) -> Laws.r2.fill(Laws.R2Word{bf} <> Laws.r2.aft(sk), SCon{' ', tt}):
+  match ds:
+    case True{}:
+      r2.bw.date(tt, bf, Laws.r2.aft(sk), r2.cast2(sr.Kc(' ', T.read.fast.old(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk,
+        sk, un, lf, at, ' ')), sr.K(False{}, False{}, False{}, T.read.once2(T.lex.bare.date.go(True{}, sip.S(bd, rw, hs,
+        he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at), ' '))), tt, Equal.cong(Bool, T.Mode, xx => sr.K(False{},
+        False{}, False{}, T.read.once2(T.lex.bare.date.go(xx, sip.S(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un,
+        lf, at), ' '))), T.date.shaped(bf), True{}, eds), ih))
+    case False{}:
+      r2.bw.fin(T.word.val(List.reverse(&2, Char, bf)), Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, bf, ' ',
+        False{}, tt, ec, {==}, vl.rf.sp(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, bf, eds), vv =>
+        vl.eh.sp(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, vv, ' ', {==}), en, ih)
+
+# a word ended by Chr{9}
+def r2.bw.d.tab(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String
+) -> r2.bw.P(Chr{9}, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt):
+  ec => en => ih => r2.bw.fin(T.word.val(List.reverse(&2, Char, bf)), Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf,
+    at}, bf, Chr{9}, False{}, tt, ec, {==}, vl.rf.tab(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, bf), vv =>
+    vl.eh.sp(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, vv, Chr{9}, {==}), en, ih)
+
+# a word ended by '\n'
+def r2.bw.d.lf(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String
+) -> r2.bw.P('\n', bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt):
+  ec => en => ih => r2.bw.fin(T.word.val(List.reverse(&2, Char, bf)), Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf,
+    at}, bf, '\n', Laws.vf.inl(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}), tt, ec, {==}, vl.rf.lf(Laws.Vf{bd,
+    rw, hs, he, pt, bk, qk, sk, un, lf, at}, bf), vv => cw.nl(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, vv),
+    en, ih)
+
+# a word ended by Chr{13}
+def r2.bw.d.cr(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String
+) -> r2.bw.P(Chr{13}, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt):
+  ec => en => ih => r2.bw.fin(T.word.val(List.reverse(&2, Char, bf)), Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf,
+    at}, bf, Chr{13}, Laws.vf.inl(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}), tt, ec, {==},
+    vl.rf.cr(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, bf), vv => vl.eh.cr(Laws.Vf{bd, rw, hs, he, pt, bk,
+    qk, sk, un, lf, at}, vv), en, ih)
+
+# a word ended by '#'
+def r2.bw.d.hash(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String
+) -> r2.bw.P('#', bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt):
+  ec => en => ih => r2.bw.fin(T.word.val(List.reverse(&2, Char, bf)), Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf,
+    at}, bf, '#', True{}, tt, ec, {==}, vl.rf.hash(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, bf), vv =>
+    cw.held(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, vv, '#'), en, ih)
+
+# a word ended by ','
+def r2.bw.d.comma(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String
+) -> r2.bw.P(',', bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt):
+  ec => en => ih => r2.bw.fin(T.word.val(List.reverse(&2, Char, bf)), Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf,
+    at}, bf, ',', True{}, tt, ec, {==}, vl.rf.comma(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, bf), vv =>
+    cw.held(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, vv, ','), en, ih)
+
+# a word ended by ']'
+def r2.bw.d.rb(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String
+) -> r2.bw.P(']', bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt):
+  ec => en => ih => r2.bw.fin(T.word.val(List.reverse(&2, Char, bf)), Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf,
+    at}, bf, ']', True{}, tt, ec, {==}, vl.rf.rb(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, bf), vv =>
+    cw.held(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, vv, ']'), en, ih)
+
+# a word ended by '}'
+def r2.bw.d.rc(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String
+) -> r2.bw.P('}', bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt):
+  ec => en => ih => r2.bw.fin(T.word.val(List.reverse(&2, Char, bf)), Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf,
+    at}, bf, '}', True{}, tt, ec, {==}, vl.rf.rc(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, bf), vv =>
+    cw.held(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, vv, '}'), en, ih)
+
+# a word ended by a space
+def r2.bw.d.sp(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String
+) -> r2.bw.P(' ', bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt):
+  ec => en => ih => r2.bw.sp(T.date.shaped(bf), bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, {==}, tt, ec, en, ih)
+
+# the mode LBare's step gives
+def r2.bwM(
+  +dl: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>
+) -> T.Mode:
+  sr.Kc(cc, T.read.once2(T.lex.bare.go(dl, T.ch.space(cc), sip.S(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf,
+    at), cc)))
+
+
+# a delimiter's step, with its test as the scanner writes it
+def r2.bw.en(
+  +cc: Char,
+  +edl: {T.ch.delim(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String,
+  en: sr.N(tt, r2.bwM(True{}, cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf))
+) -> sr.N(tt, sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at, cc))):
+  sr.ncast(r2.bwM(True{}, cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf), r2.bwM(T.ch.delim(cc), cc, bd, rw, hs,
+    he, pt, bk, qk, sk, un, lf, at, bf), tt, Equal.cong(Bool, T.Mode, xx => r2.bwM(xx, cc, bd, rw, hs, he, pt, bk, qk,
+    sk, un, lf, at, bf), True{}, T.ch.delim(cc), Equal.sym(Bool, T.ch.delim(cc), True{}, edl)), en)
+
+# and its completion
+def r2.bw.ih(
+  +cc: Char,
+  +edl: {T.ch.delim(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String,
+  ih: Laws.r2.C(r2.bwM(True{}, cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf), tt)
+) -> Laws.r2.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at, cc)), tt):
+  r2.cast2(r2.bwM(True{}, cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf), r2.bwM(T.ch.delim(cc), cc, bd, rw, hs,
+    he, pt, bk, qk, sk, un, lf, at, bf), tt, Equal.cong(Bool, T.Mode, xx => r2.bwM(xx, cc, bd, rw, hs, he, pt, bk, qk,
+    sk, un, lf, at, bf), True{}, T.ch.delim(cc), Equal.sym(Bool, T.ch.delim(cc), True{}, edl)), ih)
+
+# a delimiter: each of the eight
+def r2.bw.dl(
+  cc: Char,
+  +edl: {T.ch.delim(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String
+) -> r2.bw.P(cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt):
+  match cc:
+    case Chr{+xx}:
+      vl.delim(ch => r2.bw.P(ch, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt), xx, edl, r2.bw.d.sp(bd, rw, hs,
+        he, pt, bk, qk, sk, un, lf, at, bf, tt), r2.bw.d.tab(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt),
+        r2.bw.d.lf(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt), r2.bw.d.cr(bd, rw, hs, he, pt, bk, qk, sk, un,
+        lf, at, bf, tt), r2.bw.d.hash(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt), r2.bw.d.comma(bd, rw, hs, he,
+        pt, bk, qk, sk, un, lf, at, bf, tt), r2.bw.d.rb(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt),
+        r2.bw.d.rc(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt))
+
+# LBare's dispatch
+def r2.bw.go(
+  dl: Bool,
+  +cc: Char,
+  +edl: {T.ch.delim(cc) == dl : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String,
+  en: sr.N(tt, r2.bwM(dl, cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf)),
+  ih: Laws.r2.C(r2.bwM(dl, cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf), tt)
+) -> Laws.r2.fill(Laws.R2Word{bf} <> Laws.r2.aft(sk), SCon{cc, tt}):
+  match dl:
+    case False{}:
+      r2.bw.push(cc, tt, bf, Laws.r2.aft(sk), r2.bw.st(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+        U32.is_eq(Char.to_u32(cc), 13), cc, {==}, edl, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, cc <> bf, tt, ih))
+    case True{}:
+      r2.bw.dl(cc, edl, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt, ec, r2.bw.en(cc, edl, bd, rw, hs, he, pt,
+        bk, qk, sk, un, lf, at, bf, tt, en), r2.bw.ih(cc, edl, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt, ih))
+
+# LBare's obligation, for every character
+def r2.ob.bare(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.bw.go(T.ch.delim(cc), cc, {==}, ec, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt, en, ih)
+
+# LDate: after a date and a space. A digit goes on with the word, the space
+# in it; anything else ends the word before the space, and the space is the
+# blank space after the value.
+
+# a digit after a date's space
+def r2.dt.dig(
+  +cc: Char,
+  +tt: String,
+  +bf: List<&2, Char>,
+  +rest: List<&2, Laws.R2Fr>,
+  hh: Laws.r2.fill(Laws.R2Word{cc <> (' ' <> bf)} <> rest, tt)
+) -> Laws.r2.fill(Laws.R2Date{bf} <> rest, SCon{cc, tt}):
+  (+ww, (+rr, (e1, (e2, hr)))) = hh
+  (True{}, (cc <> ww, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, String.append(String.from_list(ww), rr),
+    e1), (e2, hr)))))
+
+# the word before the space ended: the step the scanner takes to it
+def r2.dt.rf(
+  fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +cc: Char,
+  hd: {Char.is_digit(cc) == False{} : Bool}
+) -> {T.read.fast(Laws.vst(fx, bb, T.LDate{}), cc) == T.read.once2(T.bare.got(T.word.val(List.reverse(&2, Char, bb)),
+  Laws.vst(fx, [], T.LDate{}), cc, True{})) : T.St}:
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, +stack, +uni, +left, +arrtab}:
+      Equal.cong(Bool, T.St, xx => T.read.once2(T.lex.date.go(xx, T.St{bad, rows, heads, here, parts, bb, T.LDate{},
+        back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc)), Char.is_digit(cc), False{}, hd)
+
+# a character after a date's space that is no digit
+def r2.dt.fin(
+  gg: T.Got,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +cc: Char,
+  +tt: String,
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +egg: {T.word.val(List.reverse(&2, Char, bf)) == gg : T.Got},
+  +hd: {Char.is_digit(cc) == False{} : Bool},
+  en: sr.N(tt, sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LDate{}, bk, qk, sk, un, lf, at, cc))),
+  ih: Laws.r2.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LDate{}, bk, qk, sk, un, lf, at, cc)), tt)
+) -> Laws.r2.fill(Laws.R2Date{bf} <> Laws.r2.aft(sk), SCon{cc, tt}):
+  match gg:
+    case T.GotVal{+vv}:
+      (False{}, ([], (SCon{cc, tt}, ({==}, (r2.wok.go(vv, List.reverse(&2, Char, bf), egg), r2.aft.ws(sk, ' ', SCon{cc,
+        tt}, {==}, r2.w.at(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, bf, T.LDate{}, vv, cc, tt, ec,
+        vl.dacc(Laws.Vf{bd, rw, hs, he, pt, bk, qk, sk, un, lf, at}, bf, vv, cc, egg, hd), en, ih)))))))
+    case T.GotBad{+why}:
+      Eq.bit.gone(&1, Laws.r2.fill(Laws.R2Date{bf} <> Laws.r2.aft(sk), SCon{cc, tt}), r2.w.bad(Laws.Vf{bd, rw, hs, he,
+        pt, bk, qk, sk, un, lf, at}, bf, T.LDate{}, cc, True{}, why, tt, egg, r2.dt.rf(Laws.Vf{bd, rw, hs, he, pt, bk,
+        qk, sk, un, lf, at}, bf, cc, hd), en))
+
+# LDate's dispatch
+def r2.dt.go(
+  dg: Bool,
+  +cc: Char,
+  +edg: {Char.is_digit(cc) == dg : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bf: List<&2, Char>,
+  +tt: String,
+  en: sr.N(tt, sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LDate{}, bk, qk, sk, un, lf, at, cc))),
+  ih: Laws.r2.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LDate{}, bk, qk, sk, un, lf, at, cc)), tt)
+) -> Laws.r2.fill(Laws.R2Date{bf} <> Laws.r2.aft(sk), SCon{cc, tt}):
+  match dg:
+    case True{}:
+      r2.dt.dig(cc, tt, bf, Laws.r2.aft(sk), r2.kk(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc),
+        13), cc, {==}, {==}, {==}, xx => Char.is_digit(xx), edg, {==}, {==}, {==},
+        T.read.once2(T.lex.date.digit(sip.S(bd, rw, hs, he, pt, bf, T.LDate{}, bk, qk, sk, un, lf, at), cc)), tt,
+        r2.cast2(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LDate{}, bk, qk, sk, un, lf, at, cc)), sr.Kc(cc,
+        T.read.once2(T.lex.date.go(True{}, sip.S(bd, rw, hs, he, pt, bf, T.LDate{}, bk, qk, sk, un, lf, at), cc))), tt,
+        Equal.cong(Bool, T.Mode, xx => sr.Kc(cc, T.read.once2(T.lex.date.go(xx, sip.S(bd, rw, hs, he, pt, bf, T.LDate{},
+        bk, qk, sk, un, lf, at), cc))), Char.is_digit(cc), True{}, edg), ih)))
+    case False{}:
+      r2.dt.fin(T.word.val(List.reverse(&2, Char, bf)), bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, cc, tt, ec,
+        {==}, edg, en, ih)
+
+# LDate's obligation, for every character
+def r2.ob.date(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LDate{}, bk, qk, sk, un, lf, at, cc, tt):
+  ec => en => ih => r2.dt.go(Char.is_digit(cc), cc, {==}, ec, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, bf, tt, en,
+    ih)
+
+
+# LSink's obligation: a failed state claims nothing
+def r2.ob.sink(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r2.Ob(bd, rw, hs, he, pt, bf, T.LSink{}, bk, qk, sk, un, lf, at, cc, tt):
+  _ec => _en => _ih => Unit{}
+
+# The other modes. After a carriage return, a line feed reads on as the
+# state after it, and anything else fails; a held character claims nothing;
+# the first character may be a byte-order mark.
+
+# the character after a carriage return, by whether it is a line feed
+def r2.ocr.go(
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +tt: String,
+  +enl: {Char.is_eq(cc, '\n') == nl : Bool},
+  en: sr.N(tt, T.doc.cr(nl, st, cc)),
+  ih: Laws.r2.C(T.doc.cr(nl, st, cc), tt)
+) -> Laws.r2.C(T.MCr{st}, SCon{cc, tt}):
+  match nl:
+    case True{}:
+      vl.chs(ch => Laws.r2.C(T.MScan{T.read.fast(st, ch)}, tt) -> Laws.r2.C(T.MCr{st}, SCon{ch, tt}), cc, '\n',
+        Eq.char_eq_true(cc, '\n', enl), hh => (tt, ({==}, hh)))(ih)
+    case False{}:
+      Eq.bit.gone(&1, Laws.r2.C(T.MCr{st}, SCon{cc, tt}), r1.clash(tt, T.MScan{T.st.err(st,
+        "carriage return without line feed")}, en, err.sinks(st, 'c', "arriage return without line feed", tt)))
+
+# the character after a carriage return
+def r2.ocr(
+  +st: T.St,
+  +cc: Char,
+  +tt: String,
+  en: sr.N(tt, T.doc.cr(Char.is_eq(cc, '\n'), st, cc)),
+  ih: Laws.r2.C(T.doc.cr(Char.is_eq(cc, '\n'), st, cc), tt)
+) -> Laws.r2.C(T.MCr{st}, SCon{cc, tt}):
+  r2.ocr.go(Char.is_eq(cc, '\n'), st, cc, tt, {==}, en, ih)
+
+# the first character's position with a character held: none
+def r2.ohd.lead(
+  lx: T.Lex,
+  sk: List<&2, T.Ctx>,
+  +hc: Char,
+  +text: String
+) -> Laws.r2.fill(Laws.r2.lift(Laws.r1.gp.lead(lx, sk, T.HChar{hc})), text):
+  match lx:
+    case T.LTop{}:
+      match sk:
+        case []:
+          Unit{}
+        case _s <> _ss:
+          Unit{}
+    case T.LLine{}:
+      Unit{}
+    case T.LKey{}:
+      Unit{}
+    case T.LKeyDot{}:
+      Unit{}
+    case T.LAfter{}:
+      Unit{}
+    case T.LKeyQ{}:
+      Unit{}
+    case T.LKeyE{}:
+      Unit{}
+    case T.LKeyU{}:
+      Unit{}
+    case T.LVal{}:
+      Unit{}
+    case T.LQ{}:
+      Unit{}
+    case T.LQ2{}:
+      Unit{}
+    case T.LStr{}:
+      Unit{}
+    case T.LEsc{}:
+      Unit{}
+    case T.LUni{}:
+      Unit{}
+    case T.LFold{}:
+      Unit{}
+    case T.LMq{}:
+      Unit{}
+    case T.LMqEnd{}:
+      Unit{}
+    case T.LTrim{}:
+      Unit{}
+    case T.LTrim2{}:
+      Unit{}
+    case T.LBare{}:
+      Unit{}
+    case T.LDate{}:
+      Unit{}
+    case T.LCom{}:
+      Unit{}
+    case T.LHead{}:
+      Unit{}
+    case T.LHeadGap{}:
+      Unit{}
+    case T.LHeadDot{}:
+      Unit{}
+    case T.LHeadQ{}:
+      Unit{}
+    case T.LHeadE{}:
+      Unit{}
+    case T.LHeadU{}:
+      Unit{}
+    case T.LHeadR{}:
+      Unit{}
+    case T.LArr{}:
+      Unit{}
+    case T.LArrC{}:
+      Unit{}
+    case T.LInl{}:
+      Unit{}
+    case T.LInlK{}:
+      Unit{}
+    case T.LInlC{}:
+      Unit{}
+    case T.LSink{}:
+      Unit{}
+
+# a held character, read before the next: its state claims nothing
+def r2.ohd(
+  ld: Bool,
+  +lx: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +hc: Char,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +text: String
+) -> Laws.r2.fill(Laws.r2.gp(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{hc}, un, lf, at, ld}), text):
+  match ld:
+    case True{}:
+      r2.ohd.lead(lx, sk, hc, text)
+    case False{}:
+      Unit{}
+
+# a document's text with no byte-order mark in front is itself
+def r2.nobom(
+  +cc: Char,
+  +tt: String,
+  +eb: {U32.is_eq(Char.to_u32(cc), 65279) == False{} : Bool}
+) -> {Laws.bom.drop(SCon{cc, tt}) == SCon{cc, tt} : String}:
+  match cc:
+    case Chr{+uu}:
+      Equal.cong(Bool, String, bb => Laws.bom.drop.pick(bb, Chr{uu}, tt), U32.is_eq(uu, 65279), False{}, eb)
+
+# the type of r2.old.top's en
+def r2.T.old.top.en(
+  bm: Bool,
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  bk: T.Lex,
+  qk: T.QKind,
+  un: U32,
+  lf: U32,
+  at: Bool,
+  +cc: Char,
+  tt: String
+) -> Type:
+  sr.N(tt, sr.Kc(cc, T.read.once2(T.read.step.bom(bm, sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, [], un, lf,
+    at), cc))))
+
+# the type of r2.old.top's ih
+def r2.T.old.top.ih(
+  bm: Bool,
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  bk: T.Lex,
+  qk: T.QKind,
+  un: U32,
+  lf: U32,
+  at: Bool,
+  +cc: Char,
+  tt: String
+) -> Type:
+  Laws.r2.C(sr.Kc(cc, T.read.once2(T.read.step.bom(bm, sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, [], un, lf,
+    at), cc))), tt)
+
+# the first character: a byte-order mark is passed over, and anything else
+# is LTop's
+def r2.old.top(
+  bm: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  +ebm: {U32.is_eq(Char.to_u32(cc), 65279) == bm : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  en: r2.T.old.top.en(bm, bd, rw, hs, he, pt, bf, bk, qk, un, lf, at, cc, tt),
+  ih: r2.T.old.top.ih(bm, bd, rw, hs, he, pt, bf, bk, qk, un, lf, at, cc, tt)
+) -> Laws.r2.fill([Laws.R2Old{Laws.RfBom{}}, Laws.R2Old{Laws.RfTop{}}], SCon{cc, tt}):
+  match bm:
+    case True{}:
+      match cc:
+        case Chr{+uu}:
+          vl.chs(ch => Laws.r2.C(sr.Kc(ch, sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, [], un, lf, at)), tt) ->
+            Laws.r2.fill([Laws.R2Old{Laws.RfBom{}}, Laws.R2Old{Laws.RfTop{}}], SCon{ch, tt}), Chr{uu}, Chr{65279},
+            Eq.u32_eq(uu, 65279, ebm), hh => hh)(ih)
+    case False{}:
+      r2.rw2([Laws.R2Old{Laws.RfTop{}}], Laws.bom.drop(SCon{cc, tt}), SCon{cc, tt}, r2.nobom(cc, tt, ebm), r2.ob.top(bd,
+        rw, hs, he, pt, bf, bk, qk, [], un, lf, at, cc, tt, ec, en, ih))
+
+# the type of r2.olead's ih
+def r2.T.olead.ih(
+  lx: T.Lex,
+  sk: List<&2, T.Ctx>,
+  bd: String,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  bk: T.Lex,
+  qk: T.QKind,
+  un: U32,
+  lf: U32,
+  at: Bool,
+  +cc: Char,
+  tt: String
+) -> Type:
+  Laws.r2.C(sr.Kc(cc, T.read.once(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}},
+    cc)), tt)
+
+# the first character, at every state
+def r2.olead(
+  lx: T.Lex,
+  sk: List<&2, T.Ctx>,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  en: sr.N(tt, sr.Kc(cc, T.read.once(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}}, cc))),
+  ih: r2.T.olead.ih(lx, sk, bd, rw, hs, he, pt, bf, bk, qk, un, lf, at, cc, tt)
+) -> Laws.r2.C(T.MScan{T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}}}, SCon{cc, tt}):
+  match lx:
+    case T.LTop{}:
+      match sk:
+        case []:
+          r2.old.top(U32.is_eq(Char.to_u32(cc), 65279), bd, rw, hs, he, pt, bf, bk, qk, un, lf, at, cc, tt, {==}, ec,
+            en, ih)
+        case _s <> _ss:
+          Unit{}
+    case T.LLine{}:
+      Unit{}
+    case T.LKey{}:
+      Unit{}
+    case T.LKeyDot{}:
+      Unit{}
+    case T.LAfter{}:
+      Unit{}
+    case T.LKeyQ{}:
+      Unit{}
+    case T.LKeyE{}:
+      Unit{}
+    case T.LKeyU{}:
+      Unit{}
+    case T.LVal{}:
+      Unit{}
+    case T.LQ{}:
+      Unit{}
+    case T.LQ2{}:
+      Unit{}
+    case T.LStr{}:
+      Unit{}
+    case T.LEsc{}:
+      Unit{}
+    case T.LUni{}:
+      Unit{}
+    case T.LFold{}:
+      Unit{}
+    case T.LMq{}:
+      Unit{}
+    case T.LMqEnd{}:
+      Unit{}
+    case T.LTrim{}:
+      Unit{}
+    case T.LTrim2{}:
+      Unit{}
+    case T.LBare{}:
+      Unit{}
+    case T.LDate{}:
+      Unit{}
+    case T.LCom{}:
+      Unit{}
+    case T.LHead{}:
+      Unit{}
+    case T.LHeadGap{}:
+      Unit{}
+    case T.LHeadDot{}:
+      Unit{}
+    case T.LHeadQ{}:
+      Unit{}
+    case T.LHeadE{}:
+      Unit{}
+    case T.LHeadU{}:
+      Unit{}
+    case T.LHeadR{}:
+      Unit{}
+    case T.LArr{}:
+      Unit{}
+    case T.LArrC{}:
+      Unit{}
+    case T.LInl{}:
+      Unit{}
+    case T.LInlK{}:
+      Unit{}
+    case T.LInlC{}:
+      Unit{}
+    case T.LSink{}:
+      Unit{}
