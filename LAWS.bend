@@ -6973,3 +6973,460 @@ law date_time_render:
   for +h: {T.wf.when(w) == True{} : Bool}
   {Bool.and(g.ok.val(GvDateTime{String.to_list(T.render.atom(T.VWhen{w}))}, RVal{}),
     g.val(GvDateTime{String.to_list(T.render.atom(T.VWhen{w}))}, T.VWhen{w})) == True{} : Bool}
+
+# WP-R
+#
+# The refusal direction of TOML-TEXT-1 (docs/rfc/eztoml-grammar-proofs.md,
+# REVIEW-G5 (a)): a text parse accepts has a derivation. It runs backward
+# over the scan induction (sipr in PROOF.bend). r1.gp maps each scanner
+# state to a grammar position: the rules it has open, innermost first, as a
+# list of frames. r1.fill says which texts complete a position: for each
+# frame, the parts of a derivation (Gd) that close its rule, then the rest
+# of the text completing the frames under it, as Sigma types, so that a
+# completion carries its parts. A step's obligation is local: a character
+# the scanner takes from s to s' turns a completion of gp(s') into one of
+# gp(s), and the frames a step does not touch are passed through untouched.
+# The spike defines the positions of the header and key states, and of the
+# top, line and comment states they start and end in; the value states are
+# RfLater, which WP-R proper defines. A state no step reaches (one holding a
+# character, one before the byte-order mark but not the start, a top-level
+# state with a frame open) is RfAny and claims nothing; a state whose every
+# text fails (a comment inside a header or a key) is RfNone.
+
+# one open rule of a partial derivation
+type R1Fr is Data:
+  RfAny{}
+  RfNone{}
+  RfLater{}
+  RfBom{}
+  RfTop{}
+  RfLines{}
+  RfLineEnd{}
+  RfComment{}
+  RfHOpen{arr: Bool}
+  RfHClose{arr: Bool}
+  RfRBr{}
+  RfWs{}
+  RfKSeg{}
+  RfKBare{}
+  RfKAfter{}
+  RfEq{}
+  RfKBasic{}
+  RfKLit{}
+  RfKEsc{}
+  RfKUni{uni: U32, left: U32}
+  RfVal{}
+  RfArrAfter{}
+  RfInlAfter{}
+
+# what follows an array item's trailing ws-comment-newline: its [ array-sep ]
+# and nothing more (RaEnd), or array-sep and more array-values (RaMore)
+type R1ATail is Data:
+  RaEnd{sep: Bool}
+  RaMore{vals: GVal}
+
+# what follows a keyval in an inline table: nothing more (RiEnd), or
+# inline-table-sep and more inline-table-keyvals (RiMore)
+type R1ITail is Data:
+  RiEnd{}
+  RiMore{w1: String, w2: String, kvs: GVal}
+
+# a header's opening brackets, read already: [ (arr False) or [[ (arr True)
+def r1.open(arr: Bool, tail: String) -> String:
+  match arr:
+    case False{}:
+      SCon{'[', tail}
+    case True{}:
+      SCon{'[', SCon{'[', tail}}
+
+# a header's closing brackets: std-table-close's ] or array-table-close's ]]
+def r1.close(arr: Bool, tail: String) -> String:
+  match arr:
+    case False{}:
+      SCon{']', tail}
+    case True{}:
+      SCon{']', SCon{']', tail}}
+
+# the characters of hexadecimal digits, then tail
+def r1.hexs.text(hs: List<&2, KHex>, tail: String) -> String:
+  match hs:
+    case []:
+      tail
+    case hx <> rest:
+      SCon{k3.hex.char(hx), r1.hexs.text(rest, tail)}
+
+# the number read so far, then the digits, the most significant first
+def r1.hexs.acc(hs: List<&2, KHex>, +acc: U32) -> U32:
+  match hs:
+    case []:
+      acc
+    case hx <> rest:
+      r1.hexs.acc(rest, k3.hex.acc(acc, hx))
+
+# whether there are exactly left digits
+def r1.hexs.count(hs: List<&2, KHex>, +left: U32) -> Bool:
+  match hs:
+    case []:
+      U32.is_zero(left)
+    case _hx <> rest:
+      Bool.and(Bool.not(U32.is_zero(left)), r1.hexs.count(rest, U32.sub(left, 1)))
+
+# an array item's tail's text
+def r1.atail.text(at: R1ATail, tail: String) -> String:
+  match at:
+    case RaEnd{sep}:
+      g.sep.text(sep, tail)
+    case RaMore{vals}:
+      SCon{',', g.val.text(vals, tail)}
+
+# and its parts' rules
+def r1.atail.ok(at: R1ATail) -> Bool:
+  match at:
+    case RaEnd{_s}:
+      True{}
+    case RaMore{vals}:
+      g.ok.val(vals, RArrayValues{})
+
+# an inline table keyval's tail's text
+def r1.itail.text(it: R1ITail, tail: String) -> String:
+  match it:
+    case RiEnd{}:
+      tail
+    case RiMore{w1, w2, kvs}:
+      String.append(w1, SCon{',', String.append(w2, g.val.text(kvs, tail))})
+
+# and its parts' rules
+def r1.itail.ok(it: R1ITail) -> Bool:
+  match it:
+    case RiEnd{}:
+      True{}
+    case RiMore{w1, w2, kvs}:
+      Bool.and(abnf.ws(w1), Bool.and(abnf.ws(w2), g.ok.val(kvs, RInlineTableKeyvals{})))
+
+# the texts that complete a position: none left when every rule is closed;
+# else the innermost rule's parts, then the rest completing the frames under
+# it. RfTop: expression *( newline expression ); RfLines: *( newline
+# expression ); RfLineEnd: an expression's ws [ comment ]; RfComment: the
+# rest of a comment's characters; RfHOpen: a table header whose [ or [[ is
+# read; RfHClose: ws and the header's ] or ]]; RfRBr: the second ] of ]];
+# RfWs: ws; RfKSeg: a simple-key; RfKBare: the rest of an unquoted-key;
+# RfKAfter: *( dot-sep simple-key ); RfEq: keyval-sep up to its =; RfKBasic,
+# RfKLit: the rest of a quoted key and its closing quote; RfKEsc: an escape
+# after its backslash, then RfKBasic's; RfKUni: the rest of a \u or \U
+# escape's digits, then RfKBasic's; RfVal: ws val; RfArrAfter,
+# RfInlAfter: the rest of the array or inline table a value is in
+def r1.fill(fs: List<&2, R1Fr>, +text: String) -> Type:
+  match fs:
+    case []:
+      {text == "" : String}
+    case fr <> rest:
+      match fr:
+        case RfAny{}:
+          Unit
+        case RfNone{}:
+          Empty
+        case RfLater{}:
+          Unit
+        case RfBom{}:
+          r1.fill(rest, bom.drop(text))
+        case RfTop{}:
+          &ex: GExpr -> &ls: List<&2, GLine> -> &rr: String -> ({text == g.expr.text(ex, g.lines.text(ls, rr)) :
+            String} & ({Bool.and(g.ok.expr(ex), g.ok.lines(ls)) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfLines{}:
+          &ls: List<&2, GLine> -> &rr: String -> ({text == g.lines.text(ls, rr) : String} &
+            ({g.ok.lines(ls) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfLineEnd{}:
+          &ww: String -> &cm: GCom -> &rr: String -> ({text == String.append(ww, g.com.text(cm, rr)) : String} &
+            ({Bool.and(abnf.ws(ww), g.ok.com(cm)) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfComment{}:
+          &bd: String -> &rr: String -> ({text == String.append(bd, rr) : String} &
+            ({g.ok.com(GcSome{bd}) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfHOpen{arr}:
+          &tb: GTable -> &rr: String -> ({r1.open(arr, text) == g.table.text(tb, rr) : String} &
+            ({g.ok.table(tb) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfHClose{arr}:
+          &ww: String -> &rr: String -> ({text == String.append(ww, r1.close(arr, rr)) : String} &
+            ({abnf.ws(ww) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfRBr{}:
+          &rr: String -> ({text == SCon{']', rr} : String} & r1.fill(rest, rr))
+        case RfWs{}:
+          &ww: String -> &rr: String -> ({text == String.append(ww, rr) : String} &
+            ({abnf.ws(ww) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfKSeg{}:
+          &sg: KSeg -> &rr: String -> ({text == k3.seg.text(sg, rr) : String} &
+            ({g.ok.seg(sg) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfKBare{}:
+          &ss: String -> &rr: String -> ({text == String.append(ss, rr) : String} &
+            ({abnf.all_unquoted_key_chars(ss) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfKAfter{}:
+          &ds: List<&2, GDotSep> -> &rr: String -> ({text == g.dots.text(ds, rr) : String} &
+            ({g.ok.dots(ds) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfEq{}:
+          &ww: String -> &rr: String -> ({text == String.append(ww, SCon{'=', rr}) : String} &
+            ({abnf.ws(ww) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfKBasic{}:
+          &pl: List<&2, KPiece> -> &rr: String -> ({text == k3.pcs.text(pl, SCon{'"', rr}) : String} &
+            ({Bool.and(abnf.basic_string(pl), prose.escapes_scalar(pl)) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfKLit{}:
+          &ss: String -> &rr: String -> ({text == String.append(ss, SCon{'\'', rr}) : String} &
+            ({abnf.literal_string(ss) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfKEsc{}:
+          &pp: KPiece -> &pl: List<&2, KPiece> -> &rr: String -> ({SCon{'\\', text} == k3.pc.text(pp,
+            k3.pcs.text(pl, SCon{'"', rr})) : String} & ({Bool.and(abnf.basic_string(pp <> pl),
+            prose.escapes_scalar(pp <> pl)) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfKUni{uni, left}:
+          &hs: List<&2, KHex> -> &pl: List<&2, KPiece> -> &rr: String -> ({text == r1.hexs.text(hs,
+            k3.pcs.text(pl, SCon{'"', rr})) : String} & ({Bool.and(r1.hexs.count(hs, left),
+            Bool.and(k3.scalar(r1.hexs.acc(hs, uni)), Bool.and(abnf.basic_string(pl), prose.escapes_scalar(pl))))
+            == True{} : Bool} & r1.fill(rest, rr)))
+        case RfVal{}:
+          &ww: String -> &vv: GVal -> &rr: String -> ({text == String.append(ww, g.val.text(vv, rr)) : String} &
+            ({Bool.and(abnf.ws(ww), g.ok.val(vv, RVal{})) == True{} : Bool} & r1.fill(rest, rr)))
+        case RfArrAfter{}:
+          &wb: List<&2, GWcn> -> &at: R1ATail -> &wn: List<&2, GWcn> -> &rr: String -> ({text ==
+            g.wcn.text(wb, r1.atail.text(at, g.wcn.text(wn, SCon{']', rr}))) : String} &
+            ({Bool.and(g.ok.wcn(wb), Bool.and(r1.atail.ok(at), g.ok.wcn(wn))) == True{} : Bool} &
+            r1.fill(rest, rr)))
+        case RfInlAfter{}:
+          &it: R1ITail -> &ww: String -> &rr: String -> ({text == r1.itail.text(it, String.append(ww,
+            SCon{Chr{125}, rr})) : String} & ({Bool.and(r1.itail.ok(it), abnf.ws(ww)) == True{} : Bool} &
+            r1.fill(rest, rr)))
+
+# the rules still open after an expression: ws [ comment ], then the lines
+def r1.eol() -> List<&2, R1Fr>:
+  [RfLineEnd{}, RfLines{}]
+
+# the rules still open after a value, in the frames of the arrays and
+# inline tables it is in, innermost first
+def r1.after(stack: List<&2, T.Ctx>) -> List<&2, R1Fr>:
+  match stack:
+    case []:
+      r1.eol()
+    case T.CArr{_i, _p, _h} <> rest:
+      RfArrAfter{} <> r1.after(rest)
+    case T.CInl{_r, _p, _h} <> rest:
+      RfInlAfter{} <> r1.after(rest)
+
+# the rules after a header's key: ws and its closing brackets, then the line
+def r1.hend(arr: Bool) -> List<&2, R1Fr>:
+  RfHClose{arr} <> r1.eol()
+
+# the rules after a keyval's key: keyval-sep and the value, in its frames
+def r1.vend(stack: List<&2, T.Ctx>) -> List<&2, R1Fr>:
+  RfEq{} <> (RfVal{} <> r1.after(stack))
+
+# a top-level position, when no frame is open
+def r1.gp.top(fs: List<&2, R1Fr>, stack: List<&2, T.Ctx>) -> List<&2, R1Fr>:
+  match stack:
+    case []:
+      fs
+    case _f <> _fs:
+      [RfAny{}]
+
+# a comment's: the rest of it and the lines after it at the top level or
+# after an expression, doomed in a header or a key
+def r1.gp.com(back: T.Lex, stack: List<&2, T.Ctx>) -> List<&2, R1Fr>:
+  match back:
+    case T.LTop{}:
+      r1.gp.top([RfComment{}, RfLines{}], stack)
+    case T.LLine{}:
+      r1.gp.top([RfComment{}, RfLines{}], stack)
+    case T.LHead{}:
+      [RfNone{}]
+    case T.LAfter{}:
+      [RfNone{}]
+    case _b:
+      [RfLater{}]
+
+# LHead's with no segment begun: the header right after [ (a second [ still
+# possible) or [[
+def r1.gp.head0(parts: List<&2, String>, arr: Bool) -> List<&2, R1Fr>:
+  match parts:
+    case []:
+      RfHOpen{arr} <> r1.eol()
+    case _p <> _ps:
+      [RfAny{}]
+
+# LHead's: the header right after its brackets, or a bare segment begun
+def r1.gp.head(buf: List<&2, Char>, parts: List<&2, String>, arr: Bool) -> List<&2, R1Fr>:
+  match buf:
+    case []:
+      r1.gp.head0(parts, arr)
+    case _b <> _bs:
+      RfKBare{} <> (RfKAfter{} <> r1.hend(arr))
+
+# LHeadGap's: the rest of the key after a segment
+def r1.gp.gap(buf: List<&2, Char>, arr: Bool) -> List<&2, R1Fr>:
+  match buf:
+    case []:
+      RfKAfter{} <> r1.hend(arr)
+    case _b <> _bs:
+      [RfAny{}]
+
+# LHeadR's with no segment read: doomed when none is in the buffer either
+def r1.gp.hr0(buf: List<&2, Char>) -> List<&2, R1Fr>:
+  match buf:
+    case []:
+      [RfNone{}]
+    case _b <> _bs:
+      RfRBr{} <> r1.eol()
+
+# LHeadR's: the second ] of [[ ]]
+def r1.gp.hr(parts: List<&2, String>, buf: List<&2, Char>) -> List<&2, R1Fr>:
+  match parts:
+    case []:
+      r1.gp.hr0(buf)
+    case _p <> _ps:
+      RfRBr{} <> r1.eol()
+
+# a segment in quotes: a basic or a literal one, then the key's rest
+def r1.gp.q(qkind: T.QKind, ke: List<&2, R1Fr>) -> List<&2, R1Fr>:
+  match qkind:
+    case T.QBasic{}:
+      RfKBasic{} <> (RfKAfter{} <> ke)
+    case T.QLit{}:
+      RfKLit{} <> (RfKAfter{} <> ke)
+    case _q:
+      [RfAny{}]
+
+# an escape in a basic segment
+def r1.gp.e(qkind: T.QKind, ke: List<&2, R1Fr>) -> List<&2, R1Fr>:
+  match qkind:
+    case T.QBasic{}:
+      RfKEsc{} <> (RfKAfter{} <> ke)
+    case _q:
+      [RfAny{}]
+
+# the hexadecimal digits still to read of a \u or \U escape; none left is
+# a state no step reaches
+def r1.gp.u0(zero: Bool, ke: List<&2, R1Fr>, uni: U32, left: U32) -> List<&2, R1Fr>:
+  match zero:
+    case True{}:
+      [RfAny{}]
+    case False{}:
+      RfKUni{uni, left} <> (RfKAfter{} <> ke)
+
+# the hexadecimal digits of a \u or \U escape in a basic segment
+def r1.gp.u(qkind: T.QKind, ke: List<&2, R1Fr>, uni: U32, +left: U32) -> List<&2, R1Fr>:
+  match qkind:
+    case T.QBasic{}:
+      r1.gp.u0(U32.is_zero(left), ke, uni, left)
+    case _q:
+      [RfAny{}]
+
+# LKey's: a bare segment begun
+def r1.gp.key(buf: List<&2, Char>, stack: List<&2, T.Ctx>) -> List<&2, R1Fr>:
+  match buf:
+    case []:
+      [RfAny{}]
+    case _b <> _bs:
+      RfKBare{} <> (RfKAfter{} <> r1.vend(stack))
+
+# the position of a scanner state's lex state and the fields it reads: at
+# the top level or after an expression, with no frame open; in a comment; in
+# a header's key (ending in r1.hend) or a keyval's key (ending in r1.vend):
+# a segment begun, ws and a segment after a dot, the rest after a segment, a
+# segment in quotes, an escape in a basic one and its hexadecimal digits;
+# the second ] of [[ ]]; and a keyval's value
+def r1.gp0(
+  lex: T.Lex,
+  back: T.Lex,
+  qkind: T.QKind,
+  stack: List<&2, T.Ctx>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  uni: U32,
+  left: U32,
+  arr: Bool
+) -> List<&2, R1Fr>:
+  match lex:
+    case T.LTop{}:
+      r1.gp.top([RfTop{}], stack)
+    case T.LLine{}:
+      r1.gp.top(r1.eol(), stack)
+    case T.LCom{}:
+      r1.gp.com(back, stack)
+    case T.LHead{}:
+      r1.gp.head(buf, parts, arr)
+    case T.LHeadGap{}:
+      r1.gp.gap(buf, arr)
+    case T.LHeadDot{}:
+      RfWs{} <> (RfKSeg{} <> (RfKAfter{} <> r1.hend(arr)))
+    case T.LHeadR{}:
+      r1.gp.hr(parts, buf)
+    case T.LHeadQ{}:
+      r1.gp.q(qkind, r1.hend(arr))
+    case T.LHeadE{}:
+      r1.gp.e(qkind, r1.hend(arr))
+    case T.LHeadU{}:
+      r1.gp.u(qkind, r1.hend(arr), uni, left)
+    case T.LKey{}:
+      r1.gp.key(buf, stack)
+    case T.LKeyDot{}:
+      RfWs{} <> (RfKSeg{} <> (RfKAfter{} <> r1.vend(stack)))
+    case T.LAfter{}:
+      RfKAfter{} <> r1.vend(stack)
+    case T.LKeyQ{}:
+      r1.gp.q(qkind, r1.vend(stack))
+    case T.LKeyE{}:
+      r1.gp.e(qkind, r1.vend(stack))
+    case T.LKeyU{}:
+      r1.gp.u(qkind, r1.vend(stack), uni, left)
+    case T.LVal{}:
+      RfVal{} <> r1.after(stack)
+    case T.LSink{}:
+      [RfAny{}]
+    case _l:
+      [RfLater{}]
+
+# the start: the whole document, after one byte-order mark if there is one
+def r1.gp.lead(lex: T.Lex, stack: List<&2, T.Ctx>, hold: T.Hold) -> List<&2, R1Fr>:
+  match lex stack hold:
+    case T.LTop{} Nil{} T.HNone{}:
+      [RfBom{}, RfTop{}]
+    case _l _s _h:
+      [RfAny{}]
+
+# a state past the start: none while a character is held, else its lex
+# state's
+def r1.gp.hold(
+  hold: T.Hold,
+  lex: T.Lex,
+  back: T.Lex,
+  qkind: T.QKind,
+  stack: List<&2, T.Ctx>,
+  parts: List<&2, String>,
+  buf: List<&2, Char>,
+  uni: U32,
+  left: U32,
+  arr: Bool
+) -> List<&2, R1Fr>:
+  match hold:
+    case T.HChar{_c}:
+      [RfAny{}]
+    case T.HNone{}:
+      r1.gp0(lex, back, qkind, stack, parts, buf, uni, left, arr)
+
+# the position of a scanner state
+def r1.gp(st: T.St) -> List<&2, R1Fr>:
+  match st:
+    case T.St{_b, _r, _h, _e, parts, buf, lex, back, qkind, stack, hold, uni, left, arr, lead}:
+      match lead:
+        case True{}:
+          r1.gp.lead(lex, stack, hold)
+        case False{}:
+          r1.gp.hold(hold, lex, back, qkind, stack, parts, buf, uni, left, arr)
+
+# the texts that complete a mode: a scanning state's position; after a
+# carriage return, the line feed and then the state it reads to; a string's
+# opening quote or span (the value states, RfLater's)
+def r1.C(mode: T.Mode, +text: String) -> Type:
+  match mode:
+    case T.MScan{st}:
+      r1.fill(r1.gp(st), text)
+    case T.MCr{st}:
+      &uu: String -> ({text == SCon{'\n', uu} : String} & r1.fill(r1.gp(T.read.fast(st, '\n')), uu))
+    case T.MOpen{_ba, _q, _k, _bd, _rw, _hs, _he, _pt, _bf, _bk, _sk, _un, _lf, _at}:
+      Unit
+    case T.MEat{_ba, _q, _c, _n, _bd, _rw, _hs, _he, _pt, _k, _sk, _un, _lf, _at}:
+      Unit
