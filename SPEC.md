@@ -97,6 +97,6 @@ These assumptions sit outside the proofs. They are the complete list of Trusted 
 
 | ID | Assumption | Why it is trusted |
 | :---- | :---- | :---- |
-| TOML-TRUST-1 | The Bend checker is sound: a proof it accepts proves its law. | It cannot be checked from inside Bend; this is EZ-TRUST-1. eztoml pins bend 2.0.25 through the flake. |
+| TOML-TRUST-1 | The Bend checker is sound: a proof it accepts proves its law. | It cannot be checked from inside Bend; this is EZ-TRUST-1. eztoml's code builds with the flake's `bend` input (2.0.28 and later); the proof gate runs through ez, which pins the bend it builds on (2.0.27 for ez 1.2.0). |
 | TOML-TRUST-2 | The proof-gate runner fails the build unless the first line of `bend PROOF.bend` is `All terms check.` | It is ez's `mkProofs` (`ez prove`), run by `nix flake check` in CI; this is EZ-TRUST-4. |
 | TOML-TRUST-3 | A TOML file's bytes reach `parse` as the code points of their UTF-8 decoding, and invalid UTF-8 is the reader's to reject. | `parse` takes a `String`. Bend's `File.read` decodes before eztoml sees the text, and replaces an invalid byte with U+FFFD (checked with a driver that dumps the code points it read). |
