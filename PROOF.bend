@@ -92391,3 +92391,5795 @@ def Laws.date_time_parses_as_denoted_in_inline_table(k, ek, w, hw, v, hv):
     case T.VPair{_a, _b}:
       Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VPair{_a, _b}}]}}]}
           : T.Doc}, hv)
+
+# WP-A: an error stays, and so do the rows. A walk that is refused (a
+# duplicate key, a table defined twice) sets the scanner's error and lets it
+# read on, and every later walk changes nothing (failed_walk_changes_nothing).
+# So once a state has an error, every step keeps its error and its rows, and
+# parse ends with the document of that error and those rows, sealed. The
+# proof follows every step of the scanner: a step that fails keeps the first
+# error (err.first), a step that places a value walks with the error set,
+# and every other step rebuilds the state with the same error and rows.
+
+# the error and the root's rows a state holds
+type FzP is Data:
+  FzP{bad: String, rows: List<&2, T.Val>}
+
+# the error and the rows of a state
+def fz.p(st: T.St) -> FzP:
+  match st:
+    case T.St{bd, rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+      FzP{bd, rw}
+
+# the error of a pair
+def fz.pb(pp: FzP) -> String:
+  match pp:
+    case FzP{bd, _rw}:
+      bd
+
+# the document of a pair, its rows sealed
+def fz.dp(pp: FzP) -> T.Doc:
+  match pp:
+    case FzP{bd, rw}:
+      T.Doc{bd, T.rows.seal(rw)}
+
+# a state that holds the error SCon{b0, bs} and the rows rr
+def fz.K(st: T.St, b0: Char, bs: String, rr: List<&2, T.Val>) -> Data:
+  {fz.p(st) == FzP{SCon{b0, bs}, rr} : FzP}
+
+# the error is not empty
+def fz.ne(
+  bd: String,
+  rw: List<&2, T.Val>,
+  b0: Char,
+  bs: String,
+  rr: List<&2, T.Val>,
+  h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> {String.is_empty(bd) == False{} : Bool}:
+  Equal.cong(FzP, Bool, pp => String.is_empty(fz.pb(pp)), FzP{bd, rw}, FzP{SCon{b0, bs}, rr}, h)
+
+# a second error leaves the first
+def fz.e(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  why: String,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> {FzP{T.err.first(bd, why), rw} == FzP{SCon{b0, bs}, rr} : FzP}:
+  %Equal.sym(Bool, String.is_empty(bd), False{}, fz.ne(bd, rw, b0, bs, rr, h)) : {FzP{T.err.first.go(_, bd, why), rw}
+    == FzP{SCon{b0, bs}, rr} : FzP}
+  h
+
+# the document of a state that holds them
+def fz.doc(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> {T.Doc{bd, T.rows.seal(rw)} == T.Doc{SCon{b0, bs}, T.rows.seal(rr)} : T.Doc}:
+  Equal.cong(FzP, T.Doc, pp => fz.dp(pp), FzP{bd, rw}, FzP{SCon{b0, bs}, rr}, h)
+
+# and with a second error, which leaves the first
+def fz.doce(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +why: String,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> {T.Doc{T.err.first(bd, why), T.rows.seal(rw)} == T.Doc{SCon{b0, bs}, T.rows.seal(rr)} : T.Doc}:
+  Equal.cong(FzP, T.Doc, pp => fz.dp(pp), FzP{T.err.first(bd, why), rw}, FzP{SCon{b0, bs}, rr}, fz.e(bd, rw, why,
+    b0, bs, rr, h))
+
+# a failed step keeps them
+def fz.err(
+  +st: T.St,
+  +why: String,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.st.err(st, why), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+      fz.e(bd, rw, why, b0, bs, rr, h)
+
+# a value placed where the stack puts it: a walk with the error set
+def fz.top(
+  +sk: List<&2, T.Ctx>,
+  +vv: T.Val,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +ld: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> {fz.p(T.take.top(sk, vv, bd, rw, hs, he, pt, bk, qk, un, lf, at, ld)) == FzP{SCon{b0, bs}, rr} : FzP}:
+  match sk:
+    case []:
+      %Equal.sym(T.End, T.tree.walk(T.path.cat(he, pt), T.Tw{rw, T.JPut{vv}, [], bd, "", hs, False{}}, T.path.len(he,
+        0)), T.End{rw, bd, hs}, Laws.failed_walk_changes_nothing(T.path.cat(he, pt), rw, T.JPut{vv}, bd, "", hs,
+          False{}, T.path.len(he, 0),
+        fz.ne(bd, rw, b0, bs, rr, h))) : {fz.p(T.take.root(_, he, bk, qk, un, lf, at, ld)) == FzP{SCon{b0, bs}, rr}
+        : FzP}
+      h
+    case T.CArr{_items, _saved, _at2} <> _rest:
+      h
+    case T.CInl{+inl, +saved, +at2} <> +rest:
+      %Equal.sym(T.End, T.tree.walk(List.reverse(&2, String, pt), T.Tw{inl, T.JPut{vv}, [], bd, "", [], True{}}, 0),
+        T.End{inl, bd, []}, Laws.failed_walk_changes_nothing(List.reverse(&2, String, pt), inl, T.JPut{vv}, bd, "",
+          [], True{}, 0, fz.ne(bd,
+        rw, b0, bs, rr, h))) : {fz.p(T.take.inl(_, rw, hs, at2, saved, rest, bk, qk, un, lf, at, ld))
+        == FzP{SCon{b0, bs}, rr} : FzP}
+      h
+
+# a value placed keeps them
+def fz.take(
+  +st: T.St,
+  +vv: T.Val,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.val.take(st, vv), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, _bf, _lx, bk, qk, sk, _hd, un, lf, at, ld}:
+      fz.top(sk, vv, bd, rw, hs, he, pt, bk, qk, un, lf, at, ld, b0, bs, rr, h)
+
+# a newline after a root value
+def fz.bll(
+  +lx: T.Lex,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.bare.line.lex(lx, st), b0, bs, rr):
+  match lx:
+    case T.LTop{}:
+      h
+    case T.LLine{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case T.LKey{}:
+      h
+    case T.LKeyDot{}:
+      h
+    case T.LAfter{}:
+      h
+    case T.LKeyQ{}:
+      h
+    case T.LKeyE{}:
+      h
+    case T.LKeyU{}:
+      h
+    case T.LVal{}:
+      h
+    case T.LQ{}:
+      h
+    case T.LQ2{}:
+      h
+    case T.LStr{}:
+      h
+    case T.LEsc{}:
+      h
+    case T.LUni{}:
+      h
+    case T.LFold{}:
+      h
+    case T.LMq{}:
+      h
+    case T.LMqEnd{}:
+      h
+    case T.LTrim{}:
+      h
+    case T.LTrim2{}:
+      h
+    case T.LBare{}:
+      h
+    case T.LDate{}:
+      h
+    case T.LCom{}:
+      h
+    case T.LHead{}:
+      h
+    case T.LHeadGap{}:
+      h
+    case T.LHeadDot{}:
+      h
+    case T.LHeadQ{}:
+      h
+    case T.LHeadE{}:
+      h
+    case T.LHeadU{}:
+      h
+    case T.LHeadR{}:
+      h
+    case T.LArr{}:
+      h
+    case T.LArrC{}:
+      h
+    case T.LInl{}:
+      h
+    case T.LInlK{}:
+      h
+    case T.LInlC{}:
+      h
+    case T.LSink{}:
+      h
+
+# a newline that ended a root value
+def fz.bline(
+  +nl: Bool,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.bare.line(st, nl), b0, bs, rr):
+  match nl:
+    case True{}:
+      match st:
+        case T.St{bd, rw, hs, he, pt, bf, +lx, bk, qk, sk, hd, un, lf, at, ld}:
+          fz.bll(lx, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, b0, bs, rr, h)
+    case False{}:
+      h
+
+# the delimiter after a value, held or passed over
+def fz.bhold(
+  +hold: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.bare.hold(st, cc, hold), b0, bs, rr):
+  match hold:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.bline(T.ch.nl(cc), st, b0, bs, rr, h)
+
+# a bare word read
+def fz.got(
+  +gg: T.Got,
+  +st: T.St,
+  +cc: Char,
+  +hold: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.bare.got(gg, st, cc, hold), b0, bs, rr):
+  match gg:
+    case T.GotBad{why}:
+      fz.err(st, why, b0, bs, rr, h)
+    case T.GotVal{vv}:
+      fz.bhold(hold, T.val.take(st, vv), cc, b0, bs, rr, fz.take(st, vv, b0, bs, rr, h))
+
+# a bare word finished
+def fz.finish(
+  +st: T.St,
+  +cc: Char,
+  +hold: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.bare.finish(st, cc, hold), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.got(T.word.val(List.reverse(&2, Char, bf)), T.St{bd, rw, hs, he, pt, [], lx, bk, qk, sk, hd, un, lf, at, ld},
+        cc, hold, b0, bs, rr, h)
+
+# a string finished
+def fz.sfin(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.str.fin(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.take(T.St{bd, rw, hs, he, pt, [], lx, bk, qk, sk, hd, un, lf, at, ld}, T.VStr{T.buf.str(bf)}, b0, bs, rr, h)
+
+# a segment pushed
+def fz.segp(
+  +st: T.St,
+  +lex: T.Lex,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.seg.push(st, lex), b0, bs, rr):
+  match st:
+    case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+      h
+
+# a comment entered
+def fz.com(
+  +st: T.St,
+  +back: T.Lex,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.com.enter(st, back), b0, bs, rr):
+  match st:
+    case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+      h
+
+# a header's walk, with the error set
+def fz.hjob(
+  arr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +segs: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ld: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> {fz.p(T.head.job(arr, bd, rw, hs, segs, bk, qk, un, lf, ld)) == FzP{SCon{b0, bs}, rr} : FzP}:
+  match arr:
+    case True{}:
+      %Equal.sym(T.End, T.tree.walk(segs, T.Tw{rw, T.JAot{}, [], bd, "", hs, False{}}, 0), T.End{rw, bd, hs},
+        Laws.failed_walk_changes_nothing(segs, rw, T.JAot{}, bd, "", hs, False{}, 0, fz.ne(bd, rw, b0, bs, rr, h)))
+        : {fz.p(T.head.apply(_, segs, bk, qk, un, lf, ld)) == FzP{SCon{b0, bs}, rr} : FzP}
+      h
+    case False{}:
+      %Equal.sym(T.End, T.tree.walk(segs, T.Tw{rw, T.JDef{}, [], bd, "", hs, False{}}, 0), T.End{rw, bd, hs},
+        Laws.failed_walk_changes_nothing(segs, rw, T.JDef{}, bd, "", hs, False{}, 0, fz.ne(bd, rw, b0, bs, rr, h)))
+        : {fz.p(T.head.apply(_, segs, bk, qk, un, lf, ld)) == FzP{SCon{b0, bs}, rr} : FzP}
+      h
+
+# a header ready
+def fz.hgo(
+  +empty: Bool,
+  +st: T.St,
+  +segs: List<&2, String>,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.head.go(empty, st, segs), b0, bs, rr):
+  match empty:
+    case True{}:
+      fz.err(st, "empty key", b0, bs, rr, h)
+    case False{}:
+      match st:
+        case T.St{bd, rw, hs, _he, _pt, _bf, _lx, bk, qk, _sk, _hd, un, lf, at, ld}:
+          fz.hjob(at, bd, rw, hs, segs, bk, qk, un, lf, ld, b0, bs, rr, h)
+
+# a header's segments
+def fz.huse(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.head.use(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, +pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.hgo(List.is_empty(&2, String, pt), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld},
+        List.reverse(&2, String, pt), b0, bs, rr, h)
+
+# a header's last segment
+def fz.hfb(
+  +empty: Bool,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.head.fin.buf(empty, st), b0, bs, rr):
+  match empty:
+    case True{}:
+      fz.huse(st, b0, bs, rr, h)
+    case False{}:
+      fz.huse(T.seg.push(st, T.LTop{}), b0, bs, rr, fz.segp(st, T.LTop{}, b0, bs, rr, h))
+
+# a header closed
+def fz.hfin(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.head.fin(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, +bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.hfb(List.is_empty(&2, Char, bf), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, b0, bs,
+        rr, h)
+
+# an array closed with the error set
+def fz.atop(
+  +sk: List<&2, T.Ctx>,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +ld: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> {fz.p(T.arr.top(sk, bd, rw, hs, bk, qk, un, lf, at, ld)) == FzP{SCon{b0, bs}, rr} : FzP}:
+  match sk:
+    case []:
+      fz.e(bd, rw, "unclosed", b0, bs, rr, h)
+    case T.CArr{items, pt, he} <> rest:
+      fz.take(T.St{bd, rw, hs, he, pt, [], T.LTop{}, bk, qk, rest, T.HNone{}, un, lf, at, ld}, T.VArr{List.reverse(&2,
+        T.Val, items)}, b0, bs, rr, h)
+    case T.CInl{_items, _pt, _he} <> _rest:
+      fz.e(bd, rw, "unclosed", b0, bs, rr, h)
+
+# an array closed
+def fz.aclose(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.arr.close(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, _he, _pt, _bf, _lx, bk, qk, sk, _hd, un, lf, at, ld}:
+      fz.atop(sk, bd, rw, hs, bk, qk, un, lf, at, ld, b0, bs, rr, h)
+
+# an inline table closed with the error set
+def fz.itop(
+  +sk: List<&2, T.Ctx>,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +ld: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> {fz.p(T.inl.top(sk, bd, rw, hs, bk, qk, un, lf, at, ld)) == FzP{SCon{b0, bs}, rr} : FzP}:
+  match sk:
+    case []:
+      fz.e(bd, rw, "unclosed", b0, bs, rr, h)
+    case T.CInl{items, pt, he} <> rest:
+      fz.take(T.St{bd, rw, hs, he, pt, [], T.LTop{}, bk, qk, rest, T.HNone{}, un, lf, at, ld},
+        T.VInl{T.inl.seal(items)}, b0, bs, rr, h)
+    case T.CArr{_items, _pt, _he} <> _rest:
+      fz.e(bd, rw, "unclosed", b0, bs, rr, h)
+
+# an inline table closed
+def fz.iclose(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.inl.close(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, _he, _pt, _bf, _lx, bk, qk, sk, _hd, un, lf, at, ld}:
+      fz.itop(sk, bd, rw, hs, bk, qk, un, lf, at, ld, b0, bs, rr, h)
+
+# LTop
+def fz.x.top(
+  +sp: Bool,
+  +nl: Bool,
+  +hash: Bool,
+  +br: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +bare: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.top.go(sp, nl, hash, br, qq, lit, bare, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match nl:
+        case True{}:
+          h
+        case False{}:
+          match hash:
+            case True{}:
+              match st:
+                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                  h
+            case False{}:
+              match br:
+                case True{}:
+                  match st:
+                    case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                      h
+                case False{}:
+                  match qq:
+                    case True{}:
+                      match st:
+                        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                          h
+                    case False{}:
+                      match lit:
+                        case True{}:
+                          match st:
+                            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                              h
+                        case False{}:
+                          match bare:
+                            case True{}:
+                              match st:
+                                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                                  h
+                            case False{}:
+                              fz.err(st, "invalid key", b0, bs, rr, h)
+
+# LLine
+def fz.x.line(
+  +sp: Bool,
+  +hash: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.line.go(sp, hash, nl, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match hash:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          match nl:
+            case True{}:
+              match st:
+                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                  h
+            case False{}:
+              fz.err(st, "newline required", b0, bs, rr, h)
+
+# a segment ended
+def fz.kend.go(
+  +empty: Bool,
+  +st: T.St,
+  +lex: T.Lex,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.key.end.go(empty, st, lex), b0, bs, rr):
+  match empty:
+    case True{}:
+      fz.err(st, "empty key", b0, bs, rr, h)
+    case False{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+
+# a segment ended
+def fz.kend(
+  +st: T.St,
+  +next: T.Lex,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.key.end(st, next), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, +bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.kend.go(List.is_empty(&2, Char, bf), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at,
+        ld}, next, b0, bs, rr, h)
+
+# LKey
+def fz.x.key(
+  +bare: Bool,
+  +sp: Bool,
+  +dot: Bool,
+  +eq: Bool,
+  +hash: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.key.go(bare, sp, dot, eq, hash, nl, st, cc), b0, bs, rr):
+  match bare:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      match sp:
+        case True{}:
+          fz.kend(st, T.LAfter{}, b0, bs, rr, h)
+        case False{}:
+          match dot:
+            case True{}:
+              fz.kend(st, T.LKeyDot{}, b0, bs, rr, h)
+            case False{}:
+              match eq:
+                case True{}:
+                  fz.kend(st, T.LVal{}, b0, bs, rr, h)
+                case False{}:
+                  match hash:
+                    case True{}:
+                      fz.com(T.lex.key.end(st, T.LAfter{}), T.LAfter{}, b0, bs, rr, fz.kend(st, T.LAfter{}, b0, bs,
+                        rr, h))
+                    case False{}:
+                      match nl:
+                        case True{}:
+                          fz.err(st, "newline in key", b0, bs, rr, h)
+                        case False{}:
+                          fz.err(st, "invalid key", b0, bs, rr, h)
+
+# LKeyDot, a bare segment
+def fz.x.kdot.bare(
+  +bare: Bool,
+  +dot: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.kdot.bare(bare, dot, nl, st, cc), b0, bs, rr):
+  match bare:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      match dot:
+        case True{}:
+          fz.err(st, "empty key", b0, bs, rr, h)
+        case False{}:
+          match nl:
+            case True{}:
+              fz.err(st, "newline in key", b0, bs, rr, h)
+            case False{}:
+              fz.err(st, "invalid key", b0, bs, rr, h)
+
+# LKeyDot
+def fz.x.kdot(
+  +sp: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +dot: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.kdot.go(sp, qq, lit, dot, nl, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match qq:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          match lit:
+            case True{}:
+              match st:
+                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                  h
+            case False{}:
+              fz.x.kdot.bare(T.bare.at(cc), dot, nl, st, cc, b0, bs, rr, h)
+
+# LAfter
+def fz.x.after(
+  +sp: Bool,
+  +dot: Bool,
+  +eq: Bool,
+  +hash: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.after.go(sp, dot, eq, hash, nl, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match dot:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          match eq:
+            case True{}:
+              match st:
+                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                  h
+            case False{}:
+              match hash:
+                case True{}:
+                  match st:
+                    case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                      h
+                case False{}:
+                  match nl:
+                    case True{}:
+                      fz.err(st, "newline in key", b0, bs, rr, h)
+                    case False{}:
+                      fz.err(st, "invalid key", b0, bs, rr, h)
+
+# a quoted key's character
+def fz.kq.char(
+  +bad: Bool,
+  +st: T.St,
+  +cc: Char,
+  +stay: T.Lex,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.kq.char.go(bad, st, cc, stay), b0, bs, rr):
+  match bad:
+    case True{}:
+      fz.err(st, "invalid control", b0, bs, rr, h)
+    case False{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+
+# a quoted key
+def fz.kq.go(
+  +quote: Bool,
+  +bsl: Bool,
+  +basic: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +back: T.Lex,
+  +stay: T.Lex,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.kq.go(quote, bsl, basic, nl, st, cc, back, stay), b0, bs, rr):
+  match quote:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      match bsl:
+        case True{}:
+          match basic:
+            case True{}:
+              match st:
+                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                  h
+            case False{}:
+              match st:
+                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                  h
+        case False{}:
+          match nl:
+            case True{}:
+              fz.err(st, "newline in key", b0, bs, rr, h)
+            case False{}:
+              fz.kq.char(T.str.bad(Char.to_u32(cc), False{}), st, cc, stay, b0, bs, rr, h)
+
+# LKeyQ and LHeadQ
+def fz.kq(
+  +st: T.St,
+  +cc: Char,
+  +back: T.Lex,
+  +stay: T.Lex,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.kq(st, cc, back, stay), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, +qk, sk, hd, un, lf, at, ld}:
+      fz.kq.go(Char.is_eq(cc, T.q.char(qk)), Char.is_eq(cc, '\\'), T.q.basic(qk), T.ch.nl(cc), T.St{bd, rw,
+        hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, cc, back, stay, b0, bs, rr, h)
+
+# a line-ending backslash
+def fz.fold.use(
+  +back: T.Lex,
+  +st: T.St,
+  +saw: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.esc.fold.use(back, st, saw), b0, bs, rr):
+  match back:
+    case T.LTop{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LLine{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LKey{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LKeyDot{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LAfter{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LKeyQ{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LKeyE{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LKeyU{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LVal{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LQ{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LQ2{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LStr{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case T.LEsc{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LUni{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LFold{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LMq{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LMqEnd{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LTrim{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LTrim2{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LBare{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LDate{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LCom{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LHead{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LHeadGap{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LHeadDot{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LHeadQ{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LHeadE{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LHeadU{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LHeadR{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LArr{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LArrC{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LInl{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LInlK{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LInlC{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+    case T.LSink{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+
+# an escape used
+def fz.esc(
+  +ee: T.Esc,
+  +st: T.St,
+  +back: T.Lex,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.esc.use(ee, st, back), b0, bs, rr):
+  match ee:
+    case T.EChar{_c}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case T.EUni{_n}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case T.EFold{saw}:
+      fz.fold.use(back, st, saw, b0, bs, rr, h)
+    case T.EBad{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+
+# an escape's last digit
+def fz.ufin(
+  +ok: Bool,
+  +st: T.St,
+  +uu: U32,
+  +back: T.Lex,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.uni.finish(ok, st, uu, back), b0, bs, rr):
+  match ok:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+
+# an escape's digit
+def fz.unext(
+  +last: Bool,
+  +st: T.St,
+  +uu: U32,
+  +back: T.Lex,
+  +left: U32,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.uni.next(last, st, uu, back, left), b0, bs, rr):
+  match last:
+    case True{}:
+      fz.ufin(T.uni.ok(uu), st, uu, back, b0, bs, rr, h)
+    case False{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+
+# an escape's digit
+def fz.ugo(
+  +ok: Bool,
+  +st: T.St,
+  +cc: Char,
+  +back: T.Lex,
+  +uni: U32,
+  +left: U32,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.uni.go(ok, st, cc, back, uni, left), b0, bs, rr):
+  match ok:
+    case True{}:
+      fz.unext(U32.is_eq(left, 1), st, U32.add(U32.mul(uni, 16), T.dig.val(cc)), back, left, b0, bs, rr, h)
+    case False{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+
+# LKeyU, LUni and LHeadU
+def fz.uni(
+  +st: T.St,
+  +cc: Char,
+  +back: T.Lex,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.uni.step(st, cc, back), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, +un, +lf, at, ld}:
+      fz.ugo(T.dig.ok(T.dig.val(cc), 16), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, cc,
+        back, un, lf, b0, bs, rr, h)
+
+# a newline before a value
+def fz.vnl3(
+  +inside: Bool,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.val.nl3(inside, st), b0, bs, rr):
+  match inside:
+    case True{}:
+      fz.err(st, "newline in inline table", b0, bs, rr, h)
+    case False{}:
+      fz.err(st, "newline before value", b0, bs, rr, h)
+
+# a newline before a value
+def fz.vnl2(
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.val.nl2(st, cc), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, +sk, hd, un, lf, at, ld}:
+      fz.vnl3(T.inl.open(sk), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, b0, bs, rr, h)
+
+# LVal
+def fz.x.val(
+  +sp: Bool,
+  +nl: Bool,
+  +hash: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +br: Bool,
+  +inl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.val.go(sp, nl, hash, qq, lit, br, inl, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match nl:
+        case True{}:
+          fz.vnl2(st, cc, b0, bs, rr, h)
+        case False{}:
+          match hash:
+            case True{}:
+              match st:
+                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                  h
+            case False{}:
+              match qq:
+                case True{}:
+                  match st:
+                    case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                      h
+                case False{}:
+                  match lit:
+                    case True{}:
+                      match st:
+                        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                          h
+                    case False{}:
+                      match br:
+                        case True{}:
+                          match st:
+                            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                              h
+                        case False{}:
+                          match inl:
+                            case True{}:
+                              match st:
+                                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                                  h
+                            case False{}:
+                              match st:
+                                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                                  h
+
+# LQ
+def fz.x.qgo(
+  +same: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.q.go(same, st, cc), b0, bs, rr):
+  match same:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+
+# LQ
+def fz.x.q(
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.q(st, cc), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, +qk, sk, hd, un, lf, at, ld}:
+      fz.x.qgo(Char.is_eq(cc, T.q.char(qk)), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld},
+        cc, b0, bs, rr, h)
+
+# LQ2
+def fz.x.q2go(
+  +same: Bool,
+  +st: T.St,
+  +cc: Char,
+  +kind: T.QKind,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.q2.go(same, st, cc, kind), b0, bs, rr):
+  match same:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.bhold(True{}, T.val.take(st, T.VStr{""}), cc, b0, bs, rr, fz.take(st, T.VStr{""}, b0, bs, rr, h))
+
+# LQ2
+def fz.x.q2(
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.q2(st, cc), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, +qk, sk, hd, un, lf, at, ld}:
+      fz.x.q2go(Char.is_eq(cc, T.q.char(qk)), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at,
+        ld}, cc, qk, b0, bs, rr, h)
+
+# a string's character
+def fz.x.strch(
+  +bad: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.str.char.go(bad, st, cc), b0, bs, rr):
+  match bad:
+    case True{}:
+      fz.err(st, "invalid control", b0, bs, rr, h)
+    case False{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+
+# a backslash in a basic string
+def fz.x.strbs(
+  +bsl: Bool,
+  +multi: Bool,
+  +st: T.St,
+  +cc: Char,
+  +kind: T.QKind,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.str.bs(bsl, multi, st, cc, kind), b0, bs, rr):
+  match bsl:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.x.strch(T.str.bad(Char.to_u32(cc), multi), st, cc, b0, bs, rr, h)
+
+# LStr
+def fz.x.strgo(
+  +quote: Bool,
+  +multi: Bool,
+  +basic: Bool,
+  +st: T.St,
+  +cc: Char,
+  +kind: T.QKind,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.str.go(quote, multi, basic, st, cc, kind), b0, bs, rr):
+  match quote:
+    case True{}:
+      match multi:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          fz.sfin(st, b0, bs, rr, h)
+    case False{}:
+      match basic:
+        case True{}:
+          fz.x.strbs(Char.is_eq(cc, '\\'), multi, st, cc, kind, b0, bs, rr, h)
+        case False{}:
+          fz.x.strch(T.str.bad(Char.to_u32(cc), multi), st, cc, b0, bs, rr, h)
+
+# LStr
+def fz.x.str(
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.str(st, cc), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, +qk, sk, hd, un, lf, at, ld}:
+      fz.x.strgo(Char.is_eq(cc, T.q.char(qk)), T.q.multi(qk), T.q.basic(qk), T.St{bd, rw, hs, he, pt, bf, lx,
+        bk, qk, sk, hd, un, lf, at, ld}, cc, qk, b0, bs, rr, h)
+
+# LFold
+def fz.x.fend(
+  +saw: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.fold.end.go(saw, st, cc), b0, bs, rr):
+  match saw:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.err(st, "invalid escape", b0, bs, rr, h)
+
+# LFold
+def fz.x.fold(
+  +sp: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.fold.go(sp, nl, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match nl:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          match st:
+            case T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, +lf, at, ld}:
+              fz.x.fend(U32.is_eq(lf, 1), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, cc, b0,
+                bs, rr, h)
+
+# LMq
+def fz.x.mqgo(
+  +quote: Bool,
+  +one: Bool,
+  +st: T.St,
+  +cc: Char,
+  +buf: List<&2, Char>,
+  +kind: T.QKind,
+  +left: U32,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.mq.go(quote, one, st, cc, buf, kind, left), b0, bs, rr):
+  match quote:
+    case True{}:
+      match one:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+    case False{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+
+# LMq
+def fz.x.mq(
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.mq.step(st, cc), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, +bf, lx, bk, +qk, sk, hd, un, +lf, at, ld}:
+      fz.x.mqgo(Char.is_eq(cc, T.q.char(qk)), U32.is_eq(lf, 1), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd,
+        un, lf, at, ld}, cc, bf, qk, lf, b0, bs, rr, h)
+
+# LMqEnd
+def fz.x.mqe(
+  +quote: Bool,
+  +room: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.mq.end.go(quote, room, st, cc), b0, bs, rr):
+  match quote:
+    case True{}:
+      match room:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          fz.bhold(True{}, T.str.fin(st), cc, b0, bs, rr, fz.sfin(st, b0, bs, rr, h))
+    case False{}:
+      fz.bhold(True{}, T.str.fin(st), cc, b0, bs, rr, fz.sfin(st, b0, bs, rr, h))
+
+# LMqEnd
+def fz.x.mqend(
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.mq.end(st, cc), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, +qk, sk, hd, un, +lf, at, ld}:
+      fz.x.mqe(Char.is_eq(cc, T.q.char(qk)), U32.is_lt(lf, 2), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd,
+        un, lf, at, ld}, cc, b0, bs, rr, h)
+
+# LTrim
+def fz.x.trim(
+  +cr: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.trim.go(cr, nl, st, cc), b0, bs, rr):
+  match cr:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      match nl:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+
+# LTrim2
+def fz.x.trim2(
+  +lf: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.trim2.go(lf, st, cc), b0, bs, rr):
+  match lf:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+
+# a bare word's space
+def fz.x.bdate(
+  +date: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.bare.date.go(date, st, cc), b0, bs, rr):
+  match date:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.finish(st, cc, False{}, b0, bs, rr, h)
+
+# LBare
+def fz.x.bare(
+  +delim: Bool,
+  +sp: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.bare.go(delim, sp, st, cc), b0, bs, rr):
+  match delim:
+    case True{}:
+      match sp:
+        case True{}:
+          match st:
+            case T.St{bd, rw, hs, he, pt, +bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+              fz.x.bdate(T.date.shaped(bf), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, cc, b0,
+                bs, rr, h)
+        case False{}:
+          match st:
+            case T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, +sk, hd, un, lf, at, ld}:
+              fz.finish(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, cc,
+                T.lex.bare.hold(T.ch.skip(cc),
+                T.ch.nl(cc), T.inl.open(sk)), b0, bs, rr, h)
+    case False{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+
+# LDate
+def fz.x.date(
+  +digit: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.date.go(digit, st, cc), b0, bs, rr):
+  match digit:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.finish(st, cc, True{}, b0, bs, rr, h)
+
+# LCom
+def fz.x.com(
+  +nl: Bool,
+  +ctl: Bool,
+  +tab: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.com.go(nl, ctl, tab, st, cc), b0, bs, rr):
+  match nl:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      match ctl:
+        case True{}:
+          match tab:
+            case True{}:
+              h
+            case False{}:
+              fz.err(st, "invalid control in comment", b0, bs, rr, h)
+        case False{}:
+          h
+
+# a second bracket
+def fz.x.hbrgo(
+  +fresh: Bool,
+  +once: Bool,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.br.go(fresh, once, st), b0, bs, rr):
+  match fresh:
+    case True{}:
+      match once:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          fz.err(st, "invalid header", b0, bs, rr, h)
+    case False{}:
+      fz.err(st, "invalid header", b0, bs, rr, h)
+
+# a second bracket
+def fz.x.hbr(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.br(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, +pt, +bf, lx, bk, qk, sk, hd, un, lf, +at, ld}:
+      fz.x.hbrgo(Bool.and(List.is_empty(&2, String, pt), List.is_empty(&2, Char, bf)), Bool.not(at), T.St{bd, rw,
+        hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, b0, bs, rr, h)
+
+# a header's bare character
+def fz.x.hchgo(
+  +gap: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.ch.go(gap, st, cc), b0, bs, rr):
+  match gap:
+    case True{}:
+      fz.err(st, "invalid header", b0, bs, rr, h)
+    case False{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+
+# a header's bare character
+def fz.x.hch(
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.ch(st, cc), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, +pt, +bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.x.hchgo(Bool.and(Bool.not(List.is_empty(&2, String, pt)), List.is_empty(&2, Char, bf)), T.St{bd, rw, hs,
+        he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, cc, b0, bs, rr, h)
+
+# blank space in a header
+def fz.x.hgapgo(
+  +empty: Bool,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.gap.go(empty, st), b0, bs, rr):
+  match empty:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+
+# blank space in a header
+def fz.x.hgap0(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.gap(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, +bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.x.hgapgo(List.is_empty(&2, Char, bf), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld},
+        b0, bs, rr, h)
+
+# a dot in a header
+def fz.x.hdot3(
+  +empty: Bool,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.dot3(empty, st), b0, bs, rr):
+  match empty:
+    case True{}:
+      fz.err(st, "empty key", b0, bs, rr, h)
+    case False{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+
+# a dot in a header
+def fz.x.hdot2(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.dot2(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, +bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.x.hdot3(List.is_empty(&2, Char, bf), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld},
+        b0, bs, rr, h)
+
+# a closing bracket
+def fz.x.hclose2(
+  +arr: Bool,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.close2(arr, st), b0, bs, rr):
+  match arr:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.hfin(st, b0, bs, rr, h)
+
+# a closing bracket
+def fz.x.hclosego(
+  +empty: Bool,
+  +arr: Bool,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.close.go(empty, arr, st), b0, bs, rr):
+  match empty:
+    case True{}:
+      fz.x.hclose2(arr, st, b0, bs, rr, h)
+    case False{}:
+      fz.x.hclose2(arr, T.seg.push(st, T.LHead{}), b0, bs, rr, fz.segp(st, T.LHead{}, b0, bs, rr, h))
+
+# a closing bracket
+def fz.x.hclose(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.close(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, +bf, lx, bk, qk, sk, hd, un, lf, +at, ld}:
+      fz.x.hclosego(List.is_empty(&2, Char, bf), at, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at,
+        ld}, b0, bs, rr, h)
+
+# a comment in a header
+def fz.x.hhash(
+  +hash: Bool,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.hash(hash, st), b0, bs, rr):
+  match hash:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.err(st, "invalid header", b0, bs, rr, h)
+
+# a quoted header segment
+def fz.x.hqgo(
+  +fresh: Bool,
+  +st: T.St,
+  +kind: T.QKind,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.quote.go(fresh, st, kind), b0, bs, rr):
+  match fresh:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.err(st, "invalid header", b0, bs, rr, h)
+
+# a quoted header segment
+def fz.x.hquote(
+  +st: T.St,
+  +kind: T.QKind,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.quote(st, kind), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, +pt, +bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.x.hqgo(Bool.and(List.is_empty(&2, Char, bf), List.is_empty(&2, String, pt)), T.St{bd, rw, hs, he, pt,
+        bf, lx, bk, qk, sk, hd, un, lf, at, ld}, kind, b0, bs, rr, h)
+
+# LHead
+def fz.x.head(
+  +br: Bool,
+  +bare: Bool,
+  +sp: Bool,
+  +dot: Bool,
+  +end: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +hash: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.go(br, bare, sp, dot, end, qq, lit, hash, st, cc), b0, bs, rr):
+  match br:
+    case True{}:
+      fz.x.hbr(st, b0, bs, rr, h)
+    case False{}:
+      match bare:
+        case True{}:
+          fz.x.hch(st, cc, b0, bs, rr, h)
+        case False{}:
+          match sp:
+            case True{}:
+              fz.x.hgap0(st, b0, bs, rr, h)
+            case False{}:
+              match dot:
+                case True{}:
+                  fz.x.hdot2(st, b0, bs, rr, h)
+                case False{}:
+                  match end:
+                    case True{}:
+                      fz.x.hclose(st, b0, bs, rr, h)
+                    case False{}:
+                      match qq:
+                        case True{}:
+                          fz.x.hquote(st, T.QBasic{}, b0, bs, rr, h)
+                        case False{}:
+                          match lit:
+                            case True{}:
+                              fz.x.hquote(st, T.QLit{}, b0, bs, rr, h)
+                            case False{}:
+                              fz.x.hhash(hash, st, b0, bs, rr, h)
+
+# LHeadGap
+def fz.x.hg(
+  +sp: Bool,
+  +dot: Bool,
+  +end: Bool,
+  +hash: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.hgap(sp, dot, end, hash, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match dot:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          match end:
+            case True{}:
+              fz.x.hclose(st, b0, bs, rr, h)
+            case False{}:
+              fz.x.hhash(hash, st, b0, bs, rr, h)
+
+# LHeadDot
+def fz.x.hd(
+  +sp: Bool,
+  +bare: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.hdot(sp, bare, qq, lit, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match bare:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          match qq:
+            case True{}:
+              match st:
+                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                  h
+            case False{}:
+              match lit:
+                case True{}:
+                  match st:
+                    case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                      h
+                case False{}:
+                  fz.err(st, "invalid header", b0, bs, rr, h)
+
+# LHeadR
+def fz.x.hr(
+  +end: Bool,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.head.r.go(end, st), b0, bs, rr):
+  match end:
+    case True{}:
+      fz.hfin(st, b0, bs, rr, h)
+    case False{}:
+      fz.err(st, "invalid header", b0, bs, rr, h)
+
+# LArr
+def fz.x.arr(
+  +sp: Bool,
+  +nl: Bool,
+  +hash: Bool,
+  +end: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.arr.go(sp, nl, hash, end, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match nl:
+        case True{}:
+          h
+        case False{}:
+          match hash:
+            case True{}:
+              match st:
+                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                  h
+            case False{}:
+              match end:
+                case True{}:
+                  fz.aclose(st, b0, bs, rr, h)
+                case False{}:
+                  match st:
+                    case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                      h
+
+# LArrC
+def fz.x.arrc(
+  +sp: Bool,
+  +nl: Bool,
+  +hash: Bool,
+  +comma: Bool,
+  +end: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.arrc.go(sp, nl, hash, comma, end, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match nl:
+        case True{}:
+          h
+        case False{}:
+          match hash:
+            case True{}:
+              match st:
+                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                  h
+            case False{}:
+              match comma:
+                case True{}:
+                  match st:
+                    case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                      h
+                case False{}:
+                  match end:
+                    case True{}:
+                      fz.aclose(st, b0, bs, rr, h)
+                    case False{}:
+                      fz.err(st, "invalid array", b0, bs, rr, h)
+
+# a key in an inline table
+def fz.x.kbare(
+  +ok: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.key.bare(ok, st, cc), b0, bs, rr):
+  match ok:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.err(st, "invalid key", b0, bs, rr, h)
+
+# a key in an inline table
+def fz.x.klit(
+  +lit: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.key.lit(lit, st, cc), b0, bs, rr):
+  match lit:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.x.kbare(T.bare.at(cc), st, cc, b0, bs, rr, h)
+
+# a key in an inline table
+def fz.x.kq0(
+  +qq: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.key.q(qq, st, cc), b0, bs, rr):
+  match qq:
+    case True{}:
+      match st:
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+          h
+    case False{}:
+      fz.x.klit(Char.is_eq(cc, '\''), st, cc, b0, bs, rr, h)
+
+# a key in an inline table
+def fz.x.kclear(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.key.clear(st), b0, bs, rr):
+  match st:
+    case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+      h
+
+# a key in an inline table
+def fz.x.inlnl(
+  +nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.inl.nl(nl, st, cc), b0, bs, rr):
+  match nl:
+    case True{}:
+      fz.err(st, "newline in inline table", b0, bs, rr, h)
+    case False{}:
+      fz.x.kq0(Char.is_eq(cc, '"'), T.lex.key.clear(st), cc, b0, bs, rr, fz.x.kclear(st, b0, bs, rr, h))
+
+# LInl
+def fz.x.inl(
+  +sp: Bool,
+  +hash: Bool,
+  +end: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.inl.go(sp, hash, end, nl, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match hash:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          match end:
+            case True{}:
+              fz.iclose(st, b0, bs, rr, h)
+            case False{}:
+              fz.x.inlnl(nl, st, cc, b0, bs, rr, h)
+
+# LInlK
+def fz.x.inlk(
+  +sp: Bool,
+  +hash: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.inlk.go(sp, hash, nl, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match hash:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          fz.x.inlnl(nl, st, cc, b0, bs, rr, h)
+
+# LInlC
+def fz.x.inlc(
+  +sp: Bool,
+  +hash: Bool,
+  +comma: Bool,
+  +end: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.lex.inlc.go(sp, hash, comma, end, nl, st, cc), b0, bs, rr):
+  match sp:
+    case True{}:
+      h
+    case False{}:
+      match hash:
+        case True{}:
+          match st:
+            case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+              h
+        case False{}:
+          match comma:
+            case True{}:
+              match st:
+                case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+                  h
+            case False{}:
+              match end:
+                case True{}:
+                  fz.iclose(st, b0, bs, rr, h)
+                case False{}:
+                  match nl:
+                    case True{}:
+                      fz.err(st, "newline in inline table", b0, bs, rr, h)
+                    case False{}:
+                      fz.err(st, "invalid inline table", b0, bs, rr, h)
+
+# one character in every lex state
+def fz.on(
+  +lex: T.Lex,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.read.on(lex, st, cc), b0, bs, rr):
+  match lex:
+    case T.LTop{}:
+      fz.x.top(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '['), Char.is_eq(cc, '"'),
+        Char.is_eq(cc, '\''), T.bare.at(cc), st, cc, b0, bs, rr, h)
+    case T.LLine{}:
+      fz.x.line(T.ch.sp(cc), Char.is_eq(cc, '#'), T.ch.nl(cc), st, cc, b0, bs, rr, h)
+    case T.LKey{}:
+      fz.x.key(T.bare.at(cc), T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc, '#'),
+        T.ch.nl(cc), st, cc, b0, bs, rr, h)
+    case T.LKeyDot{}:
+      fz.x.kdot(T.ch.sp(cc), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '.'), T.ch.nl(cc),
+        st, cc, b0, bs, rr, h)
+    case T.LAfter{}:
+      fz.x.after(T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc, '#'), T.ch.nl(cc), st,
+        cc, b0, bs, rr, h)
+    case T.LKeyQ{}:
+      fz.kq(st, cc, T.LAfter{}, T.LKeyQ{}, b0, bs, rr, h)
+    case T.LKeyE{}:
+      fz.esc(T.esc.of(cc), st, T.LKeyQ{}, b0, bs, rr, h)
+    case T.LKeyU{}:
+      fz.uni(st, cc, T.LKeyQ{}, b0, bs, rr, h)
+    case T.LVal{}:
+      fz.x.val(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+        Char.is_eq(cc, '['), Char.is_eq(cc, '{'), st, cc, b0, bs, rr, h)
+    case T.LQ{}:
+      fz.x.q(st, cc, b0, bs, rr, h)
+    case T.LQ2{}:
+      fz.x.q2(st, cc, b0, bs, rr, h)
+    case T.LStr{}:
+      fz.x.str(st, cc, b0, bs, rr, h)
+    case T.LEsc{}:
+      fz.esc(T.esc.of(cc), st, T.LStr{}, b0, bs, rr, h)
+    case T.LUni{}:
+      fz.uni(st, cc, T.LStr{}, b0, bs, rr, h)
+    case T.LFold{}:
+      fz.x.fold(T.ch.sp(cc), T.ch.nl(cc), st, cc, b0, bs, rr, h)
+    case T.LMq{}:
+      fz.x.mq(st, cc, b0, bs, rr, h)
+    case T.LMqEnd{}:
+      fz.x.mqend(st, cc, b0, bs, rr, h)
+    case T.LTrim{}:
+      fz.x.trim(U32.is_eq(Char.to_u32(cc), 13), T.ch.nl(cc), st, cc, b0, bs, rr, h)
+    case T.LTrim2{}:
+      fz.x.trim2(U32.is_eq(Char.to_u32(cc), 10), st, cc, b0, bs, rr, h)
+    case T.LBare{}:
+      fz.x.bare(T.ch.delim(cc), T.ch.space(cc), st, cc, b0, bs, rr, h)
+    case T.LDate{}:
+      fz.x.date(Char.is_digit(cc), st, cc, b0, bs, rr, h)
+    case T.LCom{}:
+      fz.x.com(T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), st, cc, b0, bs, rr, h)
+    case T.LHead{}:
+      fz.x.head(Char.is_eq(cc, '['), T.bare.at(cc), T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, ']'),
+        Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '#'), st, cc, b0, bs, rr, h)
+    case T.LHeadGap{}:
+      fz.x.hg(T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, ']'), Char.is_eq(cc, '#'), st, cc, b0, bs, rr,
+        h)
+    case T.LHeadDot{}:
+      fz.x.hd(T.ch.sp(cc), T.bare.at(cc), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), st, cc, b0, bs, rr,
+        h)
+    case T.LHeadQ{}:
+      fz.kq(st, cc, T.LHeadGap{}, T.LHeadQ{}, b0, bs, rr, h)
+    case T.LHeadE{}:
+      fz.esc(T.esc.of(cc), st, T.LHeadQ{}, b0, bs, rr, h)
+    case T.LHeadU{}:
+      fz.uni(st, cc, T.LHeadQ{}, b0, bs, rr, h)
+    case T.LHeadR{}:
+      fz.x.hr(Char.is_eq(cc, ']'), st, b0, bs, rr, h)
+    case T.LArr{}:
+      fz.x.arr(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ']'), st, cc, b0, bs, rr, h)
+    case T.LArrC{}:
+      fz.x.arrc(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, ']'), st,
+        cc, b0, bs, rr, h)
+    case T.LInl{}:
+      fz.x.inl(T.ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '}'), T.ch.nl(cc), st, cc, b0, bs, rr, h)
+    case T.LInlK{}:
+      fz.x.inlk(T.ch.sp(cc), Char.is_eq(cc, '#'), T.ch.nl(cc), st, cc, b0, bs, rr, h)
+    case T.LInlC{}:
+      fz.x.inlc(T.ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, '}'), T.ch.nl(cc), st,
+        cc, b0, bs, rr, h)
+    case T.LSink{}:
+      h
+
+# the full step
+def fz.onst(
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.read.on.st(st, cc), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, +lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.on(lx, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, cc, b0, bs, rr, h)
+
+# a byte-order mark
+def fz.sbom(
+  +bom: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.read.step.bom(bom, st, cc), b0, bs, rr):
+  match bom:
+    case True{}:
+      h
+    case False{}:
+      fz.onst(st, cc, b0, bs, rr, h)
+
+# the first character
+def fz.slead(
+  +lead: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.read.step.lead(lead, st, cc), b0, bs, rr):
+  match lead:
+    case True{}:
+      fz.sbom(U32.is_eq(Char.to_u32(cc), 65279), st, cc, b0, bs, rr, h)
+    case False{}:
+      fz.onst(st, cc, b0, bs, rr, h)
+
+# one character of the document
+def fz.step(
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.read.step(st, cc), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.slead(ld, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, False{}}, cc, b0, bs, rr, h)
+
+# a held character
+def fz.ohold(
+  +hold: T.Hold,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.read.once.hold(hold, st), b0, bs, rr):
+  match hold:
+    case T.HNone{}:
+      h
+    case T.HChar{c}:
+      fz.step(st, c, b0, bs, rr, h)
+
+# a held character
+def fz.once2(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.read.once2(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.ohold(hd, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, ld}, b0, bs, rr, h)
+
+# the fast step, past a held character
+def fz.flead(
+  +lead: Bool,
+  +lx: T.Lex,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> {fz.p(T.read.fast.lead(lead, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == FzP{SCon{b0, bs},
+  rr} : FzP}:
+  match lead:
+    case True{}:
+      fz.once2(T.read.step(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}}, cc), b0, bs, rr,
+        fz.step(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}}, cc, b0, bs, rr, h))
+    case False{}:
+      %Equal.sym(T.St, T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc), T.read.fast.old(bd, rw,
+        hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc), sr.ff(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc))
+        : {fz.p(_) == FzP{SCon{b0, bs}, rr} : FzP}
+      fz.once2(T.read.on.st(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, False{}}, cc), b0, bs,
+        rr,
+        fz.onst(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, False{}}, cc, b0, bs, rr, h))
+
+# the fast step
+def fz.fhold(
+  +hold: T.Hold,
+  +lead: Bool,
+  +lx: T.Lex,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> {fz.p(T.read.fast.hold(hold, lead, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == FzP{SCon{b0, bs},
+  rr} : FzP}:
+  match hold:
+    case T.HChar{held}:
+      fz.once2(T.read.step(T.read.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, lead}),
+        cc), b0, bs, rr, fz.step(T.read.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at,
+        lead}), cc, b0, bs, rr, fz.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, lead},
+        b0, bs, rr, h)))
+    case T.HNone{}:
+      fz.flead(lead, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, b0, bs, rr, h)
+
+# the fast step
+def fz.fast(
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.read.fast(st, cc), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.fhold(hd, ld, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, b0, bs, rr, h)
+
+# the error and the rows of a mode
+def fz.m(md: T.Mode) -> FzP:
+  match md:
+    case T.MScan{st}:
+      fz.p(st)
+    case T.MCr{st}:
+      fz.p(st)
+    case T.MOpen{_b, _q, _k, bd, rw, _hs, _he, _pt, _bf, _bk, _sk, _un, _lf, _at}:
+      FzP{bd, rw}
+    case T.MEat{_b, _q, _c, _n, bd, rw, _hs, _he, _pt, _k, _sk, _un, _lf, _at}:
+      FzP{bd, rw}
+
+# a mode that holds the error SCon{b0, bs} and the rows rr
+def fz.M(md: T.Mode, b0: Char, bs: String, rr: List<&2, T.Val>) -> Data:
+  {fz.m(md) == FzP{SCon{b0, bs}, rr} : FzP}
+
+# the document with the error SCon{b0, bs} and the rows rr, sealed
+def fz.D(dd: T.Doc, b0: Char, bs: String, rr: List<&2, T.Val>) -> Data:
+  {dd == T.Doc{SCon{b0, bs}, T.rows.seal(rr)} : T.Doc}
+
+# a quote's string kind
+def fz.skind(
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.doc.scan.kind(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), b0, bs, rr):
+  match qk:
+    case T.QBasic{}:
+      h
+    case T.QLit{}:
+      h
+    case T.QMulti{}:
+      h
+    case T.QMultiLit{}:
+      h
+
+# a quote at the first character
+def fz.slead2(
+  +lead: Bool,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.doc.scan.lead(lead, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), b0, bs, rr):
+  match lead:
+    case True{}:
+      h
+    case False{}:
+      fz.skind(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, b0, bs, rr, h)
+
+# a quote with a held character
+def fz.shold(
+  +hold: T.Hold,
+  +lead: Bool,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.doc.scan.hold(hold, lead, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), b0, bs, rr):
+  match hold:
+    case T.HChar{_held}:
+      h
+    case T.HNone{}:
+      fz.slead2(lead, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, b0, bs, rr, h)
+
+# a quote may open a span
+def fz.wlex(
+  +lex: T.Lex,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +hd: T.Hold,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +ld: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.doc.wrap.lex(lex, bd, rw, hs, he, pt, bf, bk, qk, sk, hd, un, lf, at, ld), b0, bs, rr):
+  match lex:
+    case T.LTop{}:
+      h
+    case T.LLine{}:
+      h
+    case T.LKey{}:
+      h
+    case T.LKeyDot{}:
+      h
+    case T.LAfter{}:
+      h
+    case T.LKeyQ{}:
+      h
+    case T.LKeyE{}:
+      h
+    case T.LKeyU{}:
+      h
+    case T.LVal{}:
+      h
+    case T.LQ{}:
+      fz.shold(hd, ld, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, b0, bs, rr, h)
+    case T.LQ2{}:
+      h
+    case T.LStr{}:
+      h
+    case T.LEsc{}:
+      h
+    case T.LUni{}:
+      h
+    case T.LFold{}:
+      h
+    case T.LMq{}:
+      h
+    case T.LMqEnd{}:
+      h
+    case T.LTrim{}:
+      h
+    case T.LTrim2{}:
+      h
+    case T.LBare{}:
+      h
+    case T.LDate{}:
+      h
+    case T.LCom{}:
+      h
+    case T.LHead{}:
+      h
+    case T.LHeadGap{}:
+      h
+    case T.LHeadDot{}:
+      h
+    case T.LHeadQ{}:
+      h
+    case T.LHeadE{}:
+      h
+    case T.LHeadU{}:
+      h
+    case T.LHeadR{}:
+      h
+    case T.LArr{}:
+      h
+    case T.LArrC{}:
+      h
+    case T.LInl{}:
+      h
+    case T.LInlK{}:
+      h
+    case T.LInlC{}:
+      h
+    case T.LSink{}:
+      h
+
+# a quote may open a span
+def fz.wrap(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.M(T.doc.wrap(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.wlex(lx, bd, rw, hs, he, pt, bf, bk, qk, sk, hd, un, lf, at, ld, b0, bs, rr, h)
+
+# a carriage return
+def fz.scr(
+  +cr: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.M(T.doc.scan.cr(cr, st, cc), b0, bs, rr):
+  match cr:
+    case True{}:
+      fz.fast(st, cc, b0, bs, rr, h)
+    case False{}:
+      fz.fast(st, cc, b0, bs, rr, h)
+
+# an apostrophe
+def fz.ssq(
+  +sq: Bool,
+  +cr: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.M(T.doc.scan.sq(sq, cr, st, cc), b0, bs, rr):
+  match sq:
+    case True{}:
+      fz.wrap(T.read.fast(st, cc), b0, bs, rr, fz.fast(st, cc, b0, bs, rr, h))
+    case False{}:
+      fz.scr(cr, st, cc, b0, bs, rr, h)
+
+# a quotation mark
+def fz.sdq(
+  +dq: Bool,
+  +sq: Bool,
+  +cr: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.M(T.doc.scan.q(dq, sq, cr, st, cc), b0, bs, rr):
+  match dq:
+    case True{}:
+      fz.wrap(T.read.fast(st, cc), b0, bs, rr, fz.fast(st, cc, b0, bs, rr, h))
+    case False{}:
+      fz.ssq(sq, cr, st, cc, b0, bs, rr, h)
+
+# a character outside a span
+def fz.scan(
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.M(T.doc.scan(st, cc), b0, bs, rr):
+  fz.sdq(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), st, cc, b0, bs, rr, h)
+
+# the character after a carriage return
+def fz.cr(
+  +lf: Bool,
+  +st: T.St,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.M(T.doc.cr(lf, st, cc), b0, bs, rr):
+  match lf:
+    case True{}:
+      fz.fast(st, cc, b0, bs, rr, h)
+    case False{}:
+      fz.err(st, "carriage return without line feed", b0, bs, rr, h)
+
+# the old step after an opening quote
+def fz.lq(
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> {fz.p(T.read.fast.lex(T.LQ{}, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == FzP{SCon{b0, bs}, rr} : FzP}:
+  fz.once2(T.read.on.st(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}, cc), b0, bs,
+    rr, fz.onst(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}, cc, b0, bs, rr, h))
+
+# a span starts on an empty buffer
+def fz.obuf(
+  +basic: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tail: String,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.doc.open.buf(basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail), b0, bs, rr):
+  match bf:
+    case []:
+      h
+    case hh <> tt:
+      fz.lq(qk, bd, rw, hs, he, pt, hh <> tt, bk, sk, un, lf, at, cc, b0, bs, rr, h)
+
+# a control after an opening quote
+def fz.ook(
+  +badc: Bool,
+  +basic: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tail: String,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.doc.open.ok(badc, basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail), b0, bs, rr):
+  match badc:
+    case True{}:
+      fz.lq(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, b0, bs, rr, h)
+    case False{}:
+      fz.obuf(basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail, b0, bs, rr, h)
+
+# a backslash after an opening quote
+def fz.obs(
+  +bsl: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tail: String,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.doc.open.bs(bsl, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail), b0, bs, rr):
+  match bsl:
+    case True{}:
+      fz.lq(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, b0, bs, rr, h)
+    case False{}:
+      fz.ook(T.str.bad(Char.to_u32(cc), False{}), True{}, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc,
+        tail, b0, bs, rr, h)
+
+# the character after an opening quote
+def fz.ob(
+  +basic: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tail: String,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.doc.open.b(basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail), b0, bs, rr):
+  match basic:
+    case False{}:
+      fz.ook(T.str.bad(Char.to_u32(cc), False{}), False{}, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc,
+        tail, b0, bs, rr, h)
+    case True{}:
+      fz.obs(Char.is_eq(cc, '\\'), qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail, b0, bs, rr, h)
+
+# a second quote
+def fz.oq(
+  +same: Bool,
+  +basic: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tail: String,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.doc.open.q(same, basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail), b0, bs, rr):
+  match same:
+    case True{}:
+      fz.lq(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, b0, bs, rr, h)
+    case False{}:
+      fz.ob(basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail, b0, bs, rr, h)
+
+# the character after an opening quote
+def fz.open(
+  +basic: Bool,
+  +qq: Char,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tail: String,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.doc.open(basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail), b0, bs, rr):
+  fz.oq(Char.is_eq(cc, qq), basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail, b0, bs, rr, h)
+
+# a span's character: copied at a control, kept otherwise
+def fz.ectrl(
+  +badc: Bool,
+  +basic: Bool,
+  +qq: Char,
+  +cc: Char,
+  +cut: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.eat.ctrl(badc, basic, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), b0, bs, rr):
+  match badc:
+    case True{}:
+      fz.x.str(T.St{bd, rw, hs, he, pt, T.span.rev(cut, nn, U32.is_zero(nn), []), T.LStr{}, T.LStr{}, qk, sk,
+        T.HNone{}, un, lf, at, False{}}, cc, b0, bs, rr, h)
+    case False{}:
+      h
+
+# a backslash in a span
+def fz.ebs(
+  +bsl: Bool,
+  +basic: Bool,
+  +qq: Char,
+  +cc: Char,
+  +cut: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.eat.bs(bsl, basic, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), b0, bs, rr):
+  match bsl:
+    case True{}:
+      fz.x.str(T.St{bd, rw, hs, he, pt, T.span.rev(cut, nn, U32.is_zero(nn), []), T.LStr{}, T.LStr{}, qk, sk,
+        T.HNone{}, un, lf, at, False{}}, cc, b0, bs, rr, h)
+    case False{}:
+      fz.ectrl(T.str.bad(Char.to_u32(cc), False{}), basic, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at,
+        b0, bs, rr, h)
+
+# a span's character
+def fz.ebasic(
+  +basic: Bool,
+  +qq: Char,
+  +cc: Char,
+  +cut: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.eat.basic(basic, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), b0, bs, rr):
+  match basic:
+    case False{}:
+      fz.ectrl(T.str.bad(Char.to_u32(cc), False{}), False{}, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at,
+        b0, bs, rr, h)
+    case True{}:
+      fz.ebs(Char.is_eq(cc, '\\'), True{}, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, b0, bs, rr, h)
+
+# a span closed
+def fz.eq(
+  +quote: Bool,
+  +basic: Bool,
+  +qq: Char,
+  +cc: Char,
+  +cut: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.eat.feed.q(quote, basic, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), b0, bs, rr):
+  match quote:
+    case True{}:
+      fz.take(T.St{bd, rw, hs, he, pt, [], T.LStr{}, T.LStr{}, qk, sk, T.HNone{}, un, lf, at, False{}}, T.VSpan{cut,
+        nn},
+        b0, bs, rr, h)
+    case False{}:
+      fz.ebasic(basic, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, b0, bs, rr, h)
+
+# a span's next character
+def fz.eat(
+  +basic: Bool,
+  +qq: Char,
+  +cut: String,
+  +nn: U32,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.M(T.eat.feed(basic, qq, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, cc), b0, bs, rr):
+  fz.eq(Char.is_eq(cc, qq), basic, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, b0, bs, rr, h)
+
+# a token still open at the end
+def fz.flex(
+  +lx: T.Lex,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.read.fin.lex(lx, st), b0, bs, rr):
+  match lx:
+    case T.LTop{}:
+      h
+    case T.LLine{}:
+      h
+    case T.LKey{}:
+      h
+    case T.LKeyDot{}:
+      h
+    case T.LAfter{}:
+      h
+    case T.LKeyQ{}:
+      h
+    case T.LKeyE{}:
+      h
+    case T.LKeyU{}:
+      h
+    case T.LVal{}:
+      h
+    case T.LQ{}:
+      h
+    case T.LQ2{}:
+      fz.take(st, T.VStr{""}, b0, bs, rr, h)
+    case T.LStr{}:
+      h
+    case T.LEsc{}:
+      h
+    case T.LUni{}:
+      h
+    case T.LFold{}:
+      h
+    case T.LMq{}:
+      h
+    case T.LMqEnd{}:
+      fz.sfin(st, b0, bs, rr, h)
+    case T.LTrim{}:
+      h
+    case T.LTrim2{}:
+      h
+    case T.LBare{}:
+      fz.finish(st, ' ', False{}, b0, bs, rr, h)
+    case T.LDate{}:
+      fz.finish(st, ' ', False{}, b0, bs, rr, h)
+    case T.LCom{}:
+      h
+    case T.LHead{}:
+      h
+    case T.LHeadGap{}:
+      h
+    case T.LHeadDot{}:
+      h
+    case T.LHeadQ{}:
+      h
+    case T.LHeadE{}:
+      h
+    case T.LHeadU{}:
+      h
+    case T.LHeadR{}:
+      h
+    case T.LArr{}:
+      h
+    case T.LArrC{}:
+      h
+    case T.LInl{}:
+      h
+    case T.LInlK{}:
+      h
+    case T.LInlC{}:
+      h
+    case T.LSink{}:
+      h
+
+# a token still open at the end
+def fz.fclose(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.K(T.read.fin.close(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, +lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.flex(lx, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, b0, bs, rr, h)
+
+# the document at the end
+def fz.fstack(
+  +sk: List<&2, T.Ctx>,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
+) -> fz.D(T.read.fin.stack(sk, bd, rw), b0, bs, rr):
+  match sk:
+    case []:
+      fz.doc(bd, rw, b0, bs, rr, h)
+    case _c <> _r:
+      fz.doce(bd, rw, "unclosed", b0, bs, rr, h)
+
+# the document at the end
+def fz.fdoc(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.D(T.read.fin.doc(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, sk, _hd, _un, _lf, _at, _ld}:
+      fz.fstack(sk, bd, rw, b0, bs, rr, h)
+
+# an unfinished document
+def fz.func(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.D(T.read.fin.unclosed(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
+      fz.doce(bd, rw, "unclosed", b0, bs, rr, h)
+
+# a comment at the end
+def fz.fcom(
+  +ok: Bool,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.D(T.read.fin.com(ok, st), b0, bs, rr):
+  match ok:
+    case True{}:
+      fz.fdoc(st, b0, bs, rr, h)
+    case False{}:
+      fz.func(st, b0, bs, rr, h)
+
+# the states that may end a document
+def fz.fok(
+  +lx: T.Lex,
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.D(T.read.fin.ok(lx, st), b0, bs, rr):
+  match lx:
+    case T.LTop{}:
+      fz.fdoc(st, b0, bs, rr, h)
+    case T.LLine{}:
+      fz.fdoc(st, b0, bs, rr, h)
+    case T.LKey{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LKeyDot{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LAfter{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LKeyQ{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LKeyE{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LKeyU{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LVal{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LQ{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LQ2{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LStr{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LEsc{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LUni{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LFold{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LMq{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LMqEnd{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LTrim{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LTrim2{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LBare{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LDate{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LCom{}:
+      match st:
+        case T.St{bd, rw, hs, he, pt, bf, lx, +bk, qk, sk, hd, un, lf, at, ld}:
+          fz.fcom(T.read.fin.end(bk), T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, b0, bs, rr,
+            h)
+    case T.LHead{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LHeadGap{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LHeadDot{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LHeadQ{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LHeadE{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LHeadU{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LHeadR{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LArr{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LArrC{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LInl{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LInlK{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LInlC{}:
+      fz.func(st, b0, bs, rr, h)
+    case T.LSink{}:
+      fz.fdoc(st, b0, bs, rr, h)
+
+# the document at the end
+def fz.fin2(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.D(T.read.fin2(st), b0, bs, rr):
+  match st:
+    case T.St{bd, rw, hs, he, pt, bf, +lx, bk, qk, sk, hd, un, lf, at, ld}:
+      fz.fok(lx, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}, b0, bs, rr, h)
+
+# the document at the end
+def fz.fin(
+  +st: T.St,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.K(st, b0, bs, rr)
+) -> fz.D(T.read.fin(st), b0, bs, rr):
+  fz.fin2(T.read.fin.close(st), b0, bs, rr, fz.fclose(st, b0, bs, rr, h))
+
+# by induction on the text, in every mode: each character keeps the error
+# and the rows, and the end gives the document of them
+def fz.read(
+  tt: String,
+  +md: T.Mode,
+  +b0: Char,
+  +bs: String,
+  +rr: List<&2, T.Val>,
+  h: fz.M(md, b0, bs, rr)
+) -> fz.D(T.doc.read(tt, md), b0, bs, rr):
+  match tt md:
+    case SNil{} T.MScan{st}:
+      fz.fin(T.read.once2(st), b0, bs, rr, fz.once2(st, b0, bs, rr, h))
+    case SNil{} T.MCr{st}:
+      fz.fin(T.read.once2(T.st.err(st, "carriage return without line feed")), b0, bs, rr, fz.once2(T.st.err(st,
+        "carriage return without line feed"), b0, bs, rr, fz.err(st, "carriage return without line feed", b0, bs, rr,
+        h)))
+    case SNil{} T.MOpen{_b, _q, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}:
+      fz.fin(T.read.once2(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}), b0, bs, rr,
+        fz.once2(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}, b0, bs, rr, h))
+    case SNil{} T.MEat{_b, _q, _cut, _n, bd, rw, _hs, _he, _pt, _qk, _sk, _un, _lf, _at}:
+      fz.doce(bd, rw, "unclosed", b0, bs, rr, h)
+    case SCon{+hh, t2} T.MScan{st}:
+      fz.read(t2, T.doc.scan(st, hh), b0, bs, rr, fz.scan(st, hh, b0, bs, rr, h))
+    case SCon{+hh, t2} T.MCr{st}:
+      fz.read(t2, T.doc.cr(Char.is_eq(hh, '\n'), st, hh), b0, bs, rr, fz.cr(Char.is_eq(hh, '\n'), st, hh, b0, bs, rr,
+        h))
+    case SCon{+hh, +t2} T.MOpen{basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}:
+      fz.read(t2, T.doc.open(basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, hh, t2), b0, bs, rr,
+        fz.open(basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, hh, t2, b0, bs, rr, h))
+    case SCon{+hh, t2} T.MEat{basic, qq, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at}:
+      fz.read(t2, T.eat.feed(basic, qq, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh), b0, bs, rr,
+        fz.eat(basic, qq, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, b0, bs, rr, h))
+
+def Laws.error_stays(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead, e, t):
+  match bad:
+    case SNil{}:
+      Eq.bit.absurd2(&2, {T.doc.read(t, T.MScan{T.St{SNil{}, rows, heads, here, parts, buf, lex, back, qkind, stack,
+        hold,
+        uni, left, arrtab, lead}}) == T.Doc{SNil{}, T.rows.seal(rows)} : T.Doc}, e)
+    case SCon{+b0, +bs}:
+      fz.read(t, T.MScan{T.St{SCon{b0, bs}, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
+        arrtab, lead}}, b0, bs, rows, {==})
+
+# WP-A: blank space, comments and newlines between expressions. A state at
+# rest (ap.s: no error, nothing buffered or held) in a state that passes blank
+# space over stays as it is for each space or tab (ap.ws); a # there enters a
+# comment, whose characters each leave it as it is (ap.cm), since a comment
+# character is a control only when it is a tab (ap.cm.c9, one enumeration of
+# the controls); a newline, LF or CRLF, ends the comment and the line and
+# leaves the scanner at the start of the next line (ap.eol); and the end of
+# the text gives the document of the rows (ap.fin).
+
+# a scanner at rest in the lex state lx: no error, nothing buffered or held,
+# past the first character
+def ap.s(
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> T.St:
+  T.St{"", rw, hs, he, pt, [], lx, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}
+
+# the lex states that pass a space or a tab over
+def ap.wsl(+lx: T.Lex) -> Bool:
+  match lx:
+    case T.LTop{}:
+      True{}
+    case T.LLine{}:
+      True{}
+    case T.LKey{}:
+      False{}
+    case T.LKeyDot{}:
+      False{}
+    case T.LAfter{}:
+      True{}
+    case T.LKeyQ{}:
+      False{}
+    case T.LKeyE{}:
+      False{}
+    case T.LKeyU{}:
+      False{}
+    case T.LVal{}:
+      True{}
+    case T.LQ{}:
+      False{}
+    case T.LQ2{}:
+      False{}
+    case T.LStr{}:
+      False{}
+    case T.LEsc{}:
+      False{}
+    case T.LUni{}:
+      False{}
+    case T.LFold{}:
+      False{}
+    case T.LMq{}:
+      False{}
+    case T.LMqEnd{}:
+      False{}
+    case T.LTrim{}:
+      False{}
+    case T.LTrim2{}:
+      False{}
+    case T.LBare{}:
+      False{}
+    case T.LDate{}:
+      False{}
+    case T.LCom{}:
+      False{}
+    case T.LHead{}:
+      False{}
+    case T.LHeadGap{}:
+      False{}
+    case T.LHeadDot{}:
+      False{}
+    case T.LHeadQ{}:
+      False{}
+    case T.LHeadE{}:
+      False{}
+    case T.LHeadU{}:
+      False{}
+    case T.LHeadR{}:
+      False{}
+    case T.LArr{}:
+      True{}
+    case T.LArrC{}:
+      True{}
+    case T.LInl{}:
+      True{}
+    case T.LInlK{}:
+      True{}
+    case T.LInlC{}:
+      True{}
+    case T.LSink{}:
+      False{}
+
+# the lex states a comment may follow blank space in: the start of a line,
+# the rest of a line after an expression, and an array's blank space
+def ap.coml(+lx: T.Lex) -> Bool:
+  match lx:
+    case T.LTop{}:
+      True{}
+    case T.LLine{}:
+      True{}
+    case T.LKey{}:
+      False{}
+    case T.LKeyDot{}:
+      False{}
+    case T.LAfter{}:
+      False{}
+    case T.LKeyQ{}:
+      False{}
+    case T.LKeyE{}:
+      False{}
+    case T.LKeyU{}:
+      False{}
+    case T.LVal{}:
+      False{}
+    case T.LQ{}:
+      False{}
+    case T.LQ2{}:
+      False{}
+    case T.LStr{}:
+      False{}
+    case T.LEsc{}:
+      False{}
+    case T.LUni{}:
+      False{}
+    case T.LFold{}:
+      False{}
+    case T.LMq{}:
+      False{}
+    case T.LMqEnd{}:
+      False{}
+    case T.LTrim{}:
+      False{}
+    case T.LTrim2{}:
+      False{}
+    case T.LBare{}:
+      False{}
+    case T.LDate{}:
+      False{}
+    case T.LCom{}:
+      False{}
+    case T.LHead{}:
+      False{}
+    case T.LHeadGap{}:
+      False{}
+    case T.LHeadDot{}:
+      False{}
+    case T.LHeadQ{}:
+      False{}
+    case T.LHeadE{}:
+      False{}
+    case T.LHeadU{}:
+      False{}
+    case T.LHeadR{}:
+      False{}
+    case T.LArr{}:
+      True{}
+    case T.LArrC{}:
+      True{}
+    case T.LInl{}:
+      False{}
+    case T.LInlK{}:
+      False{}
+    case T.LInlC{}:
+      False{}
+    case T.LSink{}:
+      False{}
+
+# the lex state a newline leaves: the start of the next line after a line,
+# and an array's own state inside one
+def ap.nlx(+lx: T.Lex) -> T.Lex:
+  match lx:
+    case T.LLine{}:
+      T.LTop{}
+    case other:
+      other
+
+# a character wschar takes is a space or a tab, by its code point
+def ap.wc.go(
+  +e32: Bool,
+  -QQ: Char -> Type,
+  +uu: U32,
+  +h32: {U32.is_eq(uu, 32) == e32 : Bool},
+  +hw: {Bool.or(e32, U32.is_eq(uu, 9)) == True{} : Bool},
+  sp: QQ(' '),
+  tab: QQ('\t')
+) -> QQ(Chr{uu}):
+  match e32:
+    case True{}:
+      %Equal.sym(U32, uu, 32, s1.isk(uu, 32, h32)) : QQ(Chr{_})
+      sp
+    case False{}:
+      %Equal.sym(U32, uu, 9, s1.isk(uu, 9, hw)) : QQ(Chr{_})
+      tab
+
+# a character wschar takes is a space or a tab: a claim about both holds of it
+def ap.wc(
+  -QQ: Char -> Type,
+  +cc: Char,
+  +hw: {Laws.abnf.wschar(cc) == True{} : Bool},
+  sp: QQ(' '),
+  tab: QQ('\t')
+) -> QQ(cc):
+  match cc:
+    case Chr{+uu}:
+      ap.wc.go(U32.is_eq(uu, 32), QQ, uu, {==}, hw, sp, tab)
+
+# a space leaves a state that passes it over as it is
+def ap.wsp(
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hl: {ap.wsl(lx) == True{} : Bool}
+) -> {T.doc.scan(ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab), ' ') == T.MScan{ap.s(lx, bk, rw, hs, he, pt, qk,
+  sk, un, lf, ab)} : T.Mode}:
+  match lx:
+    case T.LTop{}:
+      {==}
+    case T.LLine{}:
+      {==}
+    case T.LKey{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKey{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LKey{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LKeyDot{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKeyDot{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LKeyDot{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LAfter{}:
+      {==}
+    case T.LKeyQ{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKeyQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LKeyQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LKeyE{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKeyE{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LKeyE{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LKeyU{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKeyU{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LKeyU{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LVal{}:
+      {==}
+    case T.LQ{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab), ' ') == T.MScan{ap.s(T.LQ{},
+        bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LQ2{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LQ2{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LQ2{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LStr{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LStr{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LStr{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LEsc{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LEsc{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LEsc{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LUni{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LUni{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LUni{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LFold{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LFold{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LFold{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LMq{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LMq{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LMq{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LMqEnd{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LMqEnd{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LMqEnd{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LTrim{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LTrim{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LTrim{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LTrim2{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LTrim2{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LTrim2{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LBare{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LBare{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LBare{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LDate{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LDate{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LDate{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LCom{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHead{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHead{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LHead{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHeadGap{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadGap{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LHeadGap{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHeadDot{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadDot{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LHeadDot{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHeadQ{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LHeadQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHeadE{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadE{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LHeadE{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHeadU{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadU{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LHeadU{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHeadR{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadR{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LHeadR{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LArr{}:
+      {==}
+    case T.LArrC{}:
+      {==}
+    case T.LInl{}:
+      {==}
+    case T.LInlK{}:
+      {==}
+    case T.LInlC{}:
+      {==}
+    case T.LSink{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LSink{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        ' ') == T.MScan{ap.s(T.LSink{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+
+# a tab leaves a state that passes it over as it is
+def ap.wtab(
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hl: {ap.wsl(lx) == True{} : Bool}
+) -> {T.doc.scan(ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab), '\t') == T.MScan{ap.s(lx, bk, rw, hs, he, pt, qk,
+  sk, un, lf, ab)} : T.Mode}:
+  match lx:
+    case T.LTop{}:
+      {==}
+    case T.LLine{}:
+      {==}
+    case T.LKey{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKey{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LKey{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LKeyDot{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKeyDot{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LKeyDot{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LAfter{}:
+      {==}
+    case T.LKeyQ{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKeyQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LKeyQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LKeyE{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKeyE{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LKeyE{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LKeyU{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKeyU{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LKeyU{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LVal{}:
+      {==}
+    case T.LQ{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LQ2{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LQ2{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LQ2{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LStr{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LStr{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LStr{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LEsc{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LEsc{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LEsc{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LUni{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LUni{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LUni{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LFold{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LFold{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LFold{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LMq{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LMq{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LMq{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LMqEnd{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LMqEnd{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LMqEnd{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LTrim{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LTrim{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LTrim{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LTrim2{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LTrim2{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LTrim2{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LBare{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LBare{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LBare{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LDate{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LDate{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LDate{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LCom{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHead{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHead{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LHead{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHeadGap{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadGap{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LHeadGap{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHeadDot{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadDot{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LHeadDot{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHeadQ{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LHeadQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHeadE{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadE{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LHeadE{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHeadU{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadU{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LHeadU{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LHeadR{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadR{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LHeadR{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+    case T.LArr{}:
+      {==}
+    case T.LArrC{}:
+      {==}
+    case T.LInl{}:
+      {==}
+    case T.LInlK{}:
+      {==}
+    case T.LInlC{}:
+      {==}
+    case T.LSink{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LSink{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '\t') == T.MScan{ap.s(T.LSink{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode},
+        hl)
+
+# a space or a tab leaves a state that passes it over as it is
+def ap.wsc(
+  +lx: T.Lex,
+  +cc: Char,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hl: {ap.wsl(lx) == True{} : Bool},
+  +hw: {Laws.abnf.wschar(cc) == True{} : Bool}
+) -> {T.doc.scan(ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab), cc) == T.MScan{ap.s(lx, bk, rw, hs, he, pt, qk, sk,
+  un, lf, ab)} : T.Mode}:
+  ap.wc(c2 => {T.doc.scan(ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab), c2) == T.MScan{ap.s(lx, bk, rw, hs, he,
+    pt, qk, sk, un, lf, ab)} : T.Mode}, cc, hw,
+    ap.wsp(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab, hl), ap.wtab(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab, hl))
+
+# blank space leaves a state that passes it over as it is
+def ap.ws(
+  +ww: String,
+  +rest: String,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hl: {ap.wsl(lx) == True{} : Bool},
+  +hw: {Laws.abnf.ws(ww) == True{} : Bool}
+) -> {T.doc.read(String.append(ww, rest), T.MScan{ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab)}) == T.doc.read(rest,
+  T.MScan{ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab)}) : T.Doc}:
+  match ww:
+    case SNil{}:
+      {==}
+    case SCon{+hh, tt}:
+      Equal.trans(T.Doc, T.doc.read(String.append(tt, rest), T.doc.scan(ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf,
+        ab), hh)),
+        T.doc.read(String.append(tt, rest), T.MScan{ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab)}),
+          T.doc.read(rest, T.MScan{ap.s(lx,
+        bk, rw, hs, he, pt, qk, sk, un, lf, ab)}), Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, rest),
+          md), T.doc.scan(ap.s(lx,
+        bk, rw, hs, he, pt, qk, sk, un, lf, ab), hh), T.MScan{ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab)},
+          ap.wsc(lx, hh, bk, rw, hs, he, pt, qk, sk, un, lf, ab, hl,
+        Eq.and.left(Laws.abnf.wschar(hh), Laws.abnf.ws(tt), hw))), ap.ws(tt, rest, lx, bk, rw, hs, he, pt, qk, sk, un,
+          lf, ab, hl,
+        Eq.and.right(Laws.abnf.wschar(hh), Laws.abnf.ws(tt), hw)))
+
+# a comment character is a control only when it is a tab: non-eol leaves out
+# every control but tab and U+007F, and the prose leaves out U+007F
+def ap.cm.tab(
+  +uu: U32,
+  +h_c: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == True{} : Bool},
+  +hn: {Bool.and(Laws.abnf.non_eol(Chr{uu}), Laws.prose.comment_char(Chr{uu})) == True{} : Bool}
+) -> {U32.is_eq(uu, 9) == True{} : Bool}:
+  Eq.ctl.all(kk => {Bool.and(Laws.abnf.non_eol(Chr{kk}), Laws.prose.comment_char(Chr{kk})) == True{} : Bool}
+    -> {U32.is_eq(kk, 9) == True{} : Bool}, uu, h_c,
+    h0 => Eq.bit.absurd(&2, {U32.is_eq(0, 9) == True{} : Bool}, h0),
+    h1 => Eq.bit.absurd(&2, {U32.is_eq(1, 9) == True{} : Bool}, h1),
+    h2 => Eq.bit.absurd(&2, {U32.is_eq(2, 9) == True{} : Bool}, h2),
+    h3 => Eq.bit.absurd(&2, {U32.is_eq(3, 9) == True{} : Bool}, h3),
+    h4 => Eq.bit.absurd(&2, {U32.is_eq(4, 9) == True{} : Bool}, h4),
+    h5 => Eq.bit.absurd(&2, {U32.is_eq(5, 9) == True{} : Bool}, h5),
+    h6 => Eq.bit.absurd(&2, {U32.is_eq(6, 9) == True{} : Bool}, h6),
+    h7 => Eq.bit.absurd(&2, {U32.is_eq(7, 9) == True{} : Bool}, h7),
+    h8 => Eq.bit.absurd(&2, {U32.is_eq(8, 9) == True{} : Bool}, h8),
+    _h9 => {==},
+    h10 => Eq.bit.absurd(&2, {U32.is_eq(10, 9) == True{} : Bool}, h10),
+    h11 => Eq.bit.absurd(&2, {U32.is_eq(11, 9) == True{} : Bool}, h11),
+    h12 => Eq.bit.absurd(&2, {U32.is_eq(12, 9) == True{} : Bool}, h12),
+    h13 => Eq.bit.absurd(&2, {U32.is_eq(13, 9) == True{} : Bool}, h13),
+    h14 => Eq.bit.absurd(&2, {U32.is_eq(14, 9) == True{} : Bool}, h14),
+    h15 => Eq.bit.absurd(&2, {U32.is_eq(15, 9) == True{} : Bool}, h15),
+    h16 => Eq.bit.absurd(&2, {U32.is_eq(16, 9) == True{} : Bool}, h16),
+    h17 => Eq.bit.absurd(&2, {U32.is_eq(17, 9) == True{} : Bool}, h17),
+    h18 => Eq.bit.absurd(&2, {U32.is_eq(18, 9) == True{} : Bool}, h18),
+    h19 => Eq.bit.absurd(&2, {U32.is_eq(19, 9) == True{} : Bool}, h19),
+    h20 => Eq.bit.absurd(&2, {U32.is_eq(20, 9) == True{} : Bool}, h20),
+    h21 => Eq.bit.absurd(&2, {U32.is_eq(21, 9) == True{} : Bool}, h21),
+    h22 => Eq.bit.absurd(&2, {U32.is_eq(22, 9) == True{} : Bool}, h22),
+    h23 => Eq.bit.absurd(&2, {U32.is_eq(23, 9) == True{} : Bool}, h23),
+    h24 => Eq.bit.absurd(&2, {U32.is_eq(24, 9) == True{} : Bool}, h24),
+    h25 => Eq.bit.absurd(&2, {U32.is_eq(25, 9) == True{} : Bool}, h25),
+    h26 => Eq.bit.absurd(&2, {U32.is_eq(26, 9) == True{} : Bool}, h26),
+    h27 => Eq.bit.absurd(&2, {U32.is_eq(27, 9) == True{} : Bool}, h27),
+    h28 => Eq.bit.absurd(&2, {U32.is_eq(28, 9) == True{} : Bool}, h28),
+    h29 => Eq.bit.absurd(&2, {U32.is_eq(29, 9) == True{} : Bool}, h29),
+    h30 => Eq.bit.absurd(&2, {U32.is_eq(30, 9) == True{} : Bool}, h30),
+    h31 => Eq.bit.absurd(&2, {U32.is_eq(31, 9) == True{} : Bool}, h31),
+    h127 => Eq.bit.absurd(&2, {U32.is_eq(127, 9) == True{} : Bool}, h127))(hn)
+
+# so a comment character is a control exactly when it is a tab
+def ap.cm.c9(
+  +uu: U32,
+  +hn: {Bool.and(Laws.abnf.non_eol(Chr{uu}), Laws.prose.comment_char(Chr{uu})) == True{} : Bool}
+) -> s1.C9(uu):
+  s1.c9.go(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), U32.is_eq(uu, 9), uu, {==}, {==},
+    ec => ap.cm.tab(uu, ec, hn))
+
+# the first halves of two ands
+def ap.and2(
+  +aa: Bool,
+  +bb: Bool,
+  +cc: Bool,
+  +dd: Bool,
+  +ha: {Bool.and(aa, bb) == True{} : Bool},
+  +hc: {Bool.and(cc, dd) == True{} : Bool}
+) -> {Bool.and(aa, cc) == True{} : Bool}:
+  match aa cc:
+    case True{} True{}:
+      {==}
+    case False{} _c:
+      Eq.bit.absurd(&2, {Bool.and(False{}, _c) == True{} : Bool}, ha)
+    case True{} False{}:
+      Eq.bit.absurd(&2, {Bool.and(True{}, False{}) == True{} : Bool}, hc)
+
+# a comment character's fast step leaves the comment as it is: a tab goes to
+# the full step, which passes it over, and anything else stays in LCom
+def ap.cm.f9(
+  +t9: Bool,
+  +uu: U32,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +e9: {U32.is_eq(uu, 9) == t9 : Bool}
+) -> {T.read.fast.com(t9, "", rw, hs, he, pt, [], bk, qk, sk, un, lf, ab, Chr{uu}) == ap.s(T.LCom{}, bk, rw, hs, he,
+  pt, qk, sk, un, lf, ab)
+  : T.St}:
+  match t9:
+    case True{}:
+      %Equal.sym(U32, uu, 9, s1.is9(uu, e9)) : {T.read.fast.com(True{}, "", rw, hs, he, pt, [], bk, qk, sk, un, lf, ab,
+        Chr{_}) == ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab) : T.St}
+      {==}
+    case False{}:
+      {==}
+
+# a comment character's fast step leaves the comment as it is
+def ap.cm.fast(
+  +uu: U32,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hn: {Bool.and(Laws.abnf.non_eol(Chr{uu}), Laws.prose.comment_char(Chr{uu})) == True{} : Bool}
+) -> {T.read.fast(ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab), Chr{uu}) == ap.s(T.LCom{}, bk, rw, hs, he,
+  pt, qk, sk, un, lf, ab) : T.St}:
+  %Equal.sym(Bool, Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), U32.is_eq(uu, 9), ap.cm.c9(uu, hn))
+    : {T.read.fast.com(_, "", rw, hs, he, pt, [], bk, qk, sk, un, lf, ab, Chr{uu}) == ap.s(T.LCom{}, bk, rw, hs, he,
+      pt, qk, sk, un, lf, ab)
+    : T.St}
+  ap.cm.f9(U32.is_eq(uu, 9), uu, bk, rw, hs, he, pt, qk, sk, un, lf, ab, {==})
+
+# a comment character's fast step leaves the comment as it is
+def ap.cmf(
+  +uu: U32,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> Data:
+  {T.read.fast(ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab), Chr{uu}) == ap.s(T.LCom{}, bk, rw, hs, he, pt,
+    qk, sk, un, lf, ab) : T.St}
+
+# a character that is a control exactly when a tab is no carriage return
+def ap.nocr(
+  +uu: U32,
+  h9: s1.C9(uu),
+  +e13: {U32.is_eq(uu, 13) == True{} : Bool}
+) -> Empty:
+  Eq.bit.clash2(Equal.trans(Bool, True{}, U32.is_eq(uu, 9), False{}, Equal.trans(Bool, True{}, Bool.or(U32.is_lt(uu,
+    32), U32.is_eq(uu, 127)), U32.is_eq(uu, 9), Equal.cong(U32, Bool, nn => Bool.or(U32.is_lt(nn, 32), U32.is_eq(nn,
+    127)), 13, uu, Equal.sym(U32, uu, 13, s1.isk(uu, 13, e13))), h9), Equal.cong(U32, Bool, nn => U32.is_eq(nn, 9),
+    uu, 13, s1.isk(uu, 13, e13))))
+
+# a comment character leaves the comment as it is, whichever way doc.scan
+# takes it
+def ap.cm.scan(
+  +dq: Bool,
+  +sq: Bool,
+  +cr: Bool,
+  +uu: U32,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +ecr: {U32.is_eq(uu, 13) == cr : Bool},
+  h9: s1.C9(uu),
+  +ef: ap.cmf(uu, bk, rw, hs, he, pt, qk, sk, un, lf, ab)
+) -> {T.doc.scan.q(dq, sq, cr, ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+  Chr{uu}) == T.MScan{ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)}
+  : T.Mode}:
+  match dq:
+    case True{}:
+      %Equal.sym(T.St, T.read.fast(ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab), Chr{uu}), ap.s(T.LCom{},
+        bk, rw, hs, he, pt, qk, sk, un, lf, ab), ef)
+        : {T.doc.wrap(_) == T.MScan{ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode}
+      {==}
+    case False{}:
+      match sq:
+        case True{}:
+          %Equal.sym(T.St, T.read.fast(ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab), Chr{uu}),
+            ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab), ef)
+            : {T.doc.wrap(_) == T.MScan{ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode}
+          {==}
+        case False{}:
+          match cr:
+            case True{}:
+              Eq.bit.gone(&2, {T.doc.scan.cr(True{}, ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+                Chr{uu}) == T.MScan{ap.s(T.LCom{},
+                bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode}, ap.nocr(uu, h9, ecr))
+            case False{}:
+              %Equal.sym(T.St, T.read.fast(ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab), Chr{uu}),
+                ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+                ef) : {T.MScan{_} == T.MScan{ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)} : T.Mode}
+              {==}
+
+# a comment character leaves the comment as it is
+def ap.cmc(
+  +cc: Char,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hn: {Bool.and(Laws.abnf.non_eol(cc), Laws.prose.comment_char(cc)) == True{} : Bool}
+) -> {T.doc.scan(ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab), cc) == T.MScan{ap.s(T.LCom{}, bk, rw, hs, he,
+  pt, qk, sk, un, lf, ab)} : T.Mode}:
+  match cc:
+    case Chr{+uu}:
+      ap.cm.scan(Char.is_eq(Chr{uu}, '"'), Char.is_eq(Chr{uu}, '\''), U32.is_eq(uu, 13), uu, bk, rw, hs, he, pt, qk,
+        sk, un, lf, ab, {==},
+        ap.cm.c9(uu, hn), ap.cm.fast(uu, bk, rw, hs, he, pt, qk, sk, un, lf, ab, hn))
+
+# a comment's characters leave the comment as it is
+def ap.cm(
+  +body: String,
+  +rest: String,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hc: {Laws.abnf.comment(body) == True{} : Bool},
+  +hp: {Laws.prose.comment_chars(body) == True{} : Bool}
+) -> {T.doc.read(String.append(body, rest), T.MScan{ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf,
+  ab)}) == T.doc.read(rest,
+  T.MScan{ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)}) : T.Doc}:
+  match body:
+    case SNil{}:
+      {==}
+    case SCon{+hh, tt}:
+      Equal.trans(T.Doc, T.doc.read(String.append(tt, rest), T.doc.scan(ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un,
+        lf, ab), hh)),
+        T.doc.read(String.append(tt, rest), T.MScan{ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)}),
+          T.doc.read(rest,
+        T.MScan{ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab)}), Equal.cong(T.Mode, T.Doc,
+          md => T.doc.read(String.append(tt, rest), md),
+        T.doc.scan(ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab), hh), T.MScan{ap.s(T.LCom{}, bk, rw, hs, he,
+          pt, qk, sk, un, lf, ab)}, ap.cmc(hh, bk, rw, hs, he, pt, qk, sk, un, lf, ab,
+        ap.and2(Laws.abnf.non_eol(hh), Laws.abnf.comment(tt), Laws.prose.comment_char(hh), Laws.prose.comment_chars(tt),
+        hc, hp))), ap.cm(tt, rest, bk, rw, hs, he, pt, qk, sk, un, lf, ab, Eq.and.right(Laws.abnf.non_eol(hh),
+          Laws.abnf.comment(tt), hc),
+        Eq.and.right(Laws.prose.comment_char(hh), Laws.prose.comment_chars(tt), hp)))
+
+# a # enters a comment that returns to the state it interrupted
+def ap.hash(
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hl: {ap.coml(lx) == True{} : Bool}
+) -> {T.doc.scan(ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab), '#') == T.MScan{ap.s(T.LCom{}, lx, rw, hs, he, pt,
+  qk, sk, un, lf, ab)} : T.Mode}:
+  match lx:
+    case T.LTop{}:
+      {==}
+    case T.LLine{}:
+      {==}
+    case T.LKey{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKey{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LKey{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LKeyDot{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKeyDot{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LKeyDot{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LAfter{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LAfter{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LAfter{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LKeyQ{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKeyQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LKeyQ{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LKeyE{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKeyE{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LKeyE{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LKeyU{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LKeyU{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LKeyU{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LVal{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LVal{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LVal{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LQ{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LQ{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LQ2{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LQ2{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LQ2{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LStr{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LStr{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LStr{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LEsc{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LEsc{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LEsc{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LUni{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LUni{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LUni{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LFold{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LFold{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LFold{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LMq{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LMq{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LMq{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LMqEnd{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LMqEnd{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LMqEnd{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LTrim{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LTrim{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LTrim{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LTrim2{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LTrim2{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LTrim2{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LBare{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LBare{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LBare{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LDate{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LDate{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LDate{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LCom{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LCom{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LHead{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHead{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LHead{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LHeadGap{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadGap{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LHeadGap{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LHeadDot{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadDot{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LHeadDot{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LHeadQ{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadQ{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LHeadQ{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LHeadE{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadE{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LHeadE{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LHeadU{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadU{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LHeadU{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LHeadR{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LHeadR{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LHeadR{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LArr{}:
+      {==}
+    case T.LArrC{}:
+      {==}
+    case T.LInl{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LInl{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LInl{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LInlK{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LInlK{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LInlK{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LInlC{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LInlC{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LInlC{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+    case T.LSink{}:
+      Eq.bit.absurd(&2, {T.doc.scan(ap.s(T.LSink{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#') == T.MScan{ap.s(T.LCom{}, T.LSink{}, rw, hs, he, pt, qk, sk, un, lf, ab)}
+        : T.Mode}, hl)
+
+# what a [ comment ] leaves the scanner in: the state it follows, or the
+# comment, which returns to that state
+def ap.aft(
+  +com: Laws.GCom,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> T.St:
+  match com:
+    case Laws.GcNone{}:
+      ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab)
+    case Laws.GcSome{_body}:
+      ap.s(T.LCom{}, lx, rw, hs, he, pt, qk, sk, un, lf, ab)
+
+# the back state after a [ comment ] and its newline
+def ap.abk(+com: Laws.GCom, +lx: T.Lex, +bk: T.Lex) -> T.Lex:
+  match com:
+    case Laws.GcNone{}:
+      bk
+    case Laws.GcSome{_body}:
+      lx
+
+# a comment, from a state it may follow, leaves the scanner in ap.aft
+def ap.tail2(
+  +com: Laws.GCom,
+  +rest: String,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hm: {ap.coml(lx) == True{} : Bool},
+  +hc: {Laws.g.ok.com(com) == True{} : Bool}
+) -> {T.doc.read(Laws.g.com.text(com, rest), T.MScan{ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab)})
+  == T.doc.read(rest, T.MScan{ap.aft(com, lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab)}) : T.Doc}:
+  match com:
+    case Laws.GcNone{}:
+      {==}
+    case Laws.GcSome{+body}:
+      Equal.trans(T.Doc, T.doc.read(String.append(body, rest), T.doc.scan(ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf,
+        ab),
+        '#')), T.doc.read(String.append(body, rest), T.MScan{ap.s(T.LCom{}, lx, rw, hs, he, pt, qk, sk, un, lf, ab)}),
+        T.doc.read(rest, T.MScan{ap.s(T.LCom{}, lx, rw, hs, he, pt, qk, sk, un, lf, ab)}), Equal.cong(T.Mode, T.Doc,
+        md => T.doc.read(String.append(body, rest), md), T.doc.scan(ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab),
+        '#'), T.MScan{ap.s(T.LCom{}, lx, rw, hs, he, pt, qk, sk, un, lf, ab)}, ap.hash(lx, bk, rw, hs, he, pt, qk, sk,
+          un,
+        lf, ab, hm)), ap.cm(body, rest, lx, rw, hs, he, pt, qk, sk, un, lf, ab, Eq.and.left(Laws.abnf.comment(body),
+        Laws.prose.comment_chars(body), hc), Eq.and.right(Laws.abnf.comment(body), Laws.prose.comment_chars(body), hc)))
+
+# blank space and a comment, from a state they may follow, leave the scanner
+# in ap.aft
+def ap.tail(
+  +ww: String,
+  +com: Laws.GCom,
+  +rest: String,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hl: {ap.wsl(lx) == True{} : Bool},
+  +hm: {ap.coml(lx) == True{} : Bool},
+  +hw: {Laws.abnf.ws(ww) == True{} : Bool},
+  +hc: {Laws.g.ok.com(com) == True{} : Bool}
+) -> {T.doc.read(String.append(ww, Laws.g.com.text(com, rest)), T.MScan{ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf,
+  ab)}) == T.doc.read(rest, T.MScan{ap.aft(com, lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab)}) : T.Doc}:
+  Equal.trans(T.Doc, T.doc.read(String.append(ww, Laws.g.com.text(com, rest)), T.MScan{ap.s(lx, bk, rw, hs, he, pt, qk,
+    sk, un, lf, ab)}), T.doc.read(Laws.g.com.text(com, rest), T.MScan{ap.s(lx, bk, rw, hs, he, pt, qk, sk, un, lf,
+    ab)}), T.doc.read(rest, T.MScan{ap.aft(com, lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab)}), ap.ws(ww,
+    Laws.g.com.text(com, rest), lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab, hl, hw), ap.tail2(com, rest, lx, bk, rw,
+    hs, he, pt, qk, sk, un, lf, ab, hm, hc))
+
+# the lex states a comment may follow, each: a claim about the four holds of
+# every such state
+def ap.coml.elim(
+  -QQ: T.Lex -> Type,
+  +lx: T.Lex,
+  +hl: {ap.coml(lx) == True{} : Bool},
+  top: QQ(T.LTop{}),
+  line: QQ(T.LLine{}),
+  arr: QQ(T.LArr{}),
+  arrc: QQ(T.LArrC{})
+) -> QQ(lx):
+  match lx:
+    case T.LTop{}:
+      top
+    case T.LLine{}:
+      line
+    case T.LKey{}:
+      Eq.bit.absurd(&1, QQ(T.LKey{}), hl)
+    case T.LKeyDot{}:
+      Eq.bit.absurd(&1, QQ(T.LKeyDot{}), hl)
+    case T.LAfter{}:
+      Eq.bit.absurd(&1, QQ(T.LAfter{}), hl)
+    case T.LKeyQ{}:
+      Eq.bit.absurd(&1, QQ(T.LKeyQ{}), hl)
+    case T.LKeyE{}:
+      Eq.bit.absurd(&1, QQ(T.LKeyE{}), hl)
+    case T.LKeyU{}:
+      Eq.bit.absurd(&1, QQ(T.LKeyU{}), hl)
+    case T.LVal{}:
+      Eq.bit.absurd(&1, QQ(T.LVal{}), hl)
+    case T.LQ{}:
+      Eq.bit.absurd(&1, QQ(T.LQ{}), hl)
+    case T.LQ2{}:
+      Eq.bit.absurd(&1, QQ(T.LQ2{}), hl)
+    case T.LStr{}:
+      Eq.bit.absurd(&1, QQ(T.LStr{}), hl)
+    case T.LEsc{}:
+      Eq.bit.absurd(&1, QQ(T.LEsc{}), hl)
+    case T.LUni{}:
+      Eq.bit.absurd(&1, QQ(T.LUni{}), hl)
+    case T.LFold{}:
+      Eq.bit.absurd(&1, QQ(T.LFold{}), hl)
+    case T.LMq{}:
+      Eq.bit.absurd(&1, QQ(T.LMq{}), hl)
+    case T.LMqEnd{}:
+      Eq.bit.absurd(&1, QQ(T.LMqEnd{}), hl)
+    case T.LTrim{}:
+      Eq.bit.absurd(&1, QQ(T.LTrim{}), hl)
+    case T.LTrim2{}:
+      Eq.bit.absurd(&1, QQ(T.LTrim2{}), hl)
+    case T.LBare{}:
+      Eq.bit.absurd(&1, QQ(T.LBare{}), hl)
+    case T.LDate{}:
+      Eq.bit.absurd(&1, QQ(T.LDate{}), hl)
+    case T.LCom{}:
+      Eq.bit.absurd(&1, QQ(T.LCom{}), hl)
+    case T.LHead{}:
+      Eq.bit.absurd(&1, QQ(T.LHead{}), hl)
+    case T.LHeadGap{}:
+      Eq.bit.absurd(&1, QQ(T.LHeadGap{}), hl)
+    case T.LHeadDot{}:
+      Eq.bit.absurd(&1, QQ(T.LHeadDot{}), hl)
+    case T.LHeadQ{}:
+      Eq.bit.absurd(&1, QQ(T.LHeadQ{}), hl)
+    case T.LHeadE{}:
+      Eq.bit.absurd(&1, QQ(T.LHeadE{}), hl)
+    case T.LHeadU{}:
+      Eq.bit.absurd(&1, QQ(T.LHeadU{}), hl)
+    case T.LHeadR{}:
+      Eq.bit.absurd(&1, QQ(T.LHeadR{}), hl)
+    case T.LArr{}:
+      arr
+    case T.LArrC{}:
+      arrc
+    case T.LInl{}:
+      Eq.bit.absurd(&1, QQ(T.LInl{}), hl)
+    case T.LInlK{}:
+      Eq.bit.absurd(&1, QQ(T.LInlK{}), hl)
+    case T.LInlC{}:
+      Eq.bit.absurd(&1, QQ(T.LInlC{}), hl)
+    case T.LSink{}:
+      Eq.bit.absurd(&1, QQ(T.LSink{}), hl)
+
+# a newline read after a [ comment ]: the text reads on as the rest from the
+# state the newline leaves, back where the comment returned
+def ap.Eol(
+  +com: Laws.GCom,
+  +lx: T.Lex,
+  +nl: String,
+  +rest: String,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> Type:
+  {T.doc.read(String.append(nl, rest), T.MScan{ap.aft(com, lx, bk, rw, hs, he, pt, qk, sk, un, lf, ab)})
+    == T.doc.read(rest, T.MScan{ap.s(ap.nlx(lx), ap.abk(com, lx, bk), rw, hs, he, pt, qk, sk, un, lf, ab)}) : T.Doc}
+
+# a line feed after a [ comment ] leaves the scanner where the next line, or
+# the array's next part, starts
+def ap.eol.lf(
+  +com: Laws.GCom,
+  +lx: T.Lex,
+  +rest: String,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hl: {ap.coml(lx) == True{} : Bool}
+) -> ap.Eol(com, lx, "\n", rest, bk, rw, hs, he, pt, qk, sk, un, lf, ab):
+  match com:
+    case Laws.GcNone{}:
+      ap.coml.elim(l2 => ap.Eol(Laws.GcNone{}, l2, "\n", rest, bk, rw, hs, he, pt, qk, sk, un, lf, ab), lx, hl, {==},
+        {==}, {==}, {==})
+    case Laws.GcSome{bd}:
+      ap.coml.elim(l2 => ap.Eol(Laws.GcSome{bd}, l2, "\n", rest, bk, rw, hs, he, pt, qk, sk, un, lf, ab), lx, hl, {==},
+        {==}, {==}, {==})
+
+# and so does a carriage return and a line feed
+def ap.eol.crlf(
+  +com: Laws.GCom,
+  +lx: T.Lex,
+  +rest: String,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hl: {ap.coml(lx) == True{} : Bool}
+) -> ap.Eol(com, lx, "\r\n", rest, bk, rw, hs, he, pt, qk, sk, un, lf, ab):
+  match com:
+    case Laws.GcNone{}:
+      ap.coml.elim(l2 => ap.Eol(Laws.GcNone{}, l2, "\r\n", rest, bk, rw, hs, he, pt, qk, sk, un, lf, ab), lx, hl, {==},
+        {==}, {==}, {==})
+    case Laws.GcSome{bd}:
+      ap.coml.elim(l2 => ap.Eol(Laws.GcSome{bd}, l2, "\r\n", rest, bk, rw, hs, he, pt, qk, sk, un, lf, ab), lx, hl,
+        {==}, {==}, {==}, {==})
+
+# a newline after a [ comment ] leaves the scanner where the next line, or
+# the array's next part, starts: in the state a newline leaves, back where
+# the comment returned
+def ap.eol(
+  +com: Laws.GCom,
+  +lx: T.Lex,
+  +nl: String,
+  +rest: String,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hl: {ap.coml(lx) == True{} : Bool},
+  +hn: {Laws.abnf.newline(nl) == True{} : Bool}
+) -> ap.Eol(com, lx, nl, rest, bk, rw, hs, he, pt, qk, sk, un, lf, ab):
+  s1.nl.elim(n2 => ap.Eol(com, lx, n2, rest, bk, rw, hs, he, pt, qk, sk, un, lf, ab), nl, hn, ap.eol.lf(com, lx, rest,
+    bk, rw, hs, he, pt, qk, sk, un, lf, ab, hl), ap.eol.crlf(com, lx, rest, bk, rw, hs, he, pt, qk, sk, un, lf, ab, hl))
+
+# the states a document may end in after an expression: the start of a line
+# and the rest of one
+def ap.tll(+lx: T.Lex) -> Bool:
+  match lx:
+    case T.LTop{}:
+      True{}
+    case T.LLine{}:
+      True{}
+    case T.LKey{}:
+      False{}
+    case T.LKeyDot{}:
+      False{}
+    case T.LAfter{}:
+      False{}
+    case T.LKeyQ{}:
+      False{}
+    case T.LKeyE{}:
+      False{}
+    case T.LKeyU{}:
+      False{}
+    case T.LVal{}:
+      False{}
+    case T.LQ{}:
+      False{}
+    case T.LQ2{}:
+      False{}
+    case T.LStr{}:
+      False{}
+    case T.LEsc{}:
+      False{}
+    case T.LUni{}:
+      False{}
+    case T.LFold{}:
+      False{}
+    case T.LMq{}:
+      False{}
+    case T.LMqEnd{}:
+      False{}
+    case T.LTrim{}:
+      False{}
+    case T.LTrim2{}:
+      False{}
+    case T.LBare{}:
+      False{}
+    case T.LDate{}:
+      False{}
+    case T.LCom{}:
+      False{}
+    case T.LHead{}:
+      False{}
+    case T.LHeadGap{}:
+      False{}
+    case T.LHeadDot{}:
+      False{}
+    case T.LHeadQ{}:
+      False{}
+    case T.LHeadE{}:
+      False{}
+    case T.LHeadU{}:
+      False{}
+    case T.LHeadR{}:
+      False{}
+    case T.LArr{}:
+      False{}
+    case T.LArrC{}:
+      False{}
+    case T.LInl{}:
+      False{}
+    case T.LInlK{}:
+      False{}
+    case T.LInlC{}:
+      False{}
+    case T.LSink{}:
+      False{}
+
+# the two states: a claim about both holds of every such state
+def ap.tll.elim(
+  -QQ: T.Lex -> Type,
+  +lx: T.Lex,
+  +hl: {ap.tll(lx) == True{} : Bool},
+  top: QQ(T.LTop{}),
+  line: QQ(T.LLine{})
+) -> QQ(lx):
+  match lx:
+    case T.LTop{}:
+      top
+    case T.LLine{}:
+      line
+    case T.LKey{}:
+      Eq.bit.absurd(&1, QQ(T.LKey{}), hl)
+    case T.LKeyDot{}:
+      Eq.bit.absurd(&1, QQ(T.LKeyDot{}), hl)
+    case T.LAfter{}:
+      Eq.bit.absurd(&1, QQ(T.LAfter{}), hl)
+    case T.LKeyQ{}:
+      Eq.bit.absurd(&1, QQ(T.LKeyQ{}), hl)
+    case T.LKeyE{}:
+      Eq.bit.absurd(&1, QQ(T.LKeyE{}), hl)
+    case T.LKeyU{}:
+      Eq.bit.absurd(&1, QQ(T.LKeyU{}), hl)
+    case T.LVal{}:
+      Eq.bit.absurd(&1, QQ(T.LVal{}), hl)
+    case T.LQ{}:
+      Eq.bit.absurd(&1, QQ(T.LQ{}), hl)
+    case T.LQ2{}:
+      Eq.bit.absurd(&1, QQ(T.LQ2{}), hl)
+    case T.LStr{}:
+      Eq.bit.absurd(&1, QQ(T.LStr{}), hl)
+    case T.LEsc{}:
+      Eq.bit.absurd(&1, QQ(T.LEsc{}), hl)
+    case T.LUni{}:
+      Eq.bit.absurd(&1, QQ(T.LUni{}), hl)
+    case T.LFold{}:
+      Eq.bit.absurd(&1, QQ(T.LFold{}), hl)
+    case T.LMq{}:
+      Eq.bit.absurd(&1, QQ(T.LMq{}), hl)
+    case T.LMqEnd{}:
+      Eq.bit.absurd(&1, QQ(T.LMqEnd{}), hl)
+    case T.LTrim{}:
+      Eq.bit.absurd(&1, QQ(T.LTrim{}), hl)
+    case T.LTrim2{}:
+      Eq.bit.absurd(&1, QQ(T.LTrim2{}), hl)
+    case T.LBare{}:
+      Eq.bit.absurd(&1, QQ(T.LBare{}), hl)
+    case T.LDate{}:
+      Eq.bit.absurd(&1, QQ(T.LDate{}), hl)
+    case T.LCom{}:
+      Eq.bit.absurd(&1, QQ(T.LCom{}), hl)
+    case T.LHead{}:
+      Eq.bit.absurd(&1, QQ(T.LHead{}), hl)
+    case T.LHeadGap{}:
+      Eq.bit.absurd(&1, QQ(T.LHeadGap{}), hl)
+    case T.LHeadDot{}:
+      Eq.bit.absurd(&1, QQ(T.LHeadDot{}), hl)
+    case T.LHeadQ{}:
+      Eq.bit.absurd(&1, QQ(T.LHeadQ{}), hl)
+    case T.LHeadE{}:
+      Eq.bit.absurd(&1, QQ(T.LHeadE{}), hl)
+    case T.LHeadU{}:
+      Eq.bit.absurd(&1, QQ(T.LHeadU{}), hl)
+    case T.LHeadR{}:
+      Eq.bit.absurd(&1, QQ(T.LHeadR{}), hl)
+    case T.LArr{}:
+      Eq.bit.absurd(&1, QQ(T.LArr{}), hl)
+    case T.LArrC{}:
+      Eq.bit.absurd(&1, QQ(T.LArrC{}), hl)
+    case T.LInl{}:
+      Eq.bit.absurd(&1, QQ(T.LInl{}), hl)
+    case T.LInlK{}:
+      Eq.bit.absurd(&1, QQ(T.LInlK{}), hl)
+    case T.LInlC{}:
+      Eq.bit.absurd(&1, QQ(T.LInlC{}), hl)
+    case T.LSink{}:
+      Eq.bit.absurd(&1, QQ(T.LSink{}), hl)
+
+# the end of the text after a [ comment ] at the top level gives the
+# document of the rows, with no error
+def ap.fin(
+  +com: Laws.GCom,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hl: {ap.tll(lx) == True{} : Bool}
+) -> {T.doc.read("", T.MScan{ap.aft(com, lx, bk, rw, hs, he, pt, qk, [], un, lf, ab)}) == T.Doc{"", T.rows.seal(rw)}
+  : T.Doc}:
+  match com:
+    case Laws.GcNone{}:
+      ap.tll.elim(l2 => {T.doc.read("", T.MScan{ap.aft(Laws.GcNone{}, l2, bk, rw, hs, he, pt, qk, [], un, lf, ab)})
+        == T.Doc{"", T.rows.seal(rw)} : T.Doc}, lx, hl, {==}, {==})
+    case Laws.GcSome{bd}:
+      ap.tll.elim(l2 => {T.doc.read("", T.MScan{ap.aft(Laws.GcSome{bd}, l2, bk, rw, hs, he, pt, qk, [], un, lf, ab)})
+        == T.Doc{"", T.rows.seal(rw)} : T.Doc}, lx, hl, {==}, {==})
+
+# WP-A: a header however its walk ends. KEY-3's header reader (k3.hcore)
+# reads a header whose walk succeeds; the same reading (k3.hlead, k3.hkeys)
+# ends at the bracket in a walk that may fail as well (ap.hend), and the
+# scanner reads on with the walk's error, rows and definitions. A header of
+# the grammar (GTable) is one of KEY-3's (ap.dots and ap.last spell its key
+# as KEY-3's KDot list and last segment, ap.gs its blank space as gap).
+
+# the scanner after a header in its table, with the error, rows and
+# definitions its walk returned
+def ap.ln(
+  +bd: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32
+) -> T.St:
+  T.St{bd, rows, heads, here, [], [], T.LLine{}, bk, qk, [], T.HNone{}, un, lf, False{}, False{}}
+
+# a header's walk from the root, with what it returns
+def ap.Wk(
+  +path: List<&2, String>,
+  +rw: List<&2, T.Val>,
+  +job: T.Job,
+  +hs: List<&2, String>,
+  +en: T.End
+) -> Data:
+  {T.tree.walk(path, T.Tw{rw, job, [], "", "", hs, False{}}, 0) == en : T.End}
+
+# the bracket runs the header's walk along the segments read, whatever it
+# returns, and leaves the scanner in the header's table
+def ap.hend(
+  +ab: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +parts: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +path: List<&2, String>,
+  +rows2: List<&2, T.Val>,
+  +bd2: String,
+  +heads2: List<&2, String>,
+  +rest: String,
+  +ne: {List.is_empty(&2, String, parts) == False{} : Bool},
+  +er: {List.reverse(&2, String, parts) == path : List<&2, String>},
+  +ew: ap.Wk(path, rw, Laws.header_job(ab), hs, T.End{rows2, bd2, heads2})
+) -> {T.doc.read(rest, T.MScan{ap.ln(bd2, rows2, heads2, path, bk, qk, un, lf)}) == T.doc.read(k3.htail(ab, rest),
+  T.MScan{k3.haft(True{}, rw, hs, he, parts, bk, qk, un, lf, ab)}) : T.Doc}:
+  match ab:
+    case False{}:
+      %Equal.sym(Bool, List.is_empty(&2, String, parts), False{}, ne) : {T.doc.read(rest,
+        T.MScan{ap.ln(bd2, rows2, heads2, path, bk, qk, un, lf)}) == T.doc.read(rest, T.MScan{T.read.once2(T.head.go(_,
+        k3.w(rw, hs, he, parts, [], T.LHeadGap{}, bk, qk, [], un, lf, False{}), List.reverse(&2, String, parts)))})
+        : T.Doc}
+      %Equal.sym(List<&2, String>, List.reverse(&2, String, parts), path, er) : {T.doc.read(rest,
+        T.MScan{ap.ln(bd2, rows2, heads2, path, bk, qk, un, lf)}) == T.doc.read(rest,
+        T.MScan{T.read.once2(T.head.apply(T.tree.walk(_, T.Tw{rw, T.JDef{}, [], "", "", hs, False{}}, 0), _, bk, qk,
+        un, lf, False{}))}) : T.Doc}
+      %Equal.sym(T.End, T.tree.walk(path, T.Tw{rw, T.JDef{}, [], "", "", hs, False{}}, 0), T.End{rows2, bd2, heads2},
+        ew) : {T.doc.read(rest, T.MScan{ap.ln(bd2, rows2, heads2, path, bk, qk, un, lf)}) == T.doc.read(rest,
+        T.MScan{T.read.once2(T.head.apply(_, path, bk, qk, un, lf, False{}))}) : T.Doc}
+      {==}
+    case True{}:
+      %Equal.sym(Bool, List.is_empty(&2, String, parts), False{}, ne) : {T.doc.read(rest,
+        T.MScan{ap.ln(bd2, rows2, heads2, path, bk, qk, un, lf)}) == T.doc.read(rest, T.MScan{T.read.once2(T.head.go(_,
+        k3.w(rw, hs, he, parts, [], T.LHeadR{}, bk, qk, [], un, lf, True{}), List.reverse(&2, String, parts)))})
+        : T.Doc}
+      %Equal.sym(List<&2, String>, List.reverse(&2, String, parts), path, er) : {T.doc.read(rest,
+        T.MScan{ap.ln(bd2, rows2, heads2, path, bk, qk, un, lf)}) == T.doc.read(rest,
+        T.MScan{T.read.once2(T.head.apply(T.tree.walk(_, T.Tw{rw, T.JAot{}, [], "", "", hs, False{}}, 0), _, bk, qk,
+        un, lf, False{}))}) : T.Doc}
+      %Equal.sym(T.End, T.tree.walk(path, T.Tw{rw, T.JAot{}, [], "", "", hs, False{}}, 0), T.End{rows2, bd2, heads2},
+        ew) : {T.doc.read(rest, T.MScan{ap.ln(bd2, rows2, heads2, path, bk, qk, un, lf)}) == T.doc.read(rest,
+        T.MScan{T.read.once2(T.head.apply(_, path, bk, qk, un, lf, False{}))}) : T.Doc}
+      {==}
+
+# the rest of the text read after a header in its table, with the walk's
+# error, rows and definitions, from every back, qkind, uni and left
+def ap.HLine(
+  +bd2: String,
+  +rows2: List<&2, T.Val>,
+  +heads2: List<&2, String>,
+  +path: List<&2, String>,
+  +rest: String,
+  +goal: T.Doc
+) -> Type:
+  @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
+    {T.doc.read(rest, T.MScan{ap.ln(bd2, rows2, heads2, path, b2, q2, u2, l2)}) == goal : T.Doc}
+
+# a whole header, from the start of a line in any table, whatever its walk
+# returns
+def ap.hcore(
+  +arr: Bool,
+  +g0: List<&2, Bool>,
+  +ds: List<&2, Laws.KDot>,
+  +last: Laws.KSeg,
+  +g9: List<&2, Bool>,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +a0: Bool,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +rows2: List<&2, T.Val>,
+  +bd2: String,
+  +heads2: List<&2, String>,
+  +rest: String,
+  +goal: T.Doc,
+  +eo: {Laws.k3.dk.ok(ds, last) == True{} : Bool},
+  +ew: ap.Wk(Laws.k3.dk.names(ds, last), rw, Laws.header_job(arr), hs, T.End{rows2, bd2, heads2}),
+  ih: ap.HLine(bd2, rows2, heads2, Laws.k3.dk.names(ds, last), rest, goal)
+) -> {T.doc.read(Laws.k3.hd.text(arr, g0, ds, last, g9, rest), T.MScan{Laws.k3.at(Laws.AtLine{}, rw, hs, he, [], a0,
+  bk, qk, un, lf)}) == goal : T.Doc}:
+  match arr:
+    case False{}:
+      %k3.hlead(g0, Laws.k3.dk.text(ds, last, String.append(Laws.gap(g9), SCon{']', rest})), rw, hs, he, bk, qk, un, lf,
+        False{}) : {_ == goal : T.Doc}
+      k3.hkeys(ds, last, g9, k3.nz(g0), rw, hs, he, [], bk, qk, un, lf, False{}, rest, goal, eo, +b2 => +q2 => +u2 =>
+        +l2 =>
+        %ap.hend(False{}, rw, hs, he, k3.acc(ds, last, k3.nz(g0), []), b2, q2, u2, l2, Laws.k3.dk.names(ds, last),
+          rows2, bd2, heads2, rest, k3.ne(ds, last, k3.ps0(k3.nz(g0), [])), k3.path(k3.nz(g0), ds, last), ew)
+          : {_ == goal : T.Doc}
+        ih(b2, q2, u2, l2))
+    case True{}:
+      %k3.hlead(g0, Laws.k3.dk.text(ds, last, String.append(Laws.gap(g9), SCon{']', SCon{']', rest}})), rw, hs, he,
+        bk, qk, un, lf, True{}) : {_ == goal : T.Doc}
+      k3.hkeys(ds, last, g9, k3.nz(g0), rw, hs, he, [], bk, qk, un, lf, True{}, SCon{']', rest}, goal, eo,
+        +b2 => +q2 => +u2 => +l2 =>
+        %ap.hend(True{}, rw, hs, he, k3.acc(ds, last, k3.nz(g0), []), b2, q2, u2, l2, Laws.k3.dk.names(ds, last),
+          rows2, bd2, heads2, rest, k3.ne(ds, last, k3.ps0(k3.nz(g0), [])), k3.path(k3.nz(g0), ds, last), ew)
+          : {_ == goal : T.Doc}
+        ih(b2, q2, u2, l2))
+
+# The grammar's keys and blank space as KEY-3 spells them.
+
+# blank space as KEY-3's list of tabs and spaces
+def ap.gs(+ww: String) -> List<&2, Bool>:
+  match ww:
+    case SNil{}:
+      []
+    case SCon{+hh, tt}:
+      Char.is_eq(hh, '\t') <> ap.gs(tt)
+
+# a space or a tab is the blank character of whether it is a tab
+def ap.bc(
+  +cc: Char,
+  +hw: {Laws.abnf.wschar(cc) == True{} : Bool}
+) -> {Laws.blank_char(Char.is_eq(cc, '\t')) == cc : Char}:
+  ap.wc(c2 => {Laws.blank_char(Char.is_eq(c2, '\t')) == c2 : Char}, cc, hw, {==}, {==})
+
+# blank space is the gap of its tabs and spaces
+def ap.gap(+ww: String, +hw: {Laws.abnf.ws(ww) == True{} : Bool}) -> {Laws.gap(ap.gs(ww)) == ww : String}:
+  match ww:
+    case SNil{}:
+      {==}
+    case SCon{+hh, +tt}:
+      %Equal.sym(Char, Laws.blank_char(Char.is_eq(hh, '\t')), hh, ap.bc(hh, Eq.and.left(Laws.abnf.wschar(hh),
+        Laws.abnf.ws(tt), hw))) : {SCon{_, Laws.gap(ap.gs(tt))} == SCon{hh, tt} : String}
+      %Equal.sym(String, Laws.gap(ap.gs(tt)), tt, ap.gap(tt, Eq.and.right(Laws.abnf.wschar(hh), Laws.abnf.ws(tt), hw)))
+        : {SCon{hh, _} == SCon{hh, tt} : String}
+      {==}
+
+# a dotted key's segments after its first, from the first, as KEY-3's KDot
+# list: each segment with the blank space around the dot after it
+def ap.dots(+more: List<&2, Laws.GDotSep>, +first: Laws.KSeg) -> List<&2, Laws.KDot>:
+  match more:
+    case []:
+      []
+    case Laws.GDotSep{w1, w2, sk} <> rest:
+      Laws.KDot{first, ap.gs(w1), ap.gs(w2)} <> ap.dots(rest, sk)
+
+# the last segment of a dotted key
+def ap.last(+more: List<&2, Laws.GDotSep>, +first: Laws.KSeg) -> Laws.KSeg:
+  match more:
+    case []:
+      first
+    case Laws.GDotSep{_w1, _w2, sk} <> rest:
+      ap.last(rest, sk)
+
+# a key's segments but its last, as KEY-3's KDot list
+def ap.kds(+kk: Laws.GKey) -> List<&2, Laws.KDot>:
+  match kk:
+    case Laws.GSimpleKey{_sk}:
+      []
+    case Laws.GDottedKey{sk, more}:
+      ap.dots(more, sk)
+
+# a key's last segment
+def ap.klast(+kk: Laws.GKey) -> Laws.KSeg:
+  match kk:
+    case Laws.GSimpleKey{sk}:
+      sk
+    case Laws.GDottedKey{sk, more}:
+      ap.last(more, sk)
+
+# a dotted key's text, from a first segment, is KEY-3's
+def ap.DT(
+  +more: List<&2, Laws.GDotSep>,
+  +first: Laws.KSeg,
+  +tail: String
+) -> Data:
+  {Laws.k3.seg.text(first, Laws.g.dots.text(more, tail)) == Laws.k3.dk.text(ap.dots(more, first), ap.last(more, first),
+    tail) : String}
+
+# one dot-sep's text is KEY-3's, given the rest's
+def ap.dots.text2(
+  +first: Laws.KSeg,
+  +w1: String,
+  +w2: String,
+  +sk: Laws.KSeg,
+  +rest: List<&2, Laws.GDotSep>,
+  +tail: String,
+  +h1: {Laws.abnf.ws(w1) == True{} : Bool},
+  +h2: {Laws.abnf.ws(w2) == True{} : Bool},
+  +ih: ap.DT(rest, sk, tail)
+) -> {Laws.k3.seg.text(first, Laws.g.dots.text(Laws.GDotSep{w1, w2, sk} <> rest, tail))
+  == Laws.k3.dk.text(ap.dots(Laws.GDotSep{w1, w2, sk} <> rest, first), ap.last(Laws.GDotSep{w1, w2, sk} <> rest, first),
+  tail) : String}:
+  %ap.gap(w1, h1) : {Laws.k3.seg.text(first, String.append(_, SCon{'.', String.append(w2, Laws.k3.seg.text(sk,
+    Laws.g.dots.text(rest, tail)))})) == Laws.k3.dk.text(ap.dots(Laws.GDotSep{w1, w2, sk} <> rest, first),
+    ap.last(Laws.GDotSep{w1, w2, sk} <> rest, first), tail) : String}
+  %ap.gap(w2, h2) : {Laws.k3.seg.text(first, String.append(Laws.gap(ap.gs(w1)), SCon{'.', String.append(_,
+    Laws.k3.seg.text(sk, Laws.g.dots.text(rest, tail)))})) == Laws.k3.dk.text(ap.dots(Laws.GDotSep{w1, w2,
+    sk} <> rest, first), ap.last(Laws.GDotSep{w1, w2, sk} <> rest, first), tail) : String}
+  %Equal.sym(String, Laws.k3.seg.text(sk, Laws.g.dots.text(rest, tail)), Laws.k3.dk.text(ap.dots(rest, sk),
+    ap.last(rest, sk), tail), ih) : {Laws.k3.seg.text(first, String.append(Laws.gap(ap.gs(w1)), SCon{'.',
+      String.append(Laws.gap(ap.gs(w2)),
+    _)})) == Laws.k3.dk.text(ap.dots(Laws.GDotSep{w1, w2, sk} <> rest, first), ap.last(Laws.GDotSep{w1, w2,
+    sk} <> rest, first), tail) : String}
+  {==}
+
+# a dotted key's text is KEY-3's
+def ap.dots.text(
+  +more: List<&2, Laws.GDotSep>,
+  +first: Laws.KSeg,
+  +tail: String,
+  +hd: {Laws.g.ok.dots(more) == True{} : Bool}
+) -> {Laws.k3.seg.text(first, Laws.g.dots.text(more, tail)) == Laws.k3.dk.text(ap.dots(more, first), ap.last(more,
+  first), tail) : String}:
+  match more:
+    case []:
+      {==}
+    case Laws.GDotSep{+w1, +w2, +sk} <> +rest:
+      +h1 = {Eq.and.left(Laws.abnf.ws(w1), Bool.and(Laws.abnf.ws(w2), Bool.and(Laws.g.ok.seg(sk),
+        Laws.g.ok.dots(rest))),
+        hd) : {Laws.abnf.ws(w1) == True{} : Bool}}
+      +h2r = {Eq.and.right(Laws.abnf.ws(w1), Bool.and(Laws.abnf.ws(w2), Bool.and(Laws.g.ok.seg(sk),
+        Laws.g.ok.dots(rest))), hd) : {Bool.and(Laws.abnf.ws(w2), Bool.and(Laws.g.ok.seg(sk), Laws.g.ok.dots(rest)))
+        == True{} : Bool}}
+      +h2 = {Eq.and.left(Laws.abnf.ws(w2), Bool.and(Laws.g.ok.seg(sk), Laws.g.ok.dots(rest)), h2r)
+        : {Laws.abnf.ws(w2) == True{} : Bool}}
+      +h3 = {Eq.and.right(Laws.g.ok.seg(sk), Laws.g.ok.dots(rest), Eq.and.right(Laws.abnf.ws(w2),
+        Bool.and(Laws.g.ok.seg(sk), Laws.g.ok.dots(rest)), h2r)) : {Laws.g.ok.dots(rest) == True{} : Bool}}
+      ap.dots.text2(first, w1, w2, sk, rest, tail, h1, h2, ap.dots.text(rest, sk, tail, h3))
+
+# a list of names equal to another: what holds of one holds of the other
+def ap.tp(
+  -PP: List<&2, String> -> Type,
+  +aa: List<&2, String>,
+  +bb: List<&2, String>,
+  ee: {aa == bb : List<&2, String>},
+  xx: PP(aa)
+) -> PP(bb):
+  %ee : PP(_)
+  xx
+
+# a dotted key's names are KEY-3's
+def ap.dots.names(
+  +more: List<&2, Laws.GDotSep>,
+  +first: Laws.KSeg
+) -> {Laws.k3.seg.name(first) <> Laws.g.dots.names(more) == Laws.k3.dk.names(ap.dots(more, first), ap.last(more,
+  first)) : List<&2, String>}:
+  match more:
+    case []:
+      {==}
+    case Laws.GDotSep{_w1, _w2, +sk} <> +rest:
+      Equal.cong(List<&2, String>, List<&2, String>, ns => Laws.k3.seg.name(first) <> ns, Laws.k3.seg.name(sk) <>
+        Laws.g.dots.names(rest), Laws.k3.dk.names(ap.dots(rest, sk), ap.last(rest, sk)), ap.dots.names(rest, sk))
+
+# a key's names are KEY-3's
+def ap.key.names(
+  +kk: Laws.GKey
+) -> {Laws.g.key.names(kk) == Laws.k3.dk.names(ap.kds(kk), ap.klast(kk)) : List<&2, String>}:
+  match kk:
+    case Laws.GSimpleKey{_sk}:
+      {==}
+    case Laws.GDottedKey{+sk, +more}:
+      ap.dots.names(more, sk)
+
+# a key's text is KEY-3's
+def ap.key.text(
+  +kk: Laws.GKey,
+  +tail: String,
+  +hk: {Laws.g.ok.key(kk) == True{} : Bool}
+) -> {Laws.g.key.text(kk, tail) == Laws.k3.dk.text(ap.kds(kk), ap.klast(kk), tail) : String}:
+  match kk:
+    case Laws.GSimpleKey{_sk}:
+      {==}
+    case Laws.GDottedKey{+sk, +more}:
+      ap.dots.text(more, sk, tail, Eq.and.right(Laws.g.ok.seg(sk), Laws.g.ok.dots(more),
+        Eq.and.right(Bool.not(List.is_empty(&2, Laws.GDotSep, more)), Bool.and(Laws.g.ok.seg(sk),
+        Laws.g.ok.dots(more)), hk)))
+
+# two halves that hold make an and that holds
+def ap.and.t(
+  +aa: Bool,
+  +bb: Bool,
+  +ha: {aa == True{} : Bool},
+  +hb: {bb == True{} : Bool}
+) -> {Bool.and(aa, bb) == True{} : Bool}:
+  match aa:
+    case True{}:
+      hb
+    case False{}:
+      Eq.bit.absurd(&2, {Bool.and(False{}, bb) == True{} : Bool}, ha)
+
+# nothing is both and not
+def ap.nand(+bb: Bool) -> {Bool.not(Bool.or(False{}, Bool.or(False{}, Bool.and(bb, Bool.not(bb))))) == True{} : Bool}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# and so for one fewer test
+def ap.nand1(+bb: Bool) -> {Bool.not(Bool.or(False{}, Bool.and(bb, Bool.not(bb)))) == True{} : Bool}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a character basic-unescaped takes is one KEY-3's basic key may hold
+def ap.bchar(
+  +uu: U32,
+  +hb: {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}
+) -> {Laws.k3.bchar(Chr{uu}) == True{} : Bool}:
+  %Equal.sym(Bool, U32.is_eq(uu, 34), False{}, s1.bu.q(uu, hb)) : {Bool.not(Bool.or(_, Bool.or(U32.is_eq(uu, 92),
+    Bool.and(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), Bool.not(U32.is_eq(uu, 9)))))) == True{} : Bool}
+  %Equal.sym(Bool, U32.is_eq(uu, 92), False{}, s1.bu.b(uu, hb)) : {Bool.not(Bool.or(False{}, Bool.or(_,
+    Bool.and(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), Bool.not(U32.is_eq(uu, 9)))))) == True{} : Bool}
+  %Equal.sym(Bool, Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), U32.is_eq(uu, 9), s1.bu.c9(uu, hb))
+    : {Bool.not(Bool.or(False{}, Bool.or(False{}, Bool.and(_, Bool.not(U32.is_eq(uu, 9)))))) == True{} : Bool}
+  ap.nand(U32.is_eq(uu, 9))
+
+# a character literal-char takes is one KEY-3's literal key may hold
+def ap.lchar(
+  +uu: U32,
+  +hl: {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}
+) -> {Laws.lit.char(Chr{uu}) == True{} : Bool}:
+  %Equal.sym(Bool, U32.is_eq(uu, 39), False{}, s1.lc.a(uu, hl)) : {Bool.not(Bool.or(_,
+    Bool.and(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), Bool.not(U32.is_eq(uu, 9))))) == True{} : Bool}
+  %Equal.sym(Bool, Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), U32.is_eq(uu, 9), s1.lc.c9(uu, hl))
+    : {Bool.not(Bool.or(False{}, Bool.and(_, Bool.not(U32.is_eq(uu, 9))))) == True{} : Bool}
+  ap.nand1(U32.is_eq(uu, 9))
+
+# a piece of a basic string of the grammar is one KEY-3's basic key may hold
+def ap.pc.ok(
+  +pp: Laws.KPiece,
+  +hb: {Laws.abnf.basic_char(pp) == True{} : Bool},
+  +he: {Laws.prose.escape_scalar(pp) == True{} : Bool}
+) -> {Laws.k3.pc.ok(pp) == True{} : Bool}:
+  match pp:
+    case Laws.KpChar{cc}:
+      match cc:
+        case Chr{+uu}:
+          ap.bchar(uu, hb)
+    case Laws.KpEsc{_mm}:
+      {==}
+    case Laws.KpU4{_d, _c, _b, _a}:
+      he
+    case Laws.KpU8{_h, _g, _f, _e, _d, _c, _b, _a}:
+      he
+
+# and so are all its pieces
+def ap.pcs.ok(
+  +pl: List<&2, Laws.KPiece>,
+  +hb: {Laws.abnf.basic_string(pl) == True{} : Bool},
+  +he: {Laws.prose.escapes_scalar(pl) == True{} : Bool}
+) -> {Laws.k3.pcs.ok(pl) == True{} : Bool}:
+  match pl:
+    case []:
+      {==}
+    case +pp <> +rest:
+      ap.and.t(Laws.k3.pc.ok(pp), Laws.k3.pcs.ok(rest), ap.pc.ok(pp, Eq.and.left(Laws.abnf.basic_char(pp),
+        Laws.abnf.basic_string(rest), hb), Eq.and.left(Laws.prose.escape_scalar(pp), Laws.prose.escapes_scalar(rest),
+        he)), ap.pcs.ok(rest, Eq.and.right(Laws.abnf.basic_char(pp), Laws.abnf.basic_string(rest), hb),
+        Eq.and.right(Laws.prose.escape_scalar(pp), Laws.prose.escapes_scalar(rest), he)))
+
+# a literal string's first character and the rest KEY-3 reads
+def ap.lit.ok2(
+  +hh: Char,
+  +tt: String,
+  +h1: {Laws.abnf.literal_char(hh) == True{} : Bool},
+  +ih: {Laws.lit.text(tt) == True{} : Bool}
+) -> {Bool.and(Laws.lit.char(hh), Laws.lit.text(tt)) == True{} : Bool}:
+  match hh:
+    case Chr{+uu}:
+      ap.and.t(Laws.lit.char(Chr{uu}), Laws.lit.text(tt), ap.lchar(uu, h1), ih)
+
+# a literal string of the grammar is one KEY-3's literal key may hold
+def ap.lit.ok(
+  +name: String,
+  +hl: {Laws.abnf.literal_string(name) == True{} : Bool}
+) -> {Laws.lit.text(name) == True{} : Bool}:
+  match name:
+    case SNil{}:
+      {==}
+    case SCon{+hh, +tt}:
+      ap.lit.ok2(hh, tt, Eq.and.left(Laws.abnf.literal_char(hh), Laws.abnf.literal_string(tt), hl), ap.lit.ok(tt,
+        Eq.and.right(Laws.abnf.literal_char(hh), Laws.abnf.literal_string(tt), hl)))
+
+# a segment of the grammar is one KEY-3 reads
+def ap.seg.ok(
+  +sg: Laws.KSeg,
+  +hs: {Laws.g.ok.seg(sg) == True{} : Bool}
+) -> {Laws.k3.seg.ok(sg) == True{} : Bool}:
+  match sg:
+    case Laws.KsBare{+name}:
+      Equal.trans(Bool, T.bare(name), Laws.abnf.unquoted_key(name), True{}, Laws.bare_is_unquoted_key(name), hs)
+    case Laws.KsBasic{+pl}:
+      ap.pcs.ok(pl, Eq.and.left(Laws.abnf.basic_string(pl), Laws.prose.escapes_scalar(pl), hs),
+        Eq.and.right(Laws.abnf.basic_string(pl), Laws.prose.escapes_scalar(pl), hs))
+    case Laws.KsLit{+name}:
+      ap.lit.ok(name, hs)
+
+# a dotted key's segments are ones KEY-3 reads
+def ap.dots.ok(
+  +more: List<&2, Laws.GDotSep>,
+  +first: Laws.KSeg,
+  +hf: {Laws.g.ok.seg(first) == True{} : Bool},
+  +hd: {Laws.g.ok.dots(more) == True{} : Bool}
+) -> {Laws.k3.dk.ok(ap.dots(more, first), ap.last(more, first)) == True{} : Bool}:
+  match more:
+    case []:
+      ap.seg.ok(first, hf)
+    case Laws.GDotSep{+w1, +w2, +sk} <> +rest:
+      +h2r = {Eq.and.right(Laws.abnf.ws(w1), Bool.and(Laws.abnf.ws(w2), Bool.and(Laws.g.ok.seg(sk),
+        Laws.g.ok.dots(rest))), hd) : {Bool.and(Laws.abnf.ws(w2), Bool.and(Laws.g.ok.seg(sk), Laws.g.ok.dots(rest)))
+        == True{} : Bool}}
+      +h3r = {Eq.and.right(Laws.abnf.ws(w2), Bool.and(Laws.g.ok.seg(sk), Laws.g.ok.dots(rest)), h2r)
+        : {Bool.and(Laws.g.ok.seg(sk), Laws.g.ok.dots(rest)) == True{} : Bool}}
+      ap.and.t(Laws.k3.seg.ok(first), Laws.k3.dk.ok(ap.dots(rest, sk), ap.last(rest, sk)), ap.seg.ok(first, hf),
+        ap.dots.ok(rest, sk, Eq.and.left(Laws.g.ok.seg(sk), Laws.g.ok.dots(rest), h3r), Eq.and.right(Laws.g.ok.seg(sk),
+        Laws.g.ok.dots(rest), h3r)))
+
+# a key of the grammar is one KEY-3 reads
+def ap.key.ok(
+  +kk: Laws.GKey,
+  +hk: {Laws.g.ok.key(kk) == True{} : Bool}
+) -> {Laws.k3.dk.ok(ap.kds(kk), ap.klast(kk)) == True{} : Bool}:
+  match kk:
+    case Laws.GSimpleKey{+sk}:
+      ap.seg.ok(sk, hk)
+    case Laws.GDottedKey{+sk, +more}:
+      +hr = {Eq.and.right(Bool.not(List.is_empty(&2, Laws.GDotSep, more)), Bool.and(Laws.g.ok.seg(sk),
+        Laws.g.ok.dots(more)), hk) : {Bool.and(Laws.g.ok.seg(sk), Laws.g.ok.dots(more)) == True{} : Bool}}
+      ap.dots.ok(more, sk, Eq.and.left(Laws.g.ok.seg(sk), Laws.g.ok.dots(more), hr), Eq.and.right(Laws.g.ok.seg(sk),
+        Laws.g.ok.dots(more), hr))
+
+# a table header's key
+def ap.tkey(tb: Laws.GTable) -> Laws.GKey:
+  match tb:
+    case Laws.GStdTable{_w1, key, _w2}:
+      key
+    case Laws.GArrayTable{_w1, key, _w2}:
+      key
+
+# whether a table header is an [[array]] one
+def ap.tarr(tb: Laws.GTable) -> Bool:
+  match tb:
+    case Laws.GStdTable{_w1, _key, _w2}:
+      False{}
+    case Laws.GArrayTable{_w1, _key, _w2}:
+      True{}
+
+# the blank space after a header's opening brackets
+def ap.tw1(tb: Laws.GTable) -> String:
+  match tb:
+    case Laws.GStdTable{w1, _key, _w2}:
+      w1
+    case Laws.GArrayTable{w1, _key, _w2}:
+      w1
+
+# the blank space before a header's closing brackets
+def ap.tw2(tb: Laws.GTable) -> String:
+  match tb:
+    case Laws.GStdTable{_w1, _key, w2}:
+      w2
+    case Laws.GArrayTable{_w1, _key, w2}:
+      w2
+
+# a header's key is one of the grammar
+def ap.tbl.hk(
+  +tb: Laws.GTable,
+  +hok: {Laws.g.ok.table(tb) == True{} : Bool}
+) -> {Laws.g.ok.key(ap.tkey(tb)) == True{} : Bool}:
+  match tb:
+    case Laws.GStdTable{+w1, +key, +w2}:
+      Eq.and.left(Laws.g.ok.key(key), Laws.abnf.ws(w2), Eq.and.right(Laws.abnf.ws(w1), Bool.and(Laws.g.ok.key(key),
+        Laws.abnf.ws(w2)), hok))
+    case Laws.GArrayTable{+w1, +key, +w2}:
+      Eq.and.left(Laws.g.ok.key(key), Laws.abnf.ws(w2), Eq.and.right(Laws.abnf.ws(w1), Bool.and(Laws.g.ok.key(key),
+        Laws.abnf.ws(w2)), hok))
+
+# a [table] header's text is KEY-3's
+def ap.std.text(
+  +v1: String,
+  +key: Laws.GKey,
+  +v2: String,
+  +xx: String,
+  +h1: {Laws.abnf.ws(v1) == True{} : Bool},
+  +hk: {Laws.g.ok.key(key) == True{} : Bool},
+  +h2: {Laws.abnf.ws(v2) == True{} : Bool}
+) -> {Laws.g.table.text(Laws.GStdTable{v1, key, v2}, xx) == Laws.k3.hd.text(False{}, ap.gs(v1), ap.kds(key),
+  ap.klast(key), ap.gs(v2), xx) : String}:
+  %ap.gap(v1, h1) : {SCon{'[', String.append(_, Laws.g.key.text(key, String.append(v2, SCon{']', xx})))}
+    == Laws.k3.hd.text(False{}, ap.gs(v1), ap.kds(key), ap.klast(key), ap.gs(v2), xx) : String}
+  %ap.gap(v2, h2) : {SCon{'[', String.append(Laws.gap(ap.gs(v1)), Laws.g.key.text(key, String.append(_, SCon{']',
+    xx})))} == Laws.k3.hd.text(False{}, ap.gs(v1), ap.kds(key), ap.klast(key), ap.gs(v2), xx) : String}
+  %Equal.sym(String, Laws.g.key.text(key, String.append(Laws.gap(ap.gs(v2)), SCon{']', xx})),
+    Laws.k3.dk.text(ap.kds(key),
+    ap.klast(key), String.append(Laws.gap(ap.gs(v2)), SCon{']', xx})), ap.key.text(key,
+      String.append(Laws.gap(ap.gs(v2)),
+    SCon{']', xx}), hk)) : {SCon{'[', String.append(Laws.gap(ap.gs(v1)), _)} == Laws.k3.hd.text(False{}, ap.gs(v1),
+    ap.kds(key), ap.klast(key), ap.gs(v2), xx) : String}
+  {==}
+
+# an [[array]] header's text is KEY-3's
+def ap.aot.text(
+  +v1: String,
+  +key: Laws.GKey,
+  +v2: String,
+  +xx: String,
+  +h1: {Laws.abnf.ws(v1) == True{} : Bool},
+  +hk: {Laws.g.ok.key(key) == True{} : Bool},
+  +h2: {Laws.abnf.ws(v2) == True{} : Bool}
+) -> {Laws.g.table.text(Laws.GArrayTable{v1, key, v2}, xx) == Laws.k3.hd.text(True{}, ap.gs(v1), ap.kds(key),
+  ap.klast(key), ap.gs(v2), xx) : String}:
+  %ap.gap(v1, h1) : {SCon{'[', SCon{'[', String.append(_, Laws.g.key.text(key, String.append(v2, SCon{']', SCon{']',
+    xx}})))}} == Laws.k3.hd.text(True{}, ap.gs(v1), ap.kds(key), ap.klast(key), ap.gs(v2), xx) : String}
+  %ap.gap(v2, h2) : {SCon{'[', SCon{'[', String.append(Laws.gap(ap.gs(v1)), Laws.g.key.text(key, String.append(_,
+    SCon{']', SCon{']', xx}})))}} == Laws.k3.hd.text(True{}, ap.gs(v1), ap.kds(key), ap.klast(key), ap.gs(v2), xx)
+    : String}
+  %Equal.sym(String, Laws.g.key.text(key, String.append(Laws.gap(ap.gs(v2)), SCon{']', SCon{']', xx}})),
+    Laws.k3.dk.text(ap.kds(key), ap.klast(key), String.append(Laws.gap(ap.gs(v2)), SCon{']', SCon{']', xx}})),
+    ap.key.text(key, String.append(Laws.gap(ap.gs(v2)), SCon{']', SCon{']', xx}}), hk)) : {SCon{'[', SCon{'[',
+    String.append(Laws.gap(ap.gs(v1)), _)}} == Laws.k3.hd.text(True{}, ap.gs(v1), ap.kds(key), ap.klast(key),
+    ap.gs(v2), xx) : String}
+  {==}
+
+# a table header's text is KEY-3's
+def ap.tbl.text(
+  +tb: Laws.GTable,
+  +xx: String,
+  +hok: {Laws.g.ok.table(tb) == True{} : Bool}
+) -> {Laws.g.table.text(tb, xx) == Laws.k3.hd.text(ap.tarr(tb), ap.gs(ap.tw1(tb)), ap.kds(ap.tkey(tb)),
+  ap.klast(ap.tkey(tb)), ap.gs(ap.tw2(tb)), xx) : String}:
+  match tb:
+    case Laws.GStdTable{+w1, +key, +w2}:
+      +hr = {Eq.and.right(Laws.abnf.ws(w1), Bool.and(Laws.g.ok.key(key), Laws.abnf.ws(w2)), hok)
+        : {Bool.and(Laws.g.ok.key(key), Laws.abnf.ws(w2)) == True{} : Bool}}
+      ap.std.text(w1, key, w2, xx, Eq.and.left(Laws.abnf.ws(w1), Bool.and(Laws.g.ok.key(key), Laws.abnf.ws(w2)), hok),
+        Eq.and.left(Laws.g.ok.key(key), Laws.abnf.ws(w2), hr), Eq.and.right(Laws.g.ok.key(key), Laws.abnf.ws(w2), hr))
+    case Laws.GArrayTable{+w1, +key, +w2}:
+      +hr = {Eq.and.right(Laws.abnf.ws(w1), Bool.and(Laws.g.ok.key(key), Laws.abnf.ws(w2)), hok)
+        : {Bool.and(Laws.g.ok.key(key), Laws.abnf.ws(w2)) == True{} : Bool}}
+      ap.aot.text(w1, key, w2, xx, Eq.and.left(Laws.abnf.ws(w1), Bool.and(Laws.g.ok.key(key), Laws.abnf.ws(w2)), hok),
+        Eq.and.left(Laws.g.ok.key(key), Laws.abnf.ws(w2), hr), Eq.and.right(Laws.g.ok.key(key), Laws.abnf.ws(w2), hr))
+
+# a table header of the grammar, from the start of a line in any table,
+# whatever its walk returns: the rest is read in its table with the walk's
+# error, rows and definitions
+def ap.table(
+  +tb: Laws.GTable,
+  +tail: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +rows2: List<&2, T.Val>,
+  +bd2: String,
+  +heads2: List<&2, String>,
+  +goal: T.Doc,
+  +hok: {Laws.g.ok.table(tb) == True{} : Bool},
+  ew: ap.Wk(Laws.g.key.names(ap.tkey(tb)), rw, Laws.header_job(ap.tarr(tb)), hs, T.End{rows2, bd2, heads2}),
+  ih: ap.HLine(bd2, rows2, heads2, Laws.g.key.names(ap.tkey(tb)), tail, goal)
+) -> {T.doc.read(Laws.g.table.text(tb, tail), T.MScan{ap.s(T.LTop{}, bk, rw, hs, he, [], qk, [], un, lf, ab)}) == goal
+  : T.Doc}:
+  %Equal.sym(String, Laws.g.table.text(tb, tail), Laws.k3.hd.text(ap.tarr(tb), ap.gs(ap.tw1(tb)), ap.kds(ap.tkey(tb)),
+    ap.klast(ap.tkey(tb)), ap.gs(ap.tw2(tb)), tail), ap.tbl.text(tb, tail, hok)) : {T.doc.read(_, T.MScan{ap.s(T.LTop{},
+    bk, rw, hs, he, [], qk, [], un, lf, ab)}) == goal : T.Doc}
+  ap.hcore(ap.tarr(tb), ap.gs(ap.tw1(tb)), ap.kds(ap.tkey(tb)), ap.klast(ap.tkey(tb)), ap.gs(ap.tw2(tb)), rw, hs, he,
+    ab,
+    bk, qk, un, lf, rows2, bd2, heads2, tail, goal, ap.key.ok(ap.tkey(tb), ap.tbl.hk(tb, hok)), ap.tp(ns =>
+    ap.Wk(ns, rw, Laws.header_job(ap.tarr(tb)), hs, T.End{rows2, bd2, heads2}), Laws.g.key.names(ap.tkey(tb)),
+      Laws.k3.dk.names(ap.kds(ap.tkey(tb)), ap.klast(ap.tkey(tb))),
+    ap.key.names(ap.tkey(tb)), ew), ap.tp(ns => ap.HLine(bd2, rows2, heads2, ns, tail, goal),
+    Laws.g.key.names(ap.tkey(tb)), Laws.k3.dk.names(ap.kds(ap.tkey(tb)), ap.klast(ap.tkey(tb))),
+    ap.key.names(ap.tkey(tb)), ih))
+
+# WP-A: a document of headers, comments and blank lines. parse starts with
+# a byte-order mark allowed (lead); a text that starts with none reads as it
+# does from the start of a line (ap.lead). Each expression is read from the
+# start of a line (ap.xstep): a blank line's blank space and comment, or a
+# header, its walk, and the blank space and comment after it. The rest of the
+# text is then read from the state they leave (ap.K): the end of the text
+# gives the rows, and a newline starts the next line (ap.go). A header whose
+# walk fails leaves the scanner with its error, which stays with its rows to
+# the end (error_stays), and replay keeps them as well (ap.stays).
+
+# a text that does not start with a byte-order mark
+def ap.nobom(+ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      True{}
+    case SCon{+hh, _tt}:
+      Bool.not(U32.is_eq(Char.to_u32(hh), 65279))
+
+# the scanner at the start of a document, past its first character
+def ap.s0() -> T.St:
+  ap.s(T.LTop{}, T.LTop{}, [], [], [], [], T.QBasic{}, [], 0, 0, False{})
+
+# the first character, when it is no byte-order mark, is read as a later one
+def ap.lead.fast(
+  +cc: Char,
+  +hb: {U32.is_eq(Char.to_u32(cc), 65279) == False{} : Bool}
+) -> {T.read.fast(T.st.start(), cc) == T.read.fast(ap.s0(), cc) : T.St}:
+  %Equal.sym(T.St, T.read.fast.lex(T.LTop{}, T.QBasic{}, "", [], [], [], [], [], T.LTop{}, [], 0, 0, False{}, cc),
+    T.read.fast.old("", [], [], [], [], [], T.LTop{}, T.LTop{}, T.QBasic{}, [], 0, 0, False{}, cc), sr.ff(T.LTop{},
+    T.QBasic{}, "", [], [], [], [], [], T.LTop{}, [], 0, 0, False{}, cc)) : {T.read.fast(T.st.start(), cc) == _ : T.St}
+  %Equal.sym(Bool, U32.is_eq(Char.to_u32(cc), 65279), False{}, hb) : {T.read.once2(T.read.step.bom(_, ap.s0(), cc))
+    == T.read.fast.old("", [], [], [], [], [], T.LTop{}, T.LTop{}, T.QBasic{}, [], 0, 0, False{}, cc) : T.St}
+  {==}
+
+# and so doc.scan takes it the same way
+def ap.lead.scan(
+  +dq: Bool,
+  +sq: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +ef: {T.read.fast(T.st.start(), cc) == T.read.fast(ap.s0(), cc) : T.St}
+) -> {T.doc.scan.q(dq, sq, cr, T.st.start(), cc) == T.doc.scan.q(dq, sq, cr, ap.s0(), cc) : T.Mode}:
+  match dq:
+    case True{}:
+      Equal.cong(T.St, T.Mode, st => T.doc.wrap(st), T.read.fast(T.st.start(), cc), T.read.fast(ap.s0(), cc), ef)
+    case False{}:
+      match sq:
+        case True{}:
+          Equal.cong(T.St, T.Mode, st => T.doc.wrap(st), T.read.fast(T.st.start(), cc), T.read.fast(ap.s0(), cc), ef)
+        case False{}:
+          match cr:
+            case True{}:
+              Equal.cong(T.St, T.Mode, st => T.MCr{st}, T.read.fast(T.st.start(), cc), T.read.fast(ap.s0(), cc), ef)
+            case False{}:
+              Equal.cong(T.St, T.Mode, st => T.MScan{st}, T.read.fast(T.st.start(), cc), T.read.fast(ap.s0(), cc), ef)
+
+# a text that starts with no byte-order mark reads from the start of a
+# document as from the start of a line
+def ap.lead(
+  +tt: String,
+  +ht: {ap.nobom(tt) == True{} : Bool}
+) -> {T.doc.read(tt, T.MScan{T.st.start()}) == T.doc.read(tt, T.MScan{ap.s0()}) : T.Doc}:
+  match tt:
+    case SNil{}:
+      {==}
+    case SCon{+hh, +t2}:
+      Equal.cong(T.Mode, T.Doc, md => T.doc.read(t2, md), T.doc.scan(T.st.start(), hh), T.doc.scan(ap.s0(), hh),
+        ap.lead.scan(Char.is_eq(hh, '"'), Char.is_eq(hh, '\''), U32.is_eq(Char.to_u32(hh), 13), hh,
+        ap.lead.fast(hh, Eq.not.true(U32.is_eq(Char.to_u32(hh), 65279), ht))))
+
+# blank space starts with no byte-order mark, and so does what follows it
+def ap.nb.ws(
+  +ww: String,
+  +xx: String,
+  +hw: {Laws.abnf.ws(ww) == True{} : Bool},
+  +hx: {ap.nobom(xx) == True{} : Bool}
+) -> {ap.nobom(String.append(ww, xx)) == True{} : Bool}:
+  match ww:
+    case SNil{}:
+      hx
+    case SCon{+hh, _tt}:
+      ap.wc(cc => {Bool.not(U32.is_eq(Char.to_u32(cc), 65279)) == True{} : Bool}, hh, Eq.and.left(Laws.abnf.wschar(hh),
+        Laws.abnf.ws(_tt), hw), {==}, {==})
+
+# a newline starts with none
+def ap.nb.nl(
+  +nl: String,
+  +xx: String,
+  +hn: {Laws.abnf.newline(nl) == True{} : Bool}
+) -> {ap.nobom(String.append(nl, xx)) == True{} : Bool}:
+  s1.nl.elim(n2 => {ap.nobom(String.append(n2, xx)) == True{} : Bool}, nl, hn, {==}, {==})
+
+# nor do the lines after the first expression
+def ap.nb.lines(
+  +ls: List<&2, Laws.GLine>,
+  +hl: {Laws.g.ok.lines(ls) == True{} : Bool}
+) -> {ap.nobom(Laws.g.lines.text(ls, "")) == True{} : Bool}:
+  match ls:
+    case []:
+      {==}
+    case Laws.GLine{+nl, +ex} <> +rest:
+      ap.nb.nl(nl, Laws.g.expr.text(ex, Laws.g.lines.text(rest, "")), Eq.and.left(Laws.abnf.newline(nl),
+        Bool.and(Laws.g.ok.expr(ex), Laws.g.ok.lines(rest)), hl))
+
+# a [ comment ] starts with a #, or is nothing before what follows
+def ap.nb.com(
+  +com: Laws.GCom,
+  +xx: String,
+  +hx: {ap.nobom(xx) == True{} : Bool}
+) -> {ap.nobom(Laws.g.com.text(com, xx)) == True{} : Bool}:
+  match com:
+    case Laws.GcNone{}:
+      hx
+    case Laws.GcSome{_body}:
+      {==}
+
+# a header starts with a bracket
+def ap.nb.tb(+tb: Laws.GTable, +xx: String) -> {ap.nobom(Laws.g.table.text(tb, xx)) == True{} : Bool}:
+  match tb:
+    case Laws.GStdTable{_w1, _key, _w2}:
+      {==}
+    case Laws.GArrayTable{_w1, _key, _w2}:
+      {==}
+
+# a blank line or a header starts with no byte-order mark, before a text
+# that starts with none
+def ap.nb.expr(
+  +ex: Laws.GExpr,
+  +xx: String,
+  +hx: {Laws.g.ok.expr(ex) == True{} : Bool},
+  +nx: {Laws.ra.nokv.expr(ex) == True{} : Bool},
+  +ht: {ap.nobom(xx) == True{} : Bool}
+) -> {ap.nobom(Laws.g.expr.text(ex, xx)) == True{} : Bool}:
+  match ex:
+    case Laws.GxBlank{+w1, +com}:
+      ap.nb.ws(w1, Laws.g.com.text(com, xx), Eq.and.left(Laws.abnf.ws(w1), Laws.g.ok.com(com), hx), ap.nb.com(com, xx,
+        ht))
+    case Laws.GxKeyval{_w1, _kv, _w2, _com}:
+      Eq.bit.absurd(&2, {ap.nobom(Laws.g.expr.text(Laws.GxKeyval{_w1, _kv, _w2, _com}, xx)) == True{} : Bool}, nx)
+    case Laws.GxTable{+w1, +tb, +w2, +com}:
+      ap.nb.ws(w1, Laws.g.table.text(tb, String.append(w2, Laws.g.com.text(com, xx))), Eq.and.left(Laws.abnf.ws(w1),
+        Bool.and(Laws.g.ok.table(tb), Bool.and(Laws.abnf.ws(w2), Laws.g.ok.com(com))), hx), ap.nb.tb(tb,
+        String.append(w2, Laws.g.com.text(com, xx))))
+
+# the table a header's lines are in, and here otherwise
+def ap.xhere(+ex: Laws.GExpr, +here: List<&2, String>) -> List<&2, String>:
+  match ex:
+    case Laws.GxTable{_w1, Laws.GStdTable{_a, key, _b}, _w2, _com}:
+      Laws.g.key.names(key)
+    case Laws.GxTable{_w1, Laws.GArrayTable{_a, key, _b}, _w2, _com}:
+      Laws.g.key.names(key)
+    case _:
+      here
+
+# a blank line or a header, replayed from an error, keeps it and the rows
+def ap.stays.x(
+  +ex: Laws.GExpr,
+  +bd: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +eb: {String.is_empty(bd) == False{} : Bool},
+  +nx: {Laws.ra.nokv.expr(ex) == True{} : Bool}
+) -> {Laws.replay.expr(ex, Laws.RpSt{bd, rows, heads, here}) == Laws.RpSt{bd, rows, heads, ap.xhere(ex, here)}
+  : Laws.RpSt}:
+  match ex:
+    case Laws.GxBlank{_w1, _com}:
+      {==}
+    case Laws.GxKeyval{_w1, _kv, _w2, _com}:
+      Eq.bit.absurd(&2, {Laws.replay.expr(Laws.GxKeyval{_w1, _kv, _w2, _com}, Laws.RpSt{bd, rows, heads, here})
+        == Laws.RpSt{bd, rows, heads, ap.xhere(Laws.GxKeyval{_w1, _kv, _w2, _com}, here)} : Laws.RpSt}, nx)
+    case Laws.GxTable{_w1, Laws.GStdTable{_a, +key, _b}, _w2, _com}:
+      %Equal.sym(T.End, T.tree.walk(Laws.g.key.names(key), T.Tw{rows, T.JDef{}, [], bd, "", heads, False{}}, 0),
+        T.End{rows, bd, heads}, Laws.failed_walk_changes_nothing(Laws.g.key.names(key), rows, T.JDef{}, bd, "", heads,
+        False{}, 0, eb)) : {Laws.replay.end(_, Laws.g.key.names(key)) == Laws.RpSt{bd, rows, heads,
+          Laws.g.key.names(key)}
+        : Laws.RpSt}
+      {==}
+    case Laws.GxTable{_w1, Laws.GArrayTable{_a, +key, _b}, _w2, _com}:
+      %Equal.sym(T.End, T.tree.walk(Laws.g.key.names(key), T.Tw{rows, T.JAot{}, [], bd, "", heads, False{}}, 0),
+        T.End{rows, bd, heads}, Laws.failed_walk_changes_nothing(Laws.g.key.names(key), rows, T.JAot{}, bd, "", heads,
+        False{}, 0, eb)) : {Laws.replay.end(_, Laws.g.key.names(key)) == Laws.RpSt{bd, rows, heads,
+          Laws.g.key.names(key)}
+        : Laws.RpSt}
+      {==}
+
+# blank lines and headers, replayed from an error, keep it and the rows to
+# the end
+def ap.stays(
+  +ls: List<&2, Laws.GLine>,
+  +bd: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +eb: {String.is_empty(bd) == False{} : Bool},
+  +nl: {Laws.ra.nokv.lines(ls) == True{} : Bool}
+) -> {Laws.replay.doc(Laws.replay.lines(ls, Laws.RpSt{bd, rows, heads, here})) == T.Doc{bd, T.rows.seal(rows)}
+  : T.Doc}:
+  match ls:
+    case []:
+      {==}
+    case Laws.GLine{_nl, +ex} <> +rest:
+      %Equal.sym(Laws.RpSt, Laws.replay.expr(ex, Laws.RpSt{bd, rows, heads, here}), Laws.RpSt{bd, rows, heads,
+        ap.xhere(ex, here)}, ap.stays.x(ex, bd, rows, heads, here, eb, Eq.and.left(Laws.ra.nokv.expr(ex),
+        Laws.ra.nokv.lines(rest), nl))) : {Laws.replay.doc(Laws.replay.lines(rest, _)) == T.Doc{bd, T.rows.seal(rows)}
+        : T.Doc}
+      ap.stays(rest, bd, rows, heads, ap.xhere(ex, here), eb, Eq.and.right(Laws.ra.nokv.expr(ex),
+        Laws.ra.nokv.lines(rest), nl))
+
+# the document the replay of the lines ls gives from a replay state
+def ap.F(+ls: List<&2, Laws.GLine>, +rp: Laws.RpSt) -> T.Doc:
+  Laws.replay.doc(Laws.replay.lines(ls, rp))
+
+# the rest of the text after an expression, as the reader of the lines ls
+# after it gives it: from the state a [ comment ] leaves at the start of a
+# line or after a header, with no error, the rest reads to the document the
+# lines' replay gives from the same rows, definitions and table
+def ap.K(+ls: List<&2, Laws.GLine>, +tail: String) -> Type:
+  @com: Laws.GCom -> @lx: T.Lex -> {ap.tll(lx) == True{} : Bool} -> @bk: T.Lex -> @rw: List<&2, T.Val> ->
+    @hs: List<&2, String> -> @he: List<&2, String> -> @qk: T.QKind -> @un: U32 -> @lf: U32 ->
+    {T.doc.read(tail, T.MScan{ap.aft(com, lx, bk, rw, hs, he, [], qk, [], un, lf, False{})})
+    == ap.F(ls, Laws.RpSt{"", rw, hs, he}) : T.Doc}
+
+# and the lines' replay from a state with an error gives the document of the
+# error and the rows
+def ap.E(+ls: List<&2, Laws.GLine>) -> Type:
+  @bd: String -> {String.is_empty(bd) == False{} : Bool} -> @rows: List<&2, T.Val> -> @heads: List<&2, String> ->
+    @here: List<&2, String> ->
+    {ap.F(ls, Laws.RpSt{bd, rows, heads, here}) == T.Doc{bd, T.rows.seal(rows)} : T.Doc}
+
+# after a header, however its walk ended, the blank space, the comment and
+# the rest read to what the replay gives
+def ap.hl(
+  +bd2: String,
+  +rows2: List<&2, T.Val>,
+  +heads2: List<&2, String>,
+  +names: List<&2, String>,
+  +w2: String,
+  +com: Laws.GCom,
+  +tail: String,
+  +ls: List<&2, Laws.GLine>,
+  +hw: {Laws.abnf.ws(w2) == True{} : Bool},
+  +hc: {Laws.g.ok.com(com) == True{} : Bool},
+  kk: ap.K(ls, tail),
+  ee: ap.E(ls)
+) -> ap.HLine(bd2, rows2, heads2, names, String.append(w2, Laws.g.com.text(com, tail)), ap.F(ls, Laws.RpSt{bd2, rows2,
+  heads2, names})):
+  match bd2:
+    case SNil{}:
+      +b2 => +q2 => +u2 => +l2 => Equal.trans(T.Doc, T.doc.read(String.append(w2, Laws.g.com.text(com, tail)),
+        T.MScan{ap.ln("", rows2, heads2, names, b2, q2, u2, l2)}), T.doc.read(tail, T.MScan{ap.aft(com, T.LLine{}, b2,
+        rows2, heads2, names, [], q2, [], u2, l2, False{})}), ap.F(ls, Laws.RpSt{"", rows2, heads2, names}),
+          ap.tail(w2, com,
+        tail, T.LLine{}, b2, rows2, heads2, names, [], q2, [], u2, l2, False{}, {==}, {==}, hw, hc), kk(com, T.LLine{},
+        {==}, b2, rows2, heads2, names, q2, u2, l2))
+    case SCon{+c0, +cs}:
+      +b2 => +q2 => +u2 => +l2 => Equal.trans(T.Doc, T.doc.read(String.append(w2, Laws.g.com.text(com, tail)),
+        T.MScan{ap.ln(SCon{c0, cs}, rows2, heads2, names, b2, q2, u2, l2)}), T.Doc{SCon{c0, cs}, T.rows.seal(rows2)},
+        ap.F(ls, Laws.RpSt{SCon{c0, cs}, rows2, heads2, names}), Laws.error_stays(SCon{c0, cs}, rows2, heads2, names,
+          [], [],
+        T.LLine{}, b2, q2, [], T.HNone{}, u2, l2, False{}, False{}, {==}, String.append(w2, Laws.g.com.text(com,
+          tail))),
+        Equal.sym(T.Doc, ap.F(ls, Laws.RpSt{SCon{c0, cs}, rows2, heads2, names}), T.Doc{SCon{c0, cs},
+          T.rows.seal(rows2)},
+        ee(SCon{c0, cs}, {==}, rows2, heads2, names)))
+
+# a header and what follows it, with its walk's result named
+def ap.xtab(
+  +tb: Laws.GTable,
+  +w2: String,
+  +com: Laws.GCom,
+  +tail: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ls: List<&2, Laws.GLine>,
+  +en: T.End,
+  +hen: ap.Wk(Laws.g.key.names(ap.tkey(tb)), rw, Laws.header_job(ap.tarr(tb)), hs, en),
+  +hok: {Laws.g.ok.table(tb) == True{} : Bool},
+  +hw: {Laws.abnf.ws(w2) == True{} : Bool},
+  +hc: {Laws.g.ok.com(com) == True{} : Bool},
+  kk: ap.K(ls, tail),
+  ee: ap.E(ls)
+) -> {T.doc.read(Laws.g.table.text(tb, String.append(w2, Laws.g.com.text(com, tail))), T.MScan{ap.s(T.LTop{}, bk, rw,
+  hs, he, [], qk, [], un, lf, False{})}) == ap.F(ls, Laws.replay.end(en, Laws.g.key.names(ap.tkey(tb)))) : T.Doc}:
+  match en:
+    case T.End{+rows2, +bd2, +heads2}:
+      ap.table(tb, String.append(w2, Laws.g.com.text(com, tail)), rw, hs, he, False{}, bk, qk, un, lf, rows2, bd2,
+        heads2, ap.F(ls, Laws.RpSt{bd2, rows2, heads2, Laws.g.key.names(ap.tkey(tb))}), hok, hen, ap.hl(bd2, rows2,
+          heads2,
+        Laws.g.key.names(ap.tkey(tb)), w2, com, tail, ls, hw, hc, kk, ee))
+
+# a header and what follows it, as its walk replays
+def ap.xtb2(
+  +tb: Laws.GTable,
+  +w1: String,
+  +w2: String,
+  +com: Laws.GCom,
+  +tail: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ls: List<&2, Laws.GLine>,
+  +hok: {Laws.g.ok.table(tb) == True{} : Bool},
+  +hw: {Laws.abnf.ws(w2) == True{} : Bool},
+  +hc: {Laws.g.ok.com(com) == True{} : Bool},
+  kk: ap.K(ls, tail),
+  ee: ap.E(ls)
+) -> {T.doc.read(Laws.g.table.text(tb, String.append(w2, Laws.g.com.text(com, tail))), T.MScan{ap.s(T.LTop{}, bk, rw,
+  hs, he, [], qk, [], un, lf, False{})}) == ap.F(ls, Laws.replay.expr(Laws.GxTable{w1, tb, w2, com}, Laws.RpSt{"", rw,
+    hs,
+  he})) : T.Doc}:
+  match tb:
+    case Laws.GStdTable{+v1, +key, +v2}:
+      ap.xtab(Laws.GStdTable{v1, key, v2}, w2, com, tail, rw, hs, he, bk, qk, un, lf, ls,
+        T.tree.walk(Laws.g.key.names(key), T.Tw{rw, T.JDef{}, [], "", "", hs, False{}}, 0), {==}, hok, hw, hc, kk, ee)
+    case Laws.GArrayTable{+v1, +key, +v2}:
+      ap.xtab(Laws.GArrayTable{v1, key, v2}, w2, com, tail, rw, hs, he, bk, qk, un, lf, ls,
+        T.tree.walk(Laws.g.key.names(key), T.Tw{rw, T.JAot{}, [], "", "", hs, False{}}, 0), {==}, hok, hw, hc, kk, ee)
+
+# a header line: its blank space, the header and what follows it
+def ap.xtb(
+  +tb: Laws.GTable,
+  +w1: String,
+  +w2: String,
+  +com: Laws.GCom,
+  +tail: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ls: List<&2, Laws.GLine>,
+  +hx: {Laws.g.ok.expr(Laws.GxTable{w1, tb, w2, com}) == True{} : Bool},
+  kk: ap.K(ls, tail),
+  ee: ap.E(ls)
+) -> {T.doc.read(Laws.g.expr.text(Laws.GxTable{w1, tb, w2, com}, tail), T.MScan{ap.s(T.LTop{}, bk, rw, hs, he, [], qk,
+  [], un, lf, False{})}) == ap.F(ls, Laws.replay.expr(Laws.GxTable{w1, tb, w2, com}, Laws.RpSt{"", rw, hs,
+    he})) : T.Doc}:
+  +hr = {Eq.and.right(Laws.abnf.ws(w1), Bool.and(Laws.g.ok.table(tb), Bool.and(Laws.abnf.ws(w2), Laws.g.ok.com(com))),
+    hx) : {Bool.and(Laws.g.ok.table(tb), Bool.and(Laws.abnf.ws(w2), Laws.g.ok.com(com))) == True{} : Bool}}
+  +hr2 = {Eq.and.right(Laws.g.ok.table(tb), Bool.and(Laws.abnf.ws(w2), Laws.g.ok.com(com)), hr)
+    : {Bool.and(Laws.abnf.ws(w2), Laws.g.ok.com(com)) == True{} : Bool}}
+  Equal.trans(T.Doc, T.doc.read(Laws.g.expr.text(Laws.GxTable{w1, tb, w2, com}, tail), T.MScan{ap.s(T.LTop{}, bk, rw,
+    hs, he, [], qk, [], un, lf, False{})}), T.doc.read(Laws.g.table.text(tb, String.append(w2, Laws.g.com.text(com,
+    tail))), T.MScan{ap.s(T.LTop{}, bk, rw, hs, he, [], qk, [], un, lf, False{})}), ap.F(ls,
+      Laws.replay.expr(Laws.GxTable{w1,
+    tb, w2, com}, Laws.RpSt{"", rw, hs, he})), ap.ws(w1, Laws.g.table.text(tb, String.append(w2, Laws.g.com.text(com,
+    tail))), T.LTop{}, bk, rw, hs, he, [], qk, [], un, lf, False{}, {==}, Eq.and.left(Laws.abnf.ws(w1),
+    Bool.and(Laws.g.ok.table(tb), Bool.and(Laws.abnf.ws(w2), Laws.g.ok.com(com))), hx)), ap.xtb2(tb, w1, w2, com, tail,
+    rw, hs, he, bk, qk, un, lf, ls, Eq.and.left(Laws.g.ok.table(tb), Bool.and(Laws.abnf.ws(w2), Laws.g.ok.com(com)),
+    hr), Eq.and.left(Laws.abnf.ws(w2), Laws.g.ok.com(com), hr2), Eq.and.right(Laws.abnf.ws(w2), Laws.g.ok.com(com),
+    hr2), kk, ee))
+
+# one blank line or header from the start of a line in any table, then the
+# rest as ap.K reads it
+def ap.xstep(
+  +ex: Laws.GExpr,
+  +tail: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ls: List<&2, Laws.GLine>,
+  +hx: {Laws.g.ok.expr(ex) == True{} : Bool},
+  +nx: {Laws.ra.nokv.expr(ex) == True{} : Bool},
+  kk: ap.K(ls, tail),
+  ee: ap.E(ls)
+) -> {T.doc.read(Laws.g.expr.text(ex, tail), T.MScan{ap.s(T.LTop{}, bk, rw, hs, he, [], qk, [], un, lf, False{})})
+  == ap.F(ls, Laws.replay.expr(ex, Laws.RpSt{"", rw, hs, he})) : T.Doc}:
+  match ex:
+    case Laws.GxBlank{+w1, +com}:
+      Equal.trans(T.Doc, T.doc.read(String.append(w1, Laws.g.com.text(com, tail)), T.MScan{ap.s(T.LTop{}, bk, rw, hs,
+        he, [], qk, [], un, lf, False{})}), T.doc.read(tail, T.MScan{ap.aft(com, T.LTop{}, bk, rw, hs, he, [], qk, [],
+        un, lf, False{})}), ap.F(ls, Laws.RpSt{"", rw, hs, he}), ap.tail(w1, com, tail, T.LTop{}, bk, rw, hs, he, [],
+          qk, [],
+        un, lf, False{}, {==}, {==}, Eq.and.left(Laws.abnf.ws(w1), Laws.g.ok.com(com), hx),
+        Eq.and.right(Laws.abnf.ws(w1), Laws.g.ok.com(com), hx)), kk(com, T.LTop{}, {==}, bk, rw, hs, he, qk, un, lf))
+    case Laws.GxKeyval{_w1, _kv, _w2, _com}:
+      Eq.bit.absurd(&2, {T.doc.read(Laws.g.expr.text(Laws.GxKeyval{_w1, _kv, _w2, _com}, tail), T.MScan{ap.s(T.LTop{},
+        bk, rw, hs, he, [], qk, [], un, lf, False{})}) == ap.F(ls, Laws.replay.expr(Laws.GxKeyval{_w1, _kv, _w2, _com},
+        Laws.RpSt{"", rw, hs, he})) : T.Doc}, nx)
+    case Laws.GxTable{+w1, +tb, +w2, +com}:
+      ap.xtb(tb, w1, w2, com, tail, rw, hs, he, bk, qk, un, lf, ls, hx, kk, ee)
+
+# the lines after an expression: the expression, a newline and the next
+# line's, and so on to the end, read from the start of a line to the
+# document the replay gives
+def ap.go(
+  +ls: List<&2, Laws.GLine>,
+  +ex: Laws.GExpr,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +hx: {Laws.g.ok.expr(ex) == True{} : Bool},
+  +hl: {Laws.g.ok.lines(ls) == True{} : Bool},
+  +nx: {Laws.ra.nokv.expr(ex) == True{} : Bool},
+  +nl: {Laws.ra.nokv.lines(ls) == True{} : Bool}
+) -> {T.doc.read(Laws.g.expr.text(ex, Laws.g.lines.text(ls, "")), T.MScan{ap.s(T.LTop{}, bk, rw, hs, he, [], qk, [], un,
+  lf, False{})}) == Laws.replay.doc(Laws.replay.lines(ls, Laws.replay.expr(ex, Laws.RpSt{"", rw, hs, he}))) : T.Doc}:
+  match ls:
+    case []:
+      ap.xstep(ex, "", rw, hs, he, bk, qk, un, lf, [], hx, nx,
+        +com => +lx => +h2 => +b2 => +r2 => +s2 => +e2 => +q2 => +u2 => +l2 => ap.fin(com, lx, b2, r2, s2, e2, [], q2,
+          u2,
+        l2, False{}, h2), _bd => _eb => _rows => _heads => _here => {==})
+    case Laws.GLine{+nn, +ex2} <> +ls2:
+      +h1 = {Eq.and.right(Laws.abnf.newline(nn), Bool.and(Laws.g.ok.expr(ex2), Laws.g.ok.lines(ls2)), hl)
+        : {Bool.and(Laws.g.ok.expr(ex2), Laws.g.ok.lines(ls2)) == True{} : Bool}}
+      ap.xstep(ex, String.append(nn, Laws.g.expr.text(ex2, Laws.g.lines.text(ls2, ""))), rw, hs, he, bk, qk, un, lf,
+        Laws.GLine{nn, ex2} <> ls2, hx, nx,
+        +com => +lx => +h2 => +b2 => +r2 => +s2 => +e2 => +q2 => +u2 => +l2 => ap.tll.elim(l3 =>
+        {T.doc.read(String.append(nn, Laws.g.expr.text(ex2, Laws.g.lines.text(ls2, ""))), T.MScan{ap.aft(com, l3, b2,
+          r2,
+        s2, e2, [], q2, [], u2, l2, False{})}) == Laws.replay.doc(Laws.replay.lines(Laws.GLine{nn, ex2} <> ls2,
+        Laws.RpSt{"", r2, s2, e2})) : T.Doc}, lx, h2, Equal.trans(T.Doc, T.doc.read(String.append(nn,
+        Laws.g.expr.text(ex2, Laws.g.lines.text(ls2, ""))), T.MScan{ap.aft(com, T.LTop{}, b2, r2, s2, e2, [], q2, [],
+          u2,
+        l2, False{})}), T.doc.read(Laws.g.expr.text(ex2, Laws.g.lines.text(ls2, "")), T.MScan{ap.s(T.LTop{},
+        ap.abk(com, T.LTop{}, b2), r2, s2, e2, [], q2, [], u2, l2, False{})}), Laws.replay.doc(Laws.replay.lines(ls2,
+        Laws.replay.expr(ex2, Laws.RpSt{"", r2, s2, e2}))), ap.eol(com, T.LTop{}, nn, Laws.g.expr.text(ex2,
+        Laws.g.lines.text(ls2, "")), b2, r2, s2, e2, [], q2, [], u2, l2, False{}, {==},
+          Eq.and.left(Laws.abnf.newline(nn),
+        Bool.and(Laws.g.ok.expr(ex2), Laws.g.ok.lines(ls2)), hl)), ap.go(ls2, ex2, r2, s2, e2, ap.abk(com, T.LTop{},
+          b2),
+        q2, u2, l2, Eq.and.left(Laws.g.ok.expr(ex2), Laws.g.ok.lines(ls2), h1), Eq.and.right(Laws.g.ok.expr(ex2),
+        Laws.g.ok.lines(ls2), h1), Eq.and.left(Laws.ra.nokv.expr(ex2), Laws.ra.nokv.lines(ls2), nl),
+        Eq.and.right(Laws.ra.nokv.expr(ex2), Laws.ra.nokv.lines(ls2), nl))), Equal.trans(T.Doc,
+          T.doc.read(String.append(nn,
+        Laws.g.expr.text(ex2, Laws.g.lines.text(ls2, ""))), T.MScan{ap.aft(com, T.LLine{}, b2, r2, s2, e2, [], q2, [],
+          u2,
+        l2, False{})}), T.doc.read(Laws.g.expr.text(ex2, Laws.g.lines.text(ls2, "")), T.MScan{ap.s(T.LTop{},
+        ap.abk(com, T.LLine{}, b2), r2, s2, e2, [], q2, [], u2, l2, False{})}), Laws.replay.doc(Laws.replay.lines(ls2,
+        Laws.replay.expr(ex2, Laws.RpSt{"", r2, s2, e2}))), ap.eol(com, T.LLine{}, nn, Laws.g.expr.text(ex2,
+        Laws.g.lines.text(ls2, "")), b2, r2, s2, e2, [], q2, [], u2, l2, False{}, {==},
+          Eq.and.left(Laws.abnf.newline(nn),
+        Bool.and(Laws.g.ok.expr(ex2), Laws.g.ok.lines(ls2)), hl)), ap.go(ls2, ex2, r2, s2, e2, ap.abk(com, T.LLine{},
+        b2), q2, u2, l2, Eq.and.left(Laws.g.ok.expr(ex2), Laws.g.ok.lines(ls2), h1), Eq.and.right(Laws.g.ok.expr(ex2),
+        Laws.g.ok.lines(ls2), h1), Eq.and.left(Laws.ra.nokv.expr(ex2), Laws.ra.nokv.lines(ls2), nl),
+        Eq.and.right(Laws.ra.nokv.expr(ex2), Laws.ra.nokv.lines(ls2), nl)))),
+        +bd => +eb => +rows => +heads => +here => ap.stays(Laws.GLine{nn, ex2} <> ls2, bd, rows, heads, here, eb, nl))
+
+def Laws.headers_parse_as_replay(d, ok, nk):
+  match d:
+    case Laws.GToml{+first, +rest}:
+      Equal.trans(T.Doc, T.doc.read(Laws.g.expr.text(first, Laws.g.lines.text(rest, "")), T.MScan{T.st.start()}),
+        T.doc.read(Laws.g.expr.text(first, Laws.g.lines.text(rest, "")), T.MScan{ap.s0()}),
+        Laws.replay(Laws.GToml{first, rest}), ap.lead(Laws.g.expr.text(first, Laws.g.lines.text(rest, "")),
+        ap.nb.expr(first, Laws.g.lines.text(rest, ""), Eq.and.left(Laws.g.ok.expr(first), Laws.g.ok.lines(rest), ok),
+        Eq.and.left(Laws.ra.nokv.expr(first), Laws.ra.nokv.lines(rest), nk), ap.nb.lines(rest,
+        Eq.and.right(Laws.g.ok.expr(first), Laws.g.ok.lines(rest), ok)))), ap.go(rest, first, [], [], [], T.LTop{},
+        T.QBasic{}, 0, 0, Eq.and.left(Laws.g.ok.expr(first), Laws.g.ok.lines(rest), ok),
+        Eq.and.right(Laws.g.ok.expr(first), Laws.g.ok.lines(rest), ok), Eq.and.left(Laws.ra.nokv.expr(first),
+        Laws.ra.nokv.lines(rest), nk), Eq.and.right(Laws.ra.nokv.expr(first), Laws.ra.nokv.lines(rest), nk)))

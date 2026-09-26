@@ -421,3 +421,64 @@ The fifth is caught by WP-N's `when.eq`, which equates `when.text` with its toke
 Left for TOML-NUM-1, TOML-NUM-2 and TOML-TIME-1: nothing. `bare_word_refused` and `word_refused_in_document` are pieces of TOML-TEXT-1's refusal direction that WP-R can take up; they are not tagged TOML-TEXT-1.
 
 With TOML-NUM-1 proved, the spike's `dec_int_word` is retired, as REVIEW-G10 decided: the law and its top-level proof are gone, and its lemmas (`gs.*`), which WP-N1 reuses, stay. `integer_word_exact` states everything it did.
+
+## Update (WP-A chunk 1)
+
+The first chunk of WP-A: `replay` is defined, the accept statement is written down (below, not yet a law), and two laws are proved, in LAWS.bend's and PROOF.bend's `# WP-A` blocks. Both are tagged TOML-TEXT-1 and TOML-TEXT-2.
+
+**`replay`.** `replay(d)` runs the walks a derivation's expressions run, in the order the text has them, as the scanner runs them. The state between expressions (`RpSt`) is the error so far, the root's rows (newest first, as the scanner keeps them), `heads`, and the table the lines are in.
+
+- A keyval reads its value first (`replay.go`, one def over the value rules, as `g.ok.val` is), then walks it into the table the lines are in, along `here` followed by the key's names, from `path.len(here)`. That is `take.root`'s walk.
+- A header walks its names from the root with `JDef` or `JAot`, and its table is `here` after it, as `head.apply` does, whether or not the walk failed.
+- Values: a string is `VStr{g.str.chars(st)}`, owned. A bare word is what `word.val` reads it as; if `word.val` refused a word, which no word `g.ok` allows is, its reason would become the error. An array is its items in order. An inline table walks each keyval into its own rows from `""`, with `inl` set, and is `VInl{inl.seal(rows)}` when it closes, as `take.inl` and `inl.top` do.
+- Every walk starts from the error so far. So the first error, whether a walk's, an inline table's or a word's, is the document's, and no later walk changes anything (`failed_walk_changes_nothing`).
+- The document is `Doc{bad, rows.seal(rows)}`.
+
+No decision was needed beyond the plan. One point the plan left open is settled by `error_stays` (below): after a walk fails, `parse` reads on and returns the rows as they were at the failure. So `replay`'s rows after an error are well defined and equal `parse`'s, and the statement can be an equality of documents rather than of errors alone.
+
+**The accept statement, not yet proved:**
+
+```
+law text_reads_as_replay:
+  for +d: Gd
+  for ok: {g.ok(d) == True{} : Bool}
+  for es: {short(g.text(d)) == True{} : Bool}
+  {own(T.parse(g.text(d))) == replay(d) : T.Doc}
+```
+
+The existing `own` fits. `parse` keeps a one-line plain string as a span, and WP-S1's reader promises only a value that holds the string's characters (`s1.holds`: owned or a span), so `parse`'s rows are `replay`'s up to spans. `replay` holds every string owned, so `own` of `parse`'s document is `replay`'s. The proof needs `own.rows` to commute with the walk and with `rows.seal` and `inl.seal`. The walk never reads a string's characters, only names and kinds; `cv.osl.step` (WP-C) already has the `rows.seal` half. `short` is needed only by the strings (a span counts its characters in a U32). A text starting with U+FEFF is not `g.text` of any derivation, so the byte-order mark stays TOML-TEXT-1's business (`bom.drop`).
+
+**The laws:**
+
+- **`error_stays`.** From every scanner state with an error, whatever its other fields, every text reads to `Doc{bad, rows.seal(rows)}`. A walk that the definition rules refuse sets the scanner's error without failing the scanner, and the scanner reads on. This law says the error it sets is the document's, with the rows the walk found. That closes "an error the walk sets staying set to the end of the text" (TOML-TEXT-2) and "errors outside the scanner (tree errors) staying set" (TOML-TEXT-1). It covers every text, not only grammatical ones, and subsumes `fail_stays`.
+- **`headers_parse_as_replay`.** For every derivation with `g.ok(d)` whose expressions are headers and blank lines (`ra.nokv`), `parse(g.text(d)) == replay(d)`. Headers are `[table]` or `[[array]]`, with each segment bare, basic or literal and blank space anywhere the grammar allows. Blank lines may carry a comment, and lines are joined by LF or CRLF in any order. A header whose walk fails is included. No `own` is needed, since no value is read.
+
+How it is proved:
+
+- **`error_stays` (`fz.*`).** Every step of the scanner keeps the pair (error, rows) once the error is not empty. A step that fails goes through `err.first`, which keeps the first error (`fz.e`). A step that places a value, or closes a header, an array or an inline table, walks with the error set and so changes nothing (`fz.top`, `fz.hjob`, `failed_walk_changes_nothing`). Every other step rebuilds the state from the same two fields. The proof takes each lex state's dispatch apart one Bool at a time, 35 states through `fz.on`, and each leaf is the hypothesis itself. The fast step reduces to the full step through WP-R's `sr.ff`. An induction over the text in all four modes (`fz.read`) ends in `read.fin`. This is one pass over the whole scanner, and it makes the error case of every later reader free: once a walk fails, `error_stays` gives the rest.
+- **Blank space and comments (`ap.ws`, `ap.cm`, `ap.tail`).** A state at rest (`ap.s`) in a state that passes blank space over stays as it is for each space and tab. A `#` enters a comment in LTop, LLine, LArr and LArrC (`ap.hash`). A comment character leaves the comment as it is. Such a character is a control only when it is a tab (`ap.cm.c9`, one `Eq.ctl.all` enumeration, as WP-S1's `s1.C9` is), so it takes the fast step's plain path, or the full step as a tab, and it is never a carriage return (`ap.nocr`).
+- **Newlines and the end (`ap.eol`, `ap.fin`).** A newline after a `[ comment ]` (LF, or CR LF through `MCr`, split by WP-S1's `s1.nl.elim`) leaves the scanner at the start of the next line, or in the array's own state, with the back state the comment returned to. The end of the text after a line gives `Doc{"", rows.seal(rows)}`. LArr and LArrC are covered already, for WP-A's arrays.
+- **Headers (`ap.hcore`, `ap.table`).** KEY-3's header reader requires the walk to succeed. Its reading up to the bracket (`k3.hlead`, `k3.hkeys`) is reused, and `ap.hend` is KEY-3's `k3.hend` for any walk result. The grammar's key is KEY-3's `KDot` list and last segment (`ap.dots`, `ap.last`), and its blank space is KEY-3's `gap` (`ap.gs`, `ap.gap`), with text, names and `k3.dk.ok` proved equal (`ap.dots.text`, `ap.key.names`, `ap.key.ok`). The segment checks use WP-S1's `s1.bu.*` and `s1.lc.*` for `k3.bchar` and `lit.char`, and TOML-KEY-1's `bare_is_unquoted_key`.
+- **The document (`ap.go`, `ap.xstep`, `ap.lead`).** `ap.go` inducts over the lines. `ap.xstep` reads one expression from the start of a line and hands the rest to a reader of the lines after it (`ap.K`): the end of the text, or a newline and the next expression. A header whose walk failed goes to `error_stays`, and `replay` from an error keeps it and the rows (`ap.stays`). The first character of a document goes through the byte-order-mark check (`lead`). A character that is not U+FEFF reads as it would later (`ap.lead`, with `sr.ff`), and the grammar starts every expression with one (`ap.nb.*`).
+
+Findings: none. On everything covered (blank space, comments, LF and CRLF, headers of every spelling, failing header walks, the first character), the code does what the grammar says. `main.bend` is unchanged.
+
+Size: 256 lines of law (`replay` about 180, the rest the two laws and `ra.nokv`) and 5,791 of proof: `error_stays` 3,304, the readers and the document 2,487. The gate is about 22 to 24 s, against about 23.4 s at `a5cb83e` on the same machine, a difference within its noise. Lint: 0 errors, and 140 warnings, as at `a5cb83e`.
+
+Break checks: replacing either law's proof by `{==}` fails the gate. Four bugs were planted in a scratch copy of `main.bend`. Each fails the full gate first on an older proof. With those stubbed (`isolate_mutant.py`), each fails a WP-A proof:
+
+| Planted bug | Fails first (stubbed) | WP-A proof that fails |
+| :---- | :---- | :---- |
+| a later error replaces the first (`err.first`) | `gd.g.err2`, `kw.efg`, `vl.ef.go` | `fz.e` (`error_stays`) |
+| a header whose walk is refused forgets the error (`head.apply`), so a table defined twice is accepted | `gd.g.apply`, `kk.happly` | `fz.hjob` (`error_stays`) |
+| a tab in a comment is refused | `gd.g.ctab`, `kg.ctab` | `fz.x.com` (`error_stays`) |
+| the line feed that ends a comment is not read again, so a header after `[a] # c` fails | `gd.g.comnl` | `ap.eol.lf` (`headers_parse_as_replay`) |
+
+**Left for WP-A, and the plan for chunk 2.** What is left is `text_reads_as_replay` itself: keyval lines, with values of every spelling, arrays and inline tables of any spelling, dotted keys in every position (at the root, after a header, inside inline tables), and expressions in any order.
+
+- **`own` and the walk.** `own.rows` commutes with `tree.walk` for every job (a `JPut`'s value owned), with `rows.seal` (from WP-C's `cv.osl.step`) and with `inl.seal`. The line invariant becomes `own.rows(rw) == R`. About 800 to 1,200 lines.
+- **Keyval lines.** KEY-3's `key_reads_back_anywhere`, through the same key conversion, then blank space in LVal (`ap.ws`), the value, `take.root`'s walk, and the line's blank space and comment in LLine (`ap.tail`, `ap.eol`, `ap.fin`). Scalar values come through WP-S1's `string_reads_as_denoted` and WP-V's `bare_word_reads_on`. A word `g.ok` allows is one `word.val` reads: `date_time_word_read` gives it for datetimes. For the other words it comes from WP-N1's classifiers with the denoted value, which is computable for floats and booleans and needs WP-N1's radix lemmas for prefixed integers. About 1,500 lines.
+- **Arrays and inline tables.** Readers in premise form for `array-values` with `ws-comment-newline` (LArr and LArrC; the comment and newline readers above already take them), trailing commas, and `inline-table-sep` (LInl, LInlK, LInlC), nested to any depth. This is one induction over `GVal` with a mode, as `replay.go` is, with WP-S1's and WP-V's `_in_array` forms for an array's items. About 3,000 to 5,000 lines.
+- **The document.** `ap.go` generalizes from headers to keyvals, the invariant to `own`, and `ap.stays` to values (a value read from an error keeps it). About 500 lines.
+
+Chunk 2 comes to about 6,000 to 8,000 lines, which puts WP-A at about 12,000 to 14,000, at the low end of its estimate.
