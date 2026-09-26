@@ -4160,3 +4160,74 @@ law header_reads_back_anywhere:
     k3.dk.names(ds, last), bk, qk, un, lf)}) == goal : T.Doc}
   {T.doc.read(k3.hd.text(arr, g0, ds, last, g9, rest), T.MScan{k3.at(AtLine{}, rows, heads, here, [], arrtab, back,
     qkind, uni, left)}) == goal : T.Doc}
+
+# KEY-3: a key found in a parsed document. k3.has(rows, path, k) says the
+# rows hold a pair named k in the table the path names: the path's first
+# name is some pair's in the rows, every pair of that name holds the rest of
+# the path, and the last table's rows are ones get finds k in. A table's
+# rows, an inline table's and an element of an array of tables hold the path
+# as rows do; an array of tables or an array holds it when some element or
+# item does, so at, which enters no array, is not needed to say it. Names
+# compare as get compares them (str.eq).
+
+# how k3.h reads its list, and the rest of the path: the rows seen for one
+# name, or the elements of an array of tables or the items of an array
+type KHm is Data:
+  KhAll{name: String, path: List<&2, String>}
+  KhSome{path: List<&2, String>}
+
+# whether a lookup found something
+def k3.found(hh: T.Hit) -> Bool:
+  match hh:
+    case T.Found{_v}:
+      True{}
+    case T.Miss{}:
+      False{}
+
+# whether a list, read as md says, holds a pair named kk at the end of the
+# path. A table's rows are read in place: kk found in them at the end of the
+# path, or the next name found in them and every pair of it holding the rest
+def k3.h(xs: List<&2, T.Val>, md: KHm, +kk: String) -> Bool:
+  match xs md:
+    case [] KhAll{_n, _p}:
+      True{}
+    case T.VPair{+mm, T.VHead{_q, rows}} <> tt KhAll{+nn, Nil{}}:
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.found(T.get(rows, kk))), k3.h(tt, KhAll{nn, []}, kk))
+    case T.VPair{+mm, T.VHead{_q, +rows}} <> tt KhAll{+nn, +n2 <> +p2}:
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2},
+        kk))), k3.h(tt, KhAll{nn, n2 <> p2}, kk))
+    case T.VPair{+mm, T.VInl{rows}} <> tt KhAll{+nn, Nil{}}:
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.found(T.get(rows, kk))), k3.h(tt, KhAll{nn, []}, kk))
+    case T.VPair{+mm, T.VInl{+rows}} <> tt KhAll{+nn, +n2 <> +p2}:
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2},
+        kk))), k3.h(tt, KhAll{nn, n2 <> p2}, kk))
+    case T.VPair{+mm, T.VAots{_q, es}} <> tt KhAll{+nn, +pp}:
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.h(es, KhSome{pp}, kk)), k3.h(tt, KhAll{nn, pp}, kk))
+    case T.VPair{+mm, T.VArr{items}} <> tt KhAll{+nn, +pp}:
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.h(items, KhSome{pp}, kk)), k3.h(tt, KhAll{nn, pp}, kk))
+    case T.VPair{+mm, _v} <> tt KhAll{+nn, +pp}:
+      Bool.and(Bool.not(T.str.eq(mm, nn)), k3.h(tt, KhAll{nn, pp}, kk))
+    case _h <> tt KhAll{+nn, +pp}:
+      k3.h(tt, KhAll{nn, pp}, kk)
+    case [] KhSome{_p}:
+      False{}
+    case T.VAot{_q, rows} <> tt KhSome{Nil{}}:
+      Bool.or(k3.found(T.get(rows, kk)), k3.h(tt, KhSome{[]}, kk))
+    case T.VAot{_q, +rows} <> tt KhSome{+n2 <> +p2}:
+      Bool.or(Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2}, kk)), k3.h(tt, KhSome{n2 <> p2}, kk))
+    case T.VInl{rows} <> tt KhSome{Nil{}}:
+      Bool.or(k3.found(T.get(rows, kk)), k3.h(tt, KhSome{[]}, kk))
+    case T.VInl{+rows} <> tt KhSome{+n2 <> +p2}:
+      Bool.or(Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2}, kk)), k3.h(tt, KhSome{n2 <> p2}, kk))
+    case T.VArr{items} <> tt KhSome{+pp}:
+      Bool.or(k3.h(items, KhSome{pp}, kk), k3.h(tt, KhSome{pp}, kk))
+    case _v <> tt KhSome{+pp}:
+      k3.h(tt, KhSome{pp}, kk)
+
+# whether the rows hold a pair named kk in the table the path names
+def k3.has(+rows: List<&2, T.Val>, path: List<&2, String>, +kk: String) -> Bool:
+  match path:
+    case []:
+      k3.found(T.get(rows, kk))
+    case +nn <> pp:
+      Bool.and(k3.found(T.get(rows, nn)), k3.h(rows, KhAll{nn, pp}, kk))

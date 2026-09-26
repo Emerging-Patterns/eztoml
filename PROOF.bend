@@ -51286,3 +51286,1513 @@ def sip3.parse_wf(
     ~(hh => tt => et => sip3.oh(hh, tt, et)), ~(hh => tt => et => sip3.ot(hh, tt, et)), Unit{}, text,
     T.MScan{T.st.start()}, Laws.gd_start([], [], [], T.LTop{}, T.LTop{}, T.QBasic{}, 0, 0, False{}, True{}, {==},
     {==}), gd.tt(T.wf.text(text), Laws.short(text), ew, es))(eo)
+
+# KEY-3: the lemmas of k3.has. A pair's value holds the rest of a path when
+# it is a table or an inline table whose rows do, or an array of tables or
+# an array one of whose elements does (kh.hv).
+
+# a pair's value holds the rest of a path
+def kh.hv(vv: T.Val, +path: List<&2, String>, +kk: String) -> Bool:
+  match vv:
+    case T.VHead{_q, rows}:
+      Laws.k3.has(rows, path, kk)
+    case T.VInl{rows}:
+      Laws.k3.has(rows, path, kk)
+    case T.VAots{_q, es}:
+      Laws.k3.h(es, Laws.KhSome{path}, kk)
+    case T.VArr{items}:
+      Laws.k3.h(items, Laws.KhSome{path}, kk)
+    case _v:
+      False{}
+
+# a Bool is itself or False
+def kh.orf(bb: Bool) -> {Bool.not(bb) == Bool.or(Bool.not(bb), False{}) : Bool}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# one pair of the rows seen for a name: its value holds the path unless its
+# name is another
+def kh.cons(
+  +mm: String,
+  +vv: T.Val,
+  +pp: List<&2, String>,
+  +tt: List<&2, T.Val>,
+  +nn: String,
+  +kk: String
+) -> {Laws.k3.h(T.VPair{mm, vv} <> tt, Laws.KhAll{nn, pp}, kk) == Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)),
+  kh.hv(vv, pp, kk)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}:
+  match vv:
+    case T.VHead{_q, _r}:
+      match pp:
+        case []:
+          {==}
+        case _n <> _p:
+          {==}
+    case T.VInl{_r}:
+      match pp:
+        case []:
+          {==}
+        case _n <> _p:
+          {==}
+    case T.VAots{_q, _e}:
+      {==}
+    case T.VArr{_i}:
+      {==}
+    case T.VStr{_a}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VSpan{_a, _b}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VInt{_a, _b}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VFlo{_a, _b}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VBool{_a}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VWhen{_a}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VAot{_a, _b}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VPair{_a, _b}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+
+# a pair of the rows seen for a name holds the rest of the path, as k3.h asks
+# of it: its name is another, or its value holds the rest
+def kh.eA(xx: T.Val, +nn: String, +pp: List<&2, String>, +kk: String) -> Bool:
+  match xx:
+    case T.VPair{mm, vv}:
+      Bool.or(Bool.not(T.str.eq(mm, nn)), kh.hv(vv, pp, kk))
+    case _x:
+      True{}
+
+# an element of an array of tables or an item of an array holds the rest of
+# the path
+def kh.eS(xx: T.Val, +pp: List<&2, String>, +kk: String) -> Bool:
+  match xx:
+    case T.VAot{_q, rows}:
+      Laws.k3.has(rows, pp, kk)
+    case T.VInl{rows}:
+      Laws.k3.has(rows, pp, kk)
+    case T.VArr{items}:
+      Laws.k3.h(items, Laws.KhSome{pp}, kk)
+    case _x:
+      False{}
+
+# a value is a pair of this name
+def kh.eF(xx: T.Val, +nn: String) -> Bool:
+  match xx:
+    case T.VPair{mm, _v}:
+      T.str.eq(mm, nn)
+    case _x:
+      False{}
+
+# the rows seen for a name, one value at a time
+def kh.uA(
+  +xx: T.Val,
+  +pp: List<&2, String>,
+  +tt: List<&2, T.Val>,
+  +nn: String,
+  +kk: String
+) -> {Laws.k3.h(xx <> tt, Laws.KhAll{nn, pp}, kk) == Bool.and(kh.eA(xx, nn, pp, kk), Laws.k3.h(tt, Laws.KhAll{nn,
+  pp}, kk)) : Bool}:
+  match xx:
+    case T.VPair{+mm, +vv}:
+      kh.cons(mm, vv, pp, tt, nn, kk)
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+
+# the elements of an array of tables, or the items of an array, one at a time
+def kh.uS(
+  +xx: T.Val,
+  +pp: List<&2, String>,
+  +tt: List<&2, T.Val>,
+  +kk: String
+) -> {Laws.k3.h(xx <> tt, Laws.KhSome{pp}, kk) == Bool.or(kh.eS(xx, pp, kk), Laws.k3.h(tt, Laws.KhSome{pp}, kk))
+  : Bool}:
+  match xx:
+    case T.VAot{_q, _r}:
+      match pp:
+        case []:
+          {==}
+        case _n <> _p:
+          {==}
+    case T.VInl{_r}:
+      match pp:
+        case []:
+          {==}
+        case _n <> _p:
+          {==}
+    case T.VArr{_i}:
+      {==}
+    case T.VPair{_a, bb}:
+      match bb:
+        case T.VStr{_c}:
+          {==}
+        case T.VSpan{_c, _d}:
+          {==}
+        case T.VInt{_c, _d}:
+          {==}
+        case T.VFlo{_c, _d}:
+          {==}
+        case T.VBool{_c}:
+          {==}
+        case T.VWhen{_c}:
+          {==}
+        case T.VArr{_c}:
+          {==}
+        case T.VInl{_c}:
+          {==}
+        case T.VHead{_c, _d}:
+          {==}
+        case T.VAot{_c, _d}:
+          {==}
+        case T.VAots{_c, _d}:
+          {==}
+        case T.VPair{_c, _d}:
+          {==}
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+
+# the first pair found, as a Bool
+def kh.fstep(
+  bb: Bool,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +nn: String
+) -> {Laws.k3.found(T.find.step(bb, vv, _u => T.rows.find(tt, nn))) == Bool.or(bb, Laws.k3.found(T.get(tt, nn)))
+  : Bool}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a name found in rows, one value at a time
+def kh.uF(
+  +xx: T.Val,
+  +tt: List<&2, T.Val>,
+  +nn: String
+) -> {Laws.k3.found(T.get(xx <> tt, nn)) == Bool.or(kh.eF(xx, nn), Laws.k3.found(T.get(tt, nn))) : Bool}:
+  match xx:
+    case T.VPair{+mm, +vv}:
+      kh.fstep(T.str.eq(mm, nn), vv, tt, nn)
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+
+# a name found in rows
+def kh.F(xs: List<&2, T.Val>, +nn: String) -> Bool:
+  Laws.k3.found(T.get(xs, nn))
+
+# the rows seen for a name hold the rest of the path
+def kh.A(xs: List<&2, T.Val>, +nn: String, +pp: List<&2, String>, +kk: String) -> Bool:
+  Laws.k3.h(xs, Laws.KhAll{nn, pp}, kk)
+
+# some element or item holds the rest of the path
+def kh.S(xs: List<&2, T.Val>, +pp: List<&2, String>, +kk: String) -> Bool:
+  Laws.k3.h(xs, Laws.KhSome{pp}, kk)
+
+# or, with the first two swapped into a group
+def bo.or.sw(aa: Bool, bb: Bool, cc: Bool) -> {Bool.or(bb, Bool.or(aa, cc)) == Bool.or(Bool.or(aa, bb), cc) : Bool}:
+  match aa bb:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      {==}
+    case False{} True{}:
+      {==}
+    case False{} False{}:
+      {==}
+
+# and, with the first two swapped into a group
+def bo.and.sw(
+  aa: Bool,
+  bb: Bool,
+  cc: Bool
+) -> {Bool.and(bb, Bool.and(aa, cc)) == Bool.and(Bool.and(aa, bb), cc) : Bool}:
+  match aa bb:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      {==}
+    case False{} True{}:
+      {==}
+    case False{} False{}:
+      {==}
+
+# a name is found in a reversal onto a list when it is in either
+def kh.revF(
+  xs: List<&2, T.Val>,
+  +acc: List<&2, T.Val>,
+  +nn: String
+) -> {kh.F(List.reverse.go(&2, T.Val, xs, acc), nn) == Bool.or(kh.F(xs, nn), kh.F(acc, nn)) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case +xx <> +tt:
+      Equal.trans(Bool, kh.F(List.reverse.go(&2, T.Val, tt, xx <> acc), nn), Bool.or(kh.F(tt, nn), kh.F(xx <> acc,
+        nn)), Bool.or(kh.F(xx <> tt, nn), kh.F(acc, nn)), kh.revF(tt, xx <> acc, nn),
+        Equal.trans(Bool, Bool.or(kh.F(tt, nn), kh.F(xx <> acc, nn)), Bool.or(kh.F(tt, nn), Bool.or(kh.eF(xx, nn),
+          kh.F(acc, nn))), Bool.or(kh.F(xx <> tt, nn), kh.F(acc, nn)),
+          Equal.cong(Bool, Bool, zz => Bool.or(kh.F(tt, nn), zz), kh.F(xx <> acc, nn), Bool.or(kh.eF(xx, nn),
+            kh.F(acc, nn)), kh.uF(xx, acc, nn)),
+          Equal.trans(Bool, Bool.or(kh.F(tt, nn), Bool.or(kh.eF(xx, nn), kh.F(acc, nn))),
+            Bool.or(Bool.or(kh.eF(xx, nn), kh.F(tt, nn)), kh.F(acc, nn)), Bool.or(kh.F(xx <> tt, nn), kh.F(acc,
+              nn)), bo.or.sw(kh.eF(xx, nn), kh.F(tt, nn), kh.F(acc, nn)),
+            Equal.cong(Bool, Bool, zz => Bool.or(zz, kh.F(acc, nn)), Bool.or(kh.eF(xx, nn), kh.F(tt, nn)),
+              kh.F(xx <> tt, nn), Equal.sym(Bool, kh.F(xx <> tt, nn), Bool.or(kh.eF(xx, nn), kh.F(tt, nn)),
+                kh.uF(xx, tt, nn))))))
+
+# the rows seen for a name hold a path in a reversal onto a list when they
+# do in both
+def kh.revA(
+  xs: List<&2, T.Val>,
+  +acc: List<&2, T.Val>,
+  +nn: String,
+  +pp: List<&2, String>,
+  +kk: String
+) -> {kh.A(List.reverse.go(&2, T.Val, xs, acc), nn, pp, kk) == Bool.and(kh.A(xs, nn, pp, kk), kh.A(acc, nn, pp,
+  kk)) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case +xx <> +tt:
+      Equal.trans(Bool, kh.A(List.reverse.go(&2, T.Val, tt, xx <> acc), nn, pp, kk), Bool.and(kh.A(tt, nn, pp, kk),
+        kh.A(xx <> acc, nn, pp, kk)), Bool.and(kh.A(xx <> tt, nn, pp, kk), kh.A(acc, nn, pp, kk)),
+        kh.revA(tt, xx <> acc, nn, pp, kk),
+        Equal.trans(Bool, Bool.and(kh.A(tt, nn, pp, kk), kh.A(xx <> acc, nn, pp, kk)), Bool.and(kh.A(tt, nn, pp,
+          kk), Bool.and(kh.eA(xx, nn, pp, kk), kh.A(acc, nn, pp, kk))), Bool.and(kh.A(xx <> tt, nn, pp, kk),
+          kh.A(acc, nn, pp, kk)),
+          Equal.cong(Bool, Bool, zz => Bool.and(kh.A(tt, nn, pp, kk), zz), kh.A(xx <> acc, nn, pp, kk),
+            Bool.and(kh.eA(xx, nn, pp, kk), kh.A(acc, nn, pp, kk)), kh.uA(xx, pp, acc, nn, kk)),
+          Equal.trans(Bool, Bool.and(kh.A(tt, nn, pp, kk), Bool.and(kh.eA(xx, nn, pp, kk), kh.A(acc, nn, pp,
+            kk))), Bool.and(Bool.and(kh.eA(xx, nn, pp, kk), kh.A(tt, nn, pp, kk)), kh.A(acc, nn, pp, kk)),
+            Bool.and(kh.A(xx <> tt, nn, pp, kk), kh.A(acc, nn, pp, kk)), bo.and.sw(kh.eA(xx, nn, pp, kk), kh.A(tt,
+              nn, pp, kk), kh.A(acc, nn, pp, kk)),
+            Equal.cong(Bool, Bool, zz => Bool.and(zz, kh.A(acc, nn, pp, kk)), Bool.and(kh.eA(xx, nn, pp, kk),
+              kh.A(tt, nn, pp, kk)), kh.A(xx <> tt, nn, pp, kk), Equal.sym(Bool, kh.A(xx <> tt, nn, pp, kk),
+                Bool.and(kh.eA(xx, nn, pp, kk), kh.A(tt, nn, pp, kk)), kh.uA(xx, pp, tt, nn, kk))))))
+
+# some element holds a path in a reversal onto a list when one of either
+# does
+def kh.revS(
+  xs: List<&2, T.Val>,
+  +acc: List<&2, T.Val>,
+  +pp: List<&2, String>,
+  +kk: String
+) -> {kh.S(List.reverse.go(&2, T.Val, xs, acc), pp, kk) == Bool.or(kh.S(xs, pp, kk), kh.S(acc, pp, kk)) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case +xx <> +tt:
+      Equal.trans(Bool, kh.S(List.reverse.go(&2, T.Val, tt, xx <> acc), pp, kk), Bool.or(kh.S(tt, pp, kk),
+        kh.S(xx <> acc, pp, kk)), Bool.or(kh.S(xx <> tt, pp, kk), kh.S(acc, pp, kk)), kh.revS(tt, xx <> acc, pp,
+          kk),
+        Equal.trans(Bool, Bool.or(kh.S(tt, pp, kk), kh.S(xx <> acc, pp, kk)), Bool.or(kh.S(tt, pp, kk),
+          Bool.or(kh.eS(xx, pp, kk), kh.S(acc, pp, kk))), Bool.or(kh.S(xx <> tt, pp, kk), kh.S(acc, pp, kk)),
+          Equal.cong(Bool, Bool, zz => Bool.or(kh.S(tt, pp, kk), zz), kh.S(xx <> acc, pp, kk),
+            Bool.or(kh.eS(xx, pp, kk), kh.S(acc, pp, kk)), kh.uS(xx, pp, acc, kk)),
+          Equal.trans(Bool, Bool.or(kh.S(tt, pp, kk), Bool.or(kh.eS(xx, pp, kk), kh.S(acc, pp, kk))),
+            Bool.or(Bool.or(kh.eS(xx, pp, kk), kh.S(tt, pp, kk)), kh.S(acc, pp, kk)), Bool.or(kh.S(xx <> tt, pp,
+              kk), kh.S(acc, pp, kk)), bo.or.sw(kh.eS(xx, pp, kk), kh.S(tt, pp, kk), kh.S(acc, pp, kk)),
+            Equal.cong(Bool, Bool, zz => Bool.or(zz, kh.S(acc, pp, kk)), Bool.or(kh.eS(xx, pp, kk), kh.S(tt, pp,
+              kk)), kh.S(xx <> tt, pp, kk), Equal.sym(Bool, kh.S(xx <> tt, pp, kk), Bool.or(kh.eS(xx, pp, kk),
+                kh.S(tt, pp, kk)), kh.uS(xx, pp, tt, kk))))))
+
+# which of k3.h's readings a lemma is about: a name found, the rows seen
+# for a name, or some element or item
+type KSel is Data:
+  SlF{name: String}
+  SlA{name: String, path: List<&2, String>}
+  SlS{path: List<&2, String>}
+
+# the reading a selector names
+def kh.sl(sel: KSel, xs: List<&2, T.Val>, +kk: String) -> Bool:
+  match sel:
+    case SlF{nn}:
+      kh.F(xs, nn)
+    case SlA{nn, pp}:
+      kh.A(xs, nn, pp, kk)
+    case SlS{pp}:
+      kh.S(xs, pp, kk)
+
+# the reading of one value
+def kh.el(sel: KSel, xx: T.Val, +kk: String) -> Bool:
+  match sel:
+    case SlF{nn}:
+      kh.eF(xx, nn)
+    case SlA{nn, pp}:
+      kh.eA(xx, nn, pp, kk)
+    case SlS{pp}:
+      kh.eS(xx, pp, kk)
+
+# how the readings of the values join: found or some is an or, all is an and
+def kh.op(sel: KSel, aa: Bool, bb: Bool) -> Bool:
+  match sel:
+    case SlF{_n}:
+      Bool.or(aa, bb)
+    case SlA{_n, _p}:
+      Bool.and(aa, bb)
+    case SlS{_p}:
+      Bool.or(aa, bb)
+
+# a reading, one value at a time
+def kh.slu(
+  +sel: KSel,
+  +xx: T.Val,
+  +tt: List<&2, T.Val>,
+  +kk: String
+) -> {kh.sl(sel, xx <> tt, kk) == kh.op(sel, kh.el(sel, xx, kk), kh.sl(sel, tt, kk)) : Bool}:
+  match sel:
+    case SlF{+nn}:
+      kh.uF(xx, tt, nn)
+    case SlA{+nn, +pp}:
+      kh.uA(xx, pp, tt, nn, kk)
+    case SlS{+pp}:
+      kh.uS(xx, pp, tt, kk)
+
+# or False is the Bool
+def bo.or.f(aa: Bool) -> {Bool.or(aa, False{}) == aa : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# and True is the Bool
+def bo.and.t(aa: Bool) -> {Bool.and(aa, True{}) == aa : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# both sides of an and
+def bo.and.cong(
+  aa: Bool,
+  bb: Bool,
+  cc: Bool,
+  dd: Bool,
+  +e1: {aa == cc : Bool},
+  +e2: {bb == dd : Bool}
+) -> {Bool.and(aa, bb) == Bool.and(cc, dd) : Bool}:
+  Equal.trans(Bool, Bool.and(aa, bb), Bool.and(cc, bb), Bool.and(cc, dd),
+    Equal.cong(Bool, Bool, zz => Bool.and(zz, bb), aa, cc, e1),
+    Equal.cong(Bool, Bool, zz => Bool.and(cc, zz), bb, dd, e2))
+
+# both sides of an or
+def bo.or.cong(
+  aa: Bool,
+  bb: Bool,
+  cc: Bool,
+  dd: Bool,
+  +e1: {aa == cc : Bool},
+  +e2: {bb == dd : Bool}
+) -> {Bool.or(aa, bb) == Bool.or(cc, dd) : Bool}:
+  Equal.trans(Bool, Bool.or(aa, bb), Bool.or(cc, bb), Bool.or(cc, dd),
+    Equal.cong(Bool, Bool, zz => Bool.or(zz, bb), aa, cc, e1),
+    Equal.cong(Bool, Bool, zz => Bool.or(cc, zz), bb, dd, e2))
+
+# a reading does not see the order of the values
+def kh.slrev(
+  +sel: KSel,
+  +ys: List<&2, T.Val>,
+  +kk: String
+) -> {kh.sl(sel, List.reverse(&2, T.Val, ys), kk) == kh.sl(sel, ys, kk) : Bool}:
+  match sel:
+    case SlF{+nn}:
+      Equal.trans(Bool, kh.F(List.reverse(&2, T.Val, ys), nn), Bool.or(kh.F(ys, nn), False{}), kh.F(ys, nn),
+        kh.revF(ys, [], nn), bo.or.f(kh.F(ys, nn)))
+    case SlA{+nn, +pp}:
+      Equal.trans(Bool, kh.A(List.reverse(&2, T.Val, ys), nn, pp, kk), Bool.and(kh.A(ys, nn, pp, kk), True{}),
+        kh.A(ys, nn, pp, kk), kh.revA(ys, [], nn, pp, kk), bo.and.t(kh.A(ys, nn, pp, kk)))
+    case SlS{+pp}:
+      Equal.trans(Bool, kh.S(List.reverse(&2, T.Val, ys), pp, kk), Bool.or(kh.S(ys, pp, kk), False{}),
+        kh.S(ys, pp, kk), kh.revS(ys, [], pp, kk), bo.or.f(kh.S(ys, pp, kk)))
+
+# a reading of sealed rows, from the reading of the rows with every value
+# sealed
+def kh.slseal(
+  +sel: KSel,
+  +rr: List<&2, T.Val>,
+  +kk: String,
+  +ih: {kh.sl(sel, cv.smap(rr), kk) == kh.sl(sel, rr, kk) : Bool}
+) -> {kh.sl(sel, T.rows.seal(rr), kk) == kh.sl(sel, rr, kk) : Bool}:
+  Equal.trans(Bool, kh.sl(sel, T.rows.seal(rr), kk), kh.sl(sel, List.reverse(&2, T.Val, cv.smap(rr)), kk),
+    kh.sl(sel, rr, kk),
+    Equal.cong(List<&2, T.Val>, Bool, zs => kh.sl(sel, zs, kk), T.rows.seal(rr), List.reverse(&2, T.Val,
+      cv.smap(rr)), cv.seal.rs(rr)),
+    Equal.trans(Bool, kh.sl(sel, List.reverse(&2, T.Val, cv.smap(rr)), kk), kh.sl(sel, cv.smap(rr), kk),
+      kh.sl(sel, rr, kk), kh.slrev(sel, cv.smap(rr), kk), ih))
+
+# both sides of the join
+def kh.opcong(
+  +sel: KSel,
+  aa: Bool,
+  bb: Bool,
+  cc: Bool,
+  dd: Bool,
+  +e1: {aa == cc : Bool},
+  +e2: {bb == dd : Bool}
+) -> {kh.op(sel, aa, bb) == kh.op(sel, cc, dd) : Bool}:
+  match sel:
+    case SlF{_n}:
+      bo.or.cong(aa, bb, cc, dd, e1, e2)
+    case SlA{_n, _p}:
+      bo.and.cong(aa, bb, cc, dd, e1, e2)
+    case SlS{_p}:
+      bo.or.cong(aa, bb, cc, dd, e1, e2)
+
+# a reading of rows with every value sealed, one value at a time
+def kh.smstep(
+  +sel: KSel,
+  +xx: T.Val,
+  +tt: List<&2, T.Val>,
+  +kk: String,
+  +ee: {kh.el(sel, Laws.sealed(xx), kk) == kh.el(sel, xx, kk) : Bool},
+  +ih: {kh.sl(sel, cv.smap(tt), kk) == kh.sl(sel, tt, kk) : Bool}
+) -> {kh.sl(sel, Laws.sealed(xx) <> cv.smap(tt), kk) == kh.sl(sel, xx <> tt, kk) : Bool}:
+  Equal.trans(Bool, kh.sl(sel, Laws.sealed(xx) <> cv.smap(tt), kk), kh.op(sel, kh.el(sel, Laws.sealed(xx), kk),
+    kh.sl(sel, cv.smap(tt), kk)), kh.sl(sel, xx <> tt, kk), kh.slu(sel, Laws.sealed(xx), cv.smap(tt), kk),
+    Equal.trans(Bool, kh.op(sel, kh.el(sel, Laws.sealed(xx), kk), kh.sl(sel, cv.smap(tt), kk)), kh.op(sel,
+      kh.el(sel, xx, kk), kh.sl(sel, tt, kk)), kh.sl(sel, xx <> tt, kk), kh.opcong(sel, kh.el(sel,
+        Laws.sealed(xx), kk), kh.sl(sel, cv.smap(tt), kk), kh.el(sel, xx, kk), kh.sl(sel, tt, kk), ee, ih),
+      Equal.sym(Bool, kh.sl(sel, xx <> tt, kk), kh.op(sel, kh.el(sel, xx, kk), kh.sl(sel, tt, kk)), kh.slu(sel,
+        xx, tt, kk))))
+
+# sealed rows hold a path as the rows do, given that for their values
+def kh.hs(
+  pp: List<&2, String>,
+  +rr: List<&2, T.Val>,
+  +kk: String,
+  fF: @nm: String -> {kh.F(cv.smap(rr), nm) == kh.F(rr, nm) : Bool},
+  fA: @nm: String -> @qq: List<&2, String> -> {kh.A(cv.smap(rr), nm, qq, kk) == kh.A(rr, nm, qq, kk) : Bool}
+) -> {Laws.k3.has(T.rows.seal(rr), pp, kk) == Laws.k3.has(rr, pp, kk) : Bool}:
+  match pp:
+    case []:
+      kh.slseal(SlF{kk}, rr, kk, fF(kk))
+    case +n2 <> +q2:
+      bo.and.cong(kh.F(T.rows.seal(rr), n2), kh.A(T.rows.seal(rr), n2, q2, kk), kh.F(rr, n2), kh.A(rr, n2, q2,
+        kk), kh.slseal(SlF{n2}, rr, kk, fF(n2)), kh.slseal(SlA{n2, q2}, rr, kk, fA(n2, q2)))
+
+# a sealed array's items, in order again, hold a path as the items do
+def kh.ha(
+  +pp: List<&2, String>,
+  +rr: List<&2, T.Val>,
+  +kk: String,
+  +iS: {kh.S(cv.smap(rr), pp, kk) == kh.S(rr, pp, kk) : Bool}
+) -> {kh.S(List.reverse(&2, T.Val, T.rows.seal(rr)), pp, kk) == kh.S(rr, pp, kk) : Bool}:
+  Equal.trans(Bool, kh.S(List.reverse(&2, T.Val, T.rows.seal(rr)), pp, kk), kh.S(T.rows.seal(rr), pp, kk),
+    kh.S(rr, pp, kk), kh.slrev(SlS{pp}, T.rows.seal(rr), kk), kh.slseal(SlS{pp}, rr, kk, iS))
+
+# rows with every value sealed hold what the rows hold, read any way
+def kh.smapeq(
+  xs: List<&2, T.Val>,
+  +sel: KSel,
+  +kk: String
+) -> {kh.sl(sel, cv.smap(xs), kk) == kh.sl(sel, xs, kk) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+mm, T.VHead{+qq, +rr}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VHead{qq, rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VHead{qq, rr}}, tt, kk, bo.or.cong(Bool.not(T.str.eq(mm, nn)),
+            Laws.k3.has(T.rows.seal(rr), pp, kk), Bool.not(T.str.eq(mm, nn)), Laws.k3.has(rr, pp, kk), {==}, kh.hs(pp,
+              rr, kk, nm => kh.smapeq(rr, SlF{nm}, kk), nm => qq => kh.smapeq(rr, SlA{nm, qq}, kk))), kh.smapeq(tt,
+                sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VHead{qq, rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VInl{+rr}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VInl{rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VInl{rr}}, tt, kk, bo.or.cong(Bool.not(T.str.eq(mm, nn)),
+            Laws.k3.has(T.rows.seal(rr), pp, kk), Bool.not(T.str.eq(mm, nn)), Laws.k3.has(rr, pp, kk), {==}, kh.hs(pp,
+              rr, kk, nm => kh.smapeq(rr, SlF{nm}, kk), nm => qq => kh.smapeq(rr, SlA{nm, qq}, kk))), kh.smapeq(tt,
+                sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VInl{rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VAots{+qq, +rr}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VAots{qq, rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VAots{qq, rr}}, tt, kk, bo.or.cong(Bool.not(T.str.eq(mm, nn)),
+            kh.S(T.rows.seal(rr), pp, kk), Bool.not(T.str.eq(mm, nn)), kh.S(rr, pp, kk), {==}, kh.slseal(SlS{pp}, rr,
+              kk, kh.smapeq(rr, SlS{pp}, kk))), kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VAots{qq, rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VArr{+rr}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VArr{rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VArr{rr}}, tt, kk, bo.or.cong(Bool.not(T.str.eq(mm, nn)), kh.S(List.reverse(&2,
+            T.Val, T.rows.seal(rr)), pp, kk), Bool.not(T.str.eq(mm, nn)), kh.S(rr, pp, kk), {==}, kh.ha(pp, rr, kk,
+              kh.smapeq(rr, SlS{pp}, kk))), kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VArr{rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VStr{+a1}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VStr{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VStr{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VStr{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VSpan{+a1, +a2}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VSpan{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VSpan{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VSpan{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VInt{+a1, +a2}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VInt{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VInt{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VInt{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VFlo{+a1, +a2}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VFlo{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VFlo{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VFlo{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VBool{+a1}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VBool{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VBool{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VBool{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VWhen{+a1}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VWhen{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VWhen{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VWhen{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VAot{+a1, +a2}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VAot{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VAot{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VAot{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VPair{+a1, +a2}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VPair{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VPair{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VPair{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VAot{+qq, +rr} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VAot{qq, rr}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VAot{qq, rr}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VAot{qq, rr}, tt, kk, kh.hs(pp, rr, kk, nm => kh.smapeq(rr, SlF{nm}, kk),
+            nm => qq => kh.smapeq(rr, SlA{nm, qq}, kk)), kh.smapeq(tt, sel, kk))
+    case T.VInl{+rr} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VInl{rr}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VInl{rr}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VInl{rr}, tt, kk, kh.hs(pp, rr, kk, nm => kh.smapeq(rr, SlF{nm}, kk),
+            nm => qq => kh.smapeq(rr, SlA{nm, qq}, kk)), kh.smapeq(tt, sel, kk))
+    case T.VArr{+rr} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VArr{rr}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VArr{rr}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VArr{rr}, tt, kk, kh.ha(pp, rr, kk, kh.smapeq(rr, SlS{pp}, kk)), kh.smapeq(tt, sel, kk))
+    case T.VStr{+a1} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VStr{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VStr{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VStr{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VSpan{+a1, +a2} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VSpan{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VSpan{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VSpan{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VInt{+a1, +a2} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VInt{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VInt{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VInt{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VFlo{+a1, +a2} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VFlo{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VFlo{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VFlo{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VBool{+a1} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VBool{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VBool{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VBool{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VWhen{+a1} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VWhen{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VWhen{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VWhen{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VHead{+a1, +a2} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VHead{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VHead{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VHead{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VAots{+a1, +a2} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VAots{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VAots{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VAots{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+
+# a reading of two lists, one value at a time: values read alike and rests
+# read alike
+def kh.mstep(
+  +sel: KSel,
+  +yy: T.Val,
+  +xx: T.Val,
+  +ys: List<&2, T.Val>,
+  +xs: List<&2, T.Val>,
+  +kk: String,
+  +ee: {kh.el(sel, yy, kk) == kh.el(sel, xx, kk) : Bool},
+  +ih: {kh.sl(sel, ys, kk) == kh.sl(sel, xs, kk) : Bool}
+) -> {kh.sl(sel, yy <> ys, kk) == kh.sl(sel, xx <> xs, kk) : Bool}:
+  Equal.trans(Bool, kh.sl(sel, yy <> ys, kk), kh.op(sel, kh.el(sel, yy, kk), kh.sl(sel, ys, kk)), kh.sl(sel, xx <>
+    xs, kk), kh.slu(sel, yy, ys, kk),
+    Equal.trans(Bool, kh.op(sel, kh.el(sel, yy, kk), kh.sl(sel, ys, kk)), kh.op(sel, kh.el(sel, xx, kk), kh.sl(sel,
+      xs, kk)), kh.sl(sel, xx <> xs, kk), kh.opcong(sel, kh.el(sel, yy, kk), kh.sl(sel, ys, kk), kh.el(sel, xx,
+        kk), kh.sl(sel, xs, kk), ee, ih),
+      Equal.sym(Bool, kh.sl(sel, xx <> xs, kk), kh.op(sel, kh.el(sel, xx, kk), kh.sl(sel, xs, kk)), kh.slu(sel, xx,
+        xs, kk))))
+
+# rows an inline table closed hold a path as the rows do, given that for
+# their values
+def kh.hi(
+  pp: List<&2, String>,
+  +rr: List<&2, T.Val>,
+  +kk: String,
+  fF: @nm: String -> {kh.F(T.inl.seal(rr), nm) == kh.F(rr, nm) : Bool},
+  fA: @nm: String -> @qq: List<&2, String> -> {kh.A(T.inl.seal(rr), nm, qq, kk) == kh.A(rr, nm, qq, kk) : Bool}
+) -> {Laws.k3.has(T.inl.seal(rr), pp, kk) == Laws.k3.has(rr, pp, kk) : Bool}:
+  match pp:
+    case []:
+      fF(kk)
+    case +n2 <> +q2:
+      bo.and.cong(kh.F(T.inl.seal(rr), n2), kh.A(T.inl.seal(rr), n2, q2, kk), kh.F(rr, n2), kh.A(rr, n2, q2,
+        kk), fF(n2), fA(n2, q2))
+
+# an inline table closed holds what its rows held, read any way
+def kh.inleq(
+  xs: List<&2, T.Val>,
+  +sel: KSel,
+  +kk: String
+) -> {kh.sl(sel, T.inl.seal(xs), kk) == kh.sl(sel, xs, kk) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+mm, T.VHead{+qq, +rr}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.mstep(sel, T.VPair{mm, T.VInl{T.inl.seal(rr)}}, T.VPair{mm, T.VHead{qq, rr}}, T.inl.seal(tt), tt, kk,
+            {==}, kh.inleq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.mstep(sel, T.VPair{mm, T.VInl{T.inl.seal(rr)}}, T.VPair{mm, T.VHead{qq, rr}}, T.inl.seal(tt), tt, kk,
+            bo.or.cong(Bool.not(T.str.eq(mm, nn)), Laws.k3.has(T.inl.seal(rr), pp, kk), Bool.not(T.str.eq(mm, nn)),
+              Laws.k3.has(rr, pp, kk), {==}, kh.hi(pp, rr, kk, nm => kh.inleq(rr, SlF{nm}, kk),
+                nm => qq2 => kh.inleq(rr, SlA{nm, qq2}, kk))), kh.inleq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.mstep(sel, T.VPair{mm, T.VInl{T.inl.seal(rr)}}, T.VPair{mm, T.VHead{qq, rr}}, T.inl.seal(tt), tt, kk,
+            {==}, kh.inleq(tt, sel, kk))
+    case T.VPair{+mm, T.VStr{+a1}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VStr{a1}}, T.VPair{mm, T.VStr{a1}}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel,
+        kk))
+    case T.VPair{+mm, T.VSpan{+a1, +a2}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VSpan{a1, a2}}, T.VPair{mm, T.VSpan{a1, a2}}, T.inl.seal(tt), tt, kk, {==},
+        kh.inleq(tt, sel, kk))
+    case T.VPair{+mm, T.VInt{+a1, +a2}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VInt{a1, a2}}, T.VPair{mm, T.VInt{a1, a2}}, T.inl.seal(tt), tt, kk, {==},
+        kh.inleq(tt, sel, kk))
+    case T.VPair{+mm, T.VFlo{+a1, +a2}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VFlo{a1, a2}}, T.VPair{mm, T.VFlo{a1, a2}}, T.inl.seal(tt), tt, kk, {==},
+        kh.inleq(tt, sel, kk))
+    case T.VPair{+mm, T.VBool{+a1}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VBool{a1}}, T.VPair{mm, T.VBool{a1}}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt,
+        sel, kk))
+    case T.VPair{+mm, T.VWhen{+a1}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VWhen{a1}}, T.VPair{mm, T.VWhen{a1}}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt,
+        sel, kk))
+    case T.VPair{+mm, T.VArr{+a1}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VArr{a1}}, T.VPair{mm, T.VArr{a1}}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel,
+        kk))
+    case T.VPair{+mm, T.VInl{+a1}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VInl{a1}}, T.VPair{mm, T.VInl{a1}}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel,
+        kk))
+    case T.VPair{+mm, T.VAot{+a1, +a2}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VAot{a1, a2}}, T.VPair{mm, T.VAot{a1, a2}}, T.inl.seal(tt), tt, kk, {==},
+        kh.inleq(tt, sel, kk))
+    case T.VPair{+mm, T.VAots{+a1, +a2}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VAots{a1, a2}}, T.VPair{mm, T.VAots{a1, a2}}, T.inl.seal(tt), tt, kk, {==},
+        kh.inleq(tt, sel, kk))
+    case T.VPair{+mm, T.VPair{+a1, +a2}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VPair{a1, a2}}, T.VPair{mm, T.VPair{a1, a2}}, T.inl.seal(tt), tt, kk, {==},
+        kh.inleq(tt, sel, kk))
+    case T.VStr{+a1} <> +tt:
+      kh.mstep(sel, T.VStr{a1}, T.VStr{a1}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VSpan{+a1, +a2} <> +tt:
+      kh.mstep(sel, T.VSpan{a1, a2}, T.VSpan{a1, a2}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VInt{+a1, +a2} <> +tt:
+      kh.mstep(sel, T.VInt{a1, a2}, T.VInt{a1, a2}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VFlo{+a1, +a2} <> +tt:
+      kh.mstep(sel, T.VFlo{a1, a2}, T.VFlo{a1, a2}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VBool{+a1} <> +tt:
+      kh.mstep(sel, T.VBool{a1}, T.VBool{a1}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VWhen{+a1} <> +tt:
+      kh.mstep(sel, T.VWhen{a1}, T.VWhen{a1}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VArr{+a1} <> +tt:
+      kh.mstep(sel, T.VArr{a1}, T.VArr{a1}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VInl{+a1} <> +tt:
+      kh.mstep(sel, T.VInl{a1}, T.VInl{a1}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VHead{+a1, +a2} <> +tt:
+      kh.mstep(sel, T.VHead{a1, a2}, T.VHead{a1, a2}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VAot{+a1, +a2} <> +tt:
+      kh.mstep(sel, T.VAot{a1, a2}, T.VAot{a1, a2}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VAots{+a1, +a2} <> +tt:
+      kh.mstep(sel, T.VAots{a1, a2}, T.VAots{a1, a2}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+
+# an or that answered False: its left half did
+def bo.or.fl(aa: Bool, bb: Bool, +ee: {Bool.or(aa, bb) == False{} : Bool}) -> {aa == False{} : Bool}:
+  match aa:
+    case True{}:
+      Eq.bit.absurd2(&2, {True{} == False{} : Bool}, ee)
+    case False{}:
+      {==}
+
+# and its right half did
+def bo.or.fr(aa: Bool, bb: Bool, +ee: {Bool.or(aa, bb) == False{} : Bool}) -> {bb == False{} : Bool}:
+  match aa:
+    case True{}:
+      Eq.bit.absurd2(&2, {bb == False{} : Bool}, ee)
+    case False{}:
+      ee
+
+# an or whose right half answered True
+def bo.or.tr(aa: Bool, bb: Bool, +ee: {bb == True{} : Bool}) -> {Bool.or(aa, bb) == True{} : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      ee
+
+# an or whose left half answered True
+def bo.or.tl(aa: Bool, bb: Bool, +ee: {aa == True{} : Bool}) -> {Bool.or(aa, bb) == True{} : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      Eq.bit.absurd(&2, {Bool.or(False{}, bb) == True{} : Bool}, ee)
+
+# a Bool that answered True, rewritten
+def bo.t(aa: Bool, bb: Bool, +ee: {aa == bb : Bool}, +et: {bb == True{} : Bool}) -> {aa == True{} : Bool}:
+  Equal.trans(Bool, aa, bb, True{}, ee, et)
+
+# a value that is no pair of the name holds any path for it
+def kh.eA.nf(
+  +xx: T.Val,
+  +nn: String,
+  +pp: List<&2, String>,
+  +kk: String,
+  +ee: {kh.eF(xx, nn) == False{} : Bool}
+) -> {kh.eA(xx, nn, pp, kk) == True{} : Bool}:
+  match xx:
+    case T.VPair{+mm, +vv}:
+      %Equal.sym(Bool, T.str.eq(mm, nn), False{}, ee) : {Bool.or(Bool.not(_), kh.hv(vv, pp, kk)) == True{} : Bool}
+      {==}
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+
+# a name not found in rows, one value at a time
+def kh.uF.f(
+  +xx: T.Val,
+  +tt: List<&2, T.Val>,
+  +nn: String,
+  +em: {kh.F(xx <> tt, nn) == False{} : Bool}
+) -> {Bool.or(kh.eF(xx, nn), kh.F(tt, nn)) == False{} : Bool}:
+  Equal.trans(Bool, Bool.or(kh.eF(xx, nn), kh.F(tt, nn)), kh.F(xx <> tt, nn), False{}, Equal.sym(Bool, kh.F(xx <>
+    tt, nn), Bool.or(kh.eF(xx, nn), kh.F(tt, nn)), kh.uF(xx, tt, nn)), em)
+
+# rows with no pair of a name hold any path through it for the pairs of it
+def kh.A.miss(
+  xs: List<&2, T.Val>,
+  +nn: String,
+  +pp: List<&2, String>,
+  +kk: String,
+  +em: {kh.F(xs, nn) == False{} : Bool}
+) -> {kh.A(xs, nn, pp, kk) == True{} : Bool}:
+  match xs:
+    case []:
+      {==}
+    case +xx <> +tt:
+      bo.t(kh.A(xx <> tt, nn, pp, kk), Bool.and(kh.eA(xx, nn, pp, kk), kh.A(tt, nn, pp, kk)), kh.uA(xx, pp, tt, nn,
+        kk), gd.tt(kh.eA(xx, nn, pp, kk), kh.A(tt, nn, pp, kk), kh.eA.nf(xx, nn, pp, kk, bo.or.fl(kh.eF(xx, nn),
+          kh.F(tt, nn), kh.uF.f(xx, tt, nn, em))), kh.A.miss(tt, nn, pp, kk, bo.or.fr(kh.eF(xx, nn), kh.F(tt, nn),
+            kh.uF.f(xx, tt, nn, em)))))
+
+# every path the first rows hold, the second hold too
+def kh.Ext(_xs: List<&2, T.Val>, _ys: List<&2, T.Val>, +_kk: String) -> Type:
+  @pp: List<&2, String> -> {Laws.k3.has(_xs, pp, _kk) == True{} : Bool} -> {Laws.k3.has(_ys, pp, _kk) == True{} : Bool}
+
+# a name found in rows is not one missing from them
+def kh.neq(
+  nn: String,
+  mm: String,
+  +vs: List<&2, T.Val>,
+  bb: Bool,
+  +ee: {T.str.eq(nn, mm) == bb : Bool},
+  +em: {kh.F(vs, nn) == False{} : Bool},
+  +ef: {kh.F(vs, mm) == True{} : Bool}
+) -> {bb == False{} : Bool}:
+  match bb:
+    case True{}:
+      Eq.bit.absurd(&2, {True{} == False{} : Bool}, Equal.trans(Bool, False{}, kh.F(vs, nn), True{}, Equal.sym(Bool,
+        kh.F(vs, nn), False{}, em), Equal.trans(Bool, kh.F(vs, nn), kh.F(vs, mm), True{}, Equal.cong(String, Bool,
+          zz => kh.F(vs, zz), nn, mm, str.eq.true(nn, mm, ee)), ef)))
+    case False{}:
+      {==}
+
+# a pair put in front of rows that had no pair of its name keeps every path
+# they held
+def kh.fresh.go(
+  pp: List<&2, String>,
+  +nn: String,
+  +vv: T.Val,
+  +vs: List<&2, T.Val>,
+  +kk: String,
+  +em: {kh.F(vs, nn) == False{} : Bool},
+  +eh: {Laws.k3.has(vs, pp, kk) == True{} : Bool}
+) -> {Laws.k3.has(T.VPair{nn, vv} <> vs, pp, kk) == True{} : Bool}:
+  match pp:
+    case []:
+      bo.t(kh.F(T.VPair{nn, vv} <> vs, kk), Bool.or(kh.eF(T.VPair{nn, vv}, kk), kh.F(vs, kk)), kh.uF(T.VPair{nn, vv},
+        vs, kk), bo.or.tr(kh.eF(T.VPair{nn, vv}, kk), kh.F(vs, kk), eh))
+    case +mm <> +qq:
+      gd.tt(kh.F(T.VPair{nn, vv} <> vs, mm), kh.A(T.VPair{nn, vv} <> vs, mm, qq, kk),
+        bo.t(kh.F(T.VPair{nn, vv} <> vs, mm), Bool.or(kh.eF(T.VPair{nn, vv}, mm), kh.F(vs, mm)), kh.uF(T.VPair{nn,
+          vv}, vs, mm), bo.or.tr(kh.eF(T.VPair{nn, vv}, mm), kh.F(vs, mm), gd.l(kh.F(vs, mm), kh.A(vs, mm, qq, kk),
+            eh))),
+        bo.t(kh.A(T.VPair{nn, vv} <> vs, mm, qq, kk), Bool.and(kh.eA(T.VPair{nn, vv}, mm, qq, kk), kh.A(vs, mm, qq,
+          kk)), kh.uA(T.VPair{nn, vv}, qq, vs, mm, kk), gd.tt(kh.eA(T.VPair{nn, vv}, mm, qq, kk), kh.A(vs, mm, qq,
+            kk), kh.eA.nf(T.VPair{nn, vv}, mm, qq, kk, kh.neq(nn, mm, vs, T.str.eq(nn, mm), {==}, em, gd.l(kh.F(vs,
+              mm), kh.A(vs, mm, qq, kk), eh))), gd.r(kh.F(vs, mm), kh.A(vs, mm, qq, kk), eh))))
+
+# and so as a promise for every path
+def kh.fresh(
+  +nn: String,
+  +vv: T.Val,
+  +vs: List<&2, T.Val>,
+  +kk: String,
+  +em: {kh.F(vs, nn) == False{} : Bool}
+) -> kh.Ext(vs, T.VPair{nn, vv} <> vs, kk):
+  pp => eh => kh.fresh.go(pp, nn, vv, vs, kk, em, eh)
+
+# a pair of the name, with a value that holds the path, holds it
+def kh.eA.same(
+  mm: String,
+  +nn: String,
+  +vv: T.Val,
+  +pp: List<&2, String>,
+  +kk: String,
+  +ee: {T.str.eq(mm, nn) == True{} : Bool},
+  +ev: {kh.hv(vv, pp, kk) == True{} : Bool}
+) -> {kh.eA(T.VPair{mm, vv}, nn, pp, kk) == True{} : Bool}:
+  %Equal.sym(Bool, T.str.eq(mm, nn), True{}, ee) : {Bool.or(Bool.not(_), kh.hv(vv, pp, kk)) == True{} : Bool}
+  ev
+
+# a pair put in front of rows that had no pair of its name is found there
+def kh.mk0(+nn: String, +vv: T.Val, +vs: List<&2, T.Val>) -> {kh.F(T.VPair{nn, vv} <> vs, nn) == True{} : Bool}:
+  bo.t(kh.F(T.VPair{nn, vv} <> vs, nn), Bool.or(T.str.eq(nn, nn), kh.F(vs, nn)), kh.uF(T.VPair{nn, vv}, vs, nn),
+    bo.or.tl(T.str.eq(nn, nn), kh.F(vs, nn), str.eq.self(nn)))
+
+# and holds, through its name, every path its value holds
+def kh.mk(
+  +nn: String,
+  +vv: T.Val,
+  +vs: List<&2, T.Val>,
+  +pp: List<&2, String>,
+  +kk: String,
+  +em: {kh.F(vs, nn) == False{} : Bool},
+  +ev: {kh.hv(vv, pp, kk) == True{} : Bool}
+) -> {Laws.k3.has(T.VPair{nn, vv} <> vs, nn <> pp, kk) == True{} : Bool}:
+  gd.tt(kh.F(T.VPair{nn, vv} <> vs, nn), kh.A(T.VPair{nn, vv} <> vs, nn, pp, kk), kh.mk0(nn, vv, vs),
+    bo.t(kh.A(T.VPair{nn, vv} <> vs, nn, pp, kk), Bool.and(kh.eA(T.VPair{nn, vv}, nn, pp, kk), kh.A(vs, nn, pp,
+      kk)), kh.uA(T.VPair{nn, vv}, pp, vs, nn, kk), gd.tt(kh.eA(T.VPair{nn, vv}, nn, pp, kk), kh.A(vs, nn, pp, kk),
+        kh.eA.same(nn, nn, vv, pp, kk, str.eq.self(nn), ev), kh.A.miss(vs, nn, pp, kk, em))))
+
+# the value of a pair to be replaced
+def kh.hitv(hh: T.Hit) -> T.Val:
+  match hh:
+    case T.Found{vv}:
+      vv
+    case T.Miss{}:
+      T.VBool{False{}}
+
+# what rows.look finds is what get finds, as a Look
+def kh.lk(hh: T.Hit) -> T.Look:
+  match hh:
+    case T.Found{vv}:
+      T.look.of(vv)
+    case T.Miss{}:
+      T.KMiss{}
+
+# one pair of the look
+def kh.look.st(
+  bb: Bool,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +aa: String,
+  +ih: {T.rows.look(tt, aa) == kh.lk(T.rows.find(tt, aa)) : T.Look}
+) -> {T.look.step(bb, vv, _u => T.rows.look(tt, aa)) == kh.lk(T.find.step(bb, vv, _u => T.rows.find(tt, aa)))
+  : T.Look}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      ih
+
+# rows.look finds the pair get finds
+def kh.look(xs: List<&2, T.Val>, +aa: String) -> {T.rows.look(xs, aa) == kh.lk(T.rows.find(xs, aa)) : T.Look}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+mm, +vv} <> +tt:
+      kh.look.st(T.str.eq(mm, aa), vv, tt, aa, kh.look(tt, aa))
+    case T.VStr{+a1} <> +tt:
+      kh.look(tt, aa)
+    case T.VSpan{+a1, +a2} <> +tt:
+      kh.look(tt, aa)
+    case T.VInt{+a1, +a2} <> +tt:
+      kh.look(tt, aa)
+    case T.VFlo{+a1, +a2} <> +tt:
+      kh.look(tt, aa)
+    case T.VBool{+a1} <> +tt:
+      kh.look(tt, aa)
+    case T.VWhen{+a1} <> +tt:
+      kh.look(tt, aa)
+    case T.VArr{+a1} <> +tt:
+      kh.look(tt, aa)
+    case T.VInl{+a1} <> +tt:
+      kh.look(tt, aa)
+    case T.VHead{+a1, +a2} <> +tt:
+      kh.look(tt, aa)
+    case T.VAot{+a1, +a2} <> +tt:
+      kh.look(tt, aa)
+    case T.VAots{+a1, +a2} <> +tt:
+      kh.look(tt, aa)
+
+# one pair of a replacement: a name get finds is found after it
+def kh.rF.st(
+  bb: Bool,
+  +mm: String,
+  +old: T.Val,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +aa: String,
+  +nn: String,
+  +ih: {kh.F(T.rows.repl(tt, aa, vv), nn) == kh.F(tt, nn) : Bool}
+) -> {kh.F(T.rows.repl.step(bb, mm, old, vv, _u => T.rows.repl(tt, aa, vv)), nn) == kh.F(T.VPair{mm, old} <> tt,
+  nn) : Bool}:
+  match bb:
+    case True{}:
+      kh.mstep(SlF{nn}, T.VPair{mm, vv}, T.VPair{mm, old}, T.rows.repl(tt, aa, vv), tt, nn, {==}, ih)
+    case False{}:
+      kh.mstep(SlF{nn}, T.VPair{mm, old}, T.VPair{mm, old}, T.rows.repl(tt, aa, vv), tt, nn, {==}, ih)
+
+# a replacement keeps every name found
+def kh.rF(
+  xs: List<&2, T.Val>,
+  +aa: String,
+  +vv: T.Val,
+  +nn: String
+) -> {kh.F(T.rows.repl(xs, aa, vv), nn) == kh.F(xs, nn) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+mm, +old} <> +tt:
+      kh.rF.st(T.str.eq(mm, aa), mm, old, vv, tt, aa, nn, kh.rF(tt, aa, vv, nn))
+    case T.VStr{+a1} <> +tt:
+      kh.mstep(SlF{nn}, T.VStr{a1}, T.VStr{a1}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VSpan{+a1, +a2} <> +tt:
+      kh.mstep(SlF{nn}, T.VSpan{a1, a2}, T.VSpan{a1, a2}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VInt{+a1, +a2} <> +tt:
+      kh.mstep(SlF{nn}, T.VInt{a1, a2}, T.VInt{a1, a2}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VFlo{+a1, +a2} <> +tt:
+      kh.mstep(SlF{nn}, T.VFlo{a1, a2}, T.VFlo{a1, a2}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VBool{+a1} <> +tt:
+      kh.mstep(SlF{nn}, T.VBool{a1}, T.VBool{a1}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VWhen{+a1} <> +tt:
+      kh.mstep(SlF{nn}, T.VWhen{a1}, T.VWhen{a1}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VArr{+a1} <> +tt:
+      kh.mstep(SlF{nn}, T.VArr{a1}, T.VArr{a1}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VInl{+a1} <> +tt:
+      kh.mstep(SlF{nn}, T.VInl{a1}, T.VInl{a1}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VHead{+a1, +a2} <> +tt:
+      kh.mstep(SlF{nn}, T.VHead{a1, a2}, T.VHead{a1, a2}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VAot{+a1, +a2} <> +tt:
+      kh.mstep(SlF{nn}, T.VAot{a1, a2}, T.VAot{a1, a2}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VAots{+a1, +a2} <> +tt:
+      kh.mstep(SlF{nn}, T.VAots{a1, a2}, T.VAots{a1, a2}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+
+# a pair of the replaced name is no pair of another name
+def kh.ne.rep(
+  mm: String,
+  aa: String,
+  nn: String,
+  +em: {T.str.eq(mm, aa) == True{} : Bool},
+  +ea: {T.str.eq(aa, nn) == False{} : Bool}
+) -> {T.str.eq(mm, nn) == False{} : Bool}:
+  %Equal.sym(String, mm, aa, str.eq.true(mm, aa, em)) : {T.str.eq(_, nn) == False{} : Bool}
+  ea
+
+# one pair of a replacement, read for another name
+def kh.rA.st(
+  bb: Bool,
+  +mm: String,
+  +old: T.Val,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +aa: String,
+  +nn: String,
+  +qq: List<&2, String>,
+  +kk: String,
+  +eb: {T.str.eq(mm, aa) == bb : Bool},
+  +ea: {T.str.eq(aa, nn) == False{} : Bool},
+  +ih: {kh.A(T.rows.repl(tt, aa, vv), nn, qq, kk) == kh.A(tt, nn, qq, kk) : Bool}
+) -> {kh.A(T.rows.repl.step(bb, mm, old, vv, _u => T.rows.repl(tt, aa, vv)), nn, qq, kk) == kh.A(T.VPair{mm, old}
+  <> tt, nn, qq, kk) : Bool}:
+  match bb:
+    case True{}:
+      kh.mstep(SlA{nn, qq}, T.VPair{mm, vv}, T.VPair{mm, old}, T.rows.repl(tt, aa, vv), tt, kk,
+        Equal.trans(Bool, kh.eA(T.VPair{mm, vv}, nn, qq, kk), True{}, kh.eA(T.VPair{mm, old}, nn, qq, kk),
+          kh.eA.nf(T.VPair{mm, vv}, nn, qq, kk, kh.ne.rep(mm, aa, nn, eb, ea)), Equal.sym(Bool, kh.eA(T.VPair{mm,
+            old}, nn, qq, kk), True{}, kh.eA.nf(T.VPair{mm, old}, nn, qq, kk, kh.ne.rep(mm, aa, nn, eb, ea)))), ih)
+    case False{}:
+      kh.mstep(SlA{nn, qq}, T.VPair{mm, old}, T.VPair{mm, old}, T.rows.repl(tt, aa, vv), tt, kk, {==}, ih)
+
+# a replacement keeps what the rows seen for another name hold
+def kh.rA.o(
+  xs: List<&2, T.Val>,
+  +aa: String,
+  +vv: T.Val,
+  +nn: String,
+  +qq: List<&2, String>,
+  +kk: String,
+  +ea: {T.str.eq(aa, nn) == False{} : Bool}
+) -> {kh.A(T.rows.repl(xs, aa, vv), nn, qq, kk) == kh.A(xs, nn, qq, kk) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+mm, +old} <> +tt:
+      kh.rA.st(T.str.eq(mm, aa), mm, old, vv, tt, aa, nn, qq, kk, {==}, ea, kh.rA.o(tt, aa, vv, nn, qq, kk, ea))
+    case T.VStr{+a1} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VStr{a1}, T.VStr{a1}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv, nn, qq,
+        kk, ea))
+    case T.VSpan{+a1, +a2} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VSpan{a1, a2}, T.VSpan{a1, a2}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa,
+        vv, nn, qq, kk, ea))
+    case T.VInt{+a1, +a2} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VInt{a1, a2}, T.VInt{a1, a2}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv,
+        nn, qq, kk, ea))
+    case T.VFlo{+a1, +a2} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VFlo{a1, a2}, T.VFlo{a1, a2}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv,
+        nn, qq, kk, ea))
+    case T.VBool{+a1} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VBool{a1}, T.VBool{a1}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv, nn,
+        qq, kk, ea))
+    case T.VWhen{+a1} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VWhen{a1}, T.VWhen{a1}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv, nn,
+        qq, kk, ea))
+    case T.VArr{+a1} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VArr{a1}, T.VArr{a1}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv, nn, qq,
+        kk, ea))
+    case T.VInl{+a1} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VInl{a1}, T.VInl{a1}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv, nn, qq,
+        kk, ea))
+    case T.VHead{+a1, +a2} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VHead{a1, a2}, T.VHead{a1, a2}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa,
+        vv, nn, qq, kk, ea))
+    case T.VAot{+a1, +a2} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VAot{a1, a2}, T.VAot{a1, a2}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv,
+        nn, qq, kk, ea))
+    case T.VAots{+a1, +a2} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VAots{a1, a2}, T.VAots{a1, a2}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa,
+        vv, nn, qq, kk, ea))
+
+# one pair of a replacement, read for its own name
+def kh.rS.st(
+  bb: Bool,
+  +mm: String,
+  +old: T.Val,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +aa: String,
+  +qq: List<&2, String>,
+  +kk: String,
+  +eb: {T.str.eq(mm, aa) == bb : Bool},
+  +ev: {kh.hv(vv, qq, kk) == True{} : Bool},
+  +ih: {kh.A(T.rows.repl(tt, aa, vv), aa, qq, kk) == True{} : Bool}
+) -> {kh.A(T.rows.repl.step(bb, mm, old, vv, _u => T.rows.repl(tt, aa, vv)), aa, qq, kk) == True{} : Bool}:
+  match bb:
+    case True{}:
+      bo.t(kh.A(T.VPair{mm, vv} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(kh.eA(T.VPair{mm, vv}, aa, qq,
+        kk), kh.A(T.rows.repl(tt, aa, vv), aa, qq, kk)), kh.uA(T.VPair{mm, vv}, qq, T.rows.repl(tt, aa, vv), aa, kk),
+        gd.tt(kh.eA(T.VPair{mm, vv}, aa, qq, kk), kh.A(T.rows.repl(tt, aa, vv), aa, qq, kk), kh.eA.same(mm, aa, vv,
+          qq, kk, eb, ev), ih))
+    case False{}:
+      bo.t(kh.A(T.VPair{mm, old} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(kh.eA(T.VPair{mm, old}, aa, qq,
+        kk), kh.A(T.rows.repl(tt, aa, vv), aa, qq, kk)), kh.uA(T.VPair{mm, old}, qq, T.rows.repl(tt, aa, vv), aa,
+          kk), gd.tt(kh.eA(T.VPair{mm, old}, aa, qq, kk), kh.A(T.rows.repl(tt, aa, vv), aa, qq, kk),
+            kh.eA.nf(T.VPair{mm,
+            old}, aa, qq, kk, eb), ih))
+
+# every pair of the replaced name holds what the new value holds
+def kh.rA.s(
+  xs: List<&2, T.Val>,
+  +aa: String,
+  +vv: T.Val,
+  +qq: List<&2, String>,
+  +kk: String,
+  +ev: {kh.hv(vv, qq, kk) == True{} : Bool}
+) -> {kh.A(T.rows.repl(xs, aa, vv), aa, qq, kk) == True{} : Bool}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+mm, +old} <> +tt:
+      kh.rS.st(T.str.eq(mm, aa), mm, old, vv, tt, aa, qq, kk, {==}, ev, kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VStr{+a1} <> +tt:
+      bo.t(kh.A(T.VStr{a1} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv), aa,
+        qq, kk)), kh.uA(T.VStr{a1}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VSpan{+a1, +a2} <> +tt:
+      bo.t(kh.A(T.VSpan{a1, a2} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa,
+        vv), aa, qq, kk)), kh.uA(T.VSpan{a1, a2}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VInt{+a1, +a2} <> +tt:
+      bo.t(kh.A(T.VInt{a1, a2} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv),
+        aa, qq, kk)), kh.uA(T.VInt{a1, a2}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VFlo{+a1, +a2} <> +tt:
+      bo.t(kh.A(T.VFlo{a1, a2} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv),
+        aa, qq, kk)), kh.uA(T.VFlo{a1, a2}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VBool{+a1} <> +tt:
+      bo.t(kh.A(T.VBool{a1} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv),
+        aa, qq, kk)), kh.uA(T.VBool{a1}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VWhen{+a1} <> +tt:
+      bo.t(kh.A(T.VWhen{a1} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv),
+        aa, qq, kk)), kh.uA(T.VWhen{a1}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VArr{+a1} <> +tt:
+      bo.t(kh.A(T.VArr{a1} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv), aa,
+        qq, kk)), kh.uA(T.VArr{a1}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VInl{+a1} <> +tt:
+      bo.t(kh.A(T.VInl{a1} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv), aa,
+        qq, kk)), kh.uA(T.VInl{a1}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VHead{+a1, +a2} <> +tt:
+      bo.t(kh.A(T.VHead{a1, a2} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa,
+        vv), aa, qq, kk)), kh.uA(T.VHead{a1, a2}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VAot{+a1, +a2} <> +tt:
+      bo.t(kh.A(T.VAot{a1, a2} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv),
+        aa, qq, kk)), kh.uA(T.VAot{a1, a2}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VAots{+a1, +a2} <> +tt:
+      bo.t(kh.A(T.VAots{a1, a2} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa,
+        vv), aa, qq, kk)), kh.uA(T.VAots{a1, a2}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+
+# a pair of the name that holds a path: its value does
+def kh.eA.get(
+  mm: String,
+  aa: String,
+  +vv: T.Val,
+  +qq: List<&2, String>,
+  +kk: String,
+  +eb: {T.str.eq(mm, aa) == True{} : Bool},
+  +ee: {kh.eA(T.VPair{mm, vv}, aa, qq, kk) == True{} : Bool}
+) -> {kh.hv(vv, qq, kk) == True{} : Bool}:
+  Equal.trans(Bool, kh.hv(vv, qq, kk), kh.eA(T.VPair{mm, vv}, aa, qq, kk), True{}, Equal.sym(Bool,
+    kh.eA(T.VPair{mm, vv}, aa, qq, kk), kh.hv(vv, qq, kk), Equal.cong(Bool, Bool, zz => Bool.or(Bool.not(zz),
+      kh.hv(vv, qq, kk)), T.str.eq(mm, aa), True{}, eb)), ee)
+
+# the first pair's search in the rest of the rows
+def kh.FirstIH(
+  _tt: List<&2, T.Val>,
+  +_aa: String,
+  _ww: T.Val,
+  +_qq: List<&2, String>,
+  +_kk: String
+) -> Type:
+  @e1: {T.rows.find(_tt, _aa) == T.Found{_ww} : T.Hit} -> @e2: {kh.A(_tt, _aa, _qq, _kk) == True{} : Bool} ->
+    {kh.hv(_ww, _qq, _kk) == True{} : Bool}
+
+# one pair of the first pair's search
+def kh.first.st(
+  bb: Bool,
+  +mm: String,
+  +old: T.Val,
+  +tt: List<&2, T.Val>,
+  +aa: String,
+  +ww: T.Val,
+  +qq: List<&2, String>,
+  +kk: String,
+  +eb: {T.str.eq(mm, aa) == bb : Bool},
+  +ef: {T.find.step(bb, old, _u => T.rows.find(tt, aa)) == T.Found{ww} : T.Hit},
+  +ea: {Bool.and(kh.eA(T.VPair{mm, old}, aa, qq, kk), kh.A(tt, aa, qq, kk)) == True{} : Bool},
+  ih: kh.FirstIH(tt, aa, ww, qq, kk)
+) -> {kh.hv(ww, qq, kk) == True{} : Bool}:
+  match bb:
+    case True{}:
+      %Equal.cong(T.Hit, T.Val, hh => kh.hitv(hh), T.Found{old}, T.Found{ww}, ef) :
+        {kh.hv(_, qq, kk) == True{} : Bool}
+      kh.eA.get(mm, aa, old, qq, kk, eb, gd.l(kh.eA(T.VPair{mm, old}, aa, qq, kk), kh.A(tt, aa, qq, kk), ea))
+    case False{}:
+      ih(ef, gd.r(kh.eA(T.VPair{mm, old}, aa, qq, kk), kh.A(tt, aa, qq, kk), ea))
+
+# whether a lookup found something, as False for a miss
+def kh.isf(hh: T.Hit) -> Bool:
+  match hh:
+    case T.Found{_v}:
+      True{}
+    case T.Miss{}:
+      False{}
+
+# the first pair of a name, when every pair of it holds a path, holds it
+def kh.first(
+  xs: List<&2, T.Val>,
+  +aa: String,
+  +ww: T.Val,
+  +qq: List<&2, String>,
+  +kk: String,
+  +ef: {T.rows.find(xs, aa) == T.Found{ww} : T.Hit},
+  +ea: {kh.A(xs, aa, qq, kk) == True{} : Bool}
+) -> {kh.hv(ww, qq, kk) == True{} : Bool}:
+  match xs:
+    case []:
+      Eq.bit.absurd(&2, {kh.hv(ww, qq, kk) == True{} : Bool}, Equal.cong(T.Hit, Bool, hh => kh.isf(hh), T.Miss{},
+        T.Found{ww}, ef))
+    case T.VPair{+mm, +old} <> +tt:
+      kh.first.st(T.str.eq(mm, aa), mm, old, tt, aa, ww, qq, kk, {==}, ef, bo.t(Bool.and(kh.eA(T.VPair{mm, old}, aa,
+        qq, kk), kh.A(tt, aa, qq, kk)), kh.A(T.VPair{mm, old} <> tt, aa, qq, kk), Equal.sym(Bool, kh.A(T.VPair{mm,
+          old} <> tt, aa, qq, kk), Bool.and(kh.eA(T.VPair{mm, old}, aa, qq, kk), kh.A(tt, aa, qq, kk)),
+          kh.uA(T.VPair{mm, old}, qq, tt, aa, kk)), ea), e1 => e2 => kh.first(tt, aa, ww, qq, kk, e1, e2))
+    case T.VStr{+a1} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VSpan{+a1, +a2} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VInt{+a1, +a2} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VFlo{+a1, +a2} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VBool{+a1} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VWhen{+a1} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VArr{+a1} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VInl{+a1} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VHead{+a1, +a2} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VAot{+a1, +a2} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VAots{+a1, +a2} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+
+# the rows seen for one name after a replacement, by whether the name is the
+# replaced one
+def kh.xrep.a(
+  bb: Bool,
+  +parent: List<&2, T.Val>,
+  +aa: String,
+  +mm: String,
+  +qq: List<&2, String>,
+  +ww: T.Val,
+  +vv: T.Val,
+  +kk: String,
+  +eb: {T.str.eq(aa, mm) == bb : Bool},
+  +ef: {T.rows.find(parent, aa) == T.Found{ww} : T.Hit},
+  ev: @q0: List<&2, String> -> {kh.hv(ww, q0, kk) == True{} : Bool} -> {kh.hv(vv, q0, kk) == True{} : Bool},
+  +ea: {kh.A(parent, mm, qq, kk) == True{} : Bool}
+) -> {kh.A(T.rows.repl(parent, aa, vv), mm, qq, kk) == True{} : Bool}:
+  match bb:
+    case True{}:
+      %str.eq.true(aa, mm, eb) : {kh.A(T.rows.repl(parent, aa, vv), _, qq, kk) == True{} : Bool}
+      kh.rA.s(parent, aa, vv, qq, kk, ev(qq, kh.first(parent, aa, ww, qq, kk, ef, Equal.trans(Bool, kh.A(parent, aa,
+        qq, kk), kh.A(parent, mm, qq, kk), True{}, Equal.cong(String, Bool, zz => kh.A(parent, zz, qq, kk), aa, mm,
+          str.eq.true(aa, mm, eb)), ea))))
+    case False{}:
+      bo.t(kh.A(T.rows.repl(parent, aa, vv), mm, qq, kk), kh.A(parent, mm, qq, kk), kh.rA.o(parent, aa, vv, mm, qq,
+        kk, eb), ea)
+
+# a replacement of every pair of a name found in rows, by a value that holds
+# every path the first pair's value held, keeps every path the rows held
+def kh.xrep.go(
+  pp: List<&2, String>,
+  +parent: List<&2, T.Val>,
+  +aa: String,
+  +ww: T.Val,
+  +vv: T.Val,
+  +kk: String,
+  +ef: {T.rows.find(parent, aa) == T.Found{ww} : T.Hit},
+  ev: @q0: List<&2, String> -> {kh.hv(ww, q0, kk) == True{} : Bool} -> {kh.hv(vv, q0, kk) == True{} : Bool},
+  +eh: {Laws.k3.has(parent, pp, kk) == True{} : Bool}
+) -> {Laws.k3.has(T.rows.repl(parent, aa, vv), pp, kk) == True{} : Bool}:
+  match pp:
+    case []:
+      bo.t(kh.F(T.rows.repl(parent, aa, vv), kk), kh.F(parent, kk), kh.rF(parent, aa, vv, kk), eh)
+    case +mm <> +qq:
+      gd.tt(kh.F(T.rows.repl(parent, aa, vv), mm), kh.A(T.rows.repl(parent, aa, vv), mm, qq, kk),
+        bo.t(kh.F(T.rows.repl(parent, aa, vv), mm), kh.F(parent, mm), kh.rF(parent, aa, vv, mm), gd.l(kh.F(parent,
+          mm), kh.A(parent, mm, qq, kk), eh)),
+        kh.xrep.a(T.str.eq(aa, mm), parent, aa, mm, qq, ww, vv, kk, {==}, ef, ev, gd.r(kh.F(parent, mm), kh.A(parent,
+          mm, qq, kk), eh)))
+
+# and so as a promise for every path
+def kh.xrep(
+  +parent: List<&2, T.Val>,
+  +aa: String,
+  +ww: T.Val,
+  +vv: T.Val,
+  +kk: String,
+  +ef: {T.rows.find(parent, aa) == T.Found{ww} : T.Hit},
+  ev: @q0: List<&2, String> -> {kh.hv(ww, q0, kk) == True{} : Bool} -> {kh.hv(vv, q0, kk) == True{} : Bool}
+) -> kh.Ext(parent, T.rows.repl(parent, aa, vv), kk):
+  pp => eh => kh.xrep.go(pp, parent, aa, ww, vv, kk, ef, ev, eh)
