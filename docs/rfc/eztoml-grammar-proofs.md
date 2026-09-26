@@ -95,6 +95,52 @@ Size: 59 lines of law and 2,604 of proof (planned 1,800, expected 4,000 to 7,000
 
 Left for TOML-TIME-1: the same stated over `parse` from every value state, with a space after a date through `LDate` (WP-V), and a lemma that `render` writes `T` and `Z` in upper case (WP-V's render half).
 
+**Update (WP-R spike).** The spike ran the refusal direction of TOML-TEXT-1 ("a text `parse` accepts has a derivation") over the header and key states. It is in PROOF.bend's and LAWS.bend's `# WP-R` sections.
+
+- **The engine.** `sipr` is the scan induction run backward. Its motive holds the mode and the text still to read. Each step gets that the successor's text has no error. `sr.ff` proves that the fast step is the full step for every `Lex`. That is 1,044 lines, paid once.
+- **The grammar position.** `r1.gp(st)` is a list of frames, `R1Fr`: the rules still open at that state, innermost first. `r1.fill(frames, text)` says the text is made of a derivation piece for each frame, in order, so its recursion is structural. The header and key states map as follows:
+  - `LHead`: `RfHOpen` then the line's end, or a bare segment then `RfKAfter` then `r1.hend`.
+  - `LHeadGap`: `RfKAfter`.
+  - `LHeadDot` and `LKeyDot`: `RfWs` then `RfKSeg`.
+  - `LHeadR`: `RfRBr`, or `RfNone` when doomed.
+  - The quoted, escape and digit states: `RfKBasic`/`RfKLit`, `RfKEsc` and `RfKUni{uni, left}`.
+  - `LKey` and `LAfter`: a keyval's key, then `r1.vend(stack)`, which is `RfEq`, then `RfVal`, then `r1.after(stack)`.
+  - A state with no step into it maps to `RfAny`, whose fill is `Unit`. This is sound: a predecessor has to prove its own fill from its successor's, so a reachable state mapped to `RfAny` would fail the gate.
+  - The string and word states not yet done map to `RfLater`, which is also `Unit`. `LVal` already maps to its real frame, so the key states are proved against the real value frame.
+  - This part is 457 lines of law.
+- **The obligations.** The spike proves one law per state, `r1.ob.*`, for 13 states: `LHead`, `LHeadGap`, `LHeadDot`, `LHeadR`, `LHeadQ`, `LHeadE`, `LHeadU`, `LKey`, `LKeyDot`, `LAfter`, `LKeyQ`, `LKeyE` and `LKeyU`. Each is proved for every character, with no Nat literal. The U32 order kit (`r1.adj`: u ≤ k exactly when u < k+1, at the bit level) proves the character classes of `basic-unescaped` and `literal-char`, the inverse of `dig.val` on hexadecimal digits, and `\u`/`\U`'s scalar check. The obligations are 5,422 lines:
+
+| Part | States | Lines | Per state |
+| :---- | ----: | ----: | ----: |
+| bare header and key states | 7 | 1,542 | 220 |
+| quoted segments | 2 | 862 | 431 |
+| escapes | 2 | 484 | 242 |
+| `\u`/`\U` digits | 2 | 554 | 277 |
+| frame kit | | 548 | |
+| character-class and U32 order kit | | 813 | |
+| hexadecimal inverse | | 619 | |
+
+- **What the spike cost, and what is left.** The spike took 6,466 lines of proof and 457 of law, against 5,000 planned. The other 22 states and the other modes are left. The kits carry over, so the estimate uses the per-state costs:
+
+| What is left | Estimate |
+| :---- | ----: |
+| `LTop`, `LLine`, `LCom` | 900 to 1,200 |
+| the ten string states, one-line and multi-line, reusing the three kits | 3,500 to 6,000 |
+| `LBare` and `LDate`, not counting WP-N1's and WP-T1's refusal halves | about 1,100 |
+| `LVal`, the array and inline-table states, and `LSink` | 1,800 to 3,000 |
+| the CR, lead, held, open, eat and end modes, and the instance that gives `text_derived` | 900 to 1,500 |
+| **total left** | **8,200 to 12,800** |
+
+  The value states' `gp` adds 400 to 800 lines of law. WP-R comes to about 15,000 to 19,000 lines of proof, in the lower half of the 15,000 to 25,000 estimate.
+- **The checks.**
+  - The gate is 20.0 to 20.7 s, against 19.9 s at `558eced`.
+  - Lint: 0 errors.
+  - Replacing any of 26 new top-level proofs with `{==}` fails the gate. The 26 are `sr.ff`, the five `sipr.*`, the 13 `r1.ob.*`, `r1.adj`, `r1.na`, `r1.bu`, `r1.lc`, `r1.uok`, `r1.dec1` and `r1.hx.of`.
+  - Two bugs were planted in a scratch copy of `main.bend`. A header gap that skips a bare character, so `[a b]` is accepted, fails `r1.ob.gap`. A second dot in a key that stays in `LKeyDot`, so `a..b` is accepted, fails `r1.kd.go2`.
+  - No text `parse` accepts was found without a derivation. `main.bend` is unchanged.
+  - No law is tagged TOML-TEXT-1. The instance is complete only once every state is done.
+- **Recommendation for REVIEW-G6:** keep TOML-TEXT-1 Proved, as decided in (a). The cost per state is steady, at 220 to 430 lines. The kits carry over to the strings. No state needed a new idea after the frame design.
+
 **Items for review:**
 
 - [x] <!-- REVIEW-G1 (resolved): TOML-TEXT-1 is false as worded, in five ways. It says `bad(parse(t))` is `""` exactly when `t` matches toml.abnf's `toml` rule and breaks none of TOML-TEXT-2's rules. But toml.abnf is looser than the specification. Its header says "certain invalid documents would need to be rejected as per the semantics described in the supporting text". Checked against the binary at `65756da`, `parse` refuses these texts, all of which match the rule and none of which defines anything twice: (1) `a = 9223372036854775808` ("out of range"; the ABNF has no range, and the prose asks for signed 64 bits); (2) `a = 1979-13-01`, `a = 1979-02-30`, `a = 24:00:00` and `+24:00` offsets (the ABNF gives RFC 3339's ranges only in comments); (3) `a = "\uD800"` and `"\U00110000"` ("invalid escape"; the ABNF allows any 4 or 8 HEXDIG, and the prose says an escape must be a Unicode scalar value); (4) `a = 1 # x<U+007F>y` ("invalid control in comment"; the ABNF's `non-eol` is `%x20-7F`, which includes U+007F, and the prose forbids it). It also accepts one text the rule does not match: (5) `<U+FEFF>a = 1`, a leading byte-order mark (the `lead` flag in `read.step`), which toml.abnf does not allow. Python's `tomllib` refuses the cases of (2) to (5) we tried and reads (1) as a big integer. Options: (a) reword the row. The grammar relation becomes toml.abnf together with the four prose restrictions, each named, with (1) and (2) pointing at TOML-NUM-1 and TOML-TIME-1. One leading U+FEFF is taken off before matching, since it is the encoding's signature rather than text. toml-test treats it that way: `bom-not-at-start` is invalid, and the newer valid cases `utf8-bom-01` and `utf8-bom-02` start with one. The row also gains the `short` bound every row that goes through the scan induction has; (b) as (a), but refuse the byte-order mark in the code, which is a behavior change for files saved by editors that write one; (c) change the code to follow the ABNF where it is looser, accepting (1) to (4), which the specification forbids. Recommend (a). No code changes, and each restriction is one the RFC's other rows already state. It is a rewording of the specification, and so a behavior change of the promise. Decided: (a), as recommended. -->

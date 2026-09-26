@@ -67128,3 +67128,6469 @@ def Laws.date_time_render(w, h):
       Equal.cong(T.Got, Bool, gg => Laws.t1.got_when(gg, w), T.word.val(String.to_list(T.render.atom(T.VWhen{w}))),
         T.GotVal{T.VWhen{w}}, Laws.when_word(w, h)),
       when.self(w)))
+
+# WP-R: SIPR, the scan induction run backward, for TOML-TEXT-1's refusal
+# direction (REVIEW-G5 (a)). sip.read carries an invariant of the state
+# forward; sipr carries a motive of the mode and the text still to read,
+# from the end of the text back to its start: from every mode, a text the
+# text predicate allows and doc.read reads with no error has the motive,
+# when each step's obligation turns the motive at the mode after a character
+# into the motive before it, and the end's gives it for the empty text. The
+# obligations mirror sip.read's split of doc.read's step, with its fast step
+# folded into one: a scanning state with no held character and past the
+# first takes the fast step, which sr.ff shows is the full step
+# (read.fast.old) for every lex state and character, so the instance meets
+# one obligation there, sr.OFull, and dispatches on the lex state itself; a
+# held character (sr.OHeld), the first character (sr.OLead), the character
+# after a carriage return (sr.OCr), an opening quote's (sr.OOpen), a span's
+# (sr.OEat) and the end of the text (sr.ONil) are the others. A scanning
+# state's step gives the mode sr.K names: a quote may open a string, and a
+# carriage return waits for a line feed. Each obligation also gets the
+# fact that the text after the character reads with no error, which is what
+# closes every failing arm. As in sip.read, the motive, the predicates and
+# the obligations are template parameters whose names start with `_`.
+
+# after a carriage return, or not
+def sr.K.cr(cr: Bool, st: T.St) -> T.Mode:
+  match cr:
+    case True{}:
+      T.MCr{st}
+    case False{}:
+      T.MScan{st}
+
+# after an apostrophe, or not
+def sr.K.sq(sq: Bool, cr: Bool, st: T.St) -> T.Mode:
+  match sq:
+    case True{}:
+      T.doc.wrap(st)
+    case False{}:
+      sr.K.cr(cr, st)
+
+# the mode a scanning state's step gives, from the state after the step:
+# after a quote or an apostrophe a string may open, after a carriage return
+# a line feed is waited for
+def sr.K(dq: Bool, sq: Bool, cr: Bool, st: T.St) -> T.Mode:
+  match dq:
+    case True{}:
+      T.doc.wrap(st)
+    case False{}:
+      sr.K.sq(sq, cr, st)
+
+# and with the character's own tests
+def sr.Kc(+cc: Char, st: T.St) -> T.Mode:
+  sr.K(Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), st)
+
+# a scanning state's step is the fast step, then sr.K
+def sr.scan(
+  dq: Bool,
+  sq: Bool,
+  cr: Bool,
+  st: T.St,
+  +cc: Char
+) -> {T.doc.scan.q(dq, sq, cr, st, cc) == sr.K(dq, sq, cr, T.read.fast(st, cc)) : T.Mode}:
+  match dq:
+    case True{}:
+      {==}
+    case False{}:
+      match sq:
+        case True{}:
+          {==}
+        case False{}:
+          match cr:
+            case True{}:
+              {==}
+            case False{}:
+              {==}
+
+# by the two newlines' tests: each is a control
+def sr.nlctl.go(
+  +uu: U32,
+  aa: Bool,
+  bb: Bool,
+  ea: {U32.is_eq(uu, 10) == aa : Bool},
+  eb: {U32.is_eq(uu, 13) == bb : Bool},
+  ee: {T.ch.ctl(Chr{uu}) == False{} : Bool}
+) -> {Bool.or(aa, bb) == False{} : Bool}:
+  match aa:
+    case True{}:
+      Eq.bit.gone(&2, {Bool.or(True{}, bb) == False{} : Bool}, Eq.refute_char(Chr{uu}, Chr{10},
+        cc => Bool.not(T.ch.ctl(cc)), ea, Equal.cong(Bool, Bool, xx => Bool.not(xx), T.ch.ctl(Chr{uu}), False{},
+        ee), {==}))
+    case False{}:
+      match bb:
+        case True{}:
+          Eq.bit.gone(&2, {Bool.or(False{}, True{}) == False{} : Bool}, Eq.refute_char(Chr{uu}, Chr{13},
+            cc => Bool.not(T.ch.ctl(cc)), eb, Equal.cong(Bool, Bool, xx => Bool.not(xx), T.ch.ctl(Chr{uu}),
+            False{}, ee), {==}))
+        case False{}:
+          {==}
+
+# a character that is no control is no newline
+def sr.nlctl(+cc: Char, ee: {T.ch.ctl(cc) == False{} : Bool}) -> {T.ch.nl(cc) == False{} : Bool}:
+  match cc:
+    case Chr{+uu}:
+      sr.nlctl.go(uu, U32.is_eq(uu, 10), U32.is_eq(uu, 13), {==}, {==}, ee)
+
+# LStr's fast step, a basic string's character not a quote or a backslash
+def sr.ff.bpush(
+  bad: Bool,
+  +cc: Char,
+  ebad: {T.str.bad(Char.to_u32(cc), False{}) == bad : Bool},
+  eq: {Char.is_eq(cc, '"') == False{} : Bool},
+  eb: {Char.is_eq(cc, '\\') == False{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+
+) -> {T.read.fast.push(bad, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at, cc) : T.St}:
+  match bad:
+    case True{}:
+      {==}
+    case False{}:
+      %Equal.sym(Bool, Char.is_eq(cc, '"'), False{}, eq) : {T.read.fast.cons(bd, rw, hs, he, pt, bf, T.LStr{}, bk,
+        T.QBasic{}, sk, un, lf, at, cc) == T.read.once2(T.lex.str.go(_, False{}, True{}, sip.S(bd, rw, hs, he, pt,
+        bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at), cc, T.QBasic{})) : T.St}
+      %Equal.sym(Bool, Char.is_eq(cc, '\\'), False{}, eb) : {T.read.fast.cons(bd, rw, hs, he, pt, bf, T.LStr{}, bk,
+        T.QBasic{}, sk, un, lf, at, cc) == T.read.once2(T.lex.str.bs(_, False{}, sip.S(bd, rw, hs, he, pt, bf,
+        T.LStr{}, bk, T.QBasic{}, sk, un, lf, at), cc, T.QBasic{})) : T.St}
+      %Equal.sym(Bool, T.str.bad(Char.to_u32(cc), False{}), False{}, ebad) : {T.read.fast.cons(bd, rw, hs, he, pt,
+        bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at, cc) == T.read.once2(T.lex.str.char.go(_, sip.S(bd, rw, hs,
+        he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at), cc)) : T.St}
+      {==}
+
+# LStr's fast step in a basic string
+def sr.ff.basic(
+  qt: Bool,
+  bs: Bool,
+  +cc: Char,
+  eq: {Char.is_eq(cc, '"') == qt : Bool},
+  eb: {Char.is_eq(cc, '\\') == bs : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+
+) -> {T.read.fast.basic(qt, bs, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at, cc) : T.St}:
+  match qt:
+    case True{}:
+      {==}
+    case False{}:
+      match bs:
+        case True{}:
+          {==}
+        case False{}:
+          sr.ff.bpush(T.str.bad(Char.to_u32(cc), False{}), cc, {==}, eq, eb, bd, rw, hs, he, pt, bf, bk, sk, un, lf,
+            at)
+
+# LStr's fast step in a literal string, a character not an apostrophe
+def sr.ff.lpush(
+  bad: Bool,
+  +cc: Char,
+  ebad: {T.str.bad(Char.to_u32(cc), False{}) == bad : Bool},
+  eq: {Char.is_eq(cc, '\'') == False{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+
+) -> {T.read.fast.push(bad, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at, cc) : T.St}:
+  match bad:
+    case True{}:
+      {==}
+    case False{}:
+      %Equal.sym(Bool, Char.is_eq(cc, '\''), False{}, eq) : {T.read.fast.cons(bd, rw, hs, he, pt, bf, T.LStr{}, bk,
+        T.QLit{}, sk, un, lf, at, cc) == T.read.once2(T.lex.str.go(_, False{}, False{}, sip.S(bd, rw, hs, he, pt,
+        bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at), cc, T.QLit{})) : T.St}
+      %Equal.sym(Bool, T.str.bad(Char.to_u32(cc), False{}), False{}, ebad) : {T.read.fast.cons(bd, rw, hs, he, pt,
+        bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at, cc) == T.read.once2(T.lex.str.char.go(_, sip.S(bd, rw, hs,
+        he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at), cc)) : T.St}
+      {==}
+
+# LStr's fast step in a literal string
+def sr.ff.lit(
+  qt: Bool,
+  +cc: Char,
+  eq: {Char.is_eq(cc, '\'') == qt : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+
+) -> {T.read.fast.lit(qt, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at, cc) : T.St}:
+  match qt:
+    case True{}:
+      {==}
+    case False{}:
+      sr.ff.lpush(T.str.bad(Char.to_u32(cc), False{}), cc, {==}, eq, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)
+
+# LStr's fast step, by the string's kind
+def sr.ff.str(
+  qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char
+) -> {T.read.fast.str(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LStr{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match qk:
+    case T.QBasic{}:
+      sr.ff.basic(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), cc, {==}, {==}, bd, rw, hs, he, pt, bf, bk, sk, un, lf,
+        at)
+    case T.QLit{}:
+      sr.ff.lit(Char.is_eq(cc, '\''), cc, {==}, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)
+    case T.QMulti{}:
+      {==}
+    case T.QMultiLit{}:
+      {==}
+
+# LKey's fast step: a bare character is pushed
+def sr.ff.key(
+  ok: Bool,
+  +cc: Char,
+  eo: {T.bare.at(cc) == ok : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+
+) -> {T.read.fast.key(ok, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match ok:
+    case True{}:
+      %Equal.sym(Bool, T.bare.at(cc), True{}, eo) : {T.read.fast.cons(bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk,
+        un, lf, at, cc) == T.read.once2(T.lex.key.go(_, T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='),
+        Char.is_eq(cc, '#'), T.ch.nl(cc), sip.S(bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at), cc))
+        : T.St}
+      {==}
+    case False{}:
+      {==}
+
+# LBare's fast step: a character that ends no word is pushed
+def sr.ff.bare(
+  dl: Bool,
+  +cc: Char,
+  ed: {T.ch.delim(cc) == dl : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+
+) -> {T.read.fast.bare(dl, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match dl:
+    case False{}:
+      %Equal.sym(Bool, T.ch.delim(cc), False{}, ed) : {T.read.fast.cons(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk,
+        sk, un, lf, at, cc) == T.read.once2(T.lex.bare.go(_, T.ch.sp(cc), sip.S(bd, rw, hs, he, pt, bf, T.LBare{},
+        bk, qk, sk, un, lf, at), cc)) : T.St}
+      {==}
+    case True{}:
+      {==}
+
+# LCom's fast step: a character that is no control is passed over
+def sr.ff.com(
+  ct: Bool,
+  +cc: Char,
+  +ec: {T.ch.ctl(cc) == ct : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+
+) -> {T.read.fast.com(ct, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match ct:
+    case False{}:
+      %Equal.sym(Bool, T.ch.nl(cc), False{}, sr.nlctl(cc, ec)) : {sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk,
+        sk, un, lf, at) == T.read.once2(T.lex.com.go(_, T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), sip.S(bd, rw,
+        hs, he, pt, bf, T.LCom{}, bk, qk, sk, un, lf, at), cc)) : T.St}
+      %Equal.sym(Bool, T.ch.ctl(cc), False{}, ec) : {sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk, sk, un, lf, at)
+        == T.read.once2(T.lex.com.go(False{}, _, U32.is_eq(Char.to_u32(cc), 9), sip.S(bd, rw, hs, he, pt, bf,
+        T.LCom{}, bk, qk, sk, un, lf, at), cc)) : T.St}
+      {==}
+    case True{}:
+      {==}
+
+# LTop's fast step: blank space, and a newline, is passed over
+def sr.ff.top(
+  sp: Bool,
+  nl: Bool,
+  +cc: Char,
+  es: {T.ch.sp(cc) == sp : Bool},
+  en: {T.ch.nl(cc) == nl : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> {T.read.fast.ws(sp, nl, True{}, bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match sp:
+    case True{}:
+      %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at) ==
+        T.read.once2(T.lex.top.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '['), Char.is_eq(cc, '"'),
+        Char.is_eq(cc, '\''), T.bare.at(cc), sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at), cc)) :
+        T.St}
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          %Equal.sym(Bool, T.ch.sp(cc), False{}, es) : {sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf,
+            at) == T.read.once2(T.lex.top.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '['), Char.is_eq(cc,
+            '"'), Char.is_eq(cc, '\''), T.bare.at(cc), sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf,
+            at), cc)) : T.St}
+          %Equal.sym(Bool, T.ch.nl(cc), True{}, en) : {sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at)
+            == T.read.once2(T.lex.top.go(False{}, _, Char.is_eq(cc, '#'), Char.is_eq(cc, '['), Char.is_eq(cc, '"'),
+            Char.is_eq(cc, '\''), T.bare.at(cc), sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at), cc))
+            : T.St}
+          {==}
+        case False{}:
+          {==}
+
+# LArr's fast step: blank space, and a newline, is passed over
+def sr.ff.arr(
+  sp: Bool,
+  nl: Bool,
+  +cc: Char,
+  es: {T.ch.sp(cc) == sp : Bool},
+  en: {T.ch.nl(cc) == nl : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> {T.read.fast.ws(sp, nl, True{}, bd, rw, hs, he, pt, bf, T.LArr{}, bk, qk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LArr{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match sp:
+    case True{}:
+      %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {sip.S(bd, rw, hs, he, pt, bf, T.LArr{}, bk, qk, sk, un, lf, at) ==
+        T.read.once2(T.lex.arr.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ']'), sip.S(bd, rw, hs, he, pt,
+        bf, T.LArr{}, bk, qk, sk, un, lf, at), cc)) : T.St}
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          %Equal.sym(Bool, T.ch.sp(cc), False{}, es) : {sip.S(bd, rw, hs, he, pt, bf, T.LArr{}, bk, qk, sk, un, lf,
+            at) == T.read.once2(T.lex.arr.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ']'), sip.S(bd, rw,
+            hs, he, pt, bf, T.LArr{}, bk, qk, sk, un, lf, at), cc)) : T.St}
+          %Equal.sym(Bool, T.ch.nl(cc), True{}, en) : {sip.S(bd, rw, hs, he, pt, bf, T.LArr{}, bk, qk, sk, un, lf, at)
+            == T.read.once2(T.lex.arr.go(False{}, _, Char.is_eq(cc, '#'), Char.is_eq(cc, ']'), sip.S(bd, rw, hs, he,
+            pt, bf, T.LArr{}, bk, qk, sk, un, lf, at), cc)) : T.St}
+          {==}
+        case False{}:
+          {==}
+
+# LArrC's fast step: blank space, and a newline, is passed over
+def sr.ff.arrc(
+  sp: Bool,
+  nl: Bool,
+  +cc: Char,
+  es: {T.ch.sp(cc) == sp : Bool},
+  en: {T.ch.nl(cc) == nl : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> {T.read.fast.ws(sp, nl, True{}, bd, rw, hs, he, pt, bf, T.LArrC{}, bk, qk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LArrC{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match sp:
+    case True{}:
+      %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {sip.S(bd, rw, hs, he, pt, bf, T.LArrC{}, bk, qk, sk, un, lf, at) ==
+        T.read.once2(T.lex.arrc.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, ']'),
+        sip.S(bd, rw, hs, he, pt, bf, T.LArrC{}, bk, qk, sk, un, lf, at), cc)) : T.St}
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          %Equal.sym(Bool, T.ch.sp(cc), False{}, es) : {sip.S(bd, rw, hs, he, pt, bf, T.LArrC{}, bk, qk, sk, un, lf,
+            at) == T.read.once2(T.lex.arrc.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc,
+            ']'), sip.S(bd, rw, hs, he, pt, bf, T.LArrC{}, bk, qk, sk, un, lf, at), cc)) : T.St}
+          %Equal.sym(Bool, T.ch.nl(cc), True{}, en) : {sip.S(bd, rw, hs, he, pt, bf, T.LArrC{}, bk, qk, sk, un, lf,
+            at) == T.read.once2(T.lex.arrc.go(False{}, _, Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc,
+            ']'), sip.S(bd, rw, hs, he, pt, bf, T.LArrC{}, bk, qk, sk, un, lf, at), cc)) : T.St}
+          {==}
+        case False{}:
+          {==}
+
+# LLine's fast step: blank space is passed over
+def sr.ff.line(
+  sp: Bool,
+  nl: Bool,
+  +cc: Char,
+  es: {T.ch.sp(cc) == sp : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> {T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, pt, bf, T.LLine{}, bk, qk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LLine{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match sp:
+    case True{}:
+      %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {sip.S(bd, rw, hs, he, pt, bf, T.LLine{}, bk, qk, sk, un, lf, at) ==
+        T.read.once2(T.lex.line.go(_, Char.is_eq(cc, '#'), T.ch.nl(cc), sip.S(bd, rw, hs, he, pt, bf, T.LLine{}, bk,
+        qk, sk, un, lf, at), cc)) : T.St}
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          {==}
+        case False{}:
+          {==}
+
+# LVal's fast step: blank space is passed over
+def sr.ff.val(
+  sp: Bool,
+  nl: Bool,
+  +cc: Char,
+  es: {T.ch.sp(cc) == sp : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> {T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, pt, bf, T.LVal{}, bk, qk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LVal{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match sp:
+    case True{}:
+      %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {sip.S(bd, rw, hs, he, pt, bf, T.LVal{}, bk, qk, sk, un, lf, at) ==
+        T.read.once2(T.lex.val.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+        Char.is_eq(cc, '['), Char.is_eq(cc, Chr{123}), sip.S(bd, rw, hs, he, pt, bf, T.LVal{}, bk, qk, sk, un, lf,
+        at), cc)) : T.St}
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          {==}
+        case False{}:
+          {==}
+
+# LAfter's fast step: blank space is passed over
+def sr.ff.after(
+  sp: Bool,
+  nl: Bool,
+  +cc: Char,
+  es: {T.ch.sp(cc) == sp : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> {T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match sp:
+    case True{}:
+      %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {sip.S(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at)
+        == T.read.once2(T.lex.after.go(_, Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc, '#'), T.ch.nl(cc),
+        sip.S(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at), cc)) : T.St}
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          {==}
+        case False{}:
+          {==}
+
+# LInl's fast step: blank space is passed over
+def sr.ff.inl(
+  sp: Bool,
+  nl: Bool,
+  +cc: Char,
+  es: {T.ch.sp(cc) == sp : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> {T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, pt, bf, T.LInl{}, bk, qk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LInl{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match sp:
+    case True{}:
+      %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {sip.S(bd, rw, hs, he, pt, bf, T.LInl{}, bk, qk, sk, un, lf, at) ==
+        T.read.once2(T.lex.inl.go(_, Char.is_eq(cc, '#'), Char.is_eq(cc, Chr{125}), T.ch.nl(cc), sip.S(bd, rw, hs, he,
+        pt, bf, T.LInl{}, bk, qk, sk, un, lf, at), cc)) : T.St}
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          {==}
+        case False{}:
+          {==}
+
+# LInlK's fast step: blank space is passed over
+def sr.ff.inlk(
+  sp: Bool,
+  nl: Bool,
+  +cc: Char,
+  es: {T.ch.sp(cc) == sp : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> {T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, pt, bf, T.LInlK{}, bk, qk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LInlK{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match sp:
+    case True{}:
+      %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {sip.S(bd, rw, hs, he, pt, bf, T.LInlK{}, bk, qk, sk, un, lf, at) ==
+        T.read.once2(T.lex.inlk.go(_, Char.is_eq(cc, '#'), T.ch.nl(cc), sip.S(bd, rw, hs, he, pt, bf, T.LInlK{}, bk,
+        qk, sk, un, lf, at), cc)) : T.St}
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          {==}
+        case False{}:
+          {==}
+
+# LInlC's fast step: blank space is passed over
+def sr.ff.inlc(
+  sp: Bool,
+  nl: Bool,
+  +cc: Char,
+  es: {T.ch.sp(cc) == sp : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> {T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, pt, bf, T.LInlC{}, bk, qk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LInlC{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match sp:
+    case True{}:
+      %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {sip.S(bd, rw, hs, he, pt, bf, T.LInlC{}, bk, qk, sk, un, lf, at) ==
+        T.read.once2(T.lex.inlc.go(_, Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, Chr{125}), T.ch.nl(cc),
+        sip.S(bd, rw, hs, he, pt, bf, T.LInlC{}, bk, qk, sk, un, lf, at), cc)) : T.St}
+      {==}
+    case False{}:
+      match nl:
+        case True{}:
+          {==}
+        case False{}:
+          {==}
+
+# the fast step is the full step, for every lex state and character
+def sr.ff(
+  lx: T.Lex,
+  +qk: T.QKind,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char
+) -> {T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)
+  == T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc) : T.St}:
+  match lx:
+    case T.LStr{}:
+      sr.ff.str(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)
+    case T.LKey{}:
+      sr.ff.key(T.bare.at(cc), cc, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)
+    case T.LBare{}:
+      sr.ff.bare(T.ch.delim(cc), cc, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)
+    case T.LCom{}:
+      sr.ff.com(T.ch.ctl(cc), cc, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)
+    case T.LTop{}:
+      sr.ff.top(T.ch.sp(cc), T.ch.nl(cc), cc, {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf,
+        at)
+    case T.LArr{}:
+      sr.ff.arr(T.ch.sp(cc), T.ch.nl(cc), cc, {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf,
+        at)
+    case T.LArrC{}:
+      sr.ff.arrc(T.ch.sp(cc), T.ch.nl(cc), cc, {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf,
+        at)
+    case T.LLine{}:
+      sr.ff.line(T.ch.sp(cc), T.ch.nl(cc), cc, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf,
+        at)
+    case T.LVal{}:
+      sr.ff.val(T.ch.sp(cc), T.ch.nl(cc), cc, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf,
+        at)
+    case T.LAfter{}:
+      sr.ff.after(T.ch.sp(cc), T.ch.nl(cc), cc, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf,
+        at)
+    case T.LInl{}:
+      sr.ff.inl(T.ch.sp(cc), T.ch.nl(cc), cc, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf,
+        at)
+    case T.LInlK{}:
+      sr.ff.inlk(T.ch.sp(cc), T.ch.nl(cc), cc, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf,
+        at)
+    case T.LInlC{}:
+      sr.ff.inlc(T.ch.sp(cc), T.ch.nl(cc), cc, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf,
+        at)
+    case T.LKeyDot{}:
+      {==}
+    case T.LKeyQ{}:
+      {==}
+    case T.LKeyE{}:
+      {==}
+    case T.LKeyU{}:
+      {==}
+    case T.LQ{}:
+      {==}
+    case T.LQ2{}:
+      {==}
+    case T.LEsc{}:
+      {==}
+    case T.LUni{}:
+      {==}
+    case T.LFold{}:
+      {==}
+    case T.LMq{}:
+      {==}
+    case T.LMqEnd{}:
+      {==}
+    case T.LTrim{}:
+      {==}
+    case T.LTrim2{}:
+      {==}
+    case T.LDate{}:
+      {==}
+    case T.LHead{}:
+      {==}
+    case T.LHeadGap{}:
+      {==}
+    case T.LHeadDot{}:
+      {==}
+    case T.LHeadQ{}:
+      {==}
+    case T.LHeadE{}:
+      {==}
+    case T.LHeadU{}:
+      {==}
+    case T.LHeadR{}:
+      {==}
+    case T.LSink{}:
+      {==}
+
+# a mode reads a text with no error
+def sr.N(+tt: String, mode: T.Mode) -> Type:
+  {String.is_empty(T.bad(T.doc.read(tt, mode))) == True{} : Bool}
+
+# a motive at one mode is one at a mode equal to it
+def sr.cast(
+  ~_GG: Data,
+  ~_mm: _GG -> T.Mode -> String -> Type,
+  +gg: _GG,
+  aa: T.Mode,
+  bb: T.Mode,
+  +tt: String,
+  ee: {aa == bb : T.Mode},
+  hh: _mm(gg, aa, tt)
+) -> _mm(gg, bb, tt):
+  %ee : _mm(gg, _, tt)
+  hh
+
+# and so is reading with no error
+def sr.ncast(
+  aa: T.Mode,
+  bb: T.Mode,
+  +tt: String,
+  ee: {aa == bb : T.Mode},
+  en: {String.is_empty(T.bad(T.doc.read(tt, aa))) == True{} : Bool}
+) -> {String.is_empty(T.bad(T.doc.read(tt, bb))) == True{} : Bool}:
+  %ee : {String.is_empty(T.bad(T.doc.read(tt, _))) == True{} : Bool}
+  en
+
+# the end of the text: the motive at every mode that reads the empty text
+# with no error
+def sr.ONil(~_GG: Data, ~_mm: _GG -> T.Mode -> String -> Type) -> Type:
+  @gg: _GG -> @mode: T.Mode -> {String.is_empty(T.bad(T.doc.read(SNil{}, mode))) == True{} : Bool} ->
+    _mm(gg, mode, SNil{})
+
+# the full step from a state the fast step reads: the motive after it gives
+# the motive before it
+def sr.OFull(~_GG: Data, ~_mm: _GG -> T.Mode -> String -> Type, ~_cp: Char -> Bool) -> Type:
+  @gg: _GG -> @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
+    @pt: List<&2, String> -> @bf: List<&2, Char> -> @lx: T.Lex -> @bk: T.Lex -> @qk: T.QKind ->
+    @sk: List<&2, T.Ctx> -> @un: U32 -> @lf: U32 -> @at: Bool -> @cc: Char -> @tt: String ->
+    {_cp(cc) == True{} : Bool} ->
+    {String.is_empty(T.bad(T.doc.read(tt, sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un,
+      lf, at, cc))))) == True{} : Bool} ->
+    _mm(gg, sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)), tt) ->
+    _mm(gg, T.MScan{sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)}, SCon{cc, tt})
+
+# a held character, read before the new one
+def sr.OHeld(~_GG: Data, ~_mm: _GG -> T.Mode -> String -> Type, ~_cp: Char -> Bool) -> Type:
+  @gg: _GG -> @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
+    @pt: List<&2, String> -> @bf: List<&2, Char> -> @lx: T.Lex -> @bk: T.Lex -> @qk: T.QKind ->
+    @sk: List<&2, T.Ctx> -> @hc: Char -> @un: U32 -> @lf: U32 -> @at: Bool -> @ld: Bool -> @cc: Char ->
+    @tt: String -> {_cp(cc) == True{} : Bool} ->
+    {String.is_empty(T.bad(T.doc.read(tt, sr.Kc(cc, T.read.once(T.read.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk,
+      qk, sk, T.HChar{hc}, un, lf, at, ld}), cc))))) == True{} : Bool} ->
+    _mm(gg, sr.Kc(cc, T.read.once(T.read.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{hc}, un, lf,
+      at, ld}), cc)), tt) ->
+    _mm(gg, T.MScan{T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{hc}, un, lf, at, ld}}, SCon{cc, tt})
+
+# the first character, which may be a byte-order mark
+def sr.OLead(~_GG: Data, ~_mm: _GG -> T.Mode -> String -> Type, ~_cp: Char -> Bool) -> Type:
+  @gg: _GG -> @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
+    @pt: List<&2, String> -> @bf: List<&2, Char> -> @lx: T.Lex -> @bk: T.Lex -> @qk: T.QKind ->
+    @sk: List<&2, T.Ctx> -> @un: U32 -> @lf: U32 -> @at: Bool -> @cc: Char -> @tt: String ->
+    {_cp(cc) == True{} : Bool} ->
+    {String.is_empty(T.bad(T.doc.read(tt, sr.Kc(cc, T.read.once(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk,
+      T.HNone{}, un, lf, at, True{}}, cc))))) == True{} : Bool} ->
+    _mm(gg, sr.Kc(cc, T.read.once(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}}, cc)),
+      tt) ->
+    _mm(gg, T.MScan{T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}}}, SCon{cc, tt})
+
+# the character after a carriage return
+def sr.OCr(~_GG: Data, ~_mm: _GG -> T.Mode -> String -> Type, ~_cp: Char -> Bool) -> Type:
+  @gg: _GG -> @st: T.St -> @cc: Char -> @tt: String -> {_cp(cc) == True{} : Bool} ->
+    {String.is_empty(T.bad(T.doc.read(tt, T.doc.cr(Char.is_eq(cc, '\n'), st, cc)))) == True{} : Bool} ->
+    _mm(gg, T.doc.cr(Char.is_eq(cc, '\n'), st, cc), tt) -> _mm(gg, T.MCr{st}, SCon{cc, tt})
+
+# the character after an opening quote
+def sr.OOpen(~_GG: Data, ~_mm: _GG -> T.Mode -> String -> Type, ~_cp: Char -> Bool) -> Type:
+  @gg: _GG -> @ba: Bool -> @qq: Char -> @qk: T.QKind -> @bd: String -> @rw: List<&2, T.Val> ->
+    @hs: List<&2, String> -> @he: List<&2, String> -> @pt: List<&2, String> -> @bf: List<&2, Char> ->
+    @bk: T.Lex -> @sk: List<&2, T.Ctx> -> @un: U32 -> @lf: U32 -> @at: Bool -> @cc: Char -> @tt: String ->
+    {_cp(cc) == True{} : Bool} ->
+    {String.is_empty(T.bad(T.doc.read(tt, T.doc.open(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc,
+      tt)))) == True{} : Bool} ->
+    _mm(gg, T.doc.open(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tt), tt) ->
+    _mm(gg, T.MOpen{ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, SCon{cc, tt})
+
+# a character of a span
+def sr.OEat(~_GG: Data, ~_mm: _GG -> T.Mode -> String -> Type, ~_cp: Char -> Bool) -> Type:
+  @gg: _GG -> @ba: Bool -> @qq: Char -> @ct: String -> @nn: U32 -> @bd: String -> @rw: List<&2, T.Val> ->
+    @hs: List<&2, String> -> @he: List<&2, String> -> @pt: List<&2, String> -> @qk: T.QKind ->
+    @sk: List<&2, T.Ctx> -> @un: U32 -> @lf: U32 -> @at: Bool -> @cc: Char -> @tt: String ->
+    {_cp(cc) == True{} : Bool} ->
+    {String.is_empty(T.bad(T.doc.read(tt, T.eat.feed(ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at,
+      cc)))) == True{} : Bool} ->
+    _mm(gg, T.eat.feed(ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, cc), tt) ->
+    _mm(gg, T.MEat{ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at}, SCon{cc, tt})
+
+# a state with no held character: the first character, or the fast step,
+# which is the full step
+def sipr.lead(
+  ~_GG: Data,
+  ~_mm: _GG -> T.Mode -> String -> Type,
+  ~_cp: Char -> Bool,
+  ~_of: sr.OFull(~_GG, ~_mm, ~_cp),
+  ~_ol: sr.OLead(~_GG, ~_mm, ~_cp),
+  +gg: _GG,
+  ld: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  +eh: {_cp(cc) == True{} : Bool},
+  en: sr.N(tt, sr.Kc(cc, T.read.fast(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, ld}, cc))),
+  ih: _mm(gg, sr.Kc(cc, T.read.fast(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, ld}, cc)), tt)
+) -> _mm(gg, T.MScan{T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, ld}}, SCon{cc, tt}):
+  match ld:
+    case True{}:
+      _ol(gg, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc, tt, eh, en, ih)
+    case False{}:
+      _of(gg, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc, tt, eh,
+        sr.ncast(sr.Kc(cc, T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)), sr.Kc(cc,
+          T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)), tt, Equal.cong(T.St, T.Mode,
+          xx => sr.Kc(cc, xx), T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc),
+          T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc), sr.ff(lx, qk, bd, rw, hs, he, pt,
+          bf, bk, sk, un, lf, at, cc)), en),
+        sr.cast(~_GG, ~_mm, gg, sr.Kc(cc, T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)),
+          sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)), tt, Equal.cong(T.St,
+          T.Mode, xx => sr.Kc(cc, xx), T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc),
+          T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc), sr.ff(lx, qk, bd, rw, hs, he, pt,
+          bf, bk, sk, un, lf, at, cc)), ih))
+
+# a scanning state: a held character, or none
+def sipr.hold(
+  ~_GG: Data,
+  ~_mm: _GG -> T.Mode -> String -> Type,
+  ~_cp: Char -> Bool,
+  ~_of: sr.OFull(~_GG, ~_mm, ~_cp),
+  ~_oh: sr.OHeld(~_GG, ~_mm, ~_cp),
+  ~_ol: sr.OLead(~_GG, ~_mm, ~_cp),
+  +gg: _GG,
+  ho: T.Hold,
+  +ld: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  +eh: {_cp(cc) == True{} : Bool},
+  en: sr.N(tt, sr.Kc(cc, T.read.fast(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, ho, un, lf, at, ld}, cc))),
+  ih: _mm(gg, sr.Kc(cc, T.read.fast(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, ho, un, lf, at, ld}, cc)), tt)
+) -> _mm(gg, T.MScan{T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, ho, un, lf, at, ld}}, SCon{cc, tt}):
+  match ho:
+    case T.HChar{+hc}:
+      _oh(gg, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hc, un, lf, at, ld, cc, tt, eh, en, ih)
+    case T.HNone{}:
+      sipr.lead(~_GG, ~_mm, ~_cp, ~_of, ~_ol, gg, ld, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc, tt, eh,
+        en, ih)
+
+# a scanning state's step
+def sipr.scan(
+  ~_GG: Data,
+  ~_mm: _GG -> T.Mode -> String -> Type,
+  ~_cp: Char -> Bool,
+  ~_of: sr.OFull(~_GG, ~_mm, ~_cp),
+  ~_oh: sr.OHeld(~_GG, ~_mm, ~_cp),
+  ~_ol: sr.OLead(~_GG, ~_mm, ~_cp),
+  +gg: _GG,
+  st: T.St,
+  +cc: Char,
+  +tt: String,
+  +eh: {_cp(cc) == True{} : Bool},
+  en: {String.is_empty(T.bad(T.doc.read(tt, sr.Kc(cc, T.read.fast(st, cc))))) == True{} : Bool},
+  ih: _mm(gg, sr.Kc(cc, T.read.fast(st, cc)), tt)
+) -> _mm(gg, T.MScan{st}, SCon{cc, tt}):
+  match st:
+    case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, ho, +un, +lf, +at, +ld}:
+      sipr.hold(~_GG, ~_mm, ~_cp, ~_of, ~_oh, ~_ol, gg, ho, ld, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc,
+        tt, eh, en, ih)
+
+# every mode's step: the motive after a character gives the motive before it
+def sipr.mstep(
+  ~_GG: Data,
+  ~_mm: _GG -> T.Mode -> String -> Type,
+  ~_cp: Char -> Bool,
+  ~_of: sr.OFull(~_GG, ~_mm, ~_cp),
+  ~_oh: sr.OHeld(~_GG, ~_mm, ~_cp),
+  ~_ol: sr.OLead(~_GG, ~_mm, ~_cp),
+  ~_or: sr.OCr(~_GG, ~_mm, ~_cp),
+  ~_oo: sr.OOpen(~_GG, ~_mm, ~_cp),
+  ~_oe: sr.OEat(~_GG, ~_mm, ~_cp),
+  +gg: _GG,
+  mode: T.Mode,
+  +hh: Char,
+  +tt: String,
+  +eh: {_cp(hh) == True{} : Bool},
+  en: {String.is_empty(T.bad(T.doc.read(tt, Laws.gd.next(mode, hh, tt)))) == True{} : Bool},
+  ih: _mm(gg, Laws.gd.next(mode, hh, tt), tt)
+) -> _mm(gg, mode, SCon{hh, tt}):
+  match mode:
+    case T.MOpen{+ba, +qq, +qk, +bd, +rw, +hs, +he, +pt, +bf, +bk, +sk, +un, +lf, +at}:
+      _oo(gg, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, hh, tt, eh, en, ih)
+    case T.MEat{+ba, +qq, +ct, +nn, +bd, +rw, +hs, +he, +pt, +qk, +sk, +un, +lf, +at}:
+      _oe(gg, ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eh, en, ih)
+    case T.MCr{+st}:
+      _or(gg, st, hh, tt, eh, en, ih)
+    case T.MScan{+st}:
+      sipr.scan(~_GG, ~_mm, ~_cp, ~_of, ~_oh, ~_ol, gg, st, hh, tt, eh,
+        sr.ncast(T.doc.scan(st, hh), sr.Kc(hh, T.read.fast(st, hh)), tt, sr.scan(Char.is_eq(hh, '"'),
+          Char.is_eq(hh, '\''), U32.is_eq(Char.to_u32(hh), 13), st, hh), en),
+        sr.cast(~_GG, ~_mm, gg, T.doc.scan(st, hh), sr.Kc(hh, T.read.fast(st, hh)), tt, sr.scan(Char.is_eq(hh, '"'),
+          Char.is_eq(hh, '\''), U32.is_eq(Char.to_u32(hh), 13), st, hh), ih))
+
+# reading a character with no error leaves the rest with no error from the
+# mode after it
+def sr.next(
+  +mode: T.Mode,
+  +hh: Char,
+  +tt: String,
+  en: {String.is_empty(T.bad(T.doc.read(SCon{hh, tt}, mode))) == True{} : Bool}
+) -> {String.is_empty(T.bad(T.doc.read(tt, Laws.gd.next(mode, hh, tt)))) == True{} : Bool}:
+  %sip.next(mode, hh, tt) : {String.is_empty(T.bad(_)) == True{} : Bool}
+  en
+
+# WP-R: the induction itself. For every motive the obligations keep, doc.read
+# of a text the text predicate allows, from any mode, with no error, gives
+# the motive at that mode and text
+def sipr.read(
+  ~_GG: Data,
+  ~_mm: _GG -> T.Mode -> String -> Type,
+  ~_cp: Char -> Bool,
+  ~_tx: String -> Bool,
+  ~_on: sr.ONil(~_GG, ~_mm),
+  ~_of: sr.OFull(~_GG, ~_mm, ~_cp),
+  ~_oh: sr.OHeld(~_GG, ~_mm, ~_cp),
+  ~_ol: sr.OLead(~_GG, ~_mm, ~_cp),
+  ~_or: sr.OCr(~_GG, ~_mm, ~_cp),
+  ~_oo: sr.OOpen(~_GG, ~_mm, ~_cp),
+  ~_oe: sr.OEat(~_GG, ~_mm, ~_cp),
+  ~_ohh: si.OTxH(~_cp, ~_tx),
+  ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
+  +text: String,
+  +mode: T.Mode,
+  +et: {_tx(text) == True{} : Bool},
+  +en: {String.is_empty(T.bad(T.doc.read(text, mode))) == True{} : Bool}
+) -> _mm(gg, mode, text):
+  match text:
+    case SNil{}:
+      _on(gg, mode, en)
+    case SCon{+hh, +tt}:
+      sipr.mstep(~_GG, ~_mm, ~_cp, ~_of, ~_oh, ~_ol, ~_or, ~_oo, ~_oe, gg, mode, hh, tt, _ohh(hh, tt, et),
+        sr.next(mode, hh, tt, en), sipr.read(~_GG, ~_mm, ~_cp, ~_tx, ~_on, ~_of, ~_oh, ~_ol, ~_or, ~_oo, ~_oe, ~_ohh,
+        ~_ot, gg, tt, Laws.gd.next(mode, hh, tt), _ot(hh, tt, et), sr.next(mode, hh, tt, en)))
+
+# WP-R: the spike's instance of sipr. TOML-TEXT-1's refusal motive at a mode
+# and a text is r1.C: the text completes the mode's grammar position
+# (LAWS.bend's r1.gp). This section proves the local obligations of the
+# header and key states: r1.ob.* shows sr.OFull's obligation for one lex
+# state. The kit first: the error that closes a failing arm, and the
+# completions a character extends, each generic in the frames under the
+# ones it touches.
+
+# the step's obligation for a state the fast step reads, at one lex state,
+# for a character that is a Unicode scalar value
+def r1.Ob(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> Type:
+  {T.wf.char(cc) == True{} : Bool} ->
+    sr.N(tt, sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc))) ->
+    Laws.r1.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)), tt) ->
+    Laws.r1.C(T.MScan{sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)}, SCon{cc, tt})
+
+# a mode that reads a text with an error does not read it with none
+def r1.clash(
+  +tt: String,
+  +mode: T.Mode,
+  en: sr.N(tt, mode),
+  ef: {String.is_empty(T.bad(T.doc.read(tt, mode))) == False{} : Bool}
+) -> Empty:
+  Eq.bit.clash2(Equal.trans(Bool, True{}, String.is_empty(T.bad(T.doc.read(tt, mode))), False{}, Equal.sym(Bool,
+    String.is_empty(T.bad(T.doc.read(tt, mode))), True{}, en), ef))
+
+# after a failed step's carriage return, a line feed leaves the failed state
+# as it is and anything else fails it again
+def r1.bad.lf(
+  lf: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +ul: U32,
+  +at: Bool,
+  +w0: Char,
+  +ws: String,
+  +hh: Char,
+  +tt: String,
+  en: sr.N(tt, T.doc.cr(lf, T.st.err(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, ul, at), SCon{w0, ws}), hh))
+) -> Empty:
+  match lf:
+    case True{}:
+      r1.clash(tt, T.MScan{T.st.err(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, ul, at), SCon{w0, ws})}, en,
+        err.sinks(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, ul, at), w0, ws, tt))
+    case False{}:
+      r1.clash(tt, T.MScan{T.st.err(T.st.err(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, ul, at), SCon{w0, ws}),
+        "carriage return without line feed")}, en, err.sinks(T.st.err(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk,
+        un, ul, at), SCon{w0, ws}), 'c', "arriage return without line feed", tt))
+
+# a failed step's carriage return: the end of the text, or the character
+# after it
+def r1.bad.cr(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +w0: Char,
+  +ws: String,
+  +tt: String,
+  en: sr.N(tt, T.MCr{T.st.err(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at), SCon{w0, ws})})
+) -> Empty:
+  match tt:
+    case SNil{}:
+      r1.clash(SNil{}, T.MScan{T.st.err(T.st.err(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at), SCon{w0,
+        ws}), "carriage return without line feed")}, en, err.sinks(T.st.err(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk,
+        sk, un, lf, at), SCon{w0, ws}), 'c', "arriage return without line feed", SNil{}))
+    case SCon{+hh, +rest}:
+      r1.bad.lf(Char.is_eq(hh, '\n'), bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, w0, ws, hh, rest, en)
+
+# a step that fails reads every text to an error, whichever mode it gave
+def r1.bad(
+  dq: Bool,
+  sq: Bool,
+  cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +w0: Char,
+  +ws: String,
+  +tt: String,
+  en: sr.N(tt, sr.K(dq, sq, cr, T.st.err(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at), SCon{w0, ws})))
+) -> Empty:
+  match dq:
+    case True{}:
+      r1.clash(tt, T.MScan{T.st.err(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at), SCon{w0, ws})}, en,
+        err.sinks(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at), w0, ws, tt))
+    case False{}:
+      match sq:
+        case True{}:
+          r1.clash(tt, T.MScan{T.st.err(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at), SCon{w0, ws})},
+            en, err.sinks(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at), w0, ws, tt))
+        case False{}:
+          match cr:
+            case True{}:
+              r1.bad.cr(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, w0, ws, tt, en)
+            case False{}:
+              r1.clash(tt, T.MScan{T.st.err(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at), SCon{w0,
+                ws})}, en, err.sinks(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at), w0, ws, tt))
+
+# a completion of the text after a character k is one of the text after cc,
+# when cc is k
+def r1.at(
+  +cc: Char,
+  +kk: Char,
+  ee: {Char.is_eq(cc, kk) == True{} : Bool},
+  fs: List<&2, Laws.R1Fr>,
+  +tt: String,
+  hh: Laws.r1.fill(fs, SCon{kk, tt})
+) -> Laws.r1.fill(fs, SCon{cc, tt}):
+  %Equal.sym(Char, cc, kk, Eq.char_eq_true(cc, kk, ee)) : Laws.r1.fill(fs, SCon{_, tt})
+  hh
+
+# a character of an unquoted key extends the rest of one
+def r1.x.bare(
+  +cc: Char,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  ek: {Laws.abnf.unquoted_key_char(cc) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfKBare{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKBare{} <> rest, SCon{cc, tt}):
+  (+ss, (+rr, (e1, (e2, hr)))) = hh
+  (SCon{cc, ss}, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, String.append(ss, rr), e1),
+    (gd.tt(Laws.abnf.unquoted_key_char(cc), Laws.abnf.all_unquoted_key_chars(ss), ek, e2), hr))))
+
+# and begins a simple-key, the rest of which is an unquoted key's
+def r1.x.segbare(
+  +cc: Char,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  ek: {Laws.abnf.unquoted_key_char(cc) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfKBare{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKSeg{} <> rest, SCon{cc, tt}):
+  (+ss, (+rr, (e1, (e2, hr)))) = hh
+  (Laws.KsBare{SCon{cc, ss}}, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, String.append(ss, rr), e1),
+    (gd.tt(Laws.abnf.unquoted_key_char(cc), Laws.abnf.all_unquoted_key_chars(ss), ek, e2), hr))))
+
+# a simple-key with no ws before it
+def r1.x.ws0(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfKSeg{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfWs{} <> (Laws.RfKSeg{} <> rest), tt):
+  ("", (tt, ({==}, ({==}, hh))))
+
+# a wschar extends ws
+def r1.x.ws(
+  +cc: Char,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfWs{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfWs{} <> rest, SCon{cc, tt}):
+  (+ww, (+rr, (e1, (e2, hr)))) = hh
+  (SCon{cc, ww}, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, String.append(ww, rr), e1),
+    (gd.tt(Laws.abnf.wschar(cc), Laws.abnf.ws(ww), ew, e2), hr))))
+
+# a quotation mark begins a basic simple-key
+def r1.x.segbasic(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfKBasic{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKSeg{} <> rest, SCon{'"', tt}):
+  (+pl, (+rr, (e1, (e2, hr)))) = hh
+  (Laws.KsBasic{pl}, (rr, (Equal.cong(String, String, xx => SCon{'"', xx}, tt, Laws.k3.pcs.text(pl, SCon{'"', rr}),
+    e1), (e2, hr))))
+
+# an apostrophe begins a literal simple-key
+def r1.x.seglit(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfKLit{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKSeg{} <> rest, SCon{'\'', tt}):
+  (+ss, (+rr, (e1, (e2, hr)))) = hh
+  (Laws.KsLit{ss}, (rr, (Equal.cong(String, String, xx => SCon{'\'', xx}, tt, String.append(ss, SCon{'\'', rr}), e1),
+    (e2, hr))))
+
+# a dot, then ws and a simple-key, is one more dot-sep
+def r1.x.dot(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfWs{} <> (Laws.RfKSeg{} <> (Laws.RfKAfter{} <> rest)), tt)
+) -> Laws.r1.fill(Laws.RfKAfter{} <> rest, SCon{'.', tt}):
+  (+ww, (+u1, (e1, (e2, (+sg, (+u2, (e3, (e4, (+ds, (+rr, (e5, (e6, hr)))))))))))) = hh
+  (Laws.GDotSep{"", ww, sg} <> ds, (rr, (Equal.cong(String, String, xx => SCon{'.', xx}, tt, String.append(ww,
+    Laws.k3.seg.text(sg, Laws.g.dots.text(ds, rr))), Equal.trans(String, tt, String.append(ww, u1),
+    String.append(ww, Laws.k3.seg.text(sg, Laws.g.dots.text(ds, rr))), e1, Equal.cong(String, String,
+    xx => String.append(ww, xx), u1, Laws.k3.seg.text(sg, Laws.g.dots.text(ds, rr)), Equal.trans(String, u1,
+    Laws.k3.seg.text(sg, u2), Laws.k3.seg.text(sg, Laws.g.dots.text(ds, rr)), e3, Equal.cong(String, String,
+    xx => Laws.k3.seg.text(sg, xx), u2, Laws.g.dots.text(ds, rr), e5))))), (gd.tt(Laws.abnf.ws(ww),
+    Bool.and(Laws.g.ok.seg(sg), Laws.g.ok.dots(ds)), e2, gd.tt(Laws.g.ok.seg(sg), Laws.g.ok.dots(ds), e4, e6)),
+    hr))))
+
+# a segment ended: nothing more of an unquoted key
+def r1.x.segend(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfKAfter{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKBare{} <> (Laws.RfKAfter{} <> rest), tt):
+  ("", (tt, ({==}, ({==}, hh))))
+
+# a wschar before a header's dot-sep or its closing brackets
+def r1.x.hws.go(
+  ds: List<&2, Laws.GDotSep>,
+  +cc: Char,
+  +tt: String,
+  +arr: Bool,
+  rest: List<&2, Laws.R1Fr>,
+  ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  +rr: String,
+  e1: {tt == Laws.g.dots.text(ds, rr) : String},
+  +e2: {Laws.g.ok.dots(ds) == True{} : Bool},
+  hr: Laws.r1.fill(Laws.RfHClose{arr} <> rest, rr)
+) -> Laws.r1.fill(Laws.RfKAfter{} <> (Laws.RfHClose{arr} <> rest), SCon{cc, tt}):
+  match ds:
+    case []:
+      (+ww, (+r2, (e3, (e4, h2)))) = hr
+      ([], (SCon{cc, tt}, ({==}, ({==}, (SCon{cc, ww}, (r2, (Equal.cong(String, String, xx => SCon{cc, xx}, tt,
+        String.append(ww, Laws.r1.close(arr, r2)), Equal.trans(String, tt, rr, String.append(ww, Laws.r1.close(arr,
+        r2)), e1, e3)), (gd.tt(Laws.abnf.wschar(cc), Laws.abnf.ws(ww), ew, e4), h2))))))))
+    case Laws.GDotSep{+w1, +w2, +sg} <> +more:
+      (Laws.GDotSep{SCon{cc, w1}, w2, sg} <> more, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt,
+        Laws.g.dots.text(Laws.GDotSep{w1, w2, sg} <> more, rr), e1), (gd.tt(Bool.and(Laws.abnf.wschar(cc),
+        Laws.abnf.ws(w1)), Bool.and(Laws.abnf.ws(w2), Bool.and(Laws.g.ok.seg(sg), Laws.g.ok.dots(more))),
+        gd.tt(Laws.abnf.wschar(cc), Laws.abnf.ws(w1), ew, gd.l(Laws.abnf.ws(w1), Bool.and(Laws.abnf.ws(w2),
+        Bool.and(Laws.g.ok.seg(sg), Laws.g.ok.dots(more))), e2)), gd.r(Laws.abnf.ws(w1), Bool.and(Laws.abnf.ws(w2),
+        Bool.and(Laws.g.ok.seg(sg), Laws.g.ok.dots(more))), e2)), hr))))
+
+# the same, with the completion taken apart
+def r1.x.hws(
+  +cc: Char,
+  +tt: String,
+  +arr: Bool,
+  rest: List<&2, Laws.R1Fr>,
+  ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfKAfter{} <> (Laws.RfHClose{arr} <> rest), tt)
+) -> Laws.r1.fill(Laws.RfKAfter{} <> (Laws.RfHClose{arr} <> rest), SCon{cc, tt}):
+  (+ds, (+rr, (e1, (e2, hr)))) = hh
+  r1.x.hws.go(ds, cc, tt, arr, rest, ew, rr, e1, e2, hr)
+
+# a wschar before a keyval's dot-sep or its keyval-sep
+def r1.x.vws.go(
+  ds: List<&2, Laws.GDotSep>,
+  +cc: Char,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  +rr: String,
+  e1: {tt == Laws.g.dots.text(ds, rr) : String},
+  +e2: {Laws.g.ok.dots(ds) == True{} : Bool},
+  hr: Laws.r1.fill(Laws.RfEq{} <> rest, rr)
+) -> Laws.r1.fill(Laws.RfKAfter{} <> (Laws.RfEq{} <> rest), SCon{cc, tt}):
+  match ds:
+    case []:
+      (+ww, (+r2, (e3, (e4, h2)))) = hr
+      ([], (SCon{cc, tt}, ({==}, ({==}, (SCon{cc, ww}, (r2, (Equal.cong(String, String, xx => SCon{cc, xx}, tt,
+        String.append(ww, SCon{'=', r2}), Equal.trans(String, tt, rr, String.append(ww, SCon{'=', r2}), e1, e3)),
+        (gd.tt(Laws.abnf.wschar(cc), Laws.abnf.ws(ww), ew, e4), h2))))))))
+    case Laws.GDotSep{+w1, +w2, +sg} <> +more:
+      (Laws.GDotSep{SCon{cc, w1}, w2, sg} <> more, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt,
+        Laws.g.dots.text(Laws.GDotSep{w1, w2, sg} <> more, rr), e1), (gd.tt(Bool.and(Laws.abnf.wschar(cc),
+        Laws.abnf.ws(w1)), Bool.and(Laws.abnf.ws(w2), Bool.and(Laws.g.ok.seg(sg), Laws.g.ok.dots(more))),
+        gd.tt(Laws.abnf.wschar(cc), Laws.abnf.ws(w1), ew, gd.l(Laws.abnf.ws(w1), Bool.and(Laws.abnf.ws(w2),
+        Bool.and(Laws.g.ok.seg(sg), Laws.g.ok.dots(more))), e2)), gd.r(Laws.abnf.ws(w1), Bool.and(Laws.abnf.ws(w2),
+        Bool.and(Laws.g.ok.seg(sg), Laws.g.ok.dots(more))), e2)), hr))))
+
+# the same, with the completion taken apart
+def r1.x.vws(
+  +cc: Char,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  ew: {Laws.abnf.wschar(cc) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfKAfter{} <> (Laws.RfEq{} <> rest), tt)
+) -> Laws.r1.fill(Laws.RfKAfter{} <> (Laws.RfEq{} <> rest), SCon{cc, tt}):
+  (+ds, (+rr, (e1, (e2, hr)))) = hh
+  r1.x.vws.go(ds, cc, tt, rest, ew, rr, e1, e2, hr)
+
+# a [table] header's ] ends the key
+def r1.x.hclose(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(rest, tt)
+) -> Laws.r1.fill(Laws.RfKAfter{} <> (Laws.RfHClose{False{}} <> rest), SCon{']', tt}):
+  ([], (SCon{']', tt}, ({==}, ({==}, ("", (tt, ({==}, ({==}, hh))))))))
+
+# an [[array]] header's first ] ends the key, and its second is to come
+def r1.x.hclose2(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfRBr{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKAfter{} <> (Laws.RfHClose{True{}} <> rest), SCon{']', tt}):
+  (+rr, (e1, hr)) = hh
+  ([], (SCon{']', tt}, ({==}, ({==}, ("", (rr, (Equal.cong(String, String, xx => SCon{']', xx}, tt, SCon{']', rr},
+    e1), ({==}, hr))))))))
+
+# a keyval's = ends the key
+def r1.x.eq(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfVal{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKAfter{} <> (Laws.RfEq{} <> (Laws.RfVal{} <> rest)), SCon{'=', tt}):
+  ([], (SCon{'=', tt}, ({==}, ({==}, ("", (tt, ({==}, ({==}, hh))))))))
+
+# a header's text after its brackets, from the parts of its key
+def r1.x.htext(
+  +tt: String,
+  +ww: String,
+  +sg: Laws.KSeg,
+  +ds: List<&2, Laws.GDotSep>,
+  +tl: String,
+  +u1: String,
+  +u2: String,
+  +u3: String,
+  e1: {tt == String.append(ww, u1) : String},
+  e3: {u1 == Laws.k3.seg.text(sg, u2) : String},
+  e5: {u2 == Laws.g.dots.text(ds, u3) : String},
+  e7: {u3 == tl : String}
+) -> {tt == String.append(ww, Laws.k3.seg.text(sg, Laws.g.dots.text(ds, tl))) : String}:
+  Equal.trans(String, tt, String.append(ww, u1), String.append(ww, Laws.k3.seg.text(sg, Laws.g.dots.text(ds, tl))),
+    e1, Equal.cong(String, String, xx => String.append(ww, xx), u1, Laws.k3.seg.text(sg, Laws.g.dots.text(ds, tl)),
+    Equal.trans(String, u1, Laws.k3.seg.text(sg, u2), Laws.k3.seg.text(sg, Laws.g.dots.text(ds, tl)), e3,
+    Equal.cong(String, String, xx => Laws.k3.seg.text(sg, xx), u2, Laws.g.dots.text(ds, tl), Equal.trans(String, u2,
+    Laws.g.dots.text(ds, u3), Laws.g.dots.text(ds, tl), e5, Equal.cong(String, String, xx => Laws.g.dots.text(ds,
+    xx), u3, tl, e7))))))
+
+# a key of one segment, or a dotted key
+def r1.mkkey(sg: Laws.KSeg, +ds: List<&2, Laws.GDotSep>) -> Laws.GKey:
+  match ds:
+    case []:
+      Laws.GSimpleKey{sg}
+    case _d <> _ds:
+      Laws.GDottedKey{sg, ds}
+
+# the table a header's parts make: a [table] or an [[array]]
+def r1.mktab(arr: Bool, ww: String, kk: Laws.GKey, w2: String) -> Laws.GTable:
+  match arr:
+    case False{}:
+      Laws.GStdTable{ww, kk, w2}
+    case True{}:
+      Laws.GArrayTable{ww, kk, w2}
+
+# the key the parts make spells them
+def r1.mkkey.txt(
+  +sg: Laws.KSeg,
+  ds: List<&2, Laws.GDotSep>,
+  +tl: String
+) -> {Laws.g.key.text(r1.mkkey(sg, ds), tl) == Laws.k3.seg.text(sg, Laws.g.dots.text(ds, tl)) : String}:
+  match ds:
+    case []:
+      {==}
+    case _d <> _ds:
+      {==}
+
+# and follows the rules when they do
+def r1.mkkey.ok(
+  +sg: Laws.KSeg,
+  ds: List<&2, Laws.GDotSep>,
+  +e4: {Laws.g.ok.seg(sg) == True{} : Bool},
+  +e6: {Laws.g.ok.dots(ds) == True{} : Bool}
+) -> {Laws.g.ok.key(r1.mkkey(sg, ds)) == True{} : Bool}:
+  match ds:
+    case []:
+      e4
+    case +dd <> +more:
+      gd.tt(Laws.g.ok.seg(sg), Laws.g.ok.dots(dd <> more), e4, e6)
+
+# the table from its parts: its text, and its rules
+def r1.x.hopen.go(
+  +arr: Bool,
+  +tt: String,
+  +ww: String,
+  +kk: Laws.GKey,
+  +w2: String,
+  +rr: String,
+  et: {tt == String.append(ww, Laws.g.key.text(kk, String.append(w2, Laws.r1.close(arr, rr)))) : String},
+  +ew: {Laws.abnf.ws(ww) == True{} : Bool},
+  +ek: {Laws.g.ok.key(kk) == True{} : Bool},
+  +e2: {Laws.abnf.ws(w2) == True{} : Bool},
+  hl: Laws.r1.fill(Laws.r1.eol(), rr)
+) -> Laws.r1.fill(Laws.RfHOpen{arr} <> Laws.r1.eol(), tt):
+  match arr:
+    case False{}:
+      (Laws.GStdTable{ww, kk, w2}, (rr, (Equal.cong(String, String, xx => SCon{'[', xx}, tt, String.append(ww,
+        Laws.g.key.text(kk, String.append(w2, SCon{']', rr}))), et), (gd.tt(Laws.abnf.ws(ww),
+        Bool.and(Laws.g.ok.key(kk), Laws.abnf.ws(w2)), ew, gd.tt(Laws.g.ok.key(kk), Laws.abnf.ws(w2), ek, e2)), hl))))
+    case True{}:
+      (Laws.GArrayTable{ww, kk, w2}, (rr, (Equal.cong(String, String, xx => SCon{'[', SCon{'[', xx}}, tt,
+        String.append(ww, Laws.g.key.text(kk, String.append(w2, SCon{']', SCon{']', rr}}))), et),
+        (gd.tt(Laws.abnf.ws(ww), Bool.and(Laws.g.ok.key(kk), Laws.abnf.ws(w2)), ew, gd.tt(Laws.g.ok.key(kk),
+        Laws.abnf.ws(w2), ek, e2)), hl))))
+
+# a header's key with the ws after its brackets is the header
+def r1.x.hopen(
+  +arr: Bool,
+  +tt: String,
+  hh: Laws.r1.fill(Laws.RfWs{} <> (Laws.RfKSeg{} <> (Laws.RfKAfter{} <> Laws.r1.hend(arr))), tt)
+) -> Laws.r1.fill(Laws.RfHOpen{arr} <> Laws.r1.eol(), tt):
+  (+ww, (+u1, (e1, (e2, (+sg, (+u2, (e3, (+e4, (+ds, (+u3, (e5, (+e6, (+w2, (+rr, (e7, (e8, hl)))))))))))))))) = hh
+  r1.x.hopen.go(arr, tt, ww, r1.mkkey(sg, ds), w2, rr, Equal.trans(String, tt, String.append(ww,
+    Laws.k3.seg.text(sg, Laws.g.dots.text(ds, String.append(w2, Laws.r1.close(arr, rr))))), String.append(ww,
+    Laws.g.key.text(r1.mkkey(sg, ds), String.append(w2, Laws.r1.close(arr, rr)))), r1.x.htext(tt, ww, sg, ds,
+    String.append(w2, Laws.r1.close(arr, rr)), u1, u2, u3, e1, e3, e5, e7), Equal.cong(String, String,
+    xx => String.append(ww, xx), Laws.k3.seg.text(sg, Laws.g.dots.text(ds, String.append(w2, Laws.r1.close(arr,
+    rr)))), Laws.g.key.text(r1.mkkey(sg, ds), String.append(w2, Laws.r1.close(arr, rr))), Equal.sym(String,
+    Laws.g.key.text(r1.mkkey(sg, ds), String.append(w2, Laws.r1.close(arr, rr))), Laws.k3.seg.text(sg,
+    Laws.g.dots.text(ds, String.append(w2, Laws.r1.close(arr, rr)))), r1.mkkey.txt(sg, ds, String.append(w2,
+    Laws.r1.close(arr, rr)))))), e2,
+    r1.mkkey.ok(sg, ds, e4, e6), e8, hl)
+
+# the texts that complete a mode, by a short name
+def r1.CC(+mode: T.Mode, +text: String) -> Type:
+  Laws.r1.C(mode, text)
+
+# nothing completes a position no text completes
+def r1.no(+st: T.St, +cc: Char, +tt: String, ee: Empty) -> Laws.r1.C(T.MScan{st}, SCon{cc, tt}):
+  Eq.bit.gone(&1, Laws.r1.C(T.MScan{st}, SCon{cc, tt}), ee)
+
+# the carriage return's test, as a test of the character
+def r1.creq(
+  +cc: Char,
+  ee: {U32.is_eq(Char.to_u32(cc), 13) == True{} : Bool}
+) -> {Char.is_eq(cc, Chr{13}) == True{} : Bool}:
+  match cc:
+    case Chr{_u}:
+      ee
+
+# a character the scanner calls blank space is a wschar
+def r1.spws(+cc: Char, ee: {T.ch.sp(cc) == True{} : Bool}) -> {Laws.abnf.wschar(cc) == True{} : Bool}:
+  match cc:
+    case Chr{_u}:
+      ee
+
+# a character the scanner lets into a bare key is an unquoted-key's
+def r1.ukc(+cc: Char, ee: {T.bare.at(cc) == True{} : Bool}) -> {Laws.abnf.unquoted_key_char(cc) == True{} : Bool}:
+  Equal.trans(Bool, Laws.abnf.unquoted_key_char(cc), T.bare.at(cc), True{}, Equal.sym(Bool, T.bare.at(cc),
+    Laws.abnf.unquoted_key_char(cc), bare.at.abnf(cc)), ee)
+
+# a character that is no quote, apostrophe or carriage return leaves the
+# state its step gave to be read on: pp tells it from the three
+def r1.kk(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  pp: Char -> Bool,
+  +yes: {pp(cc) == True{} : Bool},
+  n1: {pp('"') == False{} : Bool},
+  n2: {pp('\'') == False{} : Bool},
+  n3: {pp(Chr{13}) == False{} : Bool},
+  xx: T.St,
+  +tt: String,
+  hh: Laws.r1.C(sr.K(qq, lit, cr, xx), tt)
+) -> Laws.r1.C(T.MScan{xx}, tt):
+  match qq:
+    case True{}:
+      Eq.bit.gone(&1, Laws.r1.C(T.MScan{xx}, tt), Eq.refute_char(cc, '"', pp, eqq, yes, n1))
+    case False{}:
+      match lit:
+        case True{}:
+          Eq.bit.gone(&1, Laws.r1.C(T.MScan{xx}, tt), Eq.refute_char(cc, '\'', pp, elt, yes, n2))
+        case False{}:
+          match cr:
+            case True{}:
+              Eq.bit.gone(&1, Laws.r1.C(T.MScan{xx}, tt), Eq.refute_char(cc, Chr{13}, pp, r1.creq(cc, ecr), yes, n3))
+            case False{}:
+              hh
+
+# the state a header's walk leaves reads the line after the header
+def r1.happ(
+  ee: T.End,
+  +sg: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +tt: String,
+  hh: Laws.r1.C(T.MScan{T.read.once2(T.head.apply(ee, sg, bk, qk, un, lf, False{}))}, tt)
+) -> Laws.r1.fill(Laws.r1.eol(), tt):
+  match ee:
+    case T.End{_v, _b, _h}:
+      hh
+
+# a header's key read: the table is opened and the line after it read
+def r1.hjob(
+  arr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +sg: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +tt: String,
+  hh: Laws.r1.C(T.MScan{T.read.once2(T.head.job(arr, bd, rw, hs, sg, bk, qk, un, lf, False{}))}, tt)
+) -> Laws.r1.fill(Laws.r1.eol(), tt):
+  match arr:
+    case False{}:
+      r1.happ(T.tree.walk(sg, T.Tw{rw, T.JDef{}, [], bd, "", hs, False{}}, 0), sg, bk, qk, un, lf, tt, hh)
+    case True{}:
+      r1.happ(T.tree.walk(sg, T.Tw{rw, T.JAot{}, [], bd, "", hs, False{}}, 0), sg, bk, qk, un, lf, tt, hh)
+
+# LHead: a header's key right after its brackets, or a bare segment begun.
+# The state, and the mode its step gives
+def r1.SH(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LHead{}, bk, qk, sk, un, lf, at)
+
+# the mode r1.hd.br reads its text from
+def r1.hd.br.M(
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.head.br(r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at))))
+
+# LHead's second [: an array of tables right after the first, else refused
+def r1.hd.br(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +ebr: {Char.is_eq(cc, '[') == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hd.br.M(qq, lit, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: Laws.r1.C(r1.hd.br.M(qq, lit, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match pt bf at:
+    case Nil{} Nil{} False{}:
+      r1.at(cc, '[', ebr, Laws.RfHOpen{False{}} <> Laws.r1.eol(), tt, r1.kk(qq, lit, cr, cc, eqq, elt, ecr,
+        xx => Char.is_eq(xx, '['), ebr, {==}, {==}, {==}, r1.SH(bd, rw, hs, he, [], [], bk, qk, sk, un, lf, True{}),
+        tt, ih))
+    case Nil{} Nil{} True{}:
+      r1.no(r1.SH(bd, rw, hs, he, [], [], bk, qk, sk, un, lf, True{}), cc, tt, r1.bad(qq, lit, cr, bd, rw, hs, he, [],
+        [], T.LHead{}, bk, qk, sk, un, lf, True{}, 'i', "nvalid header", tt, en))
+    case +p <> +ps Nil{} +aa:
+      Unit{}
+    case Nil{} +b <> +bs +aa:
+      r1.no(r1.SH(bd, rw, hs, he, [], b <> bs, bk, qk, sk, un, lf, aa), cc, tt, r1.bad(qq, lit, cr, bd, rw, hs, he, [],
+        b <> bs, T.LHead{}, bk, qk, sk, un, lf, aa, 'i', "nvalid header", tt, en))
+    case +p <> +ps +b <> +bs +aa:
+      r1.no(r1.SH(bd, rw, hs, he, p <> ps, b <> bs, bk, qk, sk, un, lf, aa), cc, tt, r1.bad(qq, lit, cr, bd, rw, hs,
+        he, p <> ps, b <> bs, T.LHead{}, bk, qk, sk, un, lf, aa, 'i', "nvalid header", tt, en))
+
+# the mode r1.hd.ch reads its text from
+def r1.hd.chM(
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.head.ch(r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc)))
+
+# LHead's bare character: one more of the segment, or the first
+def r1.hd.ch(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +eba: {T.bare.at(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  _en: sr.N(tt, r1.hd.chM(qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.hd.chM(qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match pt bf:
+    case Nil{} Nil{}:
+      r1.x.hopen(at, SCon{cc, tt}, r1.x.ws0(SCon{cc, tt}, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.x.segbare(cc, tt,
+        Laws.RfKAfter{} <> Laws.r1.hend(at), r1.ukc(cc, eba), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.bare.at(xx),
+        eba, {==}, {==}, {==}, r1.SH(bd, rw, hs, he, [], [cc], bk, qk, sk, un, lf, at), tt, ih))))
+    case +p <> +ps Nil{}:
+      Unit{}
+    case Nil{} +b <> +bs:
+      r1.x.bare(cc, tt, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.ukc(cc, eba), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx
+        => T.bare.at(xx), eba, {==}, {==}, {==}, r1.SH(bd, rw, hs, he, [], cc <> (b <> bs), bk, qk, sk, un, lf, at), tt,
+        ih))
+    case +p <> +ps +b <> +bs:
+      r1.x.bare(cc, tt, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.ukc(cc, eba), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx
+        => T.bare.at(xx), eba, {==}, {==}, {==}, r1.SH(bd, rw, hs, he, p <> ps, cc <> (b <> bs), bk, qk, sk, un, lf,
+        at), tt, ih))
+
+# the mode r1.hd.sp reads its text from
+def r1.hd.spM(
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.head.gap(r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at))))
+
+# LHead's blank space: ws after the bracket, or the segment ended
+def r1.hd.sp(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +esp: {T.ch.sp(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  _en: sr.N(tt, r1.hd.spM(qq, lit, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.hd.spM(qq, lit, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match pt bf:
+    case Nil{} Nil{}:
+      r1.x.hopen(at, SCon{cc, tt}, r1.x.ws(cc, tt, Laws.RfKSeg{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), r1.spws(cc,
+        esp), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx), esp, {==}, {==}, {==}, sip.S(bd, rw, hs, he, [],
+        [], T.LHeadDot{}, bk, qk, sk, un, lf, at), tt, ih)))
+    case +p <> +ps Nil{}:
+      Unit{}
+    case Nil{} +b <> +bs:
+      r1.x.segend(SCon{cc, tt}, Laws.r1.hend(at), r1.x.hws(cc, tt, at, Laws.r1.eol(), r1.spws(cc, esp), r1.kk(qq, lit,
+        cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx), esp, {==}, {==}, {==}, sip.S(bd, rw, hs, he, T.buf.str(b <> bs) <> [],
+        [], T.LHeadGap{}, bk, qk, sk, un, lf, at), tt, ih)))
+    case +p <> +ps +b <> +bs:
+      r1.x.segend(SCon{cc, tt}, Laws.r1.hend(at), r1.x.hws(cc, tt, at, Laws.r1.eol(), r1.spws(cc, esp), r1.kk(qq, lit,
+        cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx), esp, {==}, {==}, {==}, sip.S(bd, rw, hs, he, T.buf.str(b <> bs) <> (p
+        <> ps), [], T.LHeadGap{}, bk, qk, sk, un, lf, at), tt, ih)))
+
+# the mode r1.hd.dot reads its text from
+def r1.hd.dotM(
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.head.dot2(r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at))))
+
+# LHead's dot: the segment ended, a dot-sep begun; refused with no segment
+def r1.hd.dot(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +edt: {Char.is_eq(cc, '.') == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hd.dotM(qq, lit, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.hd.dotM(qq, lit, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match bf:
+    case []:
+      r1.no(r1.SH(bd, rw, hs, he, pt, [], bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw, hs, he, pt, [],
+        T.LHead{}, bk, qk, sk, un, lf, at, 'e', "mpty key", tt, en))
+    case +b <> +bs:
+      r1.at(cc, '.', edt, Laws.RfKBare{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt, r1.x.segend(SCon{'.', tt},
+        Laws.r1.hend(at), r1.x.dot(tt, Laws.r1.hend(at), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx,
+        '.'), edt, {==}, {==}, {==}, sip.S(bd, rw, hs, he, T.buf.str(b <> bs) <> pt, [], T.LHeadDot{}, bk, qk, sk, un,
+        lf, at), tt, ih))))
+
+# the mode r1.hd.end reads its text from
+def r1.hd.endM(
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.head.close(r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at))))
+
+# LHead's ]: the key ended, and the header, or its first ]
+def r1.hd.end(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +een: {Char.is_eq(cc, ']') == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hd.endM(qq, lit, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.hd.endM(qq, lit, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match pt bf at:
+    case Nil{} Nil{} False{}:
+      r1.no(r1.SH(bd, rw, hs, he, [], [], bk, qk, sk, un, lf, False{}), cc, tt, r1.bad(qq, lit, cr, bd, rw, hs, he, [],
+        [], T.LHead{}, bk, qk, sk, un, lf, False{}, 'e', "mpty key", tt, en))
+    case Nil{} Nil{} True{}:
+      r1.no(r1.SH(bd, rw, hs, he, [], [], bk, qk, sk, un, lf, True{}), cc, tt, r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx
+        => Char.is_eq(xx, ']'), een, {==}, {==}, {==}, sip.S(bd, rw, hs, he, [], [], T.LHeadR{}, bk, qk, sk, un, lf,
+        True{}), tt, ih))
+    case +p <> +ps Nil{} +aa:
+      Unit{}
+    case +p0 +b <> +bs False{}:
+      r1.at(cc, ']', een, Laws.RfKBare{} <> (Laws.RfKAfter{} <> Laws.r1.hend(False{})), tt, r1.x.segend(SCon{']', tt},
+        Laws.r1.hend(False{}), r1.x.hclose(tt, Laws.r1.eol(), r1.hjob(False{}, bd, rw, hs, List.reverse(&2, String,
+        T.buf.str(b <> bs) <> p0), bk, qk, un, lf, tt, r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, ']'),
+        een, {==}, {==}, {==}, T.read.once2(T.head.job(False{}, bd, rw, hs, List.reverse(&2, String, T.buf.str(b <> bs)
+        <> p0), bk, qk, un, lf, False{})), tt, ih)))))
+    case +p0 +b <> +bs True{}:
+      r1.at(cc, ']', een, Laws.RfKBare{} <> (Laws.RfKAfter{} <> Laws.r1.hend(True{})), tt, r1.x.segend(SCon{']', tt},
+        Laws.r1.hend(True{}), r1.x.hclose2(tt, Laws.r1.eol(), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx,
+        ']'), een, {==}, {==}, {==}, sip.S(bd, rw, hs, he, T.buf.str(b <> bs) <> p0, [], T.LHeadR{}, bk, qk, sk, un, lf,
+        True{}), tt, ih))))
+
+# the mode r1.hd.q reads its text from
+def r1.hd.qM(
+  +lit: Bool,
+  +cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(True{}, lit, cr, T.read.once2(T.lex.head.quote(r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at),
+    T.QBasic{})))
+
+# LHead's quotation mark: a basic segment, right after the bracket only
+def r1.hd.q(
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eqk: {Char.is_eq(cc, '"') == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hd.qM(lit, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.hd.qM(lit, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match pt bf:
+    case Nil{} Nil{}:
+      r1.at(cc, '"', eqk, Laws.RfHOpen{at} <> Laws.r1.eol(), tt, r1.x.hopen(at, SCon{'"', tt}, r1.x.ws0(SCon{'"', tt},
+        Laws.RfKAfter{} <> Laws.r1.hend(at), r1.x.segbasic(tt, Laws.RfKAfter{} <> Laws.r1.hend(at), ih))))
+    case +p <> +ps Nil{}:
+      Unit{}
+    case +p0 +b <> +bs:
+      r1.no(r1.SH(bd, rw, hs, he, p0, b <> bs, bk, qk, sk, un, lf, at), cc, tt, r1.bad(True{}, lit, cr, bd, rw, hs, he,
+        p0, b <> bs, T.LHead{}, bk, qk, sk, un, lf, at, 'i', "nvalid header", tt, en))
+
+# the mode r1.hd.lit reads its text from
+def r1.hd.litM(
+  +cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(False{}, True{}, cr, T.read.once2(T.lex.head.quote(r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at),
+    T.QLit{})))
+
+# LHead's apostrophe: a literal segment, right after the bracket only
+def r1.hd.lit(
+  cr: Bool,
+  +cc: Char,
+  +eqk: {Char.is_eq(cc, '\'') == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hd.litM(cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.hd.litM(cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match pt bf:
+    case Nil{} Nil{}:
+      r1.at(cc, '\'', eqk, Laws.RfHOpen{at} <> Laws.r1.eol(), tt, r1.x.hopen(at, SCon{'\'', tt}, r1.x.ws0(SCon{'\'',
+        tt}, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.x.seglit(tt, Laws.RfKAfter{} <> Laws.r1.hend(at), ih))))
+    case +p <> +ps Nil{}:
+      Unit{}
+    case +p0 +b <> +bs:
+      r1.no(r1.SH(bd, rw, hs, he, p0, b <> bs, bk, qk, sk, un, lf, at), cc, tt, r1.bad(False{}, True{}, cr, bd, rw, hs,
+        he, p0, b <> bs, T.LHead{}, bk, qk, sk, un, lf, at, 'i', "nvalid header", tt, en))
+
+# the mode r1.hd.hash reads its text from
+def r1.hd.hashM(
+  +cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(False{}, False{}, cr, T.read.once2(T.com.enter(r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at),
+    T.LHead{})))
+
+# LHead's #: a comment, which no header's key survives
+def r1.hd.hash(
+  cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == False{} : Bool},
+  +elt: {Char.is_eq(cc, '\'') == False{} : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +ehs: {Char.is_eq(cc, '#') == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  _en: sr.N(tt, r1.hd.hashM(cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.hd.hashM(cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  r1.no(r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.kk(False{}, False{}, cr, cc, eqq, elt, ecr, xx
+    => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==}, T.read.once2(T.com.enter(r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk,
+    un, lf, at), T.LHead{})), tt, ih))
+
+# the mode LHead's step gives, by the dispatch's tests
+def r1.hK(
+  +br: Bool,
+  +bare: Bool,
+  +sp: Bool,
+  +dot: Bool,
+  +end: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +hash: Bool,
+  +cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.head.go(br, bare, sp, dot, end, qq, lit, hash, r1.SH(bd, rw, hs, he, pt, bf, bk,
+    qk, sk, un, lf, at), cc)))
+
+# the mode r1.hd.go reads its text from
+def r1.hdM(
+  +br: Bool,
+  +bare: Bool,
+  +sp: Bool,
+  +dot: Bool,
+  +end: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +hash: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  r1.hK(br, bare, sp, dot, end, qq, lit, hash, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)
+
+# LHead's dispatch, one test at a time
+def r1.hd.go(
+  br: Bool,
+  bare: Bool,
+  sp: Bool,
+  dot: Bool,
+  end: Bool,
+  qq: Bool,
+  lit: Bool,
+  hash: Bool,
+  cr: Bool,
+  +cc: Char,
+  +ebr: {Char.is_eq(cc, '[') == br : Bool},
+  +eba: {T.bare.at(cc) == bare : Bool},
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +edt: {Char.is_eq(cc, '.') == dot : Bool},
+  +een: {Char.is_eq(cc, ']') == end : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ehs: {Char.is_eq(cc, '#') == hash : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hdM(br, bare, sp, dot, end, qq, lit, hash, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.hdM(br, bare, sp, dot, end, qq, lit, hash, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match br:
+    case True{}:
+      r1.hd.br(qq, lit, cr, cc, eqq, elt, ecr, ebr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt, en, ih)
+    case False{}:
+      match bare:
+        case True{}:
+          r1.hd.ch(qq, lit, cr, cc, eqq, elt, ecr, eba, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt, en, ih)
+        case False{}:
+          match sp:
+            case True{}:
+              r1.hd.sp(qq, lit, cr, cc, eqq, elt, ecr, esp, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt, en, ih)
+            case False{}:
+              match dot:
+                case True{}:
+                  r1.hd.dot(qq, lit, cr, cc, eqq, elt, ecr, edt, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt, en,
+                    ih)
+                case False{}:
+                  match end:
+                    case True{}:
+                      r1.hd.end(qq, lit, cr, cc, eqq, elt, ecr, een, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt,
+                        en, ih)
+                    case False{}:
+                      match qq:
+                        case True{}:
+                          r1.hd.q(lit, cr, cc, eqq, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt, en, ih)
+                        case False{}:
+                          match lit:
+                            case True{}:
+                              r1.hd.lit(cr, cc, elt, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt, en, ih)
+                            case False{}:
+                              match hash:
+                                case True{}:
+                                  r1.hd.hash(cr, cc, eqq, elt, ecr, ehs, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at,
+                                    tt, en, ih)
+                                case False{}:
+                                  r1.no(r1.SH(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.bad(False{},
+                                    False{}, cr, bd, rw, hs, he, pt, bf, T.LHead{}, bk, qk, sk, un, lf, at, 'i',
+                                    "nvalid header", tt, en))
+
+# WP-R: LHead's obligation, for every character
+def r1.ob.head(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LHead{}, bk, qk, sk, un, lf, at, cc, tt):
+  _ec => en => ih => r1.hd.go(Char.is_eq(cc, '['), T.bare.at(cc), T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, ']'),
+    Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '#'), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==},
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt, en, ih)
+
+# LHeadGap's state
+def r1.SGap(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, [], T.LHeadGap{}, bk, qk, sk, un, lf, at)
+
+# the mode r1.hg.end reads its text from
+def r1.hg.endM(
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.head.close(r1.SGap(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at))))
+
+# LHeadGap's ]: the header's key ended, and the header, or its first ]
+def r1.hg.end(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +een: {Char.is_eq(cc, ']') == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hg.endM(qq, lit, cr, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.hg.endM(qq, lit, cr, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SGap(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match pt at:
+    case Nil{} False{}:
+      r1.no(r1.SGap(bd, rw, hs, he, [], bk, qk, sk, un, lf, False{}), cc, tt, r1.bad(qq, lit, cr, bd, rw, hs, he, [],
+        [], T.LHeadGap{}, bk, qk, sk, un, lf, False{}, 'e', "mpty key", tt, en))
+    case Nil{} True{}:
+      r1.no(r1.SGap(bd, rw, hs, he, [], bk, qk, sk, un, lf, True{}), cc, tt, r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
+        Char.is_eq(xx, ']'), een, {==}, {==}, {==}, sip.S(bd, rw, hs, he, [], [], T.LHeadR{}, bk, qk, sk, un, lf,
+        True{}), tt, ih))
+    case +p <> +ps False{}:
+      r1.at(cc, ']', een, Laws.RfKAfter{} <> Laws.r1.hend(False{}), tt, r1.x.hclose(tt, Laws.r1.eol(), r1.hjob(False{},
+        bd, rw, hs, List.reverse(&2, String, p <> ps), bk, qk, un, lf, tt, r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
+        Char.is_eq(xx, ']'), een, {==}, {==}, {==}, T.read.once2(T.head.job(False{}, bd, rw, hs, List.reverse(&2,
+        String, p <> ps), bk, qk, un, lf, False{})), tt, ih))))
+    case +p <> +ps True{}:
+      r1.at(cc, ']', een, Laws.RfKAfter{} <> Laws.r1.hend(True{}), tt, r1.x.hclose2(tt, Laws.r1.eol(), r1.kk(qq, lit,
+        cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, ']'), een, {==}, {==}, {==}, sip.S(bd, rw, hs, he, p <> ps, [],
+        T.LHeadR{}, bk, qk, sk, un, lf, True{}), tt, ih)))
+
+# the mode r1.hg.go reads its text from
+def r1.hgM(
+  +sp: Bool,
+  +dot: Bool,
+  +end: Bool,
+  +hash: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.hgap(sp, dot, end, hash, r1.SGap(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at),
+    cc)))
+
+# LHeadGap's dispatch, one test at a time
+def r1.hg.go(
+  sp: Bool,
+  dot: Bool,
+  end: Bool,
+  hash: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +edt: {Char.is_eq(cc, '.') == dot : Bool},
+  +een: {Char.is_eq(cc, ']') == end : Bool},
+  +ehs: {Char.is_eq(cc, '#') == hash : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hgM(sp, dot, end, hash, qq, lit, cr, cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.hgM(sp, dot, end, hash, qq, lit, cr, cc, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SGap(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match sp:
+    case True{}:
+      r1.x.hws(cc, tt, at, Laws.r1.eol(), r1.spws(cc, esp), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx),
+        esp, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, [], T.LHeadGap{}, bk, qk, sk, un, lf, at), tt, ih))
+    case False{}:
+      match dot:
+        case True{}:
+          r1.at(cc, '.', edt, Laws.RfKAfter{} <> Laws.r1.hend(at), tt, r1.x.dot(tt, Laws.r1.hend(at), r1.kk(qq, lit, cr,
+            cc, eqq, elt, ecr, xx => Char.is_eq(xx, '.'), edt, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, [],
+            T.LHeadDot{}, bk, qk, sk, un, lf, at), tt, ih)))
+        case False{}:
+          match end:
+            case True{}:
+              r1.hg.end(qq, lit, cr, cc, eqq, elt, ecr, een, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, tt, en, ih)
+            case False{}:
+              match hash:
+                case True{}:
+                  r1.no(r1.SGap(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at), cc, tt, r1.kk(qq, lit, cr, cc, eqq, elt,
+                    ecr, xx => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==}, T.read.once2(T.com.enter(r1.SGap(bd, rw, hs,
+                    he, pt, bk, qk, sk, un, lf, at), T.LHead{})), tt, ih))
+                case False{}:
+                  r1.no(r1.SGap(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw, hs, he,
+                    pt, [], T.LHeadGap{}, bk, qk, sk, un, lf, at, 'i', "nvalid header", tt, en))
+
+# WP-R: LHeadGap's obligation, for every character: a state with a segment
+# still in its buffer is none a step reaches
+def r1.ob.gap(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LHeadGap{}, bk, qk, sk, un, lf, at, cc, tt):
+  match bf:
+    case []:
+      _ec => en => ih => r1.hg.go(T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, ']'), Char.is_eq(cc, '#'),
+        Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==},
+        {==}, {==}, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, tt, en, ih)
+    case _b <> _bs:
+      _ec => _en => _ih => Unit{}
+
+# LHeadDot's state
+def r1.SDot(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LHeadDot{}, bk, qk, sk, un, lf, at)
+
+# the mode r1.hdt.go reads its text from
+def r1.hdtM(
+  +sp: Bool,
+  +bare: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.hdot(sp, bare, qq, lit, r1.SDot(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at),
+    cc)))
+
+# LHeadDot's dispatch, one test at a time
+def r1.hdt.go(
+  sp: Bool,
+  bare: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +eba: {T.bare.at(cc) == bare : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hdtM(sp, bare, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.hdtM(sp, bare, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SDot(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match sp:
+    case True{}:
+      r1.x.ws(cc, tt, Laws.RfKSeg{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), r1.spws(cc, esp), r1.kk(qq, lit, cr, cc,
+        eqq, elt, ecr, xx => T.ch.sp(xx), esp, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf, T.LHeadDot{}, bk, qk, sk,
+        un, lf, at), tt, ih))
+    case False{}:
+      match bare:
+        case True{}:
+          r1.x.ws0(SCon{cc, tt}, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.x.segbare(cc, tt, Laws.RfKAfter{} <>
+            Laws.r1.hend(at), r1.ukc(cc, eba), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.bare.at(xx), eba, {==},
+            {==}, {==}, sip.S(bd, rw, hs, he, pt, cc <> bf, T.LHead{}, bk, qk, sk, un, lf, at), tt, ih)))
+        case False{}:
+          match qq:
+            case True{}:
+              r1.at(cc, '"', eqq, Laws.RfWs{} <> (Laws.RfKSeg{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at))), tt,
+                r1.x.ws0(SCon{'"', tt}, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.x.segbasic(tt, Laws.RfKAfter{} <>
+                Laws.r1.hend(at), ih)))
+            case False{}:
+              match lit:
+                case True{}:
+                  r1.at(cc, '\'', elt, Laws.RfWs{} <> (Laws.RfKSeg{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at))), tt,
+                    r1.x.ws0(SCon{'\'', tt}, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.x.seglit(tt, Laws.RfKAfter{} <>
+                    Laws.r1.hend(at), ih)))
+                case False{}:
+                  r1.no(r1.SDot(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.bad(False{}, False{}, cr,
+                    bd, rw, hs, he, pt, bf, T.LHeadDot{}, bk, qk, sk, un, lf, at, 'i', "nvalid header", tt, en))
+
+# WP-R: LHeadDot's obligation, for every character
+def r1.ob.hdot(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LHeadDot{}, bk, qk, sk, un, lf, at, cc, tt):
+  _ec => en => ih => r1.hdt.go(T.ch.sp(cc), T.bare.at(cc), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+    U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at,
+    tt, en, ih)
+
+# LHeadR's state
+def r1.SR(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LHeadR{}, bk, qk, sk, un, lf, at)
+
+# LHeadR's second ]: the header's end, when a segment was read
+def r1.hr.end(
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +een: {Char.is_eq(cc, ']') == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, sr.K(qq, lit, cr, T.read.once2(T.head.fin(r1.SR(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at))))),
+  ih: Laws.r1.C(sr.K(qq, lit, cr, T.read.once2(T.head.fin(r1.SR(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)))), tt)
+) -> Laws.r1.C(T.MScan{r1.SR(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match pt bf:
+    case Nil{} Nil{}:
+      r1.no(r1.SR(bd, rw, hs, he, [], [], bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw, hs, he, [], [],
+        T.LHeadR{}, bk, qk, sk, un, lf, at, 'e', "mpty key", tt, en))
+    case Nil{} +b <> +bs:
+      r1.at(cc, ']', een, Laws.RfRBr{} <> Laws.r1.eol(), tt, (tt, ({==}, r1.hjob(at, bd, rw, hs, List.reverse(&2,
+        String, T.buf.str(b <> bs) <> []), bk, qk, un, lf, tt, r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
+        Char.is_eq(xx, ']'), een, {==}, {==}, {==}, T.read.once2(T.head.job(at, bd, rw, hs, List.reverse(&2, String,
+        T.buf.str(b <> bs) <> []), bk, qk, un, lf, False{})), tt, ih)))))
+    case +p <> +ps Nil{}:
+      r1.at(cc, ']', een, Laws.RfRBr{} <> Laws.r1.eol(), tt, (tt, ({==}, r1.hjob(at, bd, rw, hs, List.reverse(&2,
+        String, p <> ps), bk, qk, un, lf, tt, r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, ']'), een,
+        {==}, {==}, {==}, T.read.once2(T.head.job(at, bd, rw, hs, List.reverse(&2, String, p <> ps), bk, qk, un, lf,
+        False{})), tt, ih)))))
+    case +p <> +ps +b <> +bs:
+      r1.at(cc, ']', een, Laws.RfRBr{} <> Laws.r1.eol(), tt, (tt, ({==}, r1.hjob(at, bd, rw, hs, List.reverse(&2,
+        String, T.buf.str(b <> bs) <> (p <> ps)), bk, qk, un, lf, tt, r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
+        Char.is_eq(xx, ']'), een, {==}, {==}, {==}, T.read.once2(T.head.job(at, bd, rw, hs, List.reverse(&2, String,
+        T.buf.str(b <> bs) <> (p <> ps)), bk, qk, un, lf, False{})), tt, ih)))))
+
+# the mode r1.hr.go reads its text from
+def r1.hrM(
+  +end: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.head.r.go(end, r1.SR(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at))))
+
+# LHeadR's dispatch
+def r1.hr.go(
+  end: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +een: {Char.is_eq(cc, ']') == end : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hrM(end, qq, lit, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.hrM(end, qq, lit, cr, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SR(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match end:
+    case True{}:
+      r1.hr.end(qq, lit, cr, cc, eqq, elt, ecr, een, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt, en, ih)
+    case False{}:
+      r1.no(r1.SR(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw, hs, he, pt, bf,
+        T.LHeadR{}, bk, qk, sk, un, lf, at, 'i', "nvalid header", tt, en))
+
+# WP-R: LHeadR's obligation, for every character
+def r1.ob.hr(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LHeadR{}, bk, qk, sk, un, lf, at, cc, tt):
+  _ec => en => ih => r1.hr.go(Char.is_eq(cc, ']'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc),
+    13), cc, {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt, en, ih)
+
+# LAfter's state
+def r1.SAft(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at)
+
+# the mode r1.af.go reads its text from
+def r1.afM(
+  +sp: Bool,
+  +dot: Bool,
+  +eq: Bool,
+  +hash: Bool,
+  +nl: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.after.go(sp, dot, eq, hash, nl, r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un,
+    lf, at), cc)))
+
+# LAfter's dispatch, one test at a time
+def r1.af.go(
+  sp: Bool,
+  dot: Bool,
+  eq: Bool,
+  hash: Bool,
+  nl: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +edt: {Char.is_eq(cc, '.') == dot : Bool},
+  +eeq: {Char.is_eq(cc, '=') == eq : Bool},
+  +ehs: {Char.is_eq(cc, '#') == hash : Bool},
+  +_enl: {T.ch.nl(cc) == nl : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.afM(sp, dot, eq, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.afM(sp, dot, eq, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match sp:
+    case True{}:
+      r1.x.vws(cc, tt, Laws.RfVal{} <> Laws.r1.after(sk), r1.spws(cc, esp), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
+        T.ch.sp(xx), esp, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at), tt, ih))
+    case False{}:
+      match dot:
+        case True{}:
+          r1.at(cc, '.', edt, Laws.RfKAfter{} <> Laws.r1.vend(sk), tt, r1.x.dot(tt, Laws.r1.vend(sk), r1.kk(qq, lit, cr,
+            cc, eqq, elt, ecr, xx => Char.is_eq(xx, '.'), edt, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf,
+            T.LKeyDot{}, bk, qk, sk, un, lf, at), tt, ih)))
+        case False{}:
+          match eq:
+            case True{}:
+              r1.at(cc, '=', eeq, Laws.RfKAfter{} <> Laws.r1.vend(sk), tt, r1.x.eq(tt, Laws.r1.after(sk), r1.kk(qq, lit,
+                cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '='), eeq, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf,
+                T.LVal{}, bk, qk, sk, un, lf, at), tt, ih)))
+            case False{}:
+              match hash:
+                case True{}:
+                  r1.no(r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.kk(qq, lit, cr, cc, eqq,
+                    elt, ecr, xx => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==}, T.read.once2(T.com.enter(r1.SAft(bd, rw,
+                    hs, he, pt, bf, bk, qk, sk, un, lf, at), T.LAfter{})), tt, ih))
+                case False{}:
+                  match nl:
+                    case True{}:
+                      r1.no(r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw,
+                        hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, 'n', "ewline in key", tt, en))
+                    case False{}:
+                      r1.no(r1.SAft(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr, bd, rw,
+                        hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, 'i', "nvalid key", tt, en))
+
+# WP-R: LAfter's obligation, for every character
+def r1.ob.after(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, cc, tt):
+  _ec => en => ih => r1.af.go(T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc, '#'), T.ch.nl(cc),
+    Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, tt, en, ih)
+
+# LKeyDot's state
+def r1.SKDot(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LKeyDot{}, bk, qk, sk, un, lf, at)
+
+# the mode r1.kd.go2 reads its text from
+def r1.kd.go2M(
+  +bare: Bool,
+  +dot: Bool,
+  +nl: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(False{}, False{}, cr, T.read.once2(T.lex.kdot.bare(bare, dot, nl, r1.SKDot(bd, rw, hs, he, pt, bf, bk, qk, sk,
+    un, lf, at), cc)))
+
+# LKeyDot's segment that is no quoted one: a bare segment, else refused
+def r1.kd.go2(
+  bare: Bool,
+  dot: Bool,
+  nl: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eba: {T.bare.at(cc) == bare : Bool},
+  +_edt: {Char.is_eq(cc, '.') == dot : Bool},
+  +_enl: {T.ch.nl(cc) == nl : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +eqq: {Char.is_eq(cc, '"') == False{} : Bool},
+  +elt: {Char.is_eq(cc, '\'') == False{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.kd.go2M(bare, dot, nl, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.kd.go2M(bare, dot, nl, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SKDot(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match bare:
+    case True{}:
+      r1.x.ws0(SCon{cc, tt}, Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.x.segbare(cc, tt, Laws.RfKAfter{} <>
+        Laws.r1.vend(sk), r1.ukc(cc, eba), r1.kk(False{}, False{}, cr, cc, eqq, elt, ecr, xx => T.bare.at(xx), eba,
+        {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, cc <> bf, T.LKey{}, bk, qk, sk, un, lf, at), tt, ih)))
+    case False{}:
+      match dot:
+        case True{}:
+          r1.no(r1.SKDot(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.bad(False{}, False{}, cr, bd, rw,
+            hs, he, pt, bf, T.LKeyDot{}, bk, qk, sk, un, lf, at, 'e', "mpty key", tt, en))
+        case False{}:
+          match nl:
+            case True{}:
+              r1.no(r1.SKDot(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.bad(False{}, False{}, cr, bd,
+                rw, hs, he, pt, bf, T.LKeyDot{}, bk, qk, sk, un, lf, at, 'n', "ewline in key", tt, en))
+            case False{}:
+              r1.no(r1.SKDot(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), cc, tt, r1.bad(False{}, False{}, cr, bd,
+                rw, hs, he, pt, bf, T.LKeyDot{}, bk, qk, sk, un, lf, at, 'i', "nvalid key", tt, en))
+
+# the mode r1.kd.go reads its text from
+def r1.kdM(
+  +sp: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +dot: Bool,
+  +nl: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.kdot.go(sp, qq, lit, dot, nl, r1.SKDot(bd, rw, hs, he, pt, bf, bk, qk, sk, un,
+    lf, at), cc)))
+
+# LKeyDot's dispatch, one test at a time
+def r1.kd.go(
+  sp: Bool,
+  qq: Bool,
+  lit: Bool,
+  dot: Bool,
+  nl: Bool,
+  cr: Bool,
+  +cc: Char,
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +edt: {Char.is_eq(cc, '.') == dot : Bool},
+  +enl: {T.ch.nl(cc) == nl : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.kdM(sp, qq, lit, dot, nl, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.kdM(sp, qq, lit, dot, nl, cr, cc, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SKDot(bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match sp:
+    case True{}:
+      r1.x.ws(cc, tt, Laws.RfKSeg{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), r1.spws(cc, esp), r1.kk(qq, lit, cr, cc,
+        eqq, elt, ecr, xx => T.ch.sp(xx), esp, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf, T.LKeyDot{}, bk, qk, sk,
+        un, lf, at), tt, ih))
+    case False{}:
+      match qq:
+        case True{}:
+          r1.at(cc, '"', eqq, Laws.RfWs{} <> (Laws.RfKSeg{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk))), tt,
+            r1.x.ws0(SCon{'"', tt}, Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.x.segbasic(tt, Laws.RfKAfter{} <>
+            Laws.r1.vend(sk), ih)))
+        case False{}:
+          match lit:
+            case True{}:
+              r1.at(cc, '\'', elt, Laws.RfWs{} <> (Laws.RfKSeg{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk))), tt,
+                r1.x.ws0(SCon{'\'', tt}, Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.x.seglit(tt, Laws.RfKAfter{} <>
+                Laws.r1.vend(sk), ih)))
+            case False{}:
+              r1.kd.go2(T.bare.at(cc), dot, nl, cr, cc, {==}, edt, enl, ecr, eqq, elt, bd, rw, hs, he, pt, bf, bk, qk,
+                sk, un, lf, at, tt, en, ih)
+
+# WP-R: LKeyDot's obligation, for every character
+def r1.ob.kdot(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LKeyDot{}, bk, qk, sk, un, lf, at, cc, tt):
+  _ec => en => ih => r1.kd.go(T.ch.sp(cc), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '.'), T.ch.nl(cc),
+    U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf,
+    at, tt, en, ih)
+
+# LKey's state
+def r1.SKey(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +b: Char,
+  +bs: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, b <> bs, T.LKey{}, bk, qk, sk, un, lf, at)
+
+# the mode r1.ky.go reads its text from
+def r1.kyM(
+  +bare: Bool,
+  +sp: Bool,
+  +dot: Bool,
+  +eq: Bool,
+  +hash: Bool,
+  +nl: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +b: Char,
+  +bs: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.key.go(bare, sp, dot, eq, hash, nl, r1.SKey(bd, rw, hs, he, pt, b, bs, bk, qk,
+    sk, un, lf, at), cc)))
+
+# LKey's dispatch, one test at a time
+def r1.ky.go(
+  bare: Bool,
+  sp: Bool,
+  dot: Bool,
+  eq: Bool,
+  hash: Bool,
+  nl: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eba: {T.bare.at(cc) == bare : Bool},
+  +esp: {T.ch.sp(cc) == sp : Bool},
+  +edt: {Char.is_eq(cc, '.') == dot : Bool},
+  +eeq: {Char.is_eq(cc, '=') == eq : Bool},
+  +ehs: {Char.is_eq(cc, '#') == hash : Bool},
+  +_enl: {T.ch.nl(cc) == nl : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +b: Char,
+  +bs: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.kyM(bare, sp, dot, eq, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, b, bs, bk, qk, sk, un, lf, at)),
+  ih: r1.CC(r1.kyM(bare, sp, dot, eq, hash, nl, qq, lit, cr, cc, bd, rw, hs, he, pt, b, bs, bk, qk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SKey(bd, rw, hs, he, pt, b, bs, bk, qk, sk, un, lf, at)}, SCon{cc, tt}):
+  match bare:
+    case True{}:
+      r1.x.bare(cc, tt, Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.ukc(cc, eba), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx
+        => T.bare.at(xx), eba, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, cc <> (b <> bs), T.LKey{}, bk, qk, sk, un,
+        lf, at), tt, ih))
+    case False{}:
+      match sp:
+        case True{}:
+          r1.x.segend(SCon{cc, tt}, Laws.r1.vend(sk), r1.x.vws(cc, tt, Laws.RfVal{} <> Laws.r1.after(sk), r1.spws(cc,
+            esp), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx => T.ch.sp(xx), esp, {==}, {==}, {==}, sip.S(bd, rw, hs, he,
+            T.buf.str(b <> bs) <> pt, [], T.LAfter{}, bk, qk, sk, un, lf, at), tt, ih)))
+        case False{}:
+          match dot:
+            case True{}:
+              r1.at(cc, '.', edt, Laws.RfKBare{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.segend(SCon{'.',
+                tt}, Laws.r1.vend(sk), r1.x.dot(tt, Laws.r1.vend(sk), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
+                Char.is_eq(xx, '.'), edt, {==}, {==}, {==}, sip.S(bd, rw, hs, he, T.buf.str(b <> bs) <> pt, [],
+                T.LKeyDot{}, bk, qk, sk, un, lf, at), tt, ih))))
+            case False{}:
+              match eq:
+                case True{}:
+                  r1.at(cc, '=', eeq, Laws.RfKBare{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.segend(SCon{'=',
+                    tt}, Laws.r1.vend(sk), r1.x.eq(tt, Laws.r1.after(sk), r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
+                    Char.is_eq(xx, '='), eeq, {==}, {==}, {==}, sip.S(bd, rw, hs, he, T.buf.str(b <> bs) <> pt, [],
+                    T.LVal{}, bk, qk, sk, un, lf, at), tt, ih))))
+                case False{}:
+                  match hash:
+                    case True{}:
+                      r1.no(r1.SKey(bd, rw, hs, he, pt, b, bs, bk, qk, sk, un, lf, at), cc, tt, r1.kk(qq, lit, cr, cc,
+                        eqq, elt, ecr, xx => Char.is_eq(xx, '#'), ehs, {==}, {==}, {==},
+                        T.read.once2(T.com.enter(T.lex.key.end(r1.SKey(bd, rw, hs, he, pt, b, bs, bk, qk, sk, un, lf,
+                        at), T.LAfter{}), T.LAfter{})), tt, ih))
+                    case False{}:
+                      match nl:
+                        case True{}:
+                          r1.no(r1.SKey(bd, rw, hs, he, pt, b, bs, bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr,
+                            bd, rw, hs, he, pt, b <> bs, T.LKey{}, bk, qk, sk, un, lf, at, 'n', "ewline in key", tt,
+                            en))
+                        case False{}:
+                          r1.no(r1.SKey(bd, rw, hs, he, pt, b, bs, bk, qk, sk, un, lf, at), cc, tt, r1.bad(qq, lit, cr,
+                            bd, rw, hs, he, pt, b <> bs, T.LKey{}, bk, qk, sk, un, lf, at, 'i', "nvalid key", tt, en))
+
+# WP-R: LKey's obligation, for every character: a state with an empty
+# buffer is none a step reaches
+def r1.ob.key(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  bf: List<&2, Char>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at, cc, tt):
+  match bf:
+    case []:
+      _ec => _en => _ih => Unit{}
+    case +b <> +bs:
+      _ec => en => ih => r1.ky.go(T.bare.at(cc), T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc,
+        '#'), T.ch.nl(cc), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==},
+        {==}, {==}, {==}, {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, b, bs, bk, qk, sk, un, lf, at, tt, en, ih)
+
+# WP-R: the order of code points. A step's test says a character is no
+# control, no quote or no backslash; toml.abnf says it is in one of a few
+# ranges. The two meet through adjacent bounds: u <= k exactly when
+# u < k + 1, for a word k below the top (r1.adj), proved bit by bit with k
+# left symbolic, so no bound is ever turned into a Nat.
+
+# the word one more than a word below the top
+def r1.winc(+nn: Nat, ww: Word(nn)) -> Word(nn):
+  match nn:
+    case 0n:
+      ww
+    case 1n+pp:
+      match ww:
+        case WCon{False{}, rest}:
+          WCon{True{}, rest}
+        case WCon{True{}, rest}:
+          WCon{False{}, r1.winc(pp, rest)}
+
+# whether a word has a zero bit, so is below the top
+def r1.hasz(+nn: Nat, ww: Word(nn)) -> Bool:
+  match nn:
+    case 0n:
+      False{}
+    case 1n+pp:
+      match ww:
+        case WCon{False{}, _r}:
+          True{}
+        case WCon{True{}, rest}:
+          r1.hasz(pp, rest)
+
+# a zero bit of the bound: the comparison with it and with it set
+def r1.adj0(
+  cc: Cmp,
+  a0: Bool
+) -> {Cmp.is_le(Word.cmp.fin(a0, False{}, cc)) == Cmp.is_lt(Word.cmp.fin(a0, True{}, cc)) : Bool}:
+  match cc:
+    case LT{}:
+      {==}
+    case EQ{}:
+      match a0:
+        case False{}:
+          {==}
+        case True{}:
+          {==}
+    case GT{}:
+      {==}
+
+# a set bit of the bound, compared at or above it, is at most the bound's
+def r1.fin.le(cc: Cmp, a0: Bool) -> {Cmp.is_le(Word.cmp.fin(a0, True{}, cc)) == Cmp.is_le(cc) : Bool}:
+  match cc:
+    case LT{}:
+      {==}
+    case EQ{}:
+      match a0:
+        case False{}:
+          {==}
+        case True{}:
+          {==}
+    case GT{}:
+      {==}
+
+# a clear bit of the next word, compared, is below it only as the rest is
+def r1.fin.lt(cc: Cmp, a0: Bool) -> {Cmp.is_lt(Word.cmp.fin(a0, False{}, cc)) == Cmp.is_lt(cc) : Bool}:
+  match cc:
+    case LT{}:
+      {==}
+    case EQ{}:
+      match a0:
+        case False{}:
+          {==}
+        case True{}:
+          {==}
+    case GT{}:
+      {==}
+
+# a set bit of the bound carries into the rest
+def r1.adj1(
+  +a0: Bool,
+  +c1: Cmp,
+  +c2: Cmp,
+  ih: {Cmp.is_le(c1) == Cmp.is_lt(c2) : Bool}
+) -> {Cmp.is_le(Word.cmp.fin(a0, True{}, c1)) == Cmp.is_lt(Word.cmp.fin(a0, False{}, c2)) : Bool}:
+  Equal.trans(Bool, Cmp.is_le(Word.cmp.fin(a0, True{}, c1)), Cmp.is_le(c1), Cmp.is_lt(Word.cmp.fin(a0, False{}, c2)),
+    r1.fin.le(c1, a0), Equal.trans(Bool, Cmp.is_le(c1), Cmp.is_lt(c2), Cmp.is_lt(Word.cmp.fin(a0, False{}, c2)), ih,
+    Equal.sym(Bool, Cmp.is_lt(Word.cmp.fin(a0, False{}, c2)), Cmp.is_lt(c2), r1.fin.lt(c2, a0))))
+
+# a word is at most a bound below the top exactly when it is below the next
+def r1.adjw(
+  +nn: Nat,
+  aa: Word(nn),
+  kk: Word(nn),
+  hz: {r1.hasz(nn, kk) == True{} : Bool}
+) -> {Cmp.is_le(Word.cmp(nn, aa, kk)) == Cmp.is_lt(Word.cmp(nn, aa, r1.winc(nn, kk))) : Bool}:
+  match nn:
+    case 0n:
+      match aa kk:
+        case WNil{} WNil{}:
+          Eq.bit.absurd(&2, {Cmp.is_le(EQ{}) == Cmp.is_lt(EQ{}) : Bool}, hz)
+    case 1n+pp:
+      match aa kk:
+        case WCon{+a0, +ar} WCon{False{}, +kr}:
+          r1.adj0(Word.cmp(pp, ar, kr), a0)
+        case WCon{+a0, +ar} WCon{True{}, +kr}:
+          r1.adj1(a0, Word.cmp(pp, ar, kr), Word.cmp(pp, ar, r1.winc(pp, kr)), r1.adjw(pp, ar, kr, hz))
+
+# a code point's word
+def r1.bits(uu: U32) -> Word(32n):
+  match uu:
+    case U32{ww}:
+      ww
+
+# a code point is at most a bound below the top exactly when it is below the
+# next
+def r1.adj(
+  uu: U32,
+  kk: Word(32n),
+  hz: {r1.hasz(32n, kk) == True{} : Bool}
+) -> {Cmp.is_le(U32.cmp(uu, U32{kk})) == Cmp.is_lt(U32.cmp(uu, U32{r1.winc(32n, kk)})) : Bool}:
+  match uu:
+    case U32{+wa}:
+      r1.adjw(32n, wa, kk, hz)
+
+# above a bound, a code point is at least the next
+def r1.up(
+  +uu: U32,
+  +kk: Word(32n),
+  hz: {r1.hasz(32n, kk) == True{} : Bool},
+  ec: {U32.cmp(uu, U32{kk}) == GT{} : Cmp}
+) -> {Cmp.is_lt(U32.cmp(uu, U32{r1.winc(32n, kk)})) == False{} : Bool}:
+  Equal.trans(Bool, Cmp.is_lt(U32.cmp(uu, U32{r1.winc(32n, kk)})), Cmp.is_le(U32.cmp(uu, U32{kk})), False{},
+    Equal.sym(Bool, Cmp.is_le(U32.cmp(uu, U32{kk})), Cmp.is_lt(U32.cmp(uu, U32{r1.winc(32n, kk)})), r1.adj(uu, kk, hz)),
+    Equal.cong(Cmp, Bool, xx => Cmp.is_le(xx), U32.cmp(uu, U32{kk}), GT{}, ec))
+
+# an or with a half that holds
+def r1.orl(aa: Bool, bb: Bool, ea: {aa == True{} : Bool}) -> {Bool.or(aa, bb) == True{} : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      Eq.bit.absurd(&2, {Bool.or(False{}, bb) == True{} : Bool}, ea)
+
+# and with its other half
+def r1.orr(aa: Bool, bb: Bool, eb: {bb == True{} : Bool}) -> {Bool.or(aa, bb) == True{} : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      eb
+
+# not below is at least
+def r1.ge(cc: Cmp, ee: {Cmp.is_lt(cc) == False{} : Bool}) -> {Cmp.is_ge(cc) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&2, {Cmp.is_ge(LT{}) == True{} : Bool}, ee)
+    case EQ{}:
+      {==}
+    case GT{}:
+      {==}
+
+# a comparison that is equal answers True to is_eq
+def r1.eqc(+uu: U32, +kk: U32, ec: {U32.cmp(uu, kk) == EQ{} : Cmp}) -> {U32.is_eq(uu, kk) == True{} : Bool}:
+  Equal.cong(Cmp, Bool, xx => Cmp.is_eq(xx), U32.cmp(uu, kk), EQ{}, ec)
+
+# and one that is less or equal answers True to is_le
+def r1.lec(
+  +uu: U32,
+  +kk: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, kk) == cc : Cmp},
+  el: {Cmp.is_le(cc) == True{} : Bool}
+) -> {U32.is_le(uu, kk) == True{} : Bool}:
+  Equal.trans(Bool, U32.is_le(uu, kk), Cmp.is_le(cc), True{}, Equal.cong(Cmp, Bool, xx => Cmp.is_le(xx), U32.cmp(uu,
+    kk), cc, ec), el)
+
+
+# a surrogate is no scalar value
+def r1.na.no(
+  +uu: U32,
+  +g1: {Cmp.is_ge(U32.cmp(uu, 55296)) == True{} : Bool},
+  cc: Cmp,
+  ec: {U32.cmp(uu, 57343) == cc : Cmp},
+  el: {Cmp.is_le(cc) == True{} : Bool},
+  ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {True{} == False{} : Bool}:
+  Equal.trans(Bool, True{}, Bool.not(Bool.and(U32.is_ge(uu, 55296), U32.is_le(uu, 57343))), False{},
+    Equal.sym(Bool, Bool.not(Bool.and(U32.is_ge(uu, 55296), U32.is_le(uu, 57343))), True{}, gd.r(U32.is_le(uu,
+    1114111), Bool.not(Bool.and(U32.is_ge(uu, 55296), U32.is_le(uu, 57343))), ok)), Equal.cong(Bool, Bool,
+    xx => Bool.not(xx), Bool.and(U32.is_ge(uu, 55296), U32.is_le(uu, 57343)), True{}, gd.tt(U32.is_ge(uu, 55296),
+    U32.is_le(uu, 57343), g1, r1.lec(uu, 57343, cc, ec, el))))
+
+# past U+D7FF: a scalar value is past U+DFFF too, and at most U+10FFFF
+def r1.na.sur(
+  +uu: U32,
+  +g1: {Cmp.is_ge(U32.cmp(uu, 55296)) == True{} : Bool},
+  cc: Cmp,
+  ec: {U32.cmp(uu, 57343) == cc : Cmp},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.non_ascii(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case GT{}:
+      r1.orr(Bool.and(U32.is_ge(uu, 128), U32.is_le(uu, 55295)), Bool.and(U32.is_ge(uu, 57344), U32.is_le(uu,
+        1114111)), gd.tt(U32.is_ge(uu, 57344), U32.is_le(uu, 1114111), r1.ge(U32.cmp(uu, 57344), r1.up(uu,
+        r1.bits(57343), {==}, ec)), gd.l(U32.is_le(uu, 1114111), Bool.not(Bool.and(U32.is_ge(uu, 55296),
+        U32.is_le(uu, 57343))), ok)))
+    case EQ{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.non_ascii(Chr{uu}) == True{} : Bool}, r1.na.no(uu, g1, EQ{}, ec, {==}, ok))
+    case LT{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.non_ascii(Chr{uu}) == True{} : Bool}, r1.na.no(uu, g1, LT{}, ec, {==}, ok))
+
+# above U+007F, a scalar value is non-ascii: below U+D800 or above U+DFFF
+def r1.na.hi(
+  +uu: U32,
+  +g128: {Cmp.is_ge(U32.cmp(uu, 128)) == True{} : Bool},
+  cc: Cmp,
+  ec: {U32.cmp(uu, 55295) == cc : Cmp},
+  ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.non_ascii(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      r1.orl(Bool.and(U32.is_ge(uu, 128), U32.is_le(uu, 55295)), Bool.and(U32.is_ge(uu, 57344), U32.is_le(uu,
+        1114111)), gd.tt(U32.is_ge(uu, 128), U32.is_le(uu, 55295), g128, r1.lec(uu, 55295, LT{}, ec, {==})))
+    case EQ{}:
+      r1.orl(Bool.and(U32.is_ge(uu, 128), U32.is_le(uu, 55295)), Bool.and(U32.is_ge(uu, 57344), U32.is_le(uu,
+        1114111)), gd.tt(U32.is_ge(uu, 128), U32.is_le(uu, 55295), g128, r1.lec(uu, 55295, EQ{}, ec, {==})))
+    case GT{}:
+      r1.na.sur(uu, r1.ge(U32.cmp(uu, 55296), r1.up(uu, r1.bits(55295), {==}, ec)), U32.cmp(uu, 57343), {==}, ok)
+
+# at or above U+0080, a scalar value is non-ascii
+def r1.na(
+  +uu: U32,
+  +g128: {Cmp.is_ge(U32.cmp(uu, 128)) == True{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.non_ascii(Chr{uu}) == True{} : Bool}:
+  r1.na.hi(uu, g128, U32.cmp(uu, 55295), {==}, ok)
+
+
+# a comparison that answered less contradicts one that said not less
+def r1.nlt(
+  +uu: U32,
+  +kk: U32,
+  ec: {U32.cmp(uu, kk) == LT{} : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, kk)) == False{} : Bool}
+) -> {True{} == False{} : Bool}:
+  Equal.trans(Bool, True{}, Cmp.is_lt(U32.cmp(uu, kk)), False{}, Equal.sym(Bool, Cmp.is_lt(U32.cmp(uu, kk)), True{},
+    Equal.cong(Cmp, Bool, xx => Cmp.is_lt(xx), U32.cmp(uu, kk), LT{}, ec)), hh)
+
+# and one that answered equal, a test that said unequal
+def r1.neq(
+  +uu: U32,
+  +kk: U32,
+  ec: {U32.cmp(uu, kk) == EQ{} : Cmp},
+  hh: {U32.is_eq(uu, kk) == False{} : Bool}
+) -> {True{} == False{} : Bool}:
+  Equal.trans(Bool, True{}, U32.is_eq(uu, kk), False{}, Equal.sym(Bool, U32.is_eq(uu, kk), True{}, r1.eqc(uu, kk, ec)),
+    hh)
+
+# U+007F is refused; past it, non-ascii
+def r1.bu.c127(
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 127) == cc : Cmp},
+  +hh: {Cmp.is_lt(U32.cmp(uu, 127)) == False{} : Bool},
+  +_e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +_e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +e127: {U32.is_eq(uu, 127) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}, r1.nlt(uu, 127, ec, hh))
+    case EQ{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}, r1.neq(uu, 127, ec, e127))
+    case GT{}:
+      r1.orr(Laws.abnf.wschar(Chr{uu}), Bool.or(U32.is_eq(uu, 33), Bool.or(Laws.abnf.range(uu, 35, 91),
+        Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})))), r1.orr(U32.is_eq(uu, 33),
+        Bool.or(Laws.abnf.range(uu, 35, 91), Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu}))),
+        r1.orr(Laws.abnf.range(uu, 35, 91), Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})),
+        r1.orr(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu}), r1.na(uu, r1.ge(U32.cmp(uu, 128), r1.up(uu,
+        r1.bits(127), {==}, ec)), ok)))))
+
+# 93 to 126, or on
+def r1.bu.c126(
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 126) == cc : Cmp},
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +e127: {U32.is_eq(uu, 127) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool},
+  +glo: {U32.is_ge(uu, 93) == True{} : Bool}
+) -> {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      r1.orr(Laws.abnf.wschar(Chr{uu}), Bool.or(U32.is_eq(uu, 33), Bool.or(Laws.abnf.range(uu, 35, 91),
+        Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})))), r1.orr(U32.is_eq(uu, 33),
+        Bool.or(Laws.abnf.range(uu, 35, 91), Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu}))),
+        r1.orr(Laws.abnf.range(uu, 35, 91), Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})),
+        r1.orl(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu}), gd.tt(U32.is_ge(uu, 93), U32.is_le(uu, 126),
+        glo, r1.lec(uu, 126, LT{}, ec, {==}))))))
+    case EQ{}:
+      r1.orr(Laws.abnf.wschar(Chr{uu}), Bool.or(U32.is_eq(uu, 33), Bool.or(Laws.abnf.range(uu, 35, 91),
+        Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})))), r1.orr(U32.is_eq(uu, 33),
+        Bool.or(Laws.abnf.range(uu, 35, 91), Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu}))),
+        r1.orr(Laws.abnf.range(uu, 35, 91), Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})),
+        r1.orl(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu}), gd.tt(U32.is_ge(uu, 93), U32.is_le(uu, 126),
+        glo, r1.lec(uu, 126, EQ{}, ec, {==}))))))
+    case GT{}:
+      r1.bu.c127(uu, U32.cmp(uu, 127), {==}, r1.up(uu, r1.bits(126), {==}, ec), e34, e92, e127, ok)
+
+# U+005C is refused; past it, from 93
+def r1.bu.c92(
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 92) == cc : Cmp},
+  +hh: {Cmp.is_lt(U32.cmp(uu, 92)) == False{} : Bool},
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +e127: {U32.is_eq(uu, 127) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}, r1.nlt(uu, 92, ec, hh))
+    case EQ{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}, r1.neq(uu, 92, ec, e92))
+    case GT{}:
+      r1.bu.c126(uu, U32.cmp(uu, 126), {==}, e34, e92, e127, ok, r1.ge(U32.cmp(uu, 93), r1.up(uu, r1.bits(92), {==},
+        ec)))
+
+# 35 to 91, or on
+def r1.bu.c91(
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 91) == cc : Cmp},
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +e127: {U32.is_eq(uu, 127) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool},
+  +glo: {U32.is_ge(uu, 35) == True{} : Bool}
+) -> {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      r1.orr(Laws.abnf.wschar(Chr{uu}), Bool.or(U32.is_eq(uu, 33), Bool.or(Laws.abnf.range(uu, 35, 91),
+        Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})))), r1.orr(U32.is_eq(uu, 33),
+        Bool.or(Laws.abnf.range(uu, 35, 91), Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu}))),
+        r1.orl(Laws.abnf.range(uu, 35, 91), Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})),
+        gd.tt(U32.is_ge(uu, 35), U32.is_le(uu, 91), glo, r1.lec(uu, 91, LT{}, ec, {==})))))
+    case EQ{}:
+      r1.orr(Laws.abnf.wschar(Chr{uu}), Bool.or(U32.is_eq(uu, 33), Bool.or(Laws.abnf.range(uu, 35, 91),
+        Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})))), r1.orr(U32.is_eq(uu, 33),
+        Bool.or(Laws.abnf.range(uu, 35, 91), Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu}))),
+        r1.orl(Laws.abnf.range(uu, 35, 91), Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})),
+        gd.tt(U32.is_ge(uu, 35), U32.is_le(uu, 91), glo, r1.lec(uu, 91, EQ{}, ec, {==})))))
+    case GT{}:
+      r1.bu.c92(uu, U32.cmp(uu, 92), {==}, r1.up(uu, r1.bits(91), {==}, ec), e34, e92, e127, ok)
+
+# U+0022 is refused; past it, from 35
+def r1.bu.c34(
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 34) == cc : Cmp},
+  +hh: {Cmp.is_lt(U32.cmp(uu, 34)) == False{} : Bool},
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +e127: {U32.is_eq(uu, 127) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}, r1.nlt(uu, 34, ec, hh))
+    case EQ{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}, r1.neq(uu, 34, ec, e34))
+    case GT{}:
+      r1.bu.c91(uu, U32.cmp(uu, 91), {==}, e34, e92, e127, ok, r1.ge(U32.cmp(uu, 35), r1.up(uu, r1.bits(34), {==}, ec)))
+
+# U+0021, or on
+def r1.bu.c33(
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 33) == cc : Cmp},
+  +hh: {Cmp.is_lt(U32.cmp(uu, 33)) == False{} : Bool},
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +e127: {U32.is_eq(uu, 127) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}, r1.nlt(uu, 33, ec, hh))
+    case EQ{}:
+      r1.orr(Laws.abnf.wschar(Chr{uu}), Bool.or(U32.is_eq(uu, 33), Bool.or(Laws.abnf.range(uu, 35, 91),
+        Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})))), r1.orl(U32.is_eq(uu, 33),
+        Bool.or(Laws.abnf.range(uu, 35, 91), Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu}))),
+        r1.eqc(uu, 33, ec)))
+    case GT{}:
+      r1.bu.c34(uu, U32.cmp(uu, 34), {==}, r1.up(uu, r1.bits(33), {==}, ec), e34, e92, e127, ok)
+
+# U+0020, a wschar, or on
+def r1.bu.c32(
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 32) == cc : Cmp},
+  +hh: {Cmp.is_lt(U32.cmp(uu, 32)) == False{} : Bool},
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +e127: {U32.is_eq(uu, 127) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}, r1.nlt(uu, 32, ec, hh))
+    case EQ{}:
+      r1.orl(Laws.abnf.wschar(Chr{uu}), Bool.or(U32.is_eq(uu, 33), Bool.or(Laws.abnf.range(uu, 35, 91),
+        Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})))), r1.orl(U32.is_eq(uu, 32), U32.is_eq(uu,
+        9), r1.eqc(uu, 32, ec)))
+    case GT{}:
+      r1.bu.c33(uu, U32.cmp(uu, 33), {==}, r1.up(uu, r1.bits(32), {==}, ec), e34, e92, e127, ok)
+
+# a control the step keeps is a tab; else the code point is at least 32
+def r1.bu.go(
+  ct: Bool,
+  tb: Bool,
+  nl: Bool,
+  +uu: U32,
+  +ect: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == ct : Bool},
+  etb: {U32.is_eq(uu, 9) == tb : Bool},
+  bad: {T.str.bad.go(ct, tb, nl, False{}) == False{} : Bool},
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}:
+  match ct:
+    case False{}:
+      r1.bu.c32(uu, U32.cmp(uu, 32), {==}, Eq.or.left_false(U32.is_lt(uu, 32), U32.is_eq(uu, 127), ect), e34, e92,
+        Eq.or.right_false(U32.is_lt(uu, 32), U32.is_eq(uu, 127), ect), ok)
+    case True{}:
+      match tb:
+        case True{}:
+          r1.orl(Laws.abnf.wschar(Chr{uu}), Bool.or(U32.is_eq(uu, 33), Bool.or(Laws.abnf.range(uu, 35, 91),
+            Bool.or(Laws.abnf.range(uu, 93, 126), Laws.abnf.non_ascii(Chr{uu})))), r1.orr(U32.is_eq(uu, 32),
+            U32.is_eq(uu, 9), etb))
+        case False{}:
+          match nl:
+            case True{}:
+              Eq.bit.absurd2(&2, {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}, bad)
+            case False{}:
+              Eq.bit.absurd2(&2, {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}, bad)
+
+# WP-R: a character the scanner keeps in a basic key, not a quote or a
+# backslash, and a Unicode scalar value, is basic-unescaped
+def r1.bu(
+  +uu: U32,
+  bad: {T.str.bad(uu, False{}) == False{} : Bool},
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.basic_unescaped(Chr{uu}) == True{} : Bool}:
+  r1.bu.go(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), U32.is_eq(uu, 9), Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu,
+    13)), uu, {==}, {==}, bad, e34, e92, ok)
+
+# U+007F is refused; past it, non-ascii
+def r1.lc.c127(
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 127) == cc : Cmp},
+  +hh: {Cmp.is_lt(U32.cmp(uu, 127)) == False{} : Bool},
+  +_e39: {U32.is_eq(uu, 39) == False{} : Bool},
+  +e127: {U32.is_eq(uu, 127) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}, r1.nlt(uu, 127, ec, hh))
+    case EQ{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}, r1.neq(uu, 127, ec, e127))
+    case GT{}:
+      r1.orr(U32.is_eq(uu, 9), Bool.or(Laws.abnf.range(uu, 32, 38), Bool.or(Laws.abnf.range(uu, 40, 126),
+        Laws.abnf.non_ascii(Chr{uu}))), r1.orr(Laws.abnf.range(uu, 32, 38), Bool.or(Laws.abnf.range(uu, 40, 126),
+        Laws.abnf.non_ascii(Chr{uu})), r1.orr(Laws.abnf.range(uu, 40, 126), Laws.abnf.non_ascii(Chr{uu}), r1.na(uu,
+        r1.ge(U32.cmp(uu, 128), r1.up(uu, r1.bits(127), {==}, ec)), ok))))
+
+# 40 to 126, or on
+def r1.lc.c126(
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 126) == cc : Cmp},
+  +e39: {U32.is_eq(uu, 39) == False{} : Bool},
+  +e127: {U32.is_eq(uu, 127) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool},
+  +glo: {U32.is_ge(uu, 40) == True{} : Bool}
+) -> {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      r1.orr(U32.is_eq(uu, 9), Bool.or(Laws.abnf.range(uu, 32, 38), Bool.or(Laws.abnf.range(uu, 40, 126),
+        Laws.abnf.non_ascii(Chr{uu}))), r1.orr(Laws.abnf.range(uu, 32, 38), Bool.or(Laws.abnf.range(uu, 40, 126),
+        Laws.abnf.non_ascii(Chr{uu})), r1.orl(Laws.abnf.range(uu, 40, 126), Laws.abnf.non_ascii(Chr{uu}),
+        gd.tt(U32.is_ge(uu, 40), U32.is_le(uu, 126), glo, r1.lec(uu, 126, LT{}, ec, {==})))))
+    case EQ{}:
+      r1.orr(U32.is_eq(uu, 9), Bool.or(Laws.abnf.range(uu, 32, 38), Bool.or(Laws.abnf.range(uu, 40, 126),
+        Laws.abnf.non_ascii(Chr{uu}))), r1.orr(Laws.abnf.range(uu, 32, 38), Bool.or(Laws.abnf.range(uu, 40, 126),
+        Laws.abnf.non_ascii(Chr{uu})), r1.orl(Laws.abnf.range(uu, 40, 126), Laws.abnf.non_ascii(Chr{uu}),
+        gd.tt(U32.is_ge(uu, 40), U32.is_le(uu, 126), glo, r1.lec(uu, 126, EQ{}, ec, {==})))))
+    case GT{}:
+      r1.lc.c127(uu, U32.cmp(uu, 127), {==}, r1.up(uu, r1.bits(126), {==}, ec), e39, e127, ok)
+
+# U+0027 is refused; past it, from 40
+def r1.lc.c39(
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 39) == cc : Cmp},
+  +hh: {Cmp.is_lt(U32.cmp(uu, 39)) == False{} : Bool},
+  +e39: {U32.is_eq(uu, 39) == False{} : Bool},
+  +e127: {U32.is_eq(uu, 127) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}, r1.nlt(uu, 39, ec, hh))
+    case EQ{}:
+      Eq.bit.absurd2(&2, {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}, r1.neq(uu, 39, ec, e39))
+    case GT{}:
+      r1.lc.c126(uu, U32.cmp(uu, 126), {==}, e39, e127, ok, r1.ge(U32.cmp(uu, 40), r1.up(uu, r1.bits(39), {==}, ec)))
+
+# 32 to 38, or on
+def r1.lc.c38(
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 38) == cc : Cmp},
+  +e39: {U32.is_eq(uu, 39) == False{} : Bool},
+  +e127: {U32.is_eq(uu, 127) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool},
+  +glo: {U32.is_ge(uu, 32) == True{} : Bool}
+) -> {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}:
+  match cc:
+    case LT{}:
+      r1.orr(U32.is_eq(uu, 9), Bool.or(Laws.abnf.range(uu, 32, 38), Bool.or(Laws.abnf.range(uu, 40, 126),
+        Laws.abnf.non_ascii(Chr{uu}))), r1.orl(Laws.abnf.range(uu, 32, 38), Bool.or(Laws.abnf.range(uu, 40, 126),
+        Laws.abnf.non_ascii(Chr{uu})), gd.tt(U32.is_ge(uu, 32), U32.is_le(uu, 38), glo, r1.lec(uu, 38, LT{}, ec,
+        {==}))))
+    case EQ{}:
+      r1.orr(U32.is_eq(uu, 9), Bool.or(Laws.abnf.range(uu, 32, 38), Bool.or(Laws.abnf.range(uu, 40, 126),
+        Laws.abnf.non_ascii(Chr{uu}))), r1.orl(Laws.abnf.range(uu, 32, 38), Bool.or(Laws.abnf.range(uu, 40, 126),
+        Laws.abnf.non_ascii(Chr{uu})), gd.tt(U32.is_ge(uu, 32), U32.is_le(uu, 38), glo, r1.lec(uu, 38, EQ{}, ec,
+        {==}))))
+    case GT{}:
+      r1.lc.c39(uu, U32.cmp(uu, 39), {==}, r1.up(uu, r1.bits(38), {==}, ec), e39, e127, ok)
+
+# a control the step keeps is a tab; else the code point is at least 32
+def r1.lc.go(
+  ct: Bool,
+  tb: Bool,
+  nl: Bool,
+  +uu: U32,
+  +ect: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == ct : Bool},
+  etb: {U32.is_eq(uu, 9) == tb : Bool},
+  bad: {T.str.bad.go(ct, tb, nl, False{}) == False{} : Bool},
+  +e39: {U32.is_eq(uu, 39) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}:
+  match ct:
+    case False{}:
+      r1.lc.c38(uu, U32.cmp(uu, 38), {==}, e39, Eq.or.right_false(U32.is_lt(uu, 32), U32.is_eq(uu, 127), ect), ok,
+        r1.ge(U32.cmp(uu, 32), Eq.or.left_false(U32.is_lt(uu, 32), U32.is_eq(uu, 127), ect)))
+    case True{}:
+      match tb:
+        case True{}:
+          r1.orl(U32.is_eq(uu, 9), Bool.or(Laws.abnf.range(uu, 32, 38), Bool.or(Laws.abnf.range(uu, 40, 126),
+            Laws.abnf.non_ascii(Chr{uu}))), etb)
+        case False{}:
+          match nl:
+            case True{}:
+              Eq.bit.absurd2(&2, {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}, bad)
+            case False{}:
+              Eq.bit.absurd2(&2, {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}, bad)
+
+# WP-R: a character the scanner keeps in a literal key, not an apostrophe,
+# and a Unicode scalar value, is a literal-char
+def r1.lc(
+  +uu: U32,
+  bad: {T.str.bad(uu, False{}) == False{} : Bool},
+  +e39: {U32.is_eq(uu, 39) == False{} : Bool},
+  +ok: {T.uni.ok(uu) == True{} : Bool}
+) -> {Laws.abnf.literal_char(Chr{uu}) == True{} : Bool}:
+  r1.lc.go(Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), U32.is_eq(uu, 9), Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu,
+    13)), uu, {==}, {==}, bad, e39, ok)
+
+# a character a basic key keeps is basic-unescaped, by its code point
+def r1.bu.c(
+  +cc: Char,
+  bad: {T.str.bad(Char.to_u32(cc), False{}) == False{} : Bool},
+  +eq: {Char.is_eq(cc, '"') == False{} : Bool},
+  +eb: {Char.is_eq(cc, '\\') == False{} : Bool},
+  +ok: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.abnf.basic_unescaped(cc) == True{} : Bool}:
+  match cc:
+    case Chr{+uu}:
+      r1.bu(uu, bad, eq, eb, ok)
+
+# and one a literal key keeps is a literal-char
+def r1.lc.c(
+  +cc: Char,
+  bad: {T.str.bad(Char.to_u32(cc), False{}) == False{} : Bool},
+  +ea: {Char.is_eq(cc, '\'') == False{} : Bool},
+  +ok: {T.wf.char(cc) == True{} : Bool}
+) -> {Laws.abnf.literal_char(cc) == True{} : Bool}:
+  match cc:
+    case Chr{+uu}:
+      r1.lc(uu, bad, ea, ok)
+
+# a quotation mark closes a basic simple-key
+def r1.x.bclose(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(rest, tt)
+) -> Laws.r1.fill(Laws.RfKBasic{} <> rest, SCon{'"', tt}):
+  ([], (tt, ({==}, ({==}, hh))))
+
+# an apostrophe closes a literal one
+def r1.x.lclose(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(rest, tt)
+) -> Laws.r1.fill(Laws.RfKLit{} <> rest, SCon{'\'', tt}):
+  ("", (tt, ({==}, ({==}, hh))))
+
+# a basic-unescaped character is one more piece of a basic simple-key
+def r1.x.bchar(
+  +cc: Char,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  eb: {Laws.abnf.basic_unescaped(cc) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfKBasic{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKBasic{} <> rest, SCon{cc, tt}):
+  (+pl, (+rr, (e1, (+e2, hr)))) = hh
+  (Laws.KpChar{cc} <> pl, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, Laws.k3.pcs.text(pl, SCon{'"',
+    rr}), e1), (gd.tt(Bool.and(Laws.abnf.basic_unescaped(cc), Laws.abnf.basic_string(pl)),
+    Laws.prose.escapes_scalar(pl), gd.tt(Laws.abnf.basic_unescaped(cc), Laws.abnf.basic_string(pl), eb,
+    gd.l(Laws.abnf.basic_string(pl), Laws.prose.escapes_scalar(pl), e2)), gd.r(Laws.abnf.basic_string(pl),
+    Laws.prose.escapes_scalar(pl), e2)), hr))))
+
+# a literal-char is one more character of a literal simple-key
+def r1.x.lchar(
+  +cc: Char,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  el: {Laws.abnf.literal_char(cc) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfKLit{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKLit{} <> rest, SCon{cc, tt}):
+  (+ss, (+rr, (e1, (e2, hr)))) = hh
+  (SCon{cc, ss}, (rr, (Equal.cong(String, String, xx => SCon{cc, xx}, tt, String.append(ss, SCon{'\'', rr}), e1),
+    (gd.tt(Laws.abnf.literal_char(cc), Laws.abnf.literal_string(ss), el, e2), hr))))
+
+# a backslash begins an escape piece of a basic simple-key
+def r1.x.besc(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfKEsc{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKBasic{} <> rest, SCon{'\\', tt}):
+  (+pp, (+pl, (+rr, (e1, (e2, hr))))) = hh
+  (pp <> pl, (rr, (e1, (e2, hr))))
+
+# an escape's letter ends the piece: the mark it writes
+def r1.x.esc(
+  +mm: Laws.KMark,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfKBasic{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{Laws.k3.mark.char(mm), tt}):
+  (+pl, (+rr, (e1, (e2, hr)))) = hh
+  (Laws.KpEsc{mm}, (pl, (rr, (Equal.cong(String, String, xx => SCon{'\\', SCon{Laws.k3.mark.char(mm), xx}}, tt,
+    Laws.k3.pcs.text(pl, SCon{'"', rr}), e1), (e2, hr)))))
+
+# a scalar check, a basic string and its escapes, in the other order
+def r1.x.sbe(
+  +sc: Bool,
+  +bs: Bool,
+  +es: Bool,
+  +ee: {Bool.and(sc, Bool.and(bs, es)) == True{} : Bool}
+) -> {Bool.and(bs, Bool.and(sc, es)) == True{} : Bool}:
+  gd.tt(bs, Bool.and(sc, es), gd.l(bs, es, gd.r(sc, Bool.and(bs, es), ee)), gd.tt(sc, es, gd.l(sc, Bool.and(bs, es),
+    ee), gd.r(bs, es, gd.r(sc, Bool.and(bs, es), ee))))
+
+# after an apostrophe, the step's mode may open a string whatever the
+# quotation-mark test said
+def r1.kwrap(
+  qq: Bool,
+  cr: Bool,
+  xx: T.St,
+  +tt: String,
+  hh: Laws.r1.C(sr.K(qq, True{}, cr, xx), tt)
+) -> Laws.r1.C(T.doc.wrap(xx), tt):
+  match qq:
+    case True{}:
+      hh
+    case False{}:
+      hh
+
+# the rules a \u or \U escape's digits keep, then the pieces after it
+def r1.uok(
+  +hs: List<&2, Laws.KHex>,
+  +nn: U32,
+  +pl: List<&2, Laws.KPiece>
+) -> Bool:
+  Bool.and(Laws.r1.hexs.count(hs, nn), Bool.and(Laws.k3.scalar(Laws.r1.hexs.acc(hs, 0)),
+    Bool.and(Laws.abnf.basic_string(pl), Laws.prose.escapes_scalar(pl))))
+
+# the 4 digits of a \u escape, and nothing but them, make its piece
+def r1.x.u4.go(
+  hs: List<&2, Laws.KHex>,
+  +pl: List<&2, Laws.KPiece>,
+  +rr: String,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  e1: {tt == Laws.r1.hexs.text(hs, Laws.k3.pcs.text(pl, SCon{'"', rr})) : String},
+  e2: {r1.uok(hs, 4, pl) == True{} : Bool},
+  hr: Laws.r1.fill(rest, rr)
+) -> Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'u', tt}):
+  match hs:
+    case []:
+      Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'u', tt}), e2)
+    case +h1 <> t1:
+      match t1:
+        case []:
+          Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'u', tt}), e2)
+        case +h2 <> t2:
+          match t2:
+            case []:
+              Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'u', tt}), e2)
+            case +h3 <> t3:
+              match t3:
+                case []:
+                  Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'u', tt}), e2)
+                case +h4 <> t4:
+                  match t4:
+                    case []:
+                      (Laws.KpU4{h1, h2, h3, h4}, (pl, (rr, (Equal.cong(String, String, xx => SCon{'\\', SCon{'u', xx}},
+                        tt, Laws.r1.hexs.text([h1, h2, h3, h4], Laws.k3.pcs.text(pl, SCon{'"', rr})), e1),
+                        (r1.x.sbe(Laws.k3.scalar(Laws.k3.hex4(h1, h2, h3, h4)), Laws.abnf.basic_string(pl),
+                        Laws.prose.escapes_scalar(pl), e2), hr)))))
+                    case _x <> _xs:
+                      Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'u', tt}), e2)
+
+# the 8 digits of a \U escape, and nothing but them, make its piece
+def r1.x.u8.go(
+  hs: List<&2, Laws.KHex>,
+  +pl: List<&2, Laws.KPiece>,
+  +rr: String,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  e1: {tt == Laws.r1.hexs.text(hs, Laws.k3.pcs.text(pl, SCon{'"', rr})) : String},
+  e2: {r1.uok(hs, 8, pl) == True{} : Bool},
+  hr: Laws.r1.fill(rest, rr)
+) -> Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'U', tt}):
+  match hs:
+    case []:
+      Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'U', tt}), e2)
+    case +h1 <> t1:
+      match t1:
+        case []:
+          Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'U', tt}), e2)
+        case +h2 <> t2:
+          match t2:
+            case []:
+              Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'U', tt}), e2)
+            case +h3 <> t3:
+              match t3:
+                case []:
+                  Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'U', tt}), e2)
+                case +h4 <> t4:
+                  match t4:
+                    case []:
+                      Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'U', tt}), e2)
+                    case +h5 <> t5:
+                      match t5:
+                        case []:
+                          Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'U', tt}), e2)
+                        case +h6 <> t6:
+                          match t6:
+                            case []:
+                              Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'U', tt}), e2)
+                            case +h7 <> t7:
+                              match t7:
+                                case []:
+                                  Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'U', tt}), e2)
+                                case +h8 <> t8:
+                                  match t8:
+                                    case []:
+                                      (Laws.KpU8{h1, h2, h3, h4, h5, h6, h7, h8}, (pl, (rr, (Equal.cong(String, String,
+                                        xx => SCon{'\\', SCon{'U', xx}}, tt, Laws.r1.hexs.text([h1, h2, h3, h4, h5, h6,
+                                        h7, h8], Laws.k3.pcs.text(pl, SCon{'"', rr})), e1),
+                                        (r1.x.sbe(Laws.k3.scalar(Laws.k3.hex8(h1, h2, h3, h4, h5, h6, h7, h8)),
+                                        Laws.abnf.basic_string(pl), Laws.prose.escapes_scalar(pl), e2), hr)))))
+                                    case _x <> _xs:
+                                      Eq.bit.absurd(&1, Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'U', tt}), e2)
+
+# \u and 4 hexadecimal digits is an escape piece
+def r1.x.u4(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfKUni{0, 4} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'u', tt}):
+  (+hs, (+pl, (+rr, (e1, (e2, hr))))) = hh
+  r1.x.u4.go(hs, pl, rr, tt, rest, e1, e2, hr)
+
+# \U and 8 hexadecimal digits is an escape piece
+def r1.x.u8(
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  hh: Laws.r1.fill(Laws.RfKUni{0, 8} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKEsc{} <> rest, SCon{'U', tt}):
+  (+hs, (+pl, (+rr, (e1, (e2, hr))))) = hh
+  r1.x.u8.go(hs, pl, rr, tt, rest, e1, e2, hr)
+
+# LHeadQ's state
+def r1.SHQb(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LHeadQ{}, bk, T.QBasic{}, sk, un, lf, at)
+
+# the mode r1.hqb.ch reads its text from
+def r1.hqb.chM(
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(False{}, lit, cr, T.read.once2(T.st.push(r1.SHQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, T.LHeadQ{})))
+
+# LHeadQ's character in a basic segment, kept
+def r1.hqb.ch(
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +_elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +eqq: {Char.is_eq(cc, '"') == False{} : Bool},
+  +ebs: {Char.is_eq(cc, '\\') == False{} : Bool},
+  +ebad: {T.str.bad(Char.to_u32(cc), False{}) == False{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  _en: sr.N(tt, r1.hqb.chM(lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.hqb.chM(lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SHQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match lit:
+    case True{}:
+      r1.x.bchar(cc, tt, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.bu.c(cc, ebad, eqq, ebs, ec), ih)
+    case False{}:
+      match cr:
+        case True{}:
+          r1.no(r1.SHQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, Eq.refute_char(cc, Chr{13}, xx =>
+            Bool.not(T.str.bad(Char.to_u32(xx), False{})), r1.creq(cc, ecr), Equal.cong(Bool, Bool, xx => Bool.not(xx),
+            T.str.bad(Char.to_u32(cc), False{}), False{}, ebad), {==}))
+        case False{}:
+          r1.x.bchar(cc, tt, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.bu.c(cc, ebad, eqq, ebs, ec), ih)
+
+# the mode r1.hqb.c reads its text from
+def r1.hqb.cM(
+  +bad: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(False{}, lit, cr, T.read.once2(T.lex.kq.char.go(bad, r1.SHQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc,
+    T.LHeadQ{})))
+
+# LHeadQ's other character in a basic segment
+def r1.hqb.c(
+  bad: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +ebad: {T.str.bad(Char.to_u32(cc), False{}) == bad : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +eqq: {Char.is_eq(cc, '"') == False{} : Bool},
+  +ebs: {Char.is_eq(cc, '\\') == False{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hqb.cM(bad, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.hqb.cM(bad, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SHQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match bad:
+    case True{}:
+      r1.no(r1.SHQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(False{}, lit, cr, bd, rw, hs, he, pt,
+        bf, T.LHeadQ{}, bk, T.QBasic{}, sk, un, lf, at, 'i', "nvalid control", tt, en))
+    case False{}:
+      r1.hqb.ch(lit, cr, cc, elt, ecr, eqq, ebs, ebad, ec, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, tt, en, ih)
+
+# the mode r1.hqb.go reads its text from
+def r1.hqbM(
+  +qq: Bool,
+  +bs: Bool,
+  +nl: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.kq.go(qq, bs, True{}, nl, r1.SHQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at),
+    cc, T.LHeadGap{}, T.LHeadQ{})))
+
+# LHeadQ's dispatch in a basic segment
+def r1.hqb.go(
+  qq: Bool,
+  bs: Bool,
+  nl: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +ebs: {Char.is_eq(cc, '\\') == bs : Bool},
+  +_enl: {T.ch.nl(cc) == nl : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hqbM(qq, bs, nl, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.hqbM(qq, bs, nl, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SHQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match qq:
+    case True{}:
+      r1.at(cc, '"', eqq, Laws.RfKBasic{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt, r1.x.bclose(tt, Laws.RfKAfter{}
+        <> Laws.r1.hend(at), ih))
+    case False{}:
+      match bs:
+        case True{}:
+          r1.at(cc, '\\', ebs, Laws.RfKBasic{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt, r1.x.besc(tt,
+            Laws.RfKAfter{} <> Laws.r1.hend(at), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '\\'),
+            ebs, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf, T.LHeadE{}, T.LHeadQ{}, T.QBasic{}, sk, un, lf, at),
+            tt, ih)))
+        case False{}:
+          match nl:
+            case True{}:
+              r1.no(r1.SHQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(False{}, lit, cr, bd, rw, hs,
+                he, pt, bf, T.LHeadQ{}, bk, T.QBasic{}, sk, un, lf, at, 'n', "ewline in key", tt, en))
+            case False{}:
+              r1.hqb.c(T.str.bad(Char.to_u32(cc), False{}), lit, cr, cc, {==}, elt, ecr, eqq, ebs, ec, bd, rw, hs, he,
+                pt, bf, bk, sk, un, lf, at, tt, en, ih)
+
+# LHeadQ's state
+def r1.SHQl(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LHeadQ{}, bk, T.QLit{}, sk, un, lf, at)
+
+# the mode r1.hql.ch reads its text from
+def r1.hql.chM(
+  +qq: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, False{}, cr, T.read.once2(T.st.push(r1.SHQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, T.LHeadQ{})))
+
+# LHeadQ's character in a literal segment, kept
+def r1.hql.ch(
+  qq: Bool,
+  cr: Bool,
+  +cc: Char,
+  +_eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +elt: {Char.is_eq(cc, '\'') == False{} : Bool},
+  +ebad: {T.str.bad(Char.to_u32(cc), False{}) == False{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  _en: sr.N(tt, r1.hql.chM(qq, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.hql.chM(qq, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SHQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match qq:
+    case True{}:
+      r1.x.lchar(cc, tt, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.lc.c(cc, ebad, elt, ec), ih)
+    case False{}:
+      match cr:
+        case True{}:
+          r1.no(r1.SHQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, Eq.refute_char(cc, Chr{13}, xx =>
+            Bool.not(T.str.bad(Char.to_u32(xx), False{})), r1.creq(cc, ecr), Equal.cong(Bool, Bool, xx => Bool.not(xx),
+            T.str.bad(Char.to_u32(cc), False{}), False{}, ebad), {==}))
+        case False{}:
+          r1.x.lchar(cc, tt, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.lc.c(cc, ebad, elt, ec), ih)
+
+# the mode r1.hql.c reads its text from
+def r1.hql.cM(
+  +bad: Bool,
+  +qq: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, False{}, cr, T.read.once2(T.lex.kq.char.go(bad, r1.SHQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc,
+    T.LHeadQ{})))
+
+# LHeadQ's other character in a literal segment
+def r1.hql.c(
+  bad: Bool,
+  qq: Bool,
+  cr: Bool,
+  +cc: Char,
+  +ebad: {T.str.bad(Char.to_u32(cc), False{}) == bad : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +elt: {Char.is_eq(cc, '\'') == False{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hql.cM(bad, qq, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.hql.cM(bad, qq, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SHQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match bad:
+    case True{}:
+      r1.no(r1.SHQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(qq, False{}, cr, bd, rw, hs, he, pt, bf,
+        T.LHeadQ{}, bk, T.QLit{}, sk, un, lf, at, 'i', "nvalid control", tt, en))
+    case False{}:
+      r1.hql.ch(qq, cr, cc, eqq, ecr, elt, ebad, ec, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, tt, en, ih)
+
+# the mode r1.hql.go reads its text from
+def r1.hqlM(
+  +lit: Bool,
+  +bs: Bool,
+  +nl: Bool,
+  +qq: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.kq.go(lit, bs, False{}, nl, r1.SHQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at),
+    cc, T.LHeadGap{}, T.LHeadQ{})))
+
+# LHeadQ's dispatch in a literal segment
+def r1.hql.go(
+  lit: Bool,
+  bs: Bool,
+  nl: Bool,
+  qq: Bool,
+  cr: Bool,
+  +cc: Char,
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ebs: {Char.is_eq(cc, '\\') == bs : Bool},
+  +_enl: {T.ch.nl(cc) == nl : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hqlM(lit, bs, nl, qq, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.hqlM(lit, bs, nl, qq, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SHQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match lit:
+    case True{}:
+      r1.at(cc, '\'', elt, Laws.RfKLit{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt, r1.x.lclose(tt, Laws.RfKAfter{}
+        <> Laws.r1.hend(at), r1.kwrap(qq, cr, T.read.once2(T.seg.push(r1.SHQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf,
+        at), T.LHeadGap{})), tt, ih)))
+    case False{}:
+      match bs:
+        case True{}:
+          r1.at(cc, '\\', ebs, Laws.RfKLit{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt, r1.x.lchar('\\', tt,
+            Laws.RfKAfter{} <> Laws.r1.hend(at), {==}, r1.kk(qq, False{}, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx,
+            '\\'), ebs, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, '\\' <> bf, T.LHeadQ{}, bk, T.QLit{}, sk, un, lf,
+            at), tt, ih)))
+        case False{}:
+          match nl:
+            case True{}:
+              r1.no(r1.SHQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(qq, False{}, cr, bd, rw, hs, he,
+                pt, bf, T.LHeadQ{}, bk, T.QLit{}, sk, un, lf, at, 'n', "ewline in key", tt, en))
+            case False{}:
+              r1.hql.c(T.str.bad(Char.to_u32(cc), False{}), qq, cr, cc, {==}, eqq, ecr, elt, ec, bd, rw, hs, he, pt, bf,
+                bk, sk, un, lf, at, tt, en, ih)
+
+# WP-R: LHeadQ's obligation, for every character: a basic segment's, a
+# literal one's, and none for a multi-line kind a key never has
+def r1.ob.hq(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LHeadQ{}, bk, qk, sk, un, lf, at, cc, tt):
+  match qk:
+    case T.QBasic{}:
+      ec => en => ih => r1.hqb.go(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), T.ch.nl(cc), Char.is_eq(cc, '\''),
+        U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, ec, bd, rw, hs, he, pt, bf, bk, sk, un, lf,
+        at, tt, en, ih)
+    case T.QLit{}:
+      ec => en => ih => r1.hql.go(Char.is_eq(cc, '\''), Char.is_eq(cc, '\\'), T.ch.nl(cc), Char.is_eq(cc, '"'),
+        U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, ec, bd, rw, hs, he, pt, bf, bk, sk, un, lf,
+        at, tt, en, ih)
+    case T.QMulti{}:
+      _ec => _en => _ih => Unit{}
+    case T.QMultiLit{}:
+      _ec => _en => _ih => Unit{}
+
+# LKeyQ's state
+def r1.SKQb(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LKeyQ{}, bk, T.QBasic{}, sk, un, lf, at)
+
+# the mode r1.kqb.ch reads its text from
+def r1.kqb.chM(
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(False{}, lit, cr, T.read.once2(T.st.push(r1.SKQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, T.LKeyQ{})))
+
+# LKeyQ's character in a basic segment, kept
+def r1.kqb.ch(
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +_elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +eqq: {Char.is_eq(cc, '"') == False{} : Bool},
+  +ebs: {Char.is_eq(cc, '\\') == False{} : Bool},
+  +ebad: {T.str.bad(Char.to_u32(cc), False{}) == False{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  _en: sr.N(tt, r1.kqb.chM(lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.kqb.chM(lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SKQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match lit:
+    case True{}:
+      r1.x.bchar(cc, tt, Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.bu.c(cc, ebad, eqq, ebs, ec), ih)
+    case False{}:
+      match cr:
+        case True{}:
+          r1.no(r1.SKQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, Eq.refute_char(cc, Chr{13}, xx =>
+            Bool.not(T.str.bad(Char.to_u32(xx), False{})), r1.creq(cc, ecr), Equal.cong(Bool, Bool, xx => Bool.not(xx),
+            T.str.bad(Char.to_u32(cc), False{}), False{}, ebad), {==}))
+        case False{}:
+          r1.x.bchar(cc, tt, Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.bu.c(cc, ebad, eqq, ebs, ec), ih)
+
+# the mode r1.kqb.c reads its text from
+def r1.kqb.cM(
+  +bad: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(False{}, lit, cr, T.read.once2(T.lex.kq.char.go(bad, r1.SKQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc,
+    T.LKeyQ{})))
+
+# LKeyQ's other character in a basic segment
+def r1.kqb.c(
+  bad: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +ebad: {T.str.bad(Char.to_u32(cc), False{}) == bad : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +eqq: {Char.is_eq(cc, '"') == False{} : Bool},
+  +ebs: {Char.is_eq(cc, '\\') == False{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.kqb.cM(bad, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.kqb.cM(bad, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SKQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match bad:
+    case True{}:
+      r1.no(r1.SKQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(False{}, lit, cr, bd, rw, hs, he, pt,
+        bf, T.LKeyQ{}, bk, T.QBasic{}, sk, un, lf, at, 'i', "nvalid control", tt, en))
+    case False{}:
+      r1.kqb.ch(lit, cr, cc, elt, ecr, eqq, ebs, ebad, ec, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, tt, en, ih)
+
+# the mode r1.kqb.go reads its text from
+def r1.kqbM(
+  +qq: Bool,
+  +bs: Bool,
+  +nl: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.kq.go(qq, bs, True{}, nl, r1.SKQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at),
+    cc, T.LAfter{}, T.LKeyQ{})))
+
+# LKeyQ's dispatch in a basic segment
+def r1.kqb.go(
+  qq: Bool,
+  bs: Bool,
+  nl: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +ebs: {Char.is_eq(cc, '\\') == bs : Bool},
+  +_enl: {T.ch.nl(cc) == nl : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.kqbM(qq, bs, nl, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.kqbM(qq, bs, nl, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SKQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match qq:
+    case True{}:
+      r1.at(cc, '"', eqq, Laws.RfKBasic{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.bclose(tt, Laws.RfKAfter{}
+        <> Laws.r1.vend(sk), ih))
+    case False{}:
+      match bs:
+        case True{}:
+          r1.at(cc, '\\', ebs, Laws.RfKBasic{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.besc(tt,
+            Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '\\'),
+            ebs, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf, T.LKeyE{}, T.LKeyQ{}, T.QBasic{}, sk, un, lf, at), tt,
+            ih)))
+        case False{}:
+          match nl:
+            case True{}:
+              r1.no(r1.SKQb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(False{}, lit, cr, bd, rw, hs,
+                he, pt, bf, T.LKeyQ{}, bk, T.QBasic{}, sk, un, lf, at, 'n', "ewline in key", tt, en))
+            case False{}:
+              r1.kqb.c(T.str.bad(Char.to_u32(cc), False{}), lit, cr, cc, {==}, elt, ecr, eqq, ebs, ec, bd, rw, hs, he,
+                pt, bf, bk, sk, un, lf, at, tt, en, ih)
+
+# LKeyQ's state
+def r1.SKQl(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LKeyQ{}, bk, T.QLit{}, sk, un, lf, at)
+
+# the mode r1.kql.ch reads its text from
+def r1.kql.chM(
+  +qq: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, False{}, cr, T.read.once2(T.st.push(r1.SKQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, T.LKeyQ{})))
+
+# LKeyQ's character in a literal segment, kept
+def r1.kql.ch(
+  qq: Bool,
+  cr: Bool,
+  +cc: Char,
+  +_eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +elt: {Char.is_eq(cc, '\'') == False{} : Bool},
+  +ebad: {T.str.bad(Char.to_u32(cc), False{}) == False{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  _en: sr.N(tt, r1.kql.chM(qq, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.kql.chM(qq, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SKQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match qq:
+    case True{}:
+      r1.x.lchar(cc, tt, Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.lc.c(cc, ebad, elt, ec), ih)
+    case False{}:
+      match cr:
+        case True{}:
+          r1.no(r1.SKQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, Eq.refute_char(cc, Chr{13}, xx =>
+            Bool.not(T.str.bad(Char.to_u32(xx), False{})), r1.creq(cc, ecr), Equal.cong(Bool, Bool, xx => Bool.not(xx),
+            T.str.bad(Char.to_u32(cc), False{}), False{}, ebad), {==}))
+        case False{}:
+          r1.x.lchar(cc, tt, Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.lc.c(cc, ebad, elt, ec), ih)
+
+# the mode r1.kql.c reads its text from
+def r1.kql.cM(
+  +bad: Bool,
+  +qq: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, False{}, cr, T.read.once2(T.lex.kq.char.go(bad, r1.SKQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc,
+    T.LKeyQ{})))
+
+# LKeyQ's other character in a literal segment
+def r1.kql.c(
+  bad: Bool,
+  qq: Bool,
+  cr: Bool,
+  +cc: Char,
+  +ebad: {T.str.bad(Char.to_u32(cc), False{}) == bad : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +elt: {Char.is_eq(cc, '\'') == False{} : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.kql.cM(bad, qq, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.kql.cM(bad, qq, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SKQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match bad:
+    case True{}:
+      r1.no(r1.SKQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(qq, False{}, cr, bd, rw, hs, he, pt, bf,
+        T.LKeyQ{}, bk, T.QLit{}, sk, un, lf, at, 'i', "nvalid control", tt, en))
+    case False{}:
+      r1.kql.ch(qq, cr, cc, eqq, ecr, elt, ebad, ec, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, tt, en, ih)
+
+# the mode r1.kql.go reads its text from
+def r1.kqlM(
+  +lit: Bool,
+  +bs: Bool,
+  +nl: Bool,
+  +qq: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.lex.kq.go(lit, bs, False{}, nl, r1.SKQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at),
+    cc, T.LAfter{}, T.LKeyQ{})))
+
+# LKeyQ's dispatch in a literal segment
+def r1.kql.go(
+  lit: Bool,
+  bs: Bool,
+  nl: Bool,
+  qq: Bool,
+  cr: Bool,
+  +cc: Char,
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ebs: {Char.is_eq(cc, '\\') == bs : Bool},
+  +_enl: {T.ch.nl(cc) == nl : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +ec: {T.wf.char(cc) == True{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.kqlM(lit, bs, nl, qq, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.kqlM(lit, bs, nl, qq, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SKQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match lit:
+    case True{}:
+      r1.at(cc, '\'', elt, Laws.RfKLit{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.lclose(tt, Laws.RfKAfter{}
+        <> Laws.r1.vend(sk), r1.kwrap(qq, cr, T.read.once2(T.seg.push(r1.SKQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf,
+        at), T.LAfter{})), tt, ih)))
+    case False{}:
+      match bs:
+        case True{}:
+          r1.at(cc, '\\', ebs, Laws.RfKLit{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.lchar('\\', tt,
+            Laws.RfKAfter{} <> Laws.r1.vend(sk), {==}, r1.kk(qq, False{}, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx,
+            '\\'), ebs, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, '\\' <> bf, T.LKeyQ{}, bk, T.QLit{}, sk, un, lf,
+            at), tt, ih)))
+        case False{}:
+          match nl:
+            case True{}:
+              r1.no(r1.SKQl(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(qq, False{}, cr, bd, rw, hs, he,
+                pt, bf, T.LKeyQ{}, bk, T.QLit{}, sk, un, lf, at, 'n', "ewline in key", tt, en))
+            case False{}:
+              r1.kql.c(T.str.bad(Char.to_u32(cc), False{}), qq, cr, cc, {==}, eqq, ecr, elt, ec, bd, rw, hs, he, pt, bf,
+                bk, sk, un, lf, at, tt, en, ih)
+
+# WP-R: LKeyQ's obligation, for every character: a basic segment's, a
+# literal one's, and none for a multi-line kind a key never has
+def r1.ob.kq(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LKeyQ{}, bk, qk, sk, un, lf, at, cc, tt):
+  match qk:
+    case T.QBasic{}:
+      ec => en => ih => r1.kqb.go(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), T.ch.nl(cc), Char.is_eq(cc, '\''),
+        U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, ec, bd, rw, hs, he, pt, bf, bk, sk, un, lf,
+        at, tt, en, ih)
+    case T.QLit{}:
+      ec => en => ih => r1.kql.go(Char.is_eq(cc, '\''), Char.is_eq(cc, '\\'), T.ch.nl(cc), Char.is_eq(cc, '"'),
+        U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, ec, bd, rw, hs, he, pt, bf, bk, sk, un, lf,
+        at, tt, en, ih)
+    case T.QMulti{}:
+      _ec => _en => _ih => Unit{}
+    case T.QMultiLit{}:
+      _ec => _en => _ih => Unit{}
+
+# LHeadE's state
+def r1.SHEb(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LHeadE{}, bk, T.QBasic{}, sk, un, lf, at)
+
+# the mode r1.heb.l reads its text from
+def r1.heb.lM(
+  +mb: Bool,
+  +mt: Bool,
+  +mn: Bool,
+  +mf: Bool,
+  +mr: Bool,
+  +mu: Bool,
+  +mw: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(False{}, lit, cr, T.read.once2(T.esc.use(T.esc.letter(mb, mt, mn, mf, mr, mu, mw), r1.SHEb(bd, rw, hs, he, pt,
+    bf, bk, sk, un, lf, at), T.LHeadQ{})))
+
+# LHeadE's escape letter
+def r1.heb.l(
+  mb: Bool,
+  mt: Bool,
+  mn: Bool,
+  mf: Bool,
+  mr: Bool,
+  mu: Bool,
+  mw: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +emb: {Char.is_eq(cc, 'b') == mb : Bool},
+  +emt: {Char.is_eq(cc, 't') == mt : Bool},
+  +emn: {Char.is_eq(cc, 'n') == mn : Bool},
+  +emf: {Char.is_eq(cc, 'f') == mf : Bool},
+  +emr: {Char.is_eq(cc, 'r') == mr : Bool},
+  +emu: {Char.is_eq(cc, 'u') == mu : Bool},
+  +emw: {Char.is_eq(cc, 'U') == mw : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +eqq: {Char.is_eq(cc, '"') == False{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.heb.lM(mb, mt, mn, mf, mr, mu, mw, lit, cr, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.heb.lM(mb, mt, mn, mf, mr, mu, mw, lit, cr, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SHEb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match mb:
+    case True{}:
+      r1.at(cc, 'b', emb, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt, r1.x.esc(Laws.KmB{}, tt,
+        Laws.RfKAfter{} <> Laws.r1.hend(at), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, 'b'), emb,
+        {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, Chr{8} <> bf, T.LHeadQ{}, bk, T.QBasic{}, sk, un, lf, at), tt, ih)))
+    case False{}:
+      match mt:
+        case True{}:
+          r1.at(cc, 't', emt, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt, r1.x.esc(Laws.KmT{}, tt,
+            Laws.RfKAfter{} <> Laws.r1.hend(at), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, 't'),
+            emt, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, '\t' <> bf, T.LHeadQ{}, bk, T.QBasic{}, sk, un, lf, at),
+            tt, ih)))
+        case False{}:
+          match mn:
+            case True{}:
+              r1.at(cc, 'n', emn, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt, r1.x.esc(Laws.KmN{}, tt,
+                Laws.RfKAfter{} <> Laws.r1.hend(at), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx,
+                'n'), emn, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, '\n' <> bf, T.LHeadQ{}, bk, T.QBasic{}, sk, un,
+                lf, at), tt, ih)))
+            case False{}:
+              match mf:
+                case True{}:
+                  r1.at(cc, 'f', emf, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt, r1.x.esc(Laws.KmF{},
+                    tt, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx =>
+                    Char.is_eq(xx, 'f'), emf, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, Chr{12} <> bf, T.LHeadQ{}, bk,
+                    T.QBasic{}, sk, un, lf, at), tt, ih)))
+                case False{}:
+                  match mr:
+                    case True{}:
+                      r1.at(cc, 'r', emr, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt,
+                        r1.x.esc(Laws.KmR{}, tt, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.kk(False{}, lit, cr, cc, eqq,
+                        elt, ecr, xx => Char.is_eq(xx, 'r'), emr, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, '\r' <>
+                        bf, T.LHeadQ{}, bk, T.QBasic{}, sk, un, lf, at), tt, ih)))
+                    case False{}:
+                      match mu:
+                        case True{}:
+                          r1.at(cc, 'u', emu, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt, r1.x.u4(tt,
+                            Laws.RfKAfter{} <> Laws.r1.hend(at), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx =>
+                            Char.is_eq(xx, 'u'), emu, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf, T.LHeadU{}, bk,
+                            T.QBasic{}, sk, 0, 4, at), tt, ih)))
+                        case False{}:
+                          match mw:
+                            case True{}:
+                              r1.at(cc, 'U', emw, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt,
+                                r1.x.u8(tt, Laws.RfKAfter{} <> Laws.r1.hend(at), r1.kk(False{}, lit, cr, cc, eqq, elt,
+                                ecr, xx => Char.is_eq(xx, 'U'), emw, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf,
+                                T.LHeadU{}, bk, T.QBasic{}, sk, 0, 8, at), tt, ih)))
+                            case False{}:
+                              r1.no(r1.SHEb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(False{}, lit,
+                                cr, bd, rw, hs, he, pt, bf, T.LHeadE{}, bk, T.QBasic{}, sk, un, lf, at, 'i',
+                                "nvalid escape", tt, en))
+
+# the mode r1.heb.go reads its text from
+def r1.hebM(
+  +qq: Bool,
+  +bs: Bool,
+  +nl: Bool,
+  +sp: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.esc.use(T.esc.of.go(qq, bs, Char.is_eq(cc, 'b'), Char.is_eq(cc, 't'), Char.is_eq(cc,
+    'n'), Char.is_eq(cc, 'f'), Char.is_eq(cc, 'r'), Char.is_eq(cc, 'u'), Char.is_eq(cc, 'U'), nl, sp), r1.SHEb(bd, rw,
+    hs, he, pt, bf, bk, sk, un, lf, at), T.LHeadQ{})))
+
+# LHeadE's dispatch: the character after the backslash
+def r1.heb.go(
+  qq: Bool,
+  bs: Bool,
+  nl: Bool,
+  sp: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +ebs: {Char.is_eq(cc, '\\') == bs : Bool},
+  +_enl: {T.ch.nl(cc) == nl : Bool},
+  +_esp: {T.ch.sp(cc) == sp : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.hebM(qq, bs, nl, sp, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.hebM(qq, bs, nl, sp, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SHEb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match qq:
+    case True{}:
+      r1.at(cc, '"', eqq, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt, r1.x.esc(Laws.KmQuote{}, tt,
+        Laws.RfKAfter{} <> Laws.r1.hend(at), ih))
+    case False{}:
+      match bs:
+        case True{}:
+          r1.at(cc, '\\', ebs, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), tt, r1.x.esc(Laws.KmBack{}, tt,
+            Laws.RfKAfter{} <> Laws.r1.hend(at), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '\\'),
+            ebs, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, '\\' <> bf, T.LHeadQ{}, bk, T.QBasic{}, sk, un, lf, at),
+            tt, ih)))
+        case False{}:
+          match nl:
+            case True{}:
+              r1.no(r1.SHEb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(False{}, lit, cr, bd, rw, hs,
+                he, pt, bf, T.LHeadE{}, bk, T.QBasic{}, sk, un, lf, at, 'i', "nvalid escape", tt, en))
+            case False{}:
+              match sp:
+                case True{}:
+                  r1.no(r1.SHEb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(False{}, lit, cr, bd, rw,
+                    hs, he, pt, bf, T.LHeadE{}, bk, T.QBasic{}, sk, un, lf, at, 'i', "nvalid escape", tt, en))
+                case False{}:
+                  r1.heb.l(Char.is_eq(cc, 'b'), Char.is_eq(cc, 't'), Char.is_eq(cc, 'n'), Char.is_eq(cc, 'f'),
+                    Char.is_eq(cc, 'r'), Char.is_eq(cc, 'u'), Char.is_eq(cc, 'U'), lit, cr, cc, {==}, {==}, {==}, {==},
+                    {==}, {==}, {==}, elt, ecr, eqq, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, tt, en, ih)
+
+# WP-R: LHeadE's obligation, for every character: an escape is only in a
+# basic segment
+def r1.ob.he(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LHeadE{}, bk, qk, sk, un, lf, at, cc, tt):
+  match qk:
+    case T.QBasic{}:
+      _ec => en => ih => r1.heb.go(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), T.ch.nl(cc), T.ch.sp(cc), Char.is_eq(cc,
+        '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bf, bk, sk,
+        un, lf, at, tt, en, ih)
+    case T.QLit{}:
+      _ec => _en => _ih => Unit{}
+    case T.QMulti{}:
+      _ec => _en => _ih => Unit{}
+    case T.QMultiLit{}:
+      _ec => _en => _ih => Unit{}
+
+# LKeyE's state
+def r1.SKEb(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LKeyE{}, bk, T.QBasic{}, sk, un, lf, at)
+
+# the mode r1.keb.l reads its text from
+def r1.keb.lM(
+  +mb: Bool,
+  +mt: Bool,
+  +mn: Bool,
+  +mf: Bool,
+  +mr: Bool,
+  +mu: Bool,
+  +mw: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(False{}, lit, cr, T.read.once2(T.esc.use(T.esc.letter(mb, mt, mn, mf, mr, mu, mw), r1.SKEb(bd, rw, hs, he, pt,
+    bf, bk, sk, un, lf, at), T.LKeyQ{})))
+
+# LKeyE's escape letter
+def r1.keb.l(
+  mb: Bool,
+  mt: Bool,
+  mn: Bool,
+  mf: Bool,
+  mr: Bool,
+  mu: Bool,
+  mw: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +emb: {Char.is_eq(cc, 'b') == mb : Bool},
+  +emt: {Char.is_eq(cc, 't') == mt : Bool},
+  +emn: {Char.is_eq(cc, 'n') == mn : Bool},
+  +emf: {Char.is_eq(cc, 'f') == mf : Bool},
+  +emr: {Char.is_eq(cc, 'r') == mr : Bool},
+  +emu: {Char.is_eq(cc, 'u') == mu : Bool},
+  +emw: {Char.is_eq(cc, 'U') == mw : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +eqq: {Char.is_eq(cc, '"') == False{} : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.keb.lM(mb, mt, mn, mf, mr, mu, mw, lit, cr, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.keb.lM(mb, mt, mn, mf, mr, mu, mw, lit, cr, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SKEb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match mb:
+    case True{}:
+      r1.at(cc, 'b', emb, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.esc(Laws.KmB{}, tt,
+        Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, 'b'), emb,
+        {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, Chr{8} <> bf, T.LKeyQ{}, bk, T.QBasic{}, sk, un, lf, at), tt, ih)))
+    case False{}:
+      match mt:
+        case True{}:
+          r1.at(cc, 't', emt, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.esc(Laws.KmT{}, tt,
+            Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, 't'),
+            emt, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, '\t' <> bf, T.LKeyQ{}, bk, T.QBasic{}, sk, un, lf, at), tt,
+            ih)))
+        case False{}:
+          match mn:
+            case True{}:
+              r1.at(cc, 'n', emn, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.esc(Laws.KmN{}, tt,
+                Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx,
+                'n'), emn, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, '\n' <> bf, T.LKeyQ{}, bk, T.QBasic{}, sk, un,
+                lf, at), tt, ih)))
+            case False{}:
+              match mf:
+                case True{}:
+                  r1.at(cc, 'f', emf, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.esc(Laws.KmF{},
+                    tt, Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx =>
+                    Char.is_eq(xx, 'f'), emf, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, Chr{12} <> bf, T.LKeyQ{}, bk,
+                    T.QBasic{}, sk, un, lf, at), tt, ih)))
+                case False{}:
+                  match mr:
+                    case True{}:
+                      r1.at(cc, 'r', emr, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt,
+                        r1.x.esc(Laws.KmR{}, tt, Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.kk(False{}, lit, cr, cc, eqq,
+                        elt, ecr, xx => Char.is_eq(xx, 'r'), emr, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, '\r' <>
+                        bf, T.LKeyQ{}, bk, T.QBasic{}, sk, un, lf, at), tt, ih)))
+                    case False{}:
+                      match mu:
+                        case True{}:
+                          r1.at(cc, 'u', emu, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.u4(tt,
+                            Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx =>
+                            Char.is_eq(xx, 'u'), emu, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf, T.LKeyU{}, bk,
+                            T.QBasic{}, sk, 0, 4, at), tt, ih)))
+                        case False{}:
+                          match mw:
+                            case True{}:
+                              r1.at(cc, 'U', emw, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt,
+                                r1.x.u8(tt, Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.kk(False{}, lit, cr, cc, eqq, elt,
+                                ecr, xx => Char.is_eq(xx, 'U'), emw, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf,
+                                T.LKeyU{}, bk, T.QBasic{}, sk, 0, 8, at), tt, ih)))
+                            case False{}:
+                              r1.no(r1.SKEb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(False{}, lit,
+                                cr, bd, rw, hs, he, pt, bf, T.LKeyE{}, bk, T.QBasic{}, sk, un, lf, at, 'i',
+                                "nvalid escape", tt, en))
+
+# the mode r1.keb.go reads its text from
+def r1.kebM(
+  +qq: Bool,
+  +bs: Bool,
+  +nl: Bool,
+  +sp: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.esc.use(T.esc.of.go(qq, bs, Char.is_eq(cc, 'b'), Char.is_eq(cc, 't'), Char.is_eq(cc,
+    'n'), Char.is_eq(cc, 'f'), Char.is_eq(cc, 'r'), Char.is_eq(cc, 'u'), Char.is_eq(cc, 'U'), nl, sp), r1.SKEb(bd, rw,
+    hs, he, pt, bf, bk, sk, un, lf, at), T.LKeyQ{})))
+
+# LKeyE's dispatch: the character after the backslash
+def r1.keb.go(
+  qq: Bool,
+  bs: Bool,
+  nl: Bool,
+  sp: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +ebs: {Char.is_eq(cc, '\\') == bs : Bool},
+  +_enl: {T.ch.nl(cc) == nl : Bool},
+  +_esp: {T.ch.sp(cc) == sp : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +tt: String,
+  en: sr.N(tt, r1.kebM(qq, bs, nl, sp, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.kebM(qq, bs, nl, sp, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.C(T.MScan{r1.SKEb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)}, SCon{cc, tt}):
+  match qq:
+    case True{}:
+      r1.at(cc, '"', eqq, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.esc(Laws.KmQuote{}, tt,
+        Laws.RfKAfter{} <> Laws.r1.vend(sk), ih))
+    case False{}:
+      match bs:
+        case True{}:
+          r1.at(cc, '\\', ebs, Laws.RfKEsc{} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), tt, r1.x.esc(Laws.KmBack{}, tt,
+            Laws.RfKAfter{} <> Laws.r1.vend(sk), r1.kk(False{}, lit, cr, cc, eqq, elt, ecr, xx => Char.is_eq(xx, '\\'),
+            ebs, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, '\\' <> bf, T.LKeyQ{}, bk, T.QBasic{}, sk, un, lf, at), tt,
+            ih)))
+        case False{}:
+          match nl:
+            case True{}:
+              r1.no(r1.SKEb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(False{}, lit, cr, bd, rw, hs,
+                he, pt, bf, T.LKeyE{}, bk, T.QBasic{}, sk, un, lf, at, 'i', "nvalid escape", tt, en))
+            case False{}:
+              match sp:
+                case True{}:
+                  r1.no(r1.SKEb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, tt, r1.bad(False{}, lit, cr, bd, rw,
+                    hs, he, pt, bf, T.LKeyE{}, bk, T.QBasic{}, sk, un, lf, at, 'i', "nvalid escape", tt, en))
+                case False{}:
+                  r1.keb.l(Char.is_eq(cc, 'b'), Char.is_eq(cc, 't'), Char.is_eq(cc, 'n'), Char.is_eq(cc, 'f'),
+                    Char.is_eq(cc, 'r'), Char.is_eq(cc, 'u'), Char.is_eq(cc, 'U'), lit, cr, cc, {==}, {==}, {==}, {==},
+                    {==}, {==}, {==}, elt, ecr, eqq, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, tt, en, ih)
+
+# WP-R: LKeyE's obligation, for every character: an escape is only in a
+# basic segment
+def r1.ob.ke(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LKeyE{}, bk, qk, sk, un, lf, at, cc, tt):
+  match qk:
+    case T.QBasic{}:
+      _ec => en => ih => r1.keb.go(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), T.ch.nl(cc), T.ch.sp(cc), Char.is_eq(cc,
+        '\''), U32.is_eq(Char.to_u32(cc), 13), cc, {==}, {==}, {==}, {==}, {==}, {==}, bd, rw, hs, he, pt, bf, bk, sk,
+        un, lf, at, tt, en, ih)
+    case T.QLit{}:
+      _ec => _en => _ih => Unit{}
+    case T.QMulti{}:
+      _ec => _en => _ih => Unit{}
+    case T.QMultiLit{}:
+      _ec => _en => _ih => Unit{}
+
+# WP-R: a \u or \U escape's digits. The count of digits left goes down by
+# one with U32.sub, which reaches zero only from one (r1.dec1, bit by bit),
+# and a character dig.val reads as a digit is one KEY-3's KHex writes
+# (r1.hx.of, each of the 22 by the order of code points).
+
+# at least is not below
+def r1.ltge(cc: Cmp, ee: {Cmp.is_ge(cc) == True{} : Bool}) -> {Cmp.is_lt(cc) == False{} : Bool}:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd(&2, {Cmp.is_lt(LT{}) == False{} : Bool}, ee)
+    case EQ{}:
+      {==}
+    case GT{}:
+      {==}
+
+# adding the top word and a carry leaves a word as it is
+def r1.adcid(+nn: Nat, ww: Word(nn)) -> {Word.adc(nn, ww, Eq.zw(nn), True{}, True{}) == ww : Word(nn)}:
+  match nn:
+    case 0n:
+      match ww:
+        case WNil{}:
+          {==}
+    case 1n+pp:
+      match ww:
+        case WCon{False{}, +rest}:
+          Equal.cong(Word(pp), Word(1n+pp), xx => WCon{False{}, xx}, Word.adc(pp, rest, Eq.zw(pp), True{}, True{}),
+            rest,
+            r1.adcid(pp, rest))
+        case WCon{True{}, +rest}:
+          Equal.cong(Word(pp), Word(1n+pp), xx => WCon{True{}, xx}, Word.adc(pp, rest, Eq.zw(pp), True{}, True{}), rest,
+            r1.adcid(pp, rest))
+
+# an even code point is not one, and one less than it is not zero
+def r1.dz0(
+  c1: Cmp,
+  c2: Cmp
+) -> {Cmp.is_eq(Word.cmp.fin(True{}, False{}, c1)) == Cmp.is_eq(Word.cmp.fin(False{}, True{}, c2)) : Bool}:
+  match c1 c2:
+    case LT{} LT{}:
+      {==}
+    case LT{} EQ{}:
+      {==}
+    case LT{} GT{}:
+      {==}
+    case EQ{} LT{}:
+      {==}
+    case EQ{} EQ{}:
+      {==}
+    case EQ{} GT{}:
+      {==}
+    case GT{} LT{}:
+      {==}
+    case GT{} EQ{}:
+      {==}
+    case GT{} GT{}:
+      {==}
+
+# an odd one's upper bits decide both
+def r1.dz1(
+  cc: Cmp
+) -> {Cmp.is_eq(Word.cmp.fin(False{}, False{}, cc)) == Cmp.is_eq(Word.cmp.fin(True{}, True{}, cc)) : Bool}:
+  match cc:
+    case LT{}:
+      {==}
+    case EQ{}:
+      {==}
+    case GT{}:
+      {==}
+
+# one less than a count is zero exactly when the count is one
+def r1.dec1(+uu: U32) -> {U32.is_zero(U32.sub(uu, 1)) == U32.is_eq(uu, 1) : Bool}:
+  match uu:
+    case U32{WCon{False{}, +rest}}:
+      r1.dz0(Word.cmp(31n, Word.adc(31n, rest, Eq.zw(31n), True{}, False{}), Eq.zw(31n)), Word.cmp(31n, rest,
+        Eq.zw(31n)))
+    case U32{WCon{True{}, +rest}}:
+      Equal.trans(Bool, Cmp.is_eq(Word.cmp.fin(False{}, False{}, Word.cmp(31n, Word.adc(31n, rest, Eq.zw(31n), True{},
+        True{}), Eq.zw(31n)))), Cmp.is_eq(Word.cmp.fin(False{}, False{}, Word.cmp(31n, rest, Eq.zw(31n)))),
+        Cmp.is_eq(Word.cmp.fin(True{}, True{}, Word.cmp(31n, rest, Eq.zw(31n)))), Equal.cong(Word(31n), Bool,
+        xx => Cmp.is_eq(Word.cmp.fin(False{}, False{}, Word.cmp(31n, xx, Eq.zw(31n)))), Word.adc(31n, rest, Eq.zw(31n),
+        True{}, True{}), rest, r1.adcid(31n, rest)), r1.dz1(Word.cmp(31n, rest, Eq.zw(31n))))
+
+# a decimal digit: 57, or on
+def r1.hx.d57(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 57) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 57)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 57) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 57, ec, hh))
+    case EQ{}:
+      kt(Laws.Kx9{}, Eq.u32_eq(uu, 57, r1.eqc(uu, 57, ec)))
+    case GT{}:
+      Eq.bit.absurd2(&1, PP, Equal.trans(Bool, True{}, U32.is_le(uu, 57), False{}, Equal.sym(Bool, U32.is_le(uu, 57),
+        True{}, hle), Equal.cong(Cmp, Bool, xx => Cmp.is_le(xx), U32.cmp(uu, 57), GT{}, ec)))
+
+# a decimal digit: 56, or on
+def r1.hx.d56(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 56) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 56)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 57) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 56, ec, hh))
+    case EQ{}:
+      kt(Laws.Kx8{}, Eq.u32_eq(uu, 56, r1.eqc(uu, 56, ec)))
+    case GT{}:
+      r1.hx.d57(PP, uu, U32.cmp(uu, 57), {==}, r1.up(uu, r1.bits(56), {==}, ec), hle, kt)
+
+# a decimal digit: 55, or on
+def r1.hx.d55(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 55) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 55)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 57) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 55, ec, hh))
+    case EQ{}:
+      kt(Laws.Kx7{}, Eq.u32_eq(uu, 55, r1.eqc(uu, 55, ec)))
+    case GT{}:
+      r1.hx.d56(PP, uu, U32.cmp(uu, 56), {==}, r1.up(uu, r1.bits(55), {==}, ec), hle, kt)
+
+# a decimal digit: 54, or on
+def r1.hx.d54(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 54) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 54)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 57) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 54, ec, hh))
+    case EQ{}:
+      kt(Laws.Kx6{}, Eq.u32_eq(uu, 54, r1.eqc(uu, 54, ec)))
+    case GT{}:
+      r1.hx.d55(PP, uu, U32.cmp(uu, 55), {==}, r1.up(uu, r1.bits(54), {==}, ec), hle, kt)
+
+# a decimal digit: 53, or on
+def r1.hx.d53(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 53) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 53)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 57) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 53, ec, hh))
+    case EQ{}:
+      kt(Laws.Kx5{}, Eq.u32_eq(uu, 53, r1.eqc(uu, 53, ec)))
+    case GT{}:
+      r1.hx.d54(PP, uu, U32.cmp(uu, 54), {==}, r1.up(uu, r1.bits(53), {==}, ec), hle, kt)
+
+# a decimal digit: 52, or on
+def r1.hx.d52(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 52) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 52)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 57) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 52, ec, hh))
+    case EQ{}:
+      kt(Laws.Kx4{}, Eq.u32_eq(uu, 52, r1.eqc(uu, 52, ec)))
+    case GT{}:
+      r1.hx.d53(PP, uu, U32.cmp(uu, 53), {==}, r1.up(uu, r1.bits(52), {==}, ec), hle, kt)
+
+# a decimal digit: 51, or on
+def r1.hx.d51(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 51) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 51)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 57) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 51, ec, hh))
+    case EQ{}:
+      kt(Laws.Kx3{}, Eq.u32_eq(uu, 51, r1.eqc(uu, 51, ec)))
+    case GT{}:
+      r1.hx.d52(PP, uu, U32.cmp(uu, 52), {==}, r1.up(uu, r1.bits(51), {==}, ec), hle, kt)
+
+# a decimal digit: 50, or on
+def r1.hx.d50(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 50) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 50)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 57) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 50, ec, hh))
+    case EQ{}:
+      kt(Laws.Kx2{}, Eq.u32_eq(uu, 50, r1.eqc(uu, 50, ec)))
+    case GT{}:
+      r1.hx.d51(PP, uu, U32.cmp(uu, 51), {==}, r1.up(uu, r1.bits(50), {==}, ec), hle, kt)
+
+# a decimal digit: 49, or on
+def r1.hx.d49(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 49) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 49)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 57) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 49, ec, hh))
+    case EQ{}:
+      kt(Laws.Kx1{}, Eq.u32_eq(uu, 49, r1.eqc(uu, 49, ec)))
+    case GT{}:
+      r1.hx.d50(PP, uu, U32.cmp(uu, 50), {==}, r1.up(uu, r1.bits(49), {==}, ec), hle, kt)
+
+# a decimal digit: 48, or on
+def r1.hx.d48(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 48) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 48)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 57) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 48, ec, hh))
+    case EQ{}:
+      kt(Laws.Kx0{}, Eq.u32_eq(uu, 48, r1.eqc(uu, 48, ec)))
+    case GT{}:
+      r1.hx.d49(PP, uu, U32.cmp(uu, 49), {==}, r1.up(uu, r1.bits(48), {==}, ec), hle, kt)
+
+# a lowercase hexadecimal letter: 102, or on
+def r1.hx.l102(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 102) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 102)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 102) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 102, ec, hh))
+    case EQ{}:
+      kt(Laws.KxF{False{}}, Eq.u32_eq(uu, 102, r1.eqc(uu, 102, ec)))
+    case GT{}:
+      Eq.bit.absurd2(&1, PP, Equal.trans(Bool, True{}, U32.is_le(uu, 102), False{}, Equal.sym(Bool, U32.is_le(uu, 102),
+        True{}, hle), Equal.cong(Cmp, Bool, xx => Cmp.is_le(xx), U32.cmp(uu, 102), GT{}, ec)))
+
+# a lowercase hexadecimal letter: 101, or on
+def r1.hx.l101(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 101) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 101)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 102) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 101, ec, hh))
+    case EQ{}:
+      kt(Laws.KxE{False{}}, Eq.u32_eq(uu, 101, r1.eqc(uu, 101, ec)))
+    case GT{}:
+      r1.hx.l102(PP, uu, U32.cmp(uu, 102), {==}, r1.up(uu, r1.bits(101), {==}, ec), hle, kt)
+
+# a lowercase hexadecimal letter: 100, or on
+def r1.hx.l100(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 100) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 100)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 102) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 100, ec, hh))
+    case EQ{}:
+      kt(Laws.KxD{False{}}, Eq.u32_eq(uu, 100, r1.eqc(uu, 100, ec)))
+    case GT{}:
+      r1.hx.l101(PP, uu, U32.cmp(uu, 101), {==}, r1.up(uu, r1.bits(100), {==}, ec), hle, kt)
+
+# a lowercase hexadecimal letter: 99, or on
+def r1.hx.l99(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 99) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 99)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 102) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 99, ec, hh))
+    case EQ{}:
+      kt(Laws.KxC{False{}}, Eq.u32_eq(uu, 99, r1.eqc(uu, 99, ec)))
+    case GT{}:
+      r1.hx.l100(PP, uu, U32.cmp(uu, 100), {==}, r1.up(uu, r1.bits(99), {==}, ec), hle, kt)
+
+# a lowercase hexadecimal letter: 98, or on
+def r1.hx.l98(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 98) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 98)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 102) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 98, ec, hh))
+    case EQ{}:
+      kt(Laws.KxB{False{}}, Eq.u32_eq(uu, 98, r1.eqc(uu, 98, ec)))
+    case GT{}:
+      r1.hx.l99(PP, uu, U32.cmp(uu, 99), {==}, r1.up(uu, r1.bits(98), {==}, ec), hle, kt)
+
+# a lowercase hexadecimal letter: 97, or on
+def r1.hx.l97(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 97) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 97)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 102) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 97, ec, hh))
+    case EQ{}:
+      kt(Laws.KxA{False{}}, Eq.u32_eq(uu, 97, r1.eqc(uu, 97, ec)))
+    case GT{}:
+      r1.hx.l98(PP, uu, U32.cmp(uu, 98), {==}, r1.up(uu, r1.bits(97), {==}, ec), hle, kt)
+
+# an uppercase hexadecimal letter: 70, or on
+def r1.hx.u70(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 70) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 70)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 70) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 70, ec, hh))
+    case EQ{}:
+      kt(Laws.KxF{True{}}, Eq.u32_eq(uu, 70, r1.eqc(uu, 70, ec)))
+    case GT{}:
+      Eq.bit.absurd2(&1, PP, Equal.trans(Bool, True{}, U32.is_le(uu, 70), False{}, Equal.sym(Bool, U32.is_le(uu, 70),
+        True{}, hle), Equal.cong(Cmp, Bool, xx => Cmp.is_le(xx), U32.cmp(uu, 70), GT{}, ec)))
+
+# an uppercase hexadecimal letter: 69, or on
+def r1.hx.u69(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 69) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 69)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 70) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 69, ec, hh))
+    case EQ{}:
+      kt(Laws.KxE{True{}}, Eq.u32_eq(uu, 69, r1.eqc(uu, 69, ec)))
+    case GT{}:
+      r1.hx.u70(PP, uu, U32.cmp(uu, 70), {==}, r1.up(uu, r1.bits(69), {==}, ec), hle, kt)
+
+# an uppercase hexadecimal letter: 68, or on
+def r1.hx.u68(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 68) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 68)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 70) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 68, ec, hh))
+    case EQ{}:
+      kt(Laws.KxD{True{}}, Eq.u32_eq(uu, 68, r1.eqc(uu, 68, ec)))
+    case GT{}:
+      r1.hx.u69(PP, uu, U32.cmp(uu, 69), {==}, r1.up(uu, r1.bits(68), {==}, ec), hle, kt)
+
+# an uppercase hexadecimal letter: 67, or on
+def r1.hx.u67(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 67) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 67)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 70) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 67, ec, hh))
+    case EQ{}:
+      kt(Laws.KxC{True{}}, Eq.u32_eq(uu, 67, r1.eqc(uu, 67, ec)))
+    case GT{}:
+      r1.hx.u68(PP, uu, U32.cmp(uu, 68), {==}, r1.up(uu, r1.bits(67), {==}, ec), hle, kt)
+
+# an uppercase hexadecimal letter: 66, or on
+def r1.hx.u66(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 66) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 66)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 70) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 66, ec, hh))
+    case EQ{}:
+      kt(Laws.KxB{True{}}, Eq.u32_eq(uu, 66, r1.eqc(uu, 66, ec)))
+    case GT{}:
+      r1.hx.u67(PP, uu, U32.cmp(uu, 67), {==}, r1.up(uu, r1.bits(66), {==}, ec), hle, kt)
+
+# an uppercase hexadecimal letter: 65, or on
+def r1.hx.u65(
+  -PP: Type,
+  +uu: U32,
+  cc: Cmp,
+  ec: {U32.cmp(uu, 65) == cc : Cmp},
+  hh: {Cmp.is_lt(U32.cmp(uu, 65)) == False{} : Bool},
+  +hle: {U32.is_le(uu, 70) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match cc:
+    case LT{}:
+      Eq.bit.absurd2(&1, PP, r1.nlt(uu, 65, ec, hh))
+    case EQ{}:
+      kt(Laws.KxA{True{}}, Eq.u32_eq(uu, 65, r1.eqc(uu, 65, ec)))
+    case GT{}:
+      r1.hx.u66(PP, uu, U32.cmp(uu, 66), {==}, r1.up(uu, r1.bits(65), {==}, ec), hle, kt)
+
+# an uppercase letter, else no digit
+def r1.hx.up(
+  -PP: Type,
+  dd: Bool,
+  +uu: U32,
+  +ed: {Bool.and(U32.is_ge(uu, 65), U32.is_le(uu, 70)) == dd : Bool},
+  ok: {T.dig.ok(T.dig.up(dd, uu), 16) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match dd:
+    case True{}:
+      r1.hx.u65(PP, uu, U32.cmp(uu, 65), {==}, r1.ltge(U32.cmp(uu, 65), gd.l(U32.is_ge(uu, 65), U32.is_le(uu, 70), ed)),
+        gd.r(U32.is_ge(uu, 65), U32.is_le(uu, 70), ed), kt)
+    case False{}:
+      Eq.bit.absurd(&1, PP, ok)
+
+# a lowercase letter, else an uppercase one
+def r1.hx.lo(
+  -PP: Type,
+  dd: Bool,
+  +uu: U32,
+  +ed: {Bool.and(U32.is_ge(uu, 97), U32.is_le(uu, 102)) == dd : Bool},
+  ok: {T.dig.ok(T.dig.low(dd, uu), 16) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match dd:
+    case True{}:
+      r1.hx.l97(PP, uu, U32.cmp(uu, 97), {==}, r1.ltge(U32.cmp(uu, 97), gd.l(U32.is_ge(uu, 97), U32.is_le(uu, 102),
+        ed)), gd.r(U32.is_ge(uu, 97), U32.is_le(uu, 102), ed), kt)
+    case False{}:
+      r1.hx.up(PP, Bool.and(U32.is_ge(uu, 65), U32.is_le(uu, 70)), uu, {==}, ok, kt)
+
+# a decimal digit, else a letter
+def r1.hx.de(
+  -PP: Type,
+  dd: Bool,
+  +uu: U32,
+  +ed: {Bool.and(U32.is_ge(uu, 48), U32.is_le(uu, 57)) == dd : Bool},
+  ok: {T.dig.ok(T.dig.dec(dd, uu), 16) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  match dd:
+    case True{}:
+      r1.hx.d48(PP, uu, U32.cmp(uu, 48), {==}, r1.ltge(U32.cmp(uu, 48), gd.l(U32.is_ge(uu, 48), U32.is_le(uu, 57), ed)),
+        gd.r(U32.is_ge(uu, 48), U32.is_le(uu, 57), ed), kt)
+    case False{}:
+      r1.hx.lo(PP, Bool.and(U32.is_ge(uu, 97), U32.is_le(uu, 102)), uu, {==}, ok, kt)
+
+# WP-R: a character dig.val reads as a digit below 16 is one a KHex writes
+def r1.hx.of(
+  -PP: Type,
+  +uu: U32,
+  ok: {T.dig.ok(T.dig.val(Chr{uu}), 16) == True{} : Bool},
+  kt: @hx: Laws.KHex -> {Chr{uu} == Laws.k3.hex.char(hx) : Char} -> PP
+) -> PP:
+  r1.hx.de(PP, Bool.and(U32.is_ge(uu, 48), U32.is_le(uu, 57)), uu, {==}, ok, kt)
+
+# the value a digit adds is the one dig.val reads from its character
+def r1.hxv(
+  +uu: U32,
+  +hx: Laws.KHex,
+  eh: {Chr{uu} == Laws.k3.hex.char(hx) : Char}
+) -> {Laws.k3.hex.val(hx) == T.dig.val(Chr{uu}) : U32}:
+  Equal.trans(U32, Laws.k3.hex.val(hx), T.dig.val(Laws.k3.hex.char(hx)), T.dig.val(Chr{uu}), k3.hx.dv(hx),
+    Equal.sym(U32, T.dig.val(Chr{uu}), T.dig.val(Laws.k3.hex.char(hx)), Equal.cong(Char, U32, xx => T.dig.val(xx),
+    Chr{uu}, Laws.k3.hex.char(hx), eh)))
+
+# the number read so far, with one more digit, as uni.step reads it
+def r1.hxa(
+  +uu: U32,
+  +un: U32,
+  +hx: Laws.KHex,
+  eh: {Chr{uu} == Laws.k3.hex.char(hx) : Char}
+) -> {Laws.k3.hex.acc(un, hx) == U32.add(U32.mul(un, 16), T.dig.val(Chr{uu})) : U32}:
+  Equal.cong(U32, U32, xx => U32.add(U32.mul(un, 16), xx), Laws.k3.hex.val(hx), T.dig.val(Chr{uu}), r1.hxv(uu, hx,
+    eh))
+
+# the last digit: the escape's piece is complete, and names a scalar value
+def r1.x.ulast.go(
+  +uu: U32,
+  +hx: Laws.KHex,
+  +eh: {Chr{uu} == Laws.k3.hex.char(hx) : Char},
+  +un: U32,
+  +lf: U32,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  ez: {U32.is_zero(lf) == False{} : Bool},
+  el: {U32.is_eq(lf, 1) == True{} : Bool},
+  eok: {T.uni.ok(U32.add(U32.mul(un, 16), T.dig.val(Chr{uu}))) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfKBasic{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKUni{un, lf} <> rest, SCon{Chr{uu}, tt}):
+  (+pl, (+rr, (e1, (+e2, hr)))) = hh
+  ([hx], (pl, (rr, (Equal.trans(String, SCon{Chr{uu}, tt}, SCon{Laws.k3.hex.char(hx), tt}, SCon{Laws.k3.hex.char(hx),
+    Laws.k3.pcs.text(pl, SCon{'"', rr})}, Equal.cong(Char, String, xx => SCon{xx, tt}, Chr{uu}, Laws.k3.hex.char(hx),
+    eh), Equal.cong(String, String, xx => SCon{Laws.k3.hex.char(hx), xx}, tt, Laws.k3.pcs.text(pl, SCon{'"', rr}),
+    e1)), (gd.tt(Bool.and(Bool.not(U32.is_zero(lf)), U32.is_zero(U32.sub(lf, 1))), Bool.and(Laws.k3.scalar(
+    Laws.k3.hex.acc(un, hx)), Bool.and(Laws.abnf.basic_string(pl), Laws.prose.escapes_scalar(pl))),
+    gd.tt(Bool.not(U32.is_zero(lf)), U32.is_zero(U32.sub(lf, 1)), Equal.cong(Bool, Bool, xx => Bool.not(xx),
+    U32.is_zero(lf), False{}, ez), Equal.trans(Bool, U32.is_zero(U32.sub(lf, 1)), U32.is_eq(lf, 1), True{},
+    r1.dec1(lf), el)), gd.tt(Laws.k3.scalar(Laws.k3.hex.acc(un, hx)), Bool.and(Laws.abnf.basic_string(pl),
+    Laws.prose.escapes_scalar(pl)), Equal.trans(Bool, Laws.k3.scalar(Laws.k3.hex.acc(un, hx)),
+      T.uni.ok(U32.add(U32.mul(un, 16), T.dig.val(Chr{uu}))),
+    True{}, Equal.cong(U32, Bool, xx => Laws.k3.scalar(xx), Laws.k3.hex.acc(un, hx), U32.add(U32.mul(un, 16),
+      T.dig.val(Chr{uu})), r1.hxa(uu, un, hx, eh)),
+    eok), e2)), hr)))))
+
+# a digit before the last: one more of the escape's digits
+def r1.x.umore.go(
+  +uu: U32,
+  +hx: Laws.KHex,
+  +eh: {Chr{uu} == Laws.k3.hex.char(hx) : Char},
+  +un: U32,
+  +lf: U32,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  ez: {U32.is_zero(lf) == False{} : Bool},
+  hh: Laws.r1.fill(Laws.RfKUni{U32.add(U32.mul(un, 16), T.dig.val(Chr{uu})), U32.sub(lf, 1)} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKUni{un, lf} <> rest, SCon{Chr{uu}, tt}):
+  (+hs, (+pl, (+rr, (e1, (+e2, hr))))) = hh
+  (hx <> hs, (pl, (rr, (Equal.trans(String, SCon{Chr{uu}, tt}, SCon{Laws.k3.hex.char(hx), tt},
+    SCon{Laws.k3.hex.char(hx), Laws.r1.hexs.text(hs, Laws.k3.pcs.text(pl, SCon{'"', rr}))}, Equal.cong(Char, String,
+    xx => SCon{xx, tt}, Chr{uu}, Laws.k3.hex.char(hx), eh), Equal.cong(String, String, xx => SCon{Laws.k3.hex.char(hx),
+    xx}, tt, Laws.r1.hexs.text(hs, Laws.k3.pcs.text(pl, SCon{'"', rr})), e1)),
+      (gd.tt(Bool.and(Bool.not(U32.is_zero(lf)), Laws.r1.hexs.count(hs, U32.sub(lf, 1))),
+      Bool.and(Laws.k3.scalar(Laws.r1.hexs.acc(hs, Laws.k3.hex.acc(un, hx))), Bool.and(Laws.abnf.basic_string(pl),
+      Laws.prose.escapes_scalar(pl))), gd.tt(Bool.not(U32.is_zero(lf)), Laws.r1.hexs.count(hs, U32.sub(lf, 1)),
+      Equal.cong(Bool, Bool, xx => Bool.not(xx), U32.is_zero(lf), False{}, ez), gd.l(Laws.r1.hexs.count(hs, U32.sub(lf,
+      1)), Bool.and(Laws.k3.scalar(Laws.r1.hexs.acc(hs, U32.add(U32.mul(un, 16), T.dig.val(Chr{uu})))),
+      Bool.and(Laws.abnf.basic_string(pl), Laws.prose.escapes_scalar(pl))), e2)), Equal.trans(Bool,
+      Bool.and(Laws.k3.scalar(Laws.r1.hexs.acc(hs, Laws.k3.hex.acc(un, hx))), Bool.and(Laws.abnf.basic_string(pl),
+      Laws.prose.escapes_scalar(pl))), Bool.and(Laws.k3.scalar(Laws.r1.hexs.acc(hs, U32.add(U32.mul(un, 16),
+      T.dig.val(Chr{uu})))), Bool.and(Laws.abnf.basic_string(pl), Laws.prose.escapes_scalar(pl))), True{},
+      Equal.cong(U32, Bool, yy => Bool.and(Laws.k3.scalar(Laws.r1.hexs.acc(hs, yy)),
+      Bool.and(Laws.abnf.basic_string(pl), Laws.prose.escapes_scalar(pl))), Laws.k3.hex.acc(un, hx), U32.add(U32.mul(un,
+      16), T.dig.val(Chr{uu})), r1.hxa(uu, un, hx, eh)), gd.r(Laws.r1.hexs.count(hs, U32.sub(lf, 1)),
+      Bool.and(Laws.k3.scalar(Laws.r1.hexs.acc(hs, U32.add(U32.mul(un, 16), T.dig.val(Chr{uu})))),
+      Bool.and(Laws.abnf.basic_string(pl), Laws.prose.escapes_scalar(pl))), e2))), hr)))))
+
+
+# the last digit, for any character dig.val reads as one
+def r1.x.ulast.c(
+  +cc: Char,
+  +un: U32,
+  +lf: U32,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  ez: {U32.is_zero(lf) == False{} : Bool},
+  el: {U32.is_eq(lf, 1) == True{} : Bool},
+  eok: {T.uni.ok(U32.add(U32.mul(un, 16), T.dig.val(cc))) == True{} : Bool},
+  edok: {T.dig.ok(T.dig.val(cc), 16) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfKBasic{} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKUni{un, lf} <> rest, SCon{cc, tt}):
+  match cc:
+    case Chr{+uu}:
+      r1.hx.of(Laws.r1.fill(Laws.RfKUni{un, lf} <> rest, SCon{Chr{uu}, tt}), uu, edok, hx => eh => r1.x.ulast.go(uu,
+        hx, eh, un, lf, tt, rest, ez, el, eok, hh))
+
+# a digit before the last, for any character dig.val reads as one
+def r1.x.umore.c(
+  +cc: Char,
+  +un: U32,
+  +lf: U32,
+  +tt: String,
+  rest: List<&2, Laws.R1Fr>,
+  ez: {U32.is_zero(lf) == False{} : Bool},
+  edok: {T.dig.ok(T.dig.val(cc), 16) == True{} : Bool},
+  hh: Laws.r1.fill(Laws.RfKUni{U32.add(U32.mul(un, 16), T.dig.val(cc)), U32.sub(lf, 1)} <> rest, tt)
+) -> Laws.r1.fill(Laws.RfKUni{un, lf} <> rest, SCon{cc, tt}):
+  match cc:
+    case Chr{+uu}:
+      r1.hx.of(Laws.r1.fill(Laws.RfKUni{un, lf} <> rest, SCon{Chr{uu}, tt}), uu, edok, hx => eh => r1.x.umore.go(uu,
+        hx, eh, un, lf, tt, rest, ez, hh))
+
+# digits still to read, when the count left is not zero
+def r1.u0f(
+  zb: Bool,
+  ezb: {zb == False{} : Bool},
+  ke: List<&2, Laws.R1Fr>,
+  +un: U32,
+  +lf: U32,
+  +tt: String,
+  hh: Laws.r1.fill(Laws.r1.gp.u0(zb, ke, un, lf), tt)
+) -> Laws.r1.fill(Laws.RfKUni{un, lf} <> (Laws.RfKAfter{} <> ke), tt):
+  match zb:
+    case True{}:
+      Eq.bit.absurd2(&1, Laws.r1.fill(Laws.RfKUni{un, lf} <> (Laws.RfKAfter{} <> ke), tt), ezb)
+    case False{}:
+      hh
+
+# LHeadU's state
+def r1.SHUb(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LHeadU{}, bk, T.QBasic{}, sk, un, lf, at)
+
+# the mode r1.hub.f reads its text from
+def r1.hub.fM(
+  +fin: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.uni.finish(fin, r1.SHUb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at),
+    U32.add(U32.mul(un, 16), T.dig.val(cc)), T.LHeadQ{})))
+
+# LHeadU's last digit: its code point checked
+def r1.hub.f(
+  fin: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +efin: {T.uni.ok(U32.add(U32.mul(un, 16), T.dig.val(cc))) == fin : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +ez: {U32.is_zero(lf) == False{} : Bool},
+  +edok: {T.dig.ok(T.dig.val(cc), 16) == True{} : Bool},
+  +el: {U32.is_eq(lf, 1) == True{} : Bool},
+  +tt: String,
+  en: sr.N(tt, r1.hub.fM(fin, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.hub.fM(fin, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.fill(Laws.RfKUni{un, lf} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), SCon{cc, tt}):
+  match fin:
+    case True{}:
+      r1.x.ulast.c(cc, un, lf, tt, Laws.RfKAfter{} <> Laws.r1.hend(at), ez, el, efin, edok, r1.kk(qq, lit, cr, cc, eqq,
+        elt, ecr, xx => T.dig.ok(T.dig.val(xx), 16), edok, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt,
+        Char.from_u32(U32.add(U32.mul(un, 16), T.dig.val(cc))) <> bf, T.LHeadQ{}, bk, T.QBasic{}, sk, 0, 0, at), tt,
+        ih))
+    case False{}:
+      Eq.bit.gone(&1, Laws.r1.fill(Laws.RfKUni{un, lf} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), SCon{cc, tt}),
+        r1.bad(qq, lit, cr, bd, rw, hs, he, pt, bf, T.LHeadU{}, bk, T.QBasic{}, sk, un, lf, at, 'i', "nvalid escape",
+        tt, en))
+
+# the mode r1.hub.n reads its text from
+def r1.hub.nM(
+  +last: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.uni.next(last, r1.SHUb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at),
+    U32.add(U32.mul(un, 16), T.dig.val(cc)), T.LHeadQ{}, lf)))
+
+# LHeadU's digit: the last one, or one more to come
+def r1.hub.n(
+  last: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +elast: {U32.is_eq(lf, 1) == last : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +ez: {U32.is_zero(lf) == False{} : Bool},
+  +edok: {T.dig.ok(T.dig.val(cc), 16) == True{} : Bool},
+  +tt: String,
+  en: sr.N(tt, r1.hub.nM(last, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.hub.nM(last, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.fill(Laws.RfKUni{un, lf} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), SCon{cc, tt}):
+  match last:
+    case True{}:
+      r1.hub.f(T.uni.ok(U32.add(U32.mul(un, 16), T.dig.val(cc))), qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un,
+        lf, at, {==}, eqq, elt, ecr, ez, edok, elast, tt, en, ih)
+    case False{}:
+      r1.x.umore.c(cc, un, lf, tt, Laws.RfKAfter{} <> Laws.r1.hend(at), ez, edok, r1.u0f(U32.is_zero(U32.sub(lf, 1)),
+        Equal.trans(Bool, U32.is_zero(U32.sub(lf, 1)), U32.is_eq(lf, 1), False{}, r1.dec1(lf), elast), Laws.r1.hend(at),
+        U32.add(U32.mul(un, 16), T.dig.val(cc)), U32.sub(lf, 1), tt, r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
+        T.dig.ok(T.dig.val(xx), 16), edok, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf, T.LHeadU{}, bk, T.QBasic{},
+        sk, U32.add(U32.mul(un, 16), T.dig.val(cc)), U32.sub(lf, 1), at), tt, ih)))
+
+# the mode r1.hub.go reads its text from
+def r1.hubM(
+  +dok: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.uni.go(dok, r1.SHUb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, T.LHeadQ{}, un,
+    lf)))
+
+# LHeadU's dispatch: a hexadecimal digit, else refused
+def r1.hub.go(
+  dok: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +edok: {T.dig.ok(T.dig.val(cc), 16) == dok : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +ez: {U32.is_zero(lf) == False{} : Bool},
+  +tt: String,
+  en: sr.N(tt, r1.hubM(dok, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.hubM(dok, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.fill(Laws.RfKUni{un, lf} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), SCon{cc, tt}):
+  match dok:
+    case True{}:
+      r1.hub.n(U32.is_eq(lf, 1), qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, {==}, eqq, elt, ecr, ez,
+        edok, tt, en, ih)
+    case False{}:
+      Eq.bit.gone(&1, Laws.r1.fill(Laws.RfKUni{un, lf} <> (Laws.RfKAfter{} <> Laws.r1.hend(at)), SCon{cc, tt}),
+        r1.bad(qq, lit, cr, bd, rw, hs, he, pt, bf, T.LHeadU{}, bk, T.QBasic{}, sk, un, lf, at, 'i', "nvalid escape",
+        tt, en))
+
+# LHeadU with no digit left is a state no step reaches
+def r1.hub.z(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  zz: Bool,
+  ez: {U32.is_zero(lf) == zz : Bool},
+  en: sr.N(tt, sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LHeadU{}, bk, T.QBasic{}, sk, un, lf, at, cc))),
+  ih: Laws.r1.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LHeadU{}, bk, T.QBasic{}, sk, un, lf, at, cc)), tt)
+) -> Laws.r1.fill(Laws.r1.gp.u0(zz, Laws.r1.hend(at), un, lf), SCon{cc, tt}):
+  match zz:
+    case True{}:
+      Unit{}
+    case False{}:
+      r1.hub.go(T.dig.ok(T.dig.val(cc), 16), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13),
+        cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, {==}, {==}, {==}, {==}, ez, tt, en, ih)
+
+# WP-R: LHeadU's obligation, for every character: an escape's digits are only
+# in a basic segment
+def r1.ob.hu(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LHeadU{}, bk, qk, sk, un, lf, at, cc, tt):
+  match qk:
+    case T.QBasic{}:
+      _ec => en => ih => r1.hub.z(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tt, U32.is_zero(lf), {==}, en, ih)
+    case T.QLit{}:
+      _ec => _en => _ih => Unit{}
+    case T.QMulti{}:
+      _ec => _en => _ih => Unit{}
+    case T.QMultiLit{}:
+      _ec => _en => _ih => Unit{}
+
+# LKeyU's state
+def r1.SKUb(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.St:
+  sip.S(bd, rw, hs, he, pt, bf, T.LKeyU{}, bk, T.QBasic{}, sk, un, lf, at)
+
+# the mode r1.kub.f reads its text from
+def r1.kub.fM(
+  +fin: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.uni.finish(fin, r1.SKUb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at),
+    U32.add(U32.mul(un, 16), T.dig.val(cc)), T.LKeyQ{})))
+
+# LKeyU's last digit: its code point checked
+def r1.kub.f(
+  fin: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +efin: {T.uni.ok(U32.add(U32.mul(un, 16), T.dig.val(cc))) == fin : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +ez: {U32.is_zero(lf) == False{} : Bool},
+  +edok: {T.dig.ok(T.dig.val(cc), 16) == True{} : Bool},
+  +el: {U32.is_eq(lf, 1) == True{} : Bool},
+  +tt: String,
+  en: sr.N(tt, r1.kub.fM(fin, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.kub.fM(fin, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.fill(Laws.RfKUni{un, lf} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), SCon{cc, tt}):
+  match fin:
+    case True{}:
+      r1.x.ulast.c(cc, un, lf, tt, Laws.RfKAfter{} <> Laws.r1.vend(sk), ez, el, efin, edok, r1.kk(qq, lit, cr, cc, eqq,
+        elt, ecr, xx => T.dig.ok(T.dig.val(xx), 16), edok, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt,
+        Char.from_u32(U32.add(U32.mul(un, 16), T.dig.val(cc))) <> bf, T.LKeyQ{}, bk, T.QBasic{}, sk, 0, 0, at), tt, ih))
+    case False{}:
+      Eq.bit.gone(&1, Laws.r1.fill(Laws.RfKUni{un, lf} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), SCon{cc, tt}),
+        r1.bad(qq, lit, cr, bd, rw, hs, he, pt, bf, T.LKeyU{}, bk, T.QBasic{}, sk, un, lf, at, 'i', "nvalid escape", tt,
+        en))
+
+# the mode r1.kub.n reads its text from
+def r1.kub.nM(
+  +last: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.uni.next(last, r1.SKUb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at),
+    U32.add(U32.mul(un, 16), T.dig.val(cc)), T.LKeyQ{}, lf)))
+
+# LKeyU's digit: the last one, or one more to come
+def r1.kub.n(
+  last: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +elast: {U32.is_eq(lf, 1) == last : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +ez: {U32.is_zero(lf) == False{} : Bool},
+  +edok: {T.dig.ok(T.dig.val(cc), 16) == True{} : Bool},
+  +tt: String,
+  en: sr.N(tt, r1.kub.nM(last, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.kub.nM(last, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.fill(Laws.RfKUni{un, lf} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), SCon{cc, tt}):
+  match last:
+    case True{}:
+      r1.kub.f(T.uni.ok(U32.add(U32.mul(un, 16), T.dig.val(cc))), qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un,
+        lf, at, {==}, eqq, elt, ecr, ez, edok, elast, tt, en, ih)
+    case False{}:
+      r1.x.umore.c(cc, un, lf, tt, Laws.RfKAfter{} <> Laws.r1.vend(sk), ez, edok, r1.u0f(U32.is_zero(U32.sub(lf, 1)),
+        Equal.trans(Bool, U32.is_zero(U32.sub(lf, 1)), U32.is_eq(lf, 1), False{}, r1.dec1(lf), elast), Laws.r1.vend(sk),
+        U32.add(U32.mul(un, 16), T.dig.val(cc)), U32.sub(lf, 1), tt, r1.kk(qq, lit, cr, cc, eqq, elt, ecr, xx =>
+        T.dig.ok(T.dig.val(xx), 16), edok, {==}, {==}, {==}, sip.S(bd, rw, hs, he, pt, bf, T.LKeyU{}, bk, T.QBasic{},
+        sk, U32.add(U32.mul(un, 16), T.dig.val(cc)), U32.sub(lf, 1), at), tt, ih)))
+
+# the mode r1.kub.go reads its text from
+def r1.kubM(
+  +dok: Bool,
+  +qq: Bool,
+  +lit: Bool,
+  +cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool
+) -> T.Mode:
+  sr.K(qq, lit, cr, T.read.once2(T.uni.go(dok, r1.SKUb(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), cc, T.LKeyQ{}, un,
+    lf)))
+
+# LKeyU's dispatch: a hexadecimal digit, else refused
+def r1.kub.go(
+  dok: Bool,
+  qq: Bool,
+  lit: Bool,
+  cr: Bool,
+  +cc: Char,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +edok: {T.dig.ok(T.dig.val(cc), 16) == dok : Bool},
+  +eqq: {Char.is_eq(cc, '"') == qq : Bool},
+  +elt: {Char.is_eq(cc, '\'') == lit : Bool},
+  +ecr: {U32.is_eq(Char.to_u32(cc), 13) == cr : Bool},
+  +ez: {U32.is_zero(lf) == False{} : Bool},
+  +tt: String,
+  en: sr.N(tt, r1.kubM(dok, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at)),
+  ih: r1.CC(r1.kubM(dok, qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), tt)
+) -> Laws.r1.fill(Laws.RfKUni{un, lf} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), SCon{cc, tt}):
+  match dok:
+    case True{}:
+      r1.kub.n(U32.is_eq(lf, 1), qq, lit, cr, cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, {==}, eqq, elt, ecr, ez,
+        edok, tt, en, ih)
+    case False{}:
+      Eq.bit.gone(&1, Laws.r1.fill(Laws.RfKUni{un, lf} <> (Laws.RfKAfter{} <> Laws.r1.vend(sk)), SCon{cc, tt}),
+        r1.bad(qq, lit, cr, bd, rw, hs, he, pt, bf, T.LKeyU{}, bk, T.QBasic{}, sk, un, lf, at, 'i', "nvalid escape", tt,
+        en))
+
+# LKeyU with no digit left is a state no step reaches
+def r1.kub.z(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String,
+  zz: Bool,
+  ez: {U32.is_zero(lf) == zz : Bool},
+  en: sr.N(tt, sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LKeyU{}, bk, T.QBasic{}, sk, un, lf, at, cc))),
+  ih: Laws.r1.C(sr.Kc(cc, T.read.fast.old(bd, rw, hs, he, pt, bf, T.LKeyU{}, bk, T.QBasic{}, sk, un, lf, at, cc)), tt)
+) -> Laws.r1.fill(Laws.r1.gp.u0(zz, Laws.r1.vend(sk), un, lf), SCon{cc, tt}):
+  match zz:
+    case True{}:
+      Unit{}
+    case False{}:
+      r1.kub.go(T.dig.ok(T.dig.val(cc), 16), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), U32.is_eq(Char.to_u32(cc), 13),
+        cc, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, {==}, {==}, {==}, {==}, ez, tt, en, ih)
+
+# WP-R: LKeyU's obligation, for every character: an escape's digits are only
+# in a basic segment
+def r1.ob.ku(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +pt: List<&2, String>,
+  +bf: List<&2, Char>,
+  +bk: T.Lex,
+  qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +at: Bool,
+  +cc: Char,
+  +tt: String
+) -> r1.Ob(bd, rw, hs, he, pt, bf, T.LKeyU{}, bk, qk, sk, un, lf, at, cc, tt):
+  match qk:
+    case T.QBasic{}:
+      _ec => en => ih => r1.kub.z(bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tt, U32.is_zero(lf), {==}, en, ih)
+    case T.QLit{}:
+      _ec => _en => _ih => Unit{}
+    case T.QMulti{}:
+      _ec => _en => _ih => Unit{}
+    case T.QMultiLit{}:
+      _ec => _en => _ih => Unit{}
