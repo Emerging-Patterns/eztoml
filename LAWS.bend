@@ -4668,16 +4668,6 @@ def abnf.dec_digits(cs: List<&2, Char>) -> String:
     case +hh <> tt:
       abnf.digits.pick(Bool.or(abnf.minus(hh), abnf.plus(hh)), hh, tt)
 
-# LAW: a bare word that matches toml.abnf's dec-int and lies within signed 64
-# bits is read as an integer: minus when it starts with a minus and plus
-# otherwise, with the digits after the sign and the underscores removed
-# TOML-NUM-1
-law dec_int_word:
-  for +cs: List<&2, Char>
-  for +h: {abnf.dec_int(cs) == True{} : Bool}
-  for +r: {T.i64.fits(abnf.dec_sign(cs), abnf.dec_digits(cs)) == True{} : Bool}
-  {T.word.val(cs) == T.GotVal{T.VInt{abnf.dec_sign(cs), abnf.dec_digits(cs)}} : T.Got}
-
 # GRAMMAR
 #
 # toml.abnf (TOML v1.0.0; github.com/toml-lang/toml at tag 1.0.0) transcribed
@@ -7672,3 +7662,533 @@ law boolean_word_exact:
   for +cs: List<&2, Char>
   for +v: T.Val
   {n1.got.bool(T.word.val(cs), v) == Bool.and(abnf.boolean(cs), g.val(GvBoolean{cs}, v)) : Bool}
+
+# WP-V
+#
+# Bare values stated over parse (docs/rfc/eztoml-grammar-proofs.md, WP-V).
+# From every state that waits for a value, the scan keeps a bare word: a
+# character that starts one, then characters a bare value keeps, where a
+# space is kept only right after a date (the buffer DDDD-DD-DD, the LDate
+# state) with a digit after it, as a datetime's time-delim. The word ends at
+# a character that ends a bare value (a space, a tab, a line feed, a carriage
+# return, #, a comma, ] or }) or at the end of the text, and word.val
+# classifies it: the value is placed where the state puts values and the
+# rest is read on, or the document has an error. The document laws take the
+# classifiers of WP-N1 and WP-T1 (integer_word_exact, float_word_exact,
+# boolean_word_exact, date_time_word) to parse.
+
+# a text's characters, last first, onto a list: the buffer the scan pushes
+# them onto
+def bw.rev(ss: String, acc: List<&2, Char>) -> List<&2, Char>:
+  match ss:
+    case SNil{}:
+      acc
+    case SCon{hh, tt}:
+      bw.rev(tt, hh <> acc)
+
+# whether a text starts with a digit
+def bw.digit1(ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      False{}
+    case SCon{+hh, _tt}:
+      Char.is_digit(hh)
+
+# whether a space is where a datetime keeps it: the word so far (buf, last
+# character first) is a date, and a digit follows
+def bw.dsp(+cc: Char, buf: List<&2, Char>, rest: String) -> Bool:
+  Bool.and(Char.is_eq(cc, ' '), Bool.and(T.date.shaped(buf), bw.digit1(rest)))
+
+# the characters after a bare word's first, as the scan keeps them: each one
+# a bare value keeps, or a space where a datetime keeps it. buf is the word so
+# far, last character first
+def bw.more(ss: String, +buf: List<&2, Char>) -> Bool:
+  match ss:
+    case SNil{}:
+      True{}
+    case SCon{+hh, +tt}:
+      Bool.and(Bool.or(word.char(hh), bw.dsp(hh, buf, tt)), bw.more(tt, hh <> buf))
+
+# a bare word as the scan reads it from a value state: a character that
+# starts a bare value, then the characters it keeps
+def bw.word(ss: String) -> Bool:
+  match ss:
+    case SNil{}:
+      False{}
+    case SCon{+hh, tt}:
+      Bool.and(word.first(hh), bw.more(tt, [hh]))
+
+# a text that ends a bare word (buf, last character first): the end of the
+# text, or a character that ends a bare value, but not a space the word keeps
+# as a datetime's
+def bw.end(buf: List<&2, Char>, rest: String) -> Bool:
+  match rest:
+    case SNil{}:
+      True{}
+    case SCon{+hh, +tt}:
+      Bool.and(T.ch.delim(hh), Bool.not(bw.dsp(hh, buf, tt)))
+
+# the scanner with a bare value placed where the stack puts values, as it is
+# after the value's word: a word keeps back, qkind, uni and left
+def bw.put(
+  sk: List<&2, T.Ctx>,
+  vv: T.Val,
+  rw: List<&2, T.Val>,
+  hs: List<&2, String>,
+  +he: List<&2, String>,
+  ps: List<&2, String>,
+  bk: T.Lex,
+  qk: T.QKind,
+  un: U32,
+  lf: U32,
+  ab: Bool
+) -> T.St:
+  T.take.top(sk, vv, "", rw, hs, he, ps, bk, qk, un, lf, ab, False{})
+
+# LAW: a bare word is read as word.val classifies it: from every state that
+# waits for a value, a bare word whose characters word.val reads as the value
+# v, then a text that ends it (a space, a tab, a newline, a carriage return,
+# #, a comma, ] or }, or nothing, but not a date's space before a digit),
+# reads on as that text from the state with v placed
+# TOML-NUM-1
+# TOML-NUM-2
+# TOML-TIME-1
+law bare_word_reads_on:
+  for +w: String
+  for hw: {bw.word(w) == True{} : Bool}
+  for +v: T.Val
+  for hv: {T.word.val(String.to_list(w)) == T.GotVal{v} : T.Got}
+  for +rw: List<&2, T.Val>
+  for +hs: List<&2, String>
+  for +he: List<&2, String>
+  for +ps: List<&2, String>
+  for +bk: T.Lex
+  for +qk: T.QKind
+  for +sk: List<&2, T.Ctx>
+  for +un: U32
+  for +lf: U32
+  for +ab: Bool
+  for +rest: String
+  for ee: {bw.end(bw.rev(w, []), rest) == True{} : Bool}
+  {T.doc.read(String.append(w, rest), T.MScan{vpos(rw, hs, he, ps, bk, qk, sk, un, lf, ab)})
+    == T.doc.read(rest, T.MScan{bw.put(sk, v, rw, hs, he, ps, bk, qk, un, lf, ab)}) : T.Doc}
+
+# LAW: a bare word word.val refuses leaves an error: from every state that
+# waits for a value, such a word, then a text that ends it, gives a document
+# with an error, whatever follows
+# TOML-NUM-1
+# TOML-NUM-2
+# TOML-TIME-1
+law bare_word_refused:
+  for +w: String
+  for hw: {bw.word(w) == True{} : Bool}
+  for +why: String
+  for hv: {T.word.val(String.to_list(w)) == T.GotBad{why} : T.Got}
+  for +rw: List<&2, T.Val>
+  for +hs: List<&2, String>
+  for +he: List<&2, String>
+  for +ps: List<&2, String>
+  for +bk: T.Lex
+  for +qk: T.QKind
+  for +sk: List<&2, T.Ctx>
+  for +un: U32
+  for +lf: U32
+  for +ab: Bool
+  for +rest: String
+  for ee: {bw.end(bw.rev(w, []), rest) == True{} : Bool}
+  {String.is_empty(T.bad(T.doc.read(String.append(w, rest), T.MScan{vpos(rw, hs, he, ps, bk, qk, sk, un, lf, ab)})))
+    == False{} : Bool}
+
+# the document of one pair: a key, " = ", a word and a newline
+def bw.kv(kk: String, ww: String) -> String:
+  String.append(kk, String.append(" = ", String.append(ww, "\n")))
+
+# the value of the one pair of rows when it is named kk, or none
+def bw.got.one(last: Bool, hit: Bool, vv: T.Val) -> T.Got:
+  match last hit:
+    case True{} True{}:
+      T.GotVal{vv}
+    case _l _h:
+      T.GotBad{""}
+
+# the value of rows that are one pair named kk, or none
+def bw.got.rows(rows: List<&2, T.Val>, +kk: String) -> T.Got:
+  match rows:
+    case T.VPair{nn, vv} <> tt:
+      bw.got.one(List.is_empty(&2, T.Val, tt), String.eq(nn, kk), vv)
+    case _r:
+      T.GotBad{""}
+
+# a document with no error holds what its rows hold
+def bw.got.go(ok: Bool, rows: List<&2, T.Val>, +kk: String) -> T.Got:
+  match ok:
+    case True{}:
+      bw.got.rows(rows, kk)
+    case False{}:
+      T.GotBad{""}
+
+# a document read as a bare word is: the value of its one pair, named kk,
+# when it has no error, and no value when it has an error or other rows
+def bw.got(dd: T.Doc, +kk: String) -> T.Got:
+  match dd:
+    case T.Doc{+bad, rows}:
+      bw.got.go(String.is_empty(bad), rows, kk)
+
+# LAW: a bare word is read as an integer in a document exactly as it is on
+# its own: for every bare key k and bare word w, k = w and a newline parse
+# with no error to one pair named k holding the integer v exactly when w
+# matches toml.abnf's integer rule, lies within signed 64 bits and denotes v
+# TOML-NUM-1
+law integer_parses_exactly:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for hw: {bw.word(w) == True{} : Bool}
+  for +v: T.Val
+  {n1.got.int(bw.got(T.parse(bw.kv(k, w)), k), v) == Bool.and(Bool.and(abnf.integer(String.to_list(w)),
+    prose.int_in_range(String.to_list(w))), g.val(GvInteger{String.to_list(w)}, v)) : Bool}
+
+# LAW: and as a float: k = w parses to the float v exactly when w matches
+# toml.abnf's float rule and denotes v
+# TOML-NUM-2
+law float_parses_exactly:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for hw: {bw.word(w) == True{} : Bool}
+  for +v: T.Val
+  {n1.got.flo(bw.got(T.parse(bw.kv(k, w)), k), v) == Bool.and(abnf.float(String.to_list(w)),
+    g.val(GvFloat{String.to_list(w)}, v)) : Bool}
+
+# LAW: and as a datetime: k = w parses to the datetime d exactly when w
+# matches one of toml.abnf's four date-time rules (T, t or a space between
+# the date and the time) within RFC 3339's ranges and denotes d
+# TOML-TIME-1
+law date_time_parses_exactly:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for hw: {bw.word(w) == True{} : Bool}
+  for +d: T.When
+  {t1.got_when(bw.got(T.parse(bw.kv(k, w)), k), d) == Bool.and(g.ok.val(GvDateTime{String.to_list(w)}, RVal{}),
+    g.val(GvDateTime{String.to_list(w)}, T.VWhen{d})) : Bool}
+
+# LAW: and as a boolean: k = w parses to the boolean v exactly when w is
+# true or false and denotes v
+law boolean_parses_exactly:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for hw: {bw.word(w) == True{} : Bool}
+  for +v: T.Val
+  {n1.got.bool(bw.got(T.parse(bw.kv(k, w)), k), v) == Bool.and(abnf.boolean(String.to_list(w)),
+    g.val(GvBoolean{String.to_list(w)}, v)) : Bool}
+
+# whether a word matches none of toml.abnf's rules for a bare value: a
+# boolean, an integer within signed 64 bits, a float, or a date-time within
+# RFC 3339's ranges
+def bw.none(+cs: List<&2, Char>) -> Bool:
+  Bool.not(Bool.or(g.ok.val(GvBoolean{cs}, RVal{}), Bool.or(g.ok.val(GvInteger{cs}, RVal{}),
+    Bool.or(g.ok.val(GvFloat{cs}, RVal{}), g.ok.val(GvDateTime{cs}, RVal{})))))
+
+# LAW: a bare word that matches no rule for a bare value leaves the document
+# with an error: for every bare key k and such a word w, k = w and a newline
+# parse with an error
+# TOML-NUM-1
+# TOML-NUM-2
+# TOML-TIME-1
+law word_refused_in_document:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for hw: {bw.word(w) == True{} : Bool}
+  for hn: {bw.none(String.to_list(w)) == True{} : Bool}
+  {String.is_empty(T.bad(T.parse(bw.kv(k, w)))) == False{} : Bool}
+
+# LAW: and so as an array's item: from every state that waits for an
+# array's item, a bare word word.val reads as v, then a text that ends it,
+# reads on as that text with v placed in the array
+# TOML-NUM-1
+# TOML-NUM-2
+# TOML-TIME-1
+law bare_word_reads_on_in_array:
+  for +w: String
+  for +hw: {bw.word(w) == True{} : Bool}
+  for +v: T.Val
+  for hv: {T.word.val(String.to_list(w)) == T.GotVal{v} : T.Got}
+  for +rw: List<&2, T.Val>
+  for +hs: List<&2, String>
+  for +he: List<&2, String>
+  for +ps: List<&2, String>
+  for +bk: T.Lex
+  for +qk: T.QKind
+  for +sk: List<&2, T.Ctx>
+  for +un: U32
+  for +lf: U32
+  for +ab: Bool
+  for +rest: String
+  for ee: {bw.end(bw.rev(w, []), rest) == True{} : Bool}
+  {T.doc.read(String.append(w, rest), T.MScan{s1.apos(rw, hs, he, ps, bk, qk, sk, un, lf, ab)})
+    == T.doc.read(rest, T.MScan{bw.put(sk, v, rw, hs, he, ps, T.LVal{}, qk, un, lf, ab)}) : T.Doc}
+
+# LAW: and a bare word word.val refuses, as an array's item, leaves an error
+# TOML-NUM-1
+# TOML-NUM-2
+# TOML-TIME-1
+law bare_word_refused_in_array:
+  for +w: String
+  for +hw: {bw.word(w) == True{} : Bool}
+  for +why: String
+  for hv: {T.word.val(String.to_list(w)) == T.GotBad{why} : T.Got}
+  for +rw: List<&2, T.Val>
+  for +hs: List<&2, String>
+  for +he: List<&2, String>
+  for +ps: List<&2, String>
+  for +bk: T.Lex
+  for +qk: T.QKind
+  for +sk: List<&2, T.Ctx>
+  for +un: U32
+  for +lf: U32
+  for +ab: Bool
+  for +rest: String
+  for ee: {bw.end(bw.rev(w, []), rest) == True{} : Bool}
+  {String.is_empty(T.bad(T.doc.read(String.append(w, rest), T.MScan{s1.apos(rw, hs, he, ps, bk, qk, sk, un, lf,
+    ab)}))) == False{} : Bool}
+
+# the sign as render writes it: nothing for plus, a minus for minus
+def bw.sign(sg: T.Sign) -> String:
+  match sg:
+    case T.Plus{}:
+      ""
+    case T.Minus{}:
+      "-"
+
+# LAW: render writes a float as its sign, a minus only and nothing for a
+# plus, then its spelling as it is
+# TOML-NUM-2
+law float_render:
+  for +sg: T.Sign
+  for +t: String
+  {T.render.atom(T.VFlo{sg, t}) == String.append(bw.sign(sg), t) : String}
+
+# whether a character is a lowercase t, a lowercase z or a space: the
+# separators toml.abnf allows in a datetime besides T and Z
+def bw.lower(+cc: Char) -> Bool:
+  Bool.or(Char.is_eq(cc, 't'), Bool.or(Char.is_eq(cc, 'z'), Char.is_eq(cc, ' ')))
+
+# whether a text holds none of them
+def bw.upper(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      True{}
+    case +hh <> tt:
+      Bool.and(Bool.not(bw.lower(hh)), bw.upper(tt))
+
+# LAW: render writes every well-formed datetime with T and Z in upper case:
+# its text holds no t, no z and no space, so of the separators the date-time
+# rules allow (date_time_render) it uses T between the date and the time and
+# Z for UTC
+# TOML-TIME-1
+law date_time_render_upper:
+  for +w: T.When
+  for +h: {T.wf.when(w) == True{} : Bool}
+  {bw.upper(String.to_list(T.render.atom(T.VWhen{w}))) == True{} : Bool}
+
+# LAW: every word toml.abnf's integer rule matches is a bare word: every
+# character of it starts a bare value, so the scan reads it whole
+# TOML-NUM-1
+law integer_is_bare_word:
+  for +w: String
+  for h: {abnf.integer(String.to_list(w)) == True{} : Bool}
+  {bw.word(w) == True{} : Bool}
+
+# LAW: and so is every word the float rule matches
+# TOML-NUM-2
+law float_is_bare_word:
+  for +w: String
+  for h: {abnf.float(String.to_list(w)) == True{} : Bool}
+  {bw.word(w) == True{} : Bool}
+
+# LAW: and every word a date-time rule matches, a space between the date and
+# the time included, which the scan keeps after a date before a digit
+# TOML-TIME-1
+law date_time_is_bare_word:
+  for +w: String
+  for h: {abnf.date_time(String.to_list(w)) == True{} : Bool}
+  {bw.word(w) == True{} : Bool}
+
+# LAW: and every word the boolean rule matches
+law boolean_is_bare_word:
+  for +w: String
+  for h: {abnf.boolean(String.to_list(w)) == True{} : Bool}
+  {bw.word(w) == True{} : Bool}
+
+# the document of one pair whose value is an array of one word
+def bw.kva(kk: String, ww: String) -> String:
+  String.append(kk, String.append(" = [", String.append(ww, "]\n")))
+
+# the document of one pair whose value is an inline table of one pair, v
+def bw.kvi(kk: String, ww: String) -> String:
+  String.append(kk, String.append(" = {v = ", String.append(ww, "}\n")))
+
+# LAW: an integer word in a document: for every bare key k and every word w
+# that matches toml.abnf's integer rule within signed 64 bits and denotes v, k
+# = w and a newline parse with no error to one pair named k holding v
+# TOML-NUM-1
+law integer_parses_as_denoted:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for +hw: {Bool.and(abnf.integer(String.to_list(w)), prose.int_in_range(String.to_list(w))) == True{} : Bool}
+  for +v: T.Val
+  for +hv: {g.val(GvInteger{String.to_list(w)}, v) == True{} : Bool}
+  {T.parse(bw.kv(k, w)) == T.Doc{"", [T.VPair{k, v}]} : T.Doc}
+
+# LAW: an integer word as an array's item: for every bare key k and every word
+# w that matches toml.abnf's integer rule within signed 64 bits and denotes v,
+# k = [w] and a newline parse with no error to one pair named k holding an
+# array of v
+# TOML-NUM-1
+law integer_parses_as_denoted_in_array:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for +hw: {Bool.and(abnf.integer(String.to_list(w)), prose.int_in_range(String.to_list(w))) == True{} : Bool}
+  for +v: T.Val
+  for +hv: {g.val(GvInteger{String.to_list(w)}, v) == True{} : Bool}
+  {T.parse(bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[v]}}]} : T.Doc}
+
+# LAW: an integer word as an inline table's value: for every bare key k and
+# every word w that matches toml.abnf's integer rule within signed 64 bits and
+# denotes v, k = {v = w} and a newline parse with no error to one pair named k
+# holding an inline table whose pair v holds v
+# TOML-NUM-1
+law integer_parses_as_denoted_in_inline_table:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for +hw: {Bool.and(abnf.integer(String.to_list(w)), prose.int_in_range(String.to_list(w))) == True{} : Bool}
+  for +v: T.Val
+  for +hv: {g.val(GvInteger{String.to_list(w)}, v) == True{} : Bool}
+  {T.parse(bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", v}]}}]} : T.Doc}
+
+# LAW: a float word in a document: for every bare key k and every word w that
+# matches toml.abnf's float rule and denotes v, k = w and a newline parse with
+# no error to one pair named k holding v
+# TOML-NUM-2
+law float_parses_as_denoted:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for +hw: {abnf.float(String.to_list(w)) == True{} : Bool}
+  for +v: T.Val
+  for +hv: {g.val(GvFloat{String.to_list(w)}, v) == True{} : Bool}
+  {T.parse(bw.kv(k, w)) == T.Doc{"", [T.VPair{k, v}]} : T.Doc}
+
+# LAW: a float word as an array's item: for every bare key k and every word w
+# that matches toml.abnf's float rule and denotes v, k = [w] and a newline
+# parse with no error to one pair named k holding an array of v
+# TOML-NUM-2
+law float_parses_as_denoted_in_array:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for +hw: {abnf.float(String.to_list(w)) == True{} : Bool}
+  for +v: T.Val
+  for +hv: {g.val(GvFloat{String.to_list(w)}, v) == True{} : Bool}
+  {T.parse(bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[v]}}]} : T.Doc}
+
+# LAW: a float word as an inline table's value: for every bare key k and every
+# word w that matches toml.abnf's float rule and denotes v, k = {v = w} and a
+# newline parse with no error to one pair named k holding an inline table whose
+# pair v holds v
+# TOML-NUM-2
+law float_parses_as_denoted_in_inline_table:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for +hw: {abnf.float(String.to_list(w)) == True{} : Bool}
+  for +v: T.Val
+  for +hv: {g.val(GvFloat{String.to_list(w)}, v) == True{} : Bool}
+  {T.parse(bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", v}]}}]} : T.Doc}
+
+# LAW: a datetime word in a document: for every bare key k and every word w
+# that matches one of toml.abnf's four date-time rules (T, t or a space between
+# the date and the time) within RFC 3339's ranges and denotes v, k = w and a
+# newline parse with no error to one pair named k holding v
+# TOML-TIME-1
+law date_time_parses_as_denoted:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for +hw: {g.ok.val(GvDateTime{String.to_list(w)}, RVal{}) == True{} : Bool}
+  for +v: T.Val
+  for +hv: {g.val(GvDateTime{String.to_list(w)}, v) == True{} : Bool}
+  {T.parse(bw.kv(k, w)) == T.Doc{"", [T.VPair{k, v}]} : T.Doc}
+
+# LAW: a datetime word as an array's item: for every bare key k and every word
+# w that matches one of toml.abnf's four date-time rules (T, t or a space
+# between the date and the time) within RFC 3339's ranges and denotes v, k =
+# [w] and a newline parse with no error to one pair named k holding an array of
+# v
+# TOML-TIME-1
+law date_time_parses_as_denoted_in_array:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for +hw: {g.ok.val(GvDateTime{String.to_list(w)}, RVal{}) == True{} : Bool}
+  for +v: T.Val
+  for +hv: {g.val(GvDateTime{String.to_list(w)}, v) == True{} : Bool}
+  {T.parse(bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[v]}}]} : T.Doc}
+
+# LAW: a datetime word as an inline table's value: for every bare key k and
+# every word w that matches one of toml.abnf's four date-time rules (T, t or a
+# space between the date and the time) within RFC 3339's ranges and denotes v,
+# k = {v = w} and a newline parse with no error to one pair named k holding an
+# inline table whose pair v holds v
+# TOML-TIME-1
+law date_time_parses_as_denoted_in_inline_table:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for +hw: {g.ok.val(GvDateTime{String.to_list(w)}, RVal{}) == True{} : Bool}
+  for +v: T.Val
+  for +hv: {g.val(GvDateTime{String.to_list(w)}, v) == True{} : Bool}
+  {T.parse(bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", v}]}}]} : T.Doc}
+
+# LAW: a boolean word in a document: for every bare key k and every word w that
+# matches toml.abnf's boolean rule and denotes v, k = w and a newline parse
+# with no error to one pair named k holding v
+law boolean_parses_as_denoted:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for +hw: {abnf.boolean(String.to_list(w)) == True{} : Bool}
+  for +v: T.Val
+  for +hv: {g.val(GvBoolean{String.to_list(w)}, v) == True{} : Bool}
+  {T.parse(bw.kv(k, w)) == T.Doc{"", [T.VPair{k, v}]} : T.Doc}
+
+# LAW: a boolean word as an array's item: for every bare key k and every word w
+# that matches toml.abnf's boolean rule and denotes v, k = [w] and a newline
+# parse with no error to one pair named k holding an array of v
+law boolean_parses_as_denoted_in_array:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for +hw: {abnf.boolean(String.to_list(w)) == True{} : Bool}
+  for +v: T.Val
+  for +hv: {g.val(GvBoolean{String.to_list(w)}, v) == True{} : Bool}
+  {T.parse(bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[v]}}]} : T.Doc}
+
+# LAW: a boolean word as an inline table's value: for every bare key k and
+# every word w that matches toml.abnf's boolean rule and denotes v, k = {v = w}
+# and a newline parse with no error to one pair named k holding an inline table
+# whose pair v holds v
+law boolean_parses_as_denoted_in_inline_table:
+  for +k: String
+  for ek: {T.bare(k) == True{} : Bool}
+  for +w: String
+  for +hw: {abnf.boolean(String.to_list(w)) == True{} : Bool}
+  for +v: T.Val
+  for +hv: {g.val(GvBoolean{String.to_list(w)}, v) == True{} : Bool}
+  {T.parse(bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", v}]}}]} : T.Doc}
