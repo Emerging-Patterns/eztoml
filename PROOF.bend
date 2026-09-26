@@ -26460,9 +26460,19 @@ def gd.g.fold(
       gd.g.err(st, "invalid escape", {==}, eg)
     case T.LStr{}:
       match st:
-        case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+        case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, qkind, +stack, +hold, +uni, +left,
           +arrtab, +lead}:
-          eg
+          match qkind:
+            case T.QMulti{}:
+              eg
+            case T.QMultiLit{}:
+              eg
+            case T.QBasic{}:
+              gd.g.err(T.St{bad, rows, heads, here, parts, buf, lex, back, T.QBasic{}, stack, hold, uni, left, arrtab,
+                lead}, "invalid escape", {==}, eg)
+            case T.QLit{}:
+              gd.g.err(T.St{bad, rows, heads, here, parts, buf, lex, back, T.QLit{}, stack, hold, uni, left, arrtab,
+                lead}, "invalid escape", {==}, eg)
     case T.LEsc{}:
       gd.g.err(st, "invalid escape", {==}, eg)
     case T.LUni{}:
@@ -56922,11 +56932,23 @@ def kg.fold(
   match back2:
     case T.LStr{}:
       match st:
-        case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+        case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, qkind, +stack, +hold, +uni, +left, +arrtab,
           +lead}:
-          kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
-            T.esc.fold.on(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
-              lead}, saw), cc, ecl, of, {==}, eg)
+          match qkind:
+            case T.QMulti{}:
+              kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, T.QMulti{}, stack, hold, uni, left, arrtab,
+                lead}, T.esc.fold.on(T.St{bad, rows, heads, here, parts, buf, lex, back, T.QMulti{}, stack, hold, uni,
+                left, arrtab, lead}, saw), cc, ecl, of, {==}, eg)
+            case T.QMultiLit{}:
+              kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, T.QMultiLit{}, stack, hold, uni, left,
+                arrtab, lead}, T.esc.fold.on(T.St{bad, rows, heads, here, parts, buf, lex, back, T.QMultiLit{}, stack,
+                hold, uni, left, arrtab, lead}, saw), cc, ecl, of, {==}, eg)
+            case T.QBasic{}:
+              kg.err(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, T.QBasic{}, stack, hold, uni, left,
+                arrtab, lead}, "invalid escape", {==}, eg)
+            case T.QLit{}:
+              kg.err(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, T.QLit{}, stack, hold, uni, left,
+                arrtab, lead}, "invalid escape", {==}, eg)
     case T.LTop{}:
       kg.err(gg, st, "invalid escape", {==}, eg)
     case T.LLine{}:
@@ -93265,8 +93287,16 @@ def fz.fold.use(
       fz.err(st, "invalid escape", b0, bs, rr, h)
     case T.LStr{}:
       match st:
-        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, _qk, _sk, _hd, _un, _lf, _at, _ld}:
-          h
+        case T.St{_bd, _rw, _hs, _he, _pt, _bf, _lx, _bk, qk, _sk, _hd, _un, _lf, _at, _ld}:
+          match qk:
+            case T.QMulti{}:
+              h
+            case T.QMultiLit{}:
+              h
+            case T.QBasic{}:
+              fz.err(st, "invalid escape", b0, bs, rr, h)
+            case T.QLit{}:
+              fz.err(st, "invalid escape", b0, bs, rr, h)
     case T.LEsc{}:
       fz.err(st, "invalid escape", b0, bs, rr, h)
     case T.LUni{}:
