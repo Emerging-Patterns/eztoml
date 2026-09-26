@@ -4160,3 +4160,377 @@ law header_reads_back_anywhere:
     k3.dk.names(ds, last), bk, qk, un, lf)}) == goal : T.Doc}
   {T.doc.read(k3.hd.text(arr, g0, ds, last, g9, rest), T.MScan{k3.at(AtLine{}, rows, heads, here, [], arrtab, back,
     qkind, uni, left)}) == goal : T.Doc}
+
+# KEY-3: a key found in a parsed document. k3.has(rows, path, k) says the
+# rows hold a pair named k in the table the path names: the path's first
+# name is some pair's in the rows, every pair of that name holds the rest of
+# the path, and the last table's rows are ones get finds k in. A table's
+# rows, an inline table's and an element of an array of tables hold the path
+# as rows do; an array of tables or an array holds it when some element or
+# item does, so at, which enters no array, is not needed to say it. Names
+# compare as get compares them (str.eq).
+
+# how k3.h reads its list, and the rest of the path: the rows seen for one
+# name, or the elements of an array of tables or the items of an array
+type KHm is Data:
+  KhAll{name: String, path: List<&2, String>}
+  KhSome{path: List<&2, String>}
+
+# whether a lookup found something
+def k3.found(hh: T.Hit) -> Bool:
+  match hh:
+    case T.Found{_v}:
+      True{}
+    case T.Miss{}:
+      False{}
+
+# whether a list, read as md says, holds a pair named kk at the end of the
+# path. A table's rows are read in place: kk found in them at the end of the
+# path, or the next name found in them and every pair of it holding the rest
+def k3.h(xs: List<&2, T.Val>, md: KHm, +kk: String) -> Bool:
+  match xs md:
+    case [] KhAll{_n, _p}:
+      True{}
+    case T.VPair{+mm, T.VHead{_q, rows}} <> tt KhAll{+nn, Nil{}}:
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.found(T.get(rows, kk))), k3.h(tt, KhAll{nn, []}, kk))
+    case T.VPair{+mm, T.VHead{_q, +rows}} <> tt KhAll{+nn, +n2 <> +p2}:
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2},
+        kk))), k3.h(tt, KhAll{nn, n2 <> p2}, kk))
+    case T.VPair{+mm, T.VInl{rows}} <> tt KhAll{+nn, Nil{}}:
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.found(T.get(rows, kk))), k3.h(tt, KhAll{nn, []}, kk))
+    case T.VPair{+mm, T.VInl{+rows}} <> tt KhAll{+nn, +n2 <> +p2}:
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2},
+        kk))), k3.h(tt, KhAll{nn, n2 <> p2}, kk))
+    case T.VPair{+mm, T.VAots{_q, es}} <> tt KhAll{+nn, +pp}:
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.h(es, KhSome{pp}, kk)), k3.h(tt, KhAll{nn, pp}, kk))
+    case T.VPair{+mm, T.VArr{items}} <> tt KhAll{+nn, +pp}:
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.h(items, KhSome{pp}, kk)), k3.h(tt, KhAll{nn, pp}, kk))
+    case T.VPair{+mm, _v} <> tt KhAll{+nn, +pp}:
+      Bool.and(Bool.not(T.str.eq(mm, nn)), k3.h(tt, KhAll{nn, pp}, kk))
+    case _h <> tt KhAll{+nn, +pp}:
+      k3.h(tt, KhAll{nn, pp}, kk)
+    case [] KhSome{_p}:
+      False{}
+    case T.VAot{_q, rows} <> tt KhSome{Nil{}}:
+      Bool.or(k3.found(T.get(rows, kk)), k3.h(tt, KhSome{[]}, kk))
+    case T.VAot{_q, +rows} <> tt KhSome{+n2 <> +p2}:
+      Bool.or(Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2}, kk)), k3.h(tt, KhSome{n2 <> p2}, kk))
+    case T.VInl{rows} <> tt KhSome{Nil{}}:
+      Bool.or(k3.found(T.get(rows, kk)), k3.h(tt, KhSome{[]}, kk))
+    case T.VInl{+rows} <> tt KhSome{+n2 <> +p2}:
+      Bool.or(Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2}, kk)), k3.h(tt, KhSome{n2 <> p2}, kk))
+    case T.VArr{items} <> tt KhSome{+pp}:
+      Bool.or(k3.h(items, KhSome{pp}, kk), k3.h(tt, KhSome{pp}, kk))
+    case _v <> tt KhSome{+pp}:
+      k3.h(tt, KhSome{pp}, kk)
+
+# the path under which a value taken now is found at the end: the current
+# table and the key's parts at the root; an array's item is found where the
+# array is; a pair in an inline table under the key's parts where the
+# inline table is
+def k3.pl(
+  stack: List<&2, T.Ctx>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +pp: List<&2, String>
+) -> List<&2, String>:
+  match stack:
+    case []:
+      List.append(&2, String, List.append(&2, String, here, List.reverse(&2, String, parts)), pp)
+    case T.CArr{_i, +sp, +sh} <> rest:
+      k3.pl(rest, sh, sp, pp)
+    case T.CInl{_r, +sp, +sh} <> rest:
+      k3.pl(rest, sh, sp, List.append(&2, String, List.reverse(&2, String, parts), pp))
+
+# whether the rows hold a pair named kk in the table the path names
+def k3.has(+rows: List<&2, T.Val>, path: List<&2, String>, +kk: String) -> Bool:
+  match path:
+    case []:
+      k3.found(T.get(rows, kk))
+    case +nn <> pp:
+      Bool.and(k3.found(T.get(rows, nn)), k3.h(rows, KhAll{nn, pp}, kk))
+
+# whether a bare word's refusal says why: a value, or a reason that is not
+# empty
+def k3.why(gg: T.Got) -> Bool:
+  match gg:
+    case T.GotVal{_v}:
+      True{}
+    case T.GotBad{why}:
+      Bool.not(String.is_empty(why))
+
+# LAW: a bare word the scanner refuses is refused with a reason: for every
+# list of characters, word.val gives a value, or a reason that is not empty,
+# so a refused value always leaves the document with an error
+# TOML-KEY-3
+law bare_word_refusal_says_why:
+  for +cs: List<&2, Char>
+  {k3.why(T.word.val(cs)) == True{} : Bool}
+
+# the names of a dotted key's segments but the last, in order
+def k3.dk.init(ds: List<&2, KDot>) -> List<&2, String>:
+  match ds:
+    case []:
+      []
+    case KDot{sg, _g1, _g2} <> rest:
+      k3.seg.name(sg) <> k3.dk.init(rest)
+
+# no array is open around a key: the innermost open frame, if any, is an
+# inline table
+def k3.noarr1(stack: List<&2, T.Ctx>) -> Bool:
+  match stack:
+    case []:
+      True{}
+    case T.CArr{_i, _p, _h} <> _t:
+      False{}
+    case T.CInl{_r, _p, _h} <> _t:
+      True{}
+
+# the table a key read with the scanner in this state is put in: the
+# current table and the key's other segments at the root, or those segments
+# in an open inline table, where that table is put
+def k3.key.table(stack: List<&2, T.Ctx>, +here: List<&2, String>, ds: List<&2, KDot>) -> List<&2, String>:
+  k3.pl(stack, here, List.reverse(&2, String, k3.dk.init(ds)), [])
+
+# a key's text and the rest of a document read from where a key may start
+def k3.key.doc(
+  at: KPos,
+  g0: List<&2, Bool>,
+  ds: List<&2, KDot>,
+  last: KSeg,
+  gs: List<&2, Bool>,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  stack: List<&2, T.Ctx>,
+  arrtab: Bool,
+  back: T.Lex,
+  qkind: T.QKind,
+  uni: U32,
+  left: U32,
+  rest: String
+) -> T.Doc:
+  T.doc.read(String.append(gap(g0), k3.dk.text(ds, last, String.append(gap(gs), SCon{'=', rest}))),
+    T.MScan{k3.at(at, rows, heads, here, stack, arrtab, back, qkind, uni, left)})
+
+# LAW: a key's value, whatever it is, is put under the key's name in the
+# key's table: after a key's `=`, with the key's segments newest first in
+# parts and no array open around the key, the rest of any text read leaves a
+# document that has an error or whose root holds a pair named by the key's
+# last segment in the table k3.pl names (TOML-KEY-3's any value)
+# TOML-KEY-3
+law key_found_after_equals:
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +k: String
+  for +ps: List<&2, String>
+  for +stack: List<&2, T.Ctx>
+  for +arrtab: Bool
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +uni: U32
+  for +left: U32
+  for +rest: String
+  for es: {k3.noarr1(stack) == True{} : Bool}
+  for eo: {String.is_empty(T.bad(T.doc.read(rest, T.MScan{k3.val(rows, heads, here, k <> ps, stack, arrtab, back,
+    qkind, uni, left)}))) == True{} : Bool}
+  {k3.has(T.root(T.doc.read(rest, T.MScan{k3.val(rows, heads, here, k <> ps, stack, arrtab, back, qkind, uni,
+    left)})), k3.pl(stack, here, ps, []), k) == True{} : Bool}
+
+# LAW: a key is put under its characters in the table its line or inline
+# table names, however it is written: wherever a key may start (the start of
+# a line in any table, or an inline table after its `{` or a comma), with no
+# array open around it and whatever the other fields hold, blank space, a
+# dotted key of segments each bare, basic or literal and spelled any way
+# toml.abnf allows, blank space, `=` and then any text leave a document that
+# has an error or whose root holds a pair named by the last segment's
+# characters in the table the other segments name from the current table
+# (k3.key.table), so get finds it by them in that table's rows
+# TOML-KEY-3
+law key_found_anywhere:
+  for +at: KPos
+  for +g0: List<&2, Bool>
+  for +ds: List<&2, KDot>
+  for +last: KSeg
+  for ok: {k3.dk.ok(ds, last) == True{} : Bool}
+  for +g: List<&2, Bool>
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +stack: List<&2, T.Ctx>
+  for +arrtab: Bool
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +uni: U32
+  for +left: U32
+  for +rest: String
+  for es: {k3.noarr1(stack) == True{} : Bool}
+  for eo: {String.is_empty(T.bad(k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab, back, qkind, uni,
+    left, rest))) == True{} : Bool}
+  {k3.has(T.root(k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab, back, qkind, uni, left, rest)),
+    k3.key.table(stack, here, ds), k3.seg.name(last)) == True{} : Bool}
+
+# a header's text and the rest of a document read from the start of a line
+def k3.hd.doc(
+  arr: Bool,
+  g0: List<&2, Bool>,
+  ds: List<&2, KDot>,
+  last: KSeg,
+  g9: List<&2, Bool>,
+  rows: List<&2, T.Val>,
+  heads: List<&2, String>,
+  here: List<&2, String>,
+  arrtab: Bool,
+  back: T.Lex,
+  qkind: T.QKind,
+  uni: U32,
+  left: U32,
+  rest: String
+) -> T.Doc:
+  T.doc.read(k3.hd.text(arr, g0, ds, last, g9, rest), T.MScan{k3.at(AtLine{}, rows, heads, here, [], arrtab, back,
+    qkind, uni, left)})
+
+# LAW: a header's table is put under its characters: from the start of a
+# line in any table, with no array or inline table open, a `[table]` or
+# `[[array]]` header of segments spelled any way toml.abnf allows, then any
+# text, leave a document that has an error or whose root holds, in the table
+# the other segments name, a pair named by the last segment's characters
+# TOML-KEY-3
+law header_found_anywhere:
+  for +arr: Bool
+  for +g0: List<&2, Bool>
+  for +ds: List<&2, KDot>
+  for +last: KSeg
+  for ok: {k3.dk.ok(ds, last) == True{} : Bool}
+  for +g9: List<&2, Bool>
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +arrtab: Bool
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +uni: U32
+  for +left: U32
+  for +rest: String
+  for eo: {String.is_empty(T.bad(k3.hd.doc(arr, g0, ds, last, g9, rows, heads, here, arrtab, back, qkind, uni, left,
+    rest))) == True{} : Bool}
+  {k3.has(T.root(k3.hd.doc(arr, g0, ds, last, g9, rows, heads, here, arrtab, back, qkind, uni, left, rest)),
+    k3.dk.init(ds), k3.seg.name(last)) == True{} : Bool}
+
+# a hit is a table or an inline table
+def k3.istab(hh: T.Hit) -> Bool:
+  match hh:
+    case T.Found{T.VHead{_q, _r}}:
+      True{}
+    case T.Found{T.VInl{_r}}:
+      True{}
+    case _h:
+      False{}
+
+# the hit and every name after it on a path are tables or inline tables
+def k3.tabh(pp: List<&2, String>, +hh: T.Hit) -> Bool:
+  match pp:
+    case []:
+      k3.istab(hh)
+    case +nn <> rest:
+      Bool.and(k3.istab(hh), k3.tabh(rest, T.get(T.at.rows_of(hh), nn)))
+
+# every name on a path, from these rows, is a table or an inline table's:
+# no array lies on the path, so at can follow it
+def k3.tabs(+rows: List<&2, T.Val>, path: List<&2, String>) -> Bool:
+  match path:
+    case []:
+      True{}
+    case +nn <> pp:
+      k3.tabh(pp, T.get(rows, nn))
+
+# LAW: and at finds it from the root by the names on its path when no array
+# lies on that path: in the document key_found_anywhere reads, with no
+# error, when every name of the key's table path is a table or an inline
+# table, at finds the key by the path's names and the key's
+# TOML-KEY-3
+law key_found_by_at:
+  for +at: KPos
+  for +g0: List<&2, Bool>
+  for +ds: List<&2, KDot>
+  for +last: KSeg
+  for ok: {k3.dk.ok(ds, last) == True{} : Bool}
+  for +g: List<&2, Bool>
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +stack: List<&2, T.Ctx>
+  for +arrtab: Bool
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +uni: U32
+  for +left: U32
+  for +rest: String
+  for es: {k3.noarr1(stack) == True{} : Bool}
+  for eo: {String.is_empty(T.bad(k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab, back, qkind, uni,
+    left, rest))) == True{} : Bool}
+  for et: {k3.tabs(T.root(k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab, back, qkind, uni, left,
+    rest)), k3.key.table(stack, here, ds)) == True{} : Bool}
+  {k3.found(T.at(T.root(k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab, back, qkind, uni, left,
+    rest)), List.append(&2, String, k3.key.table(stack, here, ds), [k3.seg.name(last)]))) == True{} : Bool}
+
+# LAW: and a header's table the same way: in the document
+# header_found_anywhere reads, with no error, when every name before the
+# last is a table or an inline table, at finds the header's table by its
+# names
+# TOML-KEY-3
+law header_found_by_at:
+  for +arr: Bool
+  for +g0: List<&2, Bool>
+  for +ds: List<&2, KDot>
+  for +last: KSeg
+  for ok: {k3.dk.ok(ds, last) == True{} : Bool}
+  for +g9: List<&2, Bool>
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +arrtab: Bool
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +uni: U32
+  for +left: U32
+  for +rest: String
+  for eo: {String.is_empty(T.bad(k3.hd.doc(arr, g0, ds, last, g9, rows, heads, here, arrtab, back, qkind, uni, left,
+    rest))) == True{} : Bool}
+  for et: {k3.tabs(T.root(k3.hd.doc(arr, g0, ds, last, g9, rows, heads, here, arrtab, back, qkind, uni, left, rest)),
+    k3.dk.init(ds)) == True{} : Bool}
+  {k3.found(T.at(T.root(k3.hd.doc(arr, g0, ds, last, g9, rows, heads, here, arrtab, back, qkind, uni, left, rest)),
+    List.append(&2, String, k3.dk.init(ds), [k3.seg.name(last)]))) == True{} : Bool}
+
+# LAW: in a parsed document: when parse reads a text's first part, pre, to
+# where a key may start, with no array open, and a key's text and the rest
+# follow, the document parse returns, with no error, holds the pair under
+# the key's characters in its table
+# TOML-KEY-3
+law key_found_in_document:
+  for +pre: String
+  for +at: KPos
+  for +g0: List<&2, Bool>
+  for +ds: List<&2, KDot>
+  for +last: KSeg
+  for ok: {k3.dk.ok(ds, last) == True{} : Bool}
+  for +g: List<&2, Bool>
+  for +rows: List<&2, T.Val>
+  for +heads: List<&2, String>
+  for +here: List<&2, String>
+  for +stack: List<&2, T.Ctx>
+  for +arrtab: Bool
+  for +back: T.Lex
+  for +qkind: T.QKind
+  for +uni: U32
+  for +left: U32
+  for +rest: String
+  for es: {k3.noarr1(stack) == True{} : Bool}
+  for +ep: {T.parse(String.append(pre, String.append(gap(g0), k3.dk.text(ds, last, String.append(gap(g), SCon{'=',
+    rest}))))) == k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab, back, qkind, uni, left, rest)
+    : T.Doc}
+  for eo: {String.is_empty(T.bad(T.parse(String.append(pre, String.append(gap(g0), k3.dk.text(ds, last,
+    String.append(gap(g), SCon{'=', rest}))))))) == True{} : Bool}
+  {k3.has(T.root(T.parse(String.append(pre, String.append(gap(g0), k3.dk.text(ds, last, String.append(gap(g),
+    SCon{'=', rest})))))), k3.key.table(stack, here, ds), k3.seg.name(last)) == True{} : Bool}

@@ -49199,6 +49199,9 @@ def Laws.header_reads_back_anywhere(
 # holds, and then holds of what parse returns in the form pd asks. The
 # characters are those cp allows, in a text tx allows; TOML-RT-3's good is
 # the instance ii = good, sp = its span check, cp = wf.char. The invariant,
+# the span predicate, the document's property and the obligations take a
+# context gg of any type GG (TOML-RT-3's is Unit; a key's is the key), since
+# a template argument must be closed and cannot capture it. The invariant,
 # the predicates and the obligations are template parameters (~), since an
 # obligation is used once for every character and Bend copies a function
 # only as a template argument; their names start with `_` because bolt's
@@ -49206,22 +49209,24 @@ def Laws.header_reads_back_anywhere(
 
 # a mode's invariant, over the text still to read
 def si.md(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
+  -gg: _GG,
   mode: T.Mode,
   -text: String
 ) -> Data:
   match mode:
     case T.MScan{st}:
-      {_ii(st) == True{} : Bool}
+      {_ii(gg, st) == True{} : Bool}
     case T.MCr{st}:
-      {_ii(st) == True{} : Bool}
+      {_ii(gg, st) == True{} : Bool}
     case T.MOpen{_basic, _q, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}:
-      {_ii(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at,
+      {_ii(gg, T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at,
         False{}}) == True{} : Bool}
     case T.MEat{_basic, _q, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at}:
-      {Bool.and(_ii(T.St{bd, rw, hs, he, pt, [], T.LStr{}, T.LStr{}, qk, sk, T.HNone{}, un, lf,
-        at, False{}}), _sp(cut, nn, text)) == True{} : Bool}
+      {Bool.and(_ii(gg, T.St{bd, rw, hs, he, pt, [], T.LStr{}, T.LStr{}, qk, sk, T.HNone{}, un, lf,
+        at, False{}}), _sp(gg, cut, nn, text)) == True{} : Bool}
 
 # a plain string's state, as its span keeps it
 def si.str(
@@ -49240,81 +49245,87 @@ def si.str(
   T.St{bd, rw, hs, he, pt, bf, T.LStr{}, T.LStr{}, qk, sk, T.HNone{}, un, lf, at, False{}}
 
 # every full step keeps the invariant: one character read in any state
-def si.OStep(~_ii: T.St -> Bool, ~_cp: Char -> Bool) -> Type:
-  @st: T.St -> {_ii(st) == True{} : Bool} -> @cc: Char -> {_cp(cc) == True{} : Bool} ->
-    {_ii(T.read.step(st, cc)) == True{} : Bool}
+def si.OStep(~_GG: Data, ~_ii: _GG -> T.St -> Bool, ~_cp: Char -> Bool) -> Type:
+  @gg: _GG -> @st: T.St -> {_ii(gg, st) == True{} : Bool} -> @cc: Char -> {_cp(cc) == True{} : Bool} ->
+    {_ii(gg, T.read.step(st, cc)) == True{} : Bool}
 
 # and so does reading a held character
-def si.OOnce(~_ii: T.St -> Bool) -> Type:
-  @st: T.St -> {_ii(st) == True{} : Bool} -> {_ii(T.read.once2(st)) == True{} : Bool}
+def si.OOnce(~_GG: Data, ~_ii: _GG -> T.St -> Bool) -> Type:
+  @gg: _GG -> @st: T.St -> {_ii(gg, st) == True{} : Bool} -> {_ii(gg, T.read.once2(st)) == True{} : Bool}
 
 # the fast step's character pushed onto the buffer keeps it, in a state
 # with no held character that is past the first
-def si.OCons(~_ii: T.St -> Bool, ~_cp: Char -> Bool) -> Type:
-  @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
+def si.OCons(~_GG: Data, ~_ii: _GG -> T.St -> Bool, ~_cp: Char -> Bool) -> Type:
+  @gg: _GG -> @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
     @pt: List<&2, String> -> @bf: List<&2, Char> -> @lx: T.Lex -> @bk: T.Lex -> @qk: T.QKind ->
     @sk: List<&2, T.Ctx> -> @un: U32 -> @lf: U32 -> @at: Bool -> @cc: Char ->
-    {_ii(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, False{}})
+    {_ii(gg, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, False{}})
       == True{} : Bool} -> {_cp(cc) == True{} : Bool} ->
-    {_ii(T.St{bd, rw, hs, he, pt, cc <> bf, lx, bk, qk, sk, T.HNone{}, un, lf, at,
+    {_ii(gg, T.St{bd, rw, hs, he, pt, cc <> bf, lx, bk, qk, sk, T.HNone{}, un, lf, at,
       False{}}) == True{} : Bool}
 
 # a failed step keeps it
-def si.OErr(~_ii: T.St -> Bool) -> Type:
-  @st: T.St -> @why: String -> {String.is_empty(why) == False{} : Bool} -> {_ii(st) == True{} : Bool} ->
-    {_ii(T.st.err(st, why)) == True{} : Bool}
+def si.OErr(~_GG: Data, ~_ii: _GG -> T.St -> Bool) -> Type:
+  @gg: _GG -> @st: T.St -> @why: String -> {String.is_empty(why) == False{} : Bool} -> {_ii(gg, st) == True{} : Bool} ->
+    {_ii(gg, T.st.err(st, why)) == True{} : Bool}
 
 # an opening quote's state that starts a span keeps it as the span's state
-def si.OOpen(~_ii: T.St -> Bool) -> Type:
-  @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
+def si.OOpen(~_GG: Data, ~_ii: _GG -> T.St -> Bool) -> Type:
+  @gg: _GG -> @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
     @pt: List<&2, String> -> @bk: T.Lex -> @qk: T.QKind -> @sk: List<&2, T.Ctx> -> @un: U32 ->
     @lf: U32 -> @at: Bool ->
-    {_ii(T.St{bd, rw, hs, he, pt, [], T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}})
+    {_ii(gg, T.St{bd, rw, hs, he, pt, [], T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}})
       == True{} : Bool} ->
-    {_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool}
+    {_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool}
 
 # a span of one character, the text's first, holds sp against the rest
-def si.OSp1(~_sp: String -> U32 -> String -> Bool, ~_cp: Char -> Bool, ~_tx: String -> Bool) -> Type:
-  @hh: Char -> @tt: String -> {_cp(hh) == True{} : Bool} -> {_tx(SCon{hh, tt}) == True{} : Bool} ->
-    {_sp(SCon{hh, tt}, 1, tt) == True{} : Bool}
+def si.OSp1(~_GG: Data, ~_sp: _GG -> String -> U32 -> String -> Bool, ~_cp: Char -> Bool, ~_tx: String -> Bool) -> Type:
+  @gg: _GG -> @hh: Char -> @tt: String -> {_cp(hh) == True{} : Bool} -> {_tx(SCon{hh, tt}) == True{} : Bool} ->
+    {_sp(gg, SCon{hh, tt}, 1, tt) == True{} : Bool}
 
 # a span that takes the text's next character still holds sp
-def si.OSpInc(~_sp: String -> U32 -> String -> Bool, ~_cp: Char -> Bool, ~_tx: String -> Bool) -> Type:
-  @cut: String -> @nn: U32 -> @hh: Char -> @tt: String -> {_sp(cut, nn, SCon{hh, tt}) == True{} : Bool} ->
-    {_cp(hh) == True{} : Bool} -> {_tx(SCon{hh, tt}) == True{} : Bool} -> {_sp(cut, U32.add(nn, 1),
+def si.OSpInc(
+  ~_GG: Data,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
+  ~_cp: Char -> Bool,
+  ~_tx: String -> Bool
+) -> Type:
+  @gg: _GG -> @cut: String -> @nn: U32 -> @hh: Char -> @tt: String -> {_sp(gg, cut, nn, SCon{hh,
+    tt}) == True{} : Bool} ->
+    {_cp(hh) == True{} : Bool} -> {_tx(SCon{hh, tt}) == True{} : Bool} -> {_sp(gg, cut, U32.add(nn, 1),
       tt) == True{} : Bool}
 
 # a span that closes is placed as a VSpan and keeps it
-def si.OClose(~_ii: T.St -> Bool, ~_sp: String -> U32 -> String -> Bool) -> Type:
-  @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
+def si.OClose(~_GG: Data, ~_ii: _GG -> T.St -> Bool, ~_sp: _GG -> String -> U32 -> String -> Bool) -> Type:
+  @gg: _GG -> @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
     @pt: List<&2, String> -> @qk: T.QKind -> @sk: List<&2, T.Ctx> -> @un: U32 -> @lf: U32 ->
     @at: Bool -> @cut: String -> @nn: U32 -> @text: String ->
-    {_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool} ->
-    {_sp(cut, nn, text) == True{} : Bool} ->
-    {_ii(T.val.take(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at), T.VSpan{cut, nn}))
+    {_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool} ->
+    {_sp(gg, cut, nn, text) == True{} : Bool} ->
+    {_ii(gg, T.val.take(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at), T.VSpan{cut, nn}))
       == True{} : Bool}
 
 # a span copied to the buffer keeps it
-def si.OCopy(~_ii: T.St -> Bool, ~_sp: String -> U32 -> String -> Bool) -> Type:
-  @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
+def si.OCopy(~_GG: Data, ~_ii: _GG -> T.St -> Bool, ~_sp: _GG -> String -> U32 -> String -> Bool) -> Type:
+  @gg: _GG -> @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
     @pt: List<&2, String> -> @qk: T.QKind -> @sk: List<&2, T.Ctx> -> @un: U32 -> @lf: U32 ->
     @at: Bool -> @cut: String -> @nn: U32 -> @text: String ->
-    {_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool} ->
-    {_sp(cut, nn, text) == True{} : Bool} ->
-    {_ii(si.str(bd, rw, hs, he, pt, T.span.rev(cut, nn, U32.is_zero(nn), []), qk, sk, un, lf,
+    {_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool} ->
+    {_sp(gg, cut, nn, text) == True{} : Bool} ->
+    {_ii(gg, si.str(bd, rw, hs, he, pt, T.span.rev(cut, nn, U32.is_zero(nn), []), qk, sk, un, lf,
       at)) == True{} : Bool}
 
 # a state at the end of the text gives what pd asks of the document
-def si.OFin(~_ii: T.St -> Bool, ~_pd: T.Doc -> Type) -> Type:
-  @st: T.St -> {_ii(st) == True{} : Bool} -> _pd(T.read.fin(st))
+def si.OFin(~_GG: Data, ~_ii: _GG -> T.St -> Bool, ~_pd: _GG -> T.Doc -> Type) -> Type:
+  @gg: _GG -> @st: T.St -> {_ii(gg, st) == True{} : Bool} -> _pd(gg, T.read.fin(st))
 
 # and a span still open at the end
-def si.OUnc(~_ii: T.St -> Bool, ~_pd: T.Doc -> Type) -> Type:
-  @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
+def si.OUnc(~_GG: Data, ~_ii: _GG -> T.St -> Bool, ~_pd: _GG -> T.Doc -> Type) -> Type:
+  @gg: _GG -> @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> ->
     @pt: List<&2, String> -> @qk: T.QKind -> @sk: List<&2, T.Ctx> -> @un: U32 -> @lf: U32 ->
     @at: Bool ->
-    {_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool} ->
-    _pd(T.read.fin.unclosed(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)))
+    {_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool} ->
+    _pd(gg, T.read.fin.unclosed(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)))
 
 # a text tx allows starts with a character cp allows
 def si.OTxH(~_cp: Char -> Bool, ~_tx: String -> Bool) -> Type:
@@ -49354,11 +49365,13 @@ def sip.S(
 
 # the full step, from the fast step's state
 def sip.fold(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   +bd: String,
   +rw: List<&2, T.Val>,
   +hs: List<&2, String>,
@@ -49372,20 +49385,23 @@ def sip.fold(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
-  _oo(T.read.on.st(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at), cc), _os(sip.S(bd, rw, hs, he, pt, bf,
+) -> {_ii(gg, T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+  _oo(gg, T.read.on.st(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at), cc), _os(gg, sip.S(bd, rw, hs, he,
+    pt, bf,
     lx, bk, qk, sk, un, lf, at), eg, cc, ec))
 
 # the character joins the buffer
 def sip.fcons(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   +bd: String,
   +rw: List<&2, T.Val>,
   +hs: List<&2, String>,
@@ -49399,19 +49415,21 @@ def sip.fcons(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.cons(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
-  _oc(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc, eg, ec)
+) -> {_ii(gg, T.read.fast.cons(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+  _oc(gg, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc, eg, ec)
 
 # a control takes the full step; a plain character is kept
 def sip.fpush(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   ctrl: Bool,
   +bd: String,
   +rw: List<&2, T.Val>,
@@ -49426,23 +49444,25 @@ def sip.fpush(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.push(ctrl, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.push(ctrl, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
   match ctrl:
     case False{}:
-      sip.fcons(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fcons(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc, ec)
     case True{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc, ec)
 
 # a backslash in a basic string takes the full step
 def sip.fbbs(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   bs: Bool,
   +bd: String,
   +rw: List<&2, T.Val>,
@@ -49455,25 +49475,29 @@ def sip.fbbs(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.basic.bs(bs, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.basic.bs(bs, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
   match bs:
     case True{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at, eg, cc,
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf,
+        at, eg, cc,
         ec)
     case False{}:
-      sip.fpush(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.str.bad(Char.to_u32(cc), False{}), bd, rw, hs, he, pt, bf, T.LStr{},
+      sip.fpush(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.str.bad(Char.to_u32(cc), False{}), bd, rw, hs, he, pt, bf,
+        T.LStr{},
         bk, T.QBasic{}, sk, un, lf, at, eg, cc, ec)
 
 # a quote in a basic string takes the full step
 def sip.fbasic(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   quote: Bool,
   +bd: String,
   +rw: List<&2, T.Val>,
@@ -49486,26 +49510,30 @@ def sip.fbasic(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.basic(quote, Char.is_eq(cc, '\\'), bd, rw, hs, he, pt, bf, bk, sk, un, lf, at,
+) -> {_ii(gg, T.read.fast.basic(quote, Char.is_eq(cc, '\\'), bd, rw, hs, he, pt, bf, bk, sk, un, lf, at,
   cc)) == True{} : Bool}:
   match quote:
     case True{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at, eg, cc,
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf,
+        at, eg, cc,
         ec)
     case False{}:
-      sip.fbbs(~_ii, ~_cp, ~_os, ~_oo, ~_oc, Char.is_eq(cc, '\\'), bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc,
+      sip.fbbs(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, Char.is_eq(cc, '\\'), bd, rw, hs, he, pt, bf, bk, sk, un, lf,
+        at, eg, cc,
         ec)
 
 # a quote in a literal string takes the full step
 def sip.flit(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   quote: Bool,
   +bd: String,
   +rw: List<&2, T.Val>,
@@ -49518,24 +49546,28 @@ def sip.flit(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.lit(quote, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.lit(quote, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
   match quote:
     case True{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at,
+        eg, cc, ec)
     case False{}:
-      sip.fpush(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.str.bad(Char.to_u32(cc), False{}), bd, rw, hs, he, pt, bf, T.LStr{},
+      sip.fpush(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.str.bad(Char.to_u32(cc), False{}), bd, rw, hs, he, pt, bf,
+        T.LStr{},
         bk, T.QLit{}, sk, un, lf, at, eg, cc, ec)
 
 # one character of a string on the fast step
 def sip.fstr(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   qk: T.QKind,
   +bd: String,
   +rw: List<&2, T.Val>,
@@ -49548,31 +49580,37 @@ def sip.fstr(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, T.LStr{}, bk, qk, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LStr{}, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.str(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.str(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
   match qk:
     case T.QBasic{}:
-      sip.fbasic(~_ii, ~_cp, ~_os, ~_oo, ~_oc, Char.is_eq(cc, '"'), bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg,
+      sip.fbasic(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, Char.is_eq(cc, '"'), bd, rw, hs, he, pt, bf, bk, sk, un, lf,
+        at, eg,
         cc, ec)
     case T.QLit{}:
-      sip.flit(~_ii, ~_cp, ~_os, ~_oo, ~_oc, Char.is_eq(cc, '\''), bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc,
+      sip.flit(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, Char.is_eq(cc, '\''), bd, rw, hs, he, pt, bf, bk, sk, un, lf,
+        at, eg, cc,
         ec)
     case T.QMulti{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QMulti{}, sk, un, lf, at, eg, cc,
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QMulti{}, sk, un, lf,
+        at, eg, cc,
         ec)
     case T.QMultiLit{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QMultiLit{}, sk, un, lf, at, eg,
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QMultiLit{}, sk, un,
+        lf, at, eg,
         cc, ec)
 
 # one character of a bare key on the fast step
 def sip.fkey(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   ok: Bool,
   +bd: String,
   +rw: List<&2, T.Val>,
@@ -49586,23 +49624,27 @@ def sip.fkey(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.key(ok, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.key(ok, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
   match ok:
     case True{}:
-      sip.fcons(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fcons(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case False{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
 
 # one character of a bare value on the fast step
 def sip.fbare(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   delim: Bool,
   +bd: String,
   +rw: List<&2, T.Val>,
@@ -49616,23 +49658,27 @@ def sip.fbare(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.bare(delim, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.bare(delim, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
   match delim:
     case True{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case False{}:
-      sip.fcons(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fcons(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
 
 # one character of a comment on the fast step
 def sip.fcom(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   ctl: Bool,
   +bd: String,
   +rw: List<&2, T.Val>,
@@ -49646,23 +49692,26 @@ def sip.fcom(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.com(ctl, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.com(ctl, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
   match ctl:
     case True{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case False{}:
       eg
 
 # a newline this state ignores
 def sip.fkeep(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   keep: Bool,
   +bd: String,
   +rw: List<&2, T.Val>,
@@ -49677,23 +49726,25 @@ def sip.fkeep(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.ws.keep(keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.ws.keep(keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
   match keep:
     case True{}:
       eg
     case False{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc, ec)
 
 # a newline, or the full step
 def sip.fwsnl(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   nl: Bool,
   +keep: Bool,
   +bd: String,
@@ -49709,23 +49760,26 @@ def sip.fwsnl(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.ws.nl(nl, keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.ws.nl(nl, keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
   match nl:
     case True{}:
-      sip.fkeep(~_ii, ~_cp, ~_os, ~_oo, ~_oc, keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fkeep(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case False{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc, ec)
 
 # blank space this state ignores
 def sip.fws(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   _sp: Bool,
   +nl: Bool,
   +keep: Bool,
@@ -49742,23 +49796,26 @@ def sip.fws(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.ws(_sp, nl, keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.ws(_sp, nl, keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
   match _sp:
     case True{}:
       eg
     case False{}:
-      sip.fwsnl(~_ii, ~_cp, ~_os, ~_oo, ~_oc, nl, keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fwsnl(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, nl, keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at,
+        eg, cc, ec)
 
 # the fast step, by the state
 def sip.flex(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   lx: T.Lex,
   +bd: String,
   +rw: List<&2, T.Val>,
@@ -49772,99 +49829,135 @@ def sip.flex(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
+  +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
   match lx:
     case T.LTop{}:
-      sip.fws(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.ch.sp(cc), T.ch.nl(cc), True{}, bd, rw, hs, he, pt, bf, T.LTop{}, bk,
+      sip.fws(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.ch.sp(cc), T.ch.nl(cc), True{}, bd, rw, hs, he, pt, bf,
+        T.LTop{}, bk,
         qk, sk, un, lf, at, eg, cc, ec)
     case T.LLine{}:
-      sip.fws(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw, hs, he, pt, bf, T.LLine{}, bk,
+      sip.fws(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw, hs, he, pt, bf,
+        T.LLine{}, bk,
         qk, sk, un, lf, at, eg, cc, ec)
     case T.LKey{}:
-      sip.fkey(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.bare.at(cc), bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fkey(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.bare.at(cc), bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at,
+        eg, cc, ec)
     case T.LKeyDot{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LKeyDot{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LKeyDot{}, bk, qk, sk, un, lf, at,
+        eg, cc, ec)
     case T.LAfter{}:
-      sip.fws(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw, hs, he, pt, bf, T.LAfter{}, bk,
+      sip.fws(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw, hs, he, pt, bf,
+        T.LAfter{}, bk,
         qk, sk, un, lf, at, eg, cc, ec)
     case T.LKeyQ{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LKeyQ{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LKeyQ{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LKeyE{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LKeyE{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LKeyE{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LKeyU{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LKeyU{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LKeyU{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LVal{}:
-      sip.fws(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw, hs, he, pt, bf, T.LVal{}, bk,
+      sip.fws(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw, hs, he, pt, bf,
+        T.LVal{}, bk,
         qk, sk, un, lf, at, eg, cc, ec)
     case T.LQ{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, un, lf, at, eg, cc,
+        ec)
     case T.LQ2{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LQ2{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LQ2{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LStr{}:
-      sip.fstr(~_ii, ~_cp, ~_os, ~_oo, ~_oc, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc, ec)
+      sip.fstr(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc, ec)
     case T.LEsc{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LEsc{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LEsc{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LUni{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LUni{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LUni{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LFold{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LFold{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LFold{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LMq{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LMq{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LMq{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LMqEnd{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LMqEnd{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LMqEnd{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LTrim{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LTrim{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LTrim{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LTrim2{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LTrim2{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LTrim2{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LBare{}:
-      sip.fbare(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.ch.delim(cc), bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, eg, cc,
+      sip.fbare(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.ch.delim(cc), bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf,
+        at, eg, cc,
         ec)
     case T.LDate{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LDate{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LDate{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LCom{}:
-      sip.fcom(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.ch.ctl(cc), bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fcom(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.ch.ctl(cc), bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at,
+        eg, cc, ec)
     case T.LHead{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LHead{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LHead{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LHeadGap{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LHeadGap{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LHeadGap{}, bk, qk, sk, un, lf, at,
+        eg, cc, ec)
     case T.LHeadDot{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LHeadDot{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LHeadDot{}, bk, qk, sk, un, lf, at,
+        eg, cc, ec)
     case T.LHeadQ{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LHeadQ{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LHeadQ{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LHeadE{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LHeadE{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LHeadE{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LHeadU{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LHeadU{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LHeadU{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LHeadR{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LHeadR{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LHeadR{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
     case T.LArr{}:
-      sip.fws(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.ch.sp(cc), T.ch.nl(cc), True{}, bd, rw, hs, he, pt, bf, T.LArr{}, bk,
+      sip.fws(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.ch.sp(cc), T.ch.nl(cc), True{}, bd, rw, hs, he, pt, bf,
+        T.LArr{}, bk,
         qk, sk, un, lf, at, eg, cc, ec)
     case T.LArrC{}:
-      sip.fws(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.ch.sp(cc), T.ch.nl(cc), True{}, bd, rw, hs, he, pt, bf, T.LArrC{}, bk,
+      sip.fws(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.ch.sp(cc), T.ch.nl(cc), True{}, bd, rw, hs, he, pt, bf,
+        T.LArrC{}, bk,
         qk, sk, un, lf, at, eg, cc, ec)
     case T.LInl{}:
-      sip.fws(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw, hs, he, pt, bf, T.LInl{}, bk,
+      sip.fws(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw, hs, he, pt, bf,
+        T.LInl{}, bk,
         qk, sk, un, lf, at, eg, cc, ec)
     case T.LInlK{}:
-      sip.fws(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw, hs, he, pt, bf, T.LInlK{}, bk,
+      sip.fws(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw, hs, he, pt, bf,
+        T.LInlK{}, bk,
         qk, sk, un, lf, at, eg, cc, ec)
     case T.LInlC{}:
-      sip.fws(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw, hs, he, pt, bf, T.LInlC{}, bk,
+      sip.fws(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw, hs, he, pt, bf,
+        T.LInlC{}, bk,
         qk, sk, un, lf, at, eg, cc, ec)
     case T.LSink{}:
-      sip.fold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, bd, rw, hs, he, pt, bf, T.LSink{}, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LSink{}, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
 
 # the first character takes the full step
 def sip.flead(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   lead: Bool,
   +bd: String,
   +rw: List<&2, T.Val>,
@@ -49879,24 +49972,27 @@ def sip.flead(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, lead}) == True{} : Bool},
+  +eg: {_ii(gg, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, lead}) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.lead(lead, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.lead(lead, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
   match lead:
     case True{}:
-      _oo(T.read.step(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}}, cc), _os(T.St{bd,
+      _oo(gg, T.read.step(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}}, cc), _os(gg,
+        T.St{bd,
         rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}}, eg, cc, ec))
     case False{}:
-      sip.flex(~_ii, ~_cp, ~_os, ~_oo, ~_oc, lx, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.flex(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, lx, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, eg, cc, ec)
 
 # a held character takes the full step first
 def sip.fhold(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   hold: T.Hold,
   +lead: Bool,
   +bd: String,
@@ -49912,57 +50008,63 @@ def sip.fhold(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hold, un, lf, at, lead}) == True{} : Bool},
+  +eg: {_ii(gg, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hold, un, lf, at, lead}) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast.hold(hold, lead, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.hold(hold, lead, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
   match hold:
     case T.HChar{+held}:
-      _oo(T.read.step(T.read.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, lead}),
-        cc), _os(T.read.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, lead}),
-          _oo(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, lead}, eg), cc, ec))
+      _oo(gg, T.read.step(T.read.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, lead}),
+        cc), _os(gg, T.read.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, lead}),
+          _oo(gg, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, lead}, eg), cc, ec))
     case T.HNone{}:
-      sip.flead(~_ii, ~_cp, ~_os, ~_oo, ~_oc, lead, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.flead(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, lead, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg,
+        cc, ec)
 
 # one character by the fast step
 def sip.fast(
-  ~_ii: T.St -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
   ~_cp: Char -> Bool,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  +gg: _GG,
   +st: T.St,
-  +eg: {_ii(st) == True{} : Bool},
+  +eg: {_ii(gg, st) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(T.read.fast(st, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast(st, cc)) == True{} : Bool}:
   match st:
     case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +hold, +un, +lf, +at,
       +lead}:
-      sip.fhold(~_ii, ~_cp, ~_os, ~_oo, ~_oc, hold, lead, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc,
+      sip.fhold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, hold, lead, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf,
+        at, eg, cc,
         ec)
 
 # a quote's state: a one-line string opens a span unless a character is held
 # or it is the first character; every other state scans on
 def sip.wlex(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   lx: T.Lex,
   hd: T.Hold,
   ld: Bool,
@@ -49979,8 +50081,8 @@ def sip.wlex(
   +lf: U32,
   +at: Bool,
   +tl: String,
-  +eg: {_ii(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.doc.wrap.lex(lx, bd, rw, hs, he, pt, bf, bk, qk, sk, hd, un, lf, at, ld), tl):
+  +eg: {_ii(gg, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}) == True{} : Bool}
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.wrap.lex(lx, bd, rw, hs, he, pt, bf, bk, qk, sk, hd, un, lf, at, ld), tl):
   match lx:
     case T.LTop{}:
       eg
@@ -50071,193 +50173,210 @@ def sip.wlex(
 
 # a state a quote may have opened a string in
 def sip.wrap(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   +st: T.St,
   +tl: String,
-  +eg: {_ii(st) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.doc.wrap(st), tl):
+  +eg: {_ii(gg, st) == True{} : Bool}
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.wrap(st), tl):
   match st:
     case T.St{+bd, +rw, +hs, +he, +pt, +bf, +lx, +bk, +qk, +sk, +hd, +un, +lf, +at, +ld}:
-      sip.wlex(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, lx, hd, ld, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, tl, eg)
+      sip.wlex(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, lx, hd, ld, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, tl, eg)
 
 # a carriage return, or another character
 def sip.scr(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   cr: Bool,
   +st: T.St,
   +cc: Char,
   +tl: String,
-  +eg: {_ii(st) == True{} : Bool},
+  +eg: {_ii(gg, st) == True{} : Bool},
   +ec: {_cp(cc) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.doc.scan.cr(cr, st, cc), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.scan.cr(cr, st, cc), tl):
   match cr:
     case True{}:
-      sip.fast(~_ii, ~_cp, ~_os, ~_oo, ~_oc, st, eg, cc, ec)
+      sip.fast(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, st, eg, cc, ec)
     case False{}:
-      sip.fast(~_ii, ~_cp, ~_os, ~_oo, ~_oc, st, eg, cc, ec)
+      sip.fast(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, st, eg, cc, ec)
 
 # an apostrophe, or another character
 def sip.ssq(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   sq: Bool,
   +cr: Bool,
   +st: T.St,
   +cc: Char,
   +tl: String,
-  +eg: {_ii(st) == True{} : Bool},
+  +eg: {_ii(gg, st) == True{} : Bool},
   +ec: {_cp(cc) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.doc.scan.sq(sq, cr, st, cc), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.scan.sq(sq, cr, st, cc), tl):
   match sq:
     case True{}:
-      sip.wrap(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, T.read.fast(st, cc), tl, sip.fast(~_ii, ~_cp, ~_os, ~_oo, ~_oc, st, eg, cc, ec))
+      sip.wrap(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, T.read.fast(st, cc), tl, sip.fast(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, st, eg, cc, ec))
     case False{}:
-      sip.scr(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, cr, st, cc, tl, eg, ec)
+      sip.scr(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, cr, st, cc, tl, eg, ec)
 
 # a quote, or another character
 def sip.sdq(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   dq: Bool,
   +sq: Bool,
   +cr: Bool,
   +st: T.St,
   +cc: Char,
   +tl: String,
-  +eg: {_ii(st) == True{} : Bool},
+  +eg: {_ii(gg, st) == True{} : Bool},
   +ec: {_cp(cc) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.doc.scan.q(dq, sq, cr, st, cc), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.scan.q(dq, sq, cr, st, cc), tl):
   match dq:
     case True{}:
-      sip.wrap(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, T.read.fast(st, cc), tl, sip.fast(~_ii, ~_cp, ~_os, ~_oo, ~_oc, st, eg, cc, ec))
+      sip.wrap(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, T.read.fast(st, cc), tl, sip.fast(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, st, eg, cc, ec))
     case False{}:
-      sip.ssq(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, sq, cr, st, cc, tl, eg, ec)
+      sip.ssq(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, sq, cr, st, cc, tl, eg, ec)
 
 # a line feed after a carriage return, or the error
 def sip.dcr(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   lf: Bool,
   +st: T.St,
   +cc: Char,
   +tl: String,
-  +eg: {_ii(st) == True{} : Bool},
+  +eg: {_ii(gg, st) == True{} : Bool},
   +ec: {_cp(cc) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.doc.cr(lf, st, cc), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.cr(lf, st, cc), tl):
   match lf:
     case True{}:
-      sip.fast(~_ii, ~_cp, ~_os, ~_oo, ~_oc, st, eg, cc, ec)
+      sip.fast(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, st, eg, cc, ec)
     case False{}:
-      _oe(st, "carriage return without line feed", {==}, eg)
+      _oe(gg, st, "carriage return without line feed", {==}, eg)
 
 # an empty buffer starts a span at this character; a buffer in use goes the
 # old way
 def sip.obuf(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   bf: List<&2, Char>,
   +ba: Bool,
   +qq: Char,
@@ -50272,39 +50391,42 @@ def sip.obuf(
   +un: U32,
   +lf: U32,
   +at: Bool,
-  +eg: {_ii(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}) == True{} : Bool},
+  +eg: {_ii(gg, T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}) == True{} : Bool},
   +cc: Char,
   +tl: String,
   +ec: {_cp(cc) == True{} : Bool},
   +et: {_tx(SCon{cc, tl}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.doc.open.buf(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.buf(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl):
   match bf:
     case []:
-      gd.tt(_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)), _sp(SCon{cc, tl}, 1, tl),
-        _oq(bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, eg), _o1(cc, tl, ec, et))
+      gd.tt(_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)), _sp(gg, SCon{cc, tl}, 1, tl),
+        _oq(gg, bd, rw, hs, he, pt, bk, qk, sk, un, lf, at, eg), _o1(gg, cc, tl, ec, et))
     case +bh <> +bt:
-      sip.flex(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.LQ{}, bd, rw, hs, he, pt, bh <> bt, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.flex(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.LQ{}, bd, rw, hs, he, pt, bh <> bt, bk, qk, sk, un, lf, at,
+        eg, cc, ec)
 
 # a forbidden control goes the old way; any other starts a span
 def sip.ook(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   badc: Bool,
   +ba: Bool,
   +qq: Char,
@@ -50320,39 +50442,44 @@ def sip.ook(
   +lf: U32,
   +at: Bool,
   +bf: List<&2, Char>,
-  +eg: {_ii(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}) == True{} : Bool},
+  +eg: {_ii(gg, T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}) == True{} : Bool},
   +cc: Char,
   +tl: String,
   +ec: {_cp(cc) == True{} : Bool},
   +et: {_tx(SCon{cc, tl}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.doc.open.ok(badc, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.ok(badc, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl),
+  tl):
   match badc:
     case True{}:
-      sip.flex(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.LQ{}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.flex(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.LQ{}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, eg, cc,
+        ec)
     case False{}:
-      sip.obuf(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, bf, ba, qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, eg, cc, tl, ec, et)
+      sip.obuf(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, bf, ba, qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, eg, cc, tl, ec, et)
 
 # a backslash in a basic string goes the old way
 def sip.obs(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   bs: Bool,
   +qq: Char,
   +qk: T.QKind,
@@ -50367,40 +50494,45 @@ def sip.obs(
   +lf: U32,
   +at: Bool,
   +bf: List<&2, Char>,
-  +eg: {_ii(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}) == True{} : Bool},
+  +eg: {_ii(gg, T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}) == True{} : Bool},
   +cc: Char,
   +tl: String,
   +ec: {_cp(cc) == True{} : Bool},
   +et: {_tx(SCon{cc, tl}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.doc.open.bs(bs, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.bs(bs, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl):
   match bs:
     case True{}:
-      sip.flex(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.LQ{}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.flex(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.LQ{}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, eg, cc,
+        ec)
     case False{}:
-      sip.ook(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, T.str.bad(Char.to_u32(cc), False{}), True{}, qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, bf, eg, cc,
+      sip.ook(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, T.str.bad(Char.to_u32(cc), False{}), True{}, qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, bf, eg,
+          cc,
           tl, ec, et)
 
 # a literal string keeps a backslash; a basic string does not
 def sip.ob(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   ba: Bool,
   +qq: Char,
   +qk: T.QKind,
@@ -50415,41 +50547,45 @@ def sip.ob(
   +lf: U32,
   +at: Bool,
   +bf: List<&2, Char>,
-  +eg: {_ii(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}) == True{} : Bool},
+  +eg: {_ii(gg, T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}) == True{} : Bool},
   +cc: Char,
   +tl: String,
   +ec: {_cp(cc) == True{} : Bool},
   +et: {_tx(SCon{cc, tl}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.doc.open.b(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.b(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl):
   match ba:
     case False{}:
-      sip.ook(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, T.str.bad(Char.to_u32(cc), False{}), False{}, qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, bf, eg,
+      sip.ook(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, T.str.bad(Char.to_u32(cc), False{}), False{}, qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, bf, eg,
           cc, tl, ec, et)
     case True{}:
-      sip.obs(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, Char.is_eq(cc, '\\'), qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, bf, eg, cc, tl, ec, et)
+      sip.obs(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, Char.is_eq(cc, '\\'), qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, bf, eg, cc, tl, ec, et)
 
 # a second quote goes the old way
 def sip.oq(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   same: Bool,
   +ba: Bool,
   +qq: Char,
@@ -50465,39 +50601,43 @@ def sip.oq(
   +lf: U32,
   +at: Bool,
   +bf: List<&2, Char>,
-  +eg: {_ii(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}) == True{} : Bool},
+  +eg: {_ii(gg, T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}) == True{} : Bool},
   +cc: Char,
   +tl: String,
   +ec: {_cp(cc) == True{} : Bool},
   +et: {_tx(SCon{cc, tl}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.doc.open.q(same, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.q(same, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl),
+  tl):
   match same:
     case True{}:
-      sip.flex(~_ii, ~_cp, ~_os, ~_oo, ~_oc, T.LQ{}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, eg, cc, ec)
+      sip.flex(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.LQ{}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, eg, cc,
+        ec)
     case False{}:
-      sip.ob(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, ba, qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, bf, eg, cc, tl, ec, et)
+      sip.ob(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
+        ~_ot, gg, ba, qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, bf, eg, cc, tl, ec, et)
 
 # the span copied to the buffer, and the character read the old way
 def sip.ecopy(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   +ct: String,
   +nn: U32,
   +bd: String,
@@ -50512,34 +50652,36 @@ def sip.ecopy(
   +at: Bool,
   +hh: Char,
   +tt: String,
-  +eg: {_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool},
-  +ep: {_sp(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +eg: {_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool},
+  +ep: {_sp(gg, ct, nn, SCon{hh, tt}) == True{} : Bool},
   +eh: {_cp(hh) == True{} : Bool},
   +_et: {_tx(SCon{hh, tt}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.eat.copy(hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
-  _os(si.str(bd, rw, hs, he, pt, T.span.rev(ct, nn, U32.is_zero(nn), []), qk, sk, un, lf, at),
-    _oy(bd, rw, hs, he, pt, qk, sk, un, lf, at, ct, nn, SCon{hh, tt}, eg, ep), hh, eh)
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.copy(hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
+  _os(gg, si.str(bd, rw, hs, he, pt, T.span.rev(ct, nn, U32.is_zero(nn), []), qk, sk, un, lf, at),
+    _oy(gg, bd, rw, hs, he, pt, qk, sk, un, lf, at, ct, nn, SCon{hh, tt}, eg, ep), hh, eh)
 
 # the span one character longer
 def sip.emore(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   +ba: Bool,
   +qq: Char,
   +ct: String,
@@ -50556,34 +50698,36 @@ def sip.emore(
   +at: Bool,
   +hh: Char,
   +tt: String,
-  +eg: {_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool},
-  +ep: {_sp(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +eg: {_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool},
+  +ep: {_sp(gg, ct, nn, SCon{hh, tt}) == True{} : Bool},
   +eh: {_cp(hh) == True{} : Bool},
   +et: {_tx(SCon{hh, tt}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.MEat{ba, qq, ct, U32.add(nn, 1), bd, rw, hs, he, pt, qk, sk, un, lf, at}, tt):
-  gd.tt(_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)), _sp(ct, U32.add(nn, 1), tt), eg,
-    _oi(ct, nn, hh, tt, ep, eh, et))
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.MEat{ba, qq, ct, U32.add(nn, 1), bd, rw, hs, he, pt, qk, sk, un, lf, at}, tt):
+  gd.tt(_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)), _sp(gg, ct, U32.add(nn, 1), tt), eg,
+    _oi(gg, ct, nn, hh, tt, ep, eh, et))
 
 # a forbidden control copies the span; a plain character extends it
 def sip.ectrl(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   badc: Bool,
   +ba: Bool,
   +qq: Char,
@@ -50601,39 +50745,43 @@ def sip.ectrl(
   +at: Bool,
   +hh: Char,
   +tt: String,
-  +eg: {_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool},
-  +ep: {_sp(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +eg: {_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool},
+  +ep: {_sp(gg, ct, nn, SCon{hh, tt}) == True{} : Bool},
   +eh: {_cp(hh) == True{} : Bool},
   +et: {_tx(SCon{hh, tt}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.eat.ctrl(badc, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.ctrl(badc, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
   match badc:
     case True{}:
-      sip.ecopy(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, et)
+      sip.ecopy(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, et)
     case False{}:
-      sip.emore(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, et)
+      sip.emore(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, et)
 
 # a backslash in a basic string copies the span
 def sip.ebs(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   bs: Bool,
   +ba: Bool,
   +qq: Char,
@@ -50651,40 +50799,45 @@ def sip.ebs(
   +at: Bool,
   +hh: Char,
   +tt: String,
-  +eg: {_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool},
-  +ep: {_sp(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +eg: {_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool},
+  +ep: {_sp(gg, ct, nn, SCon{hh, tt}) == True{} : Bool},
   +eh: {_cp(hh) == True{} : Bool},
   +et: {_tx(SCon{hh, tt}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.eat.bs(bs, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.bs(bs, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
   match bs:
     case True{}:
-      sip.ecopy(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, et)
+      sip.ecopy(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, et)
     case False{}:
-      sip.ectrl(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, T.str.bad(Char.to_u32(hh), False{}), ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg,
+      sip.ectrl(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, T.str.bad(Char.to_u32(hh), False{}), ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt,
+          eg,
           ep, eh, et)
 
 # a literal string's character, or a basic string's
 def sip.ebasic(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   ba: Bool,
   +qq: Char,
   +ct: String,
@@ -50701,40 +50854,45 @@ def sip.ebasic(
   +at: Bool,
   +hh: Char,
   +tt: String,
-  +eg: {_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool},
-  +ep: {_sp(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +eg: {_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool},
+  +ep: {_sp(gg, ct, nn, SCon{hh, tt}) == True{} : Bool},
   +eh: {_cp(hh) == True{} : Bool},
   +et: {_tx(SCon{hh, tt}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.eat.basic(ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.basic(ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
   match ba:
     case False{}:
-      sip.ectrl(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, T.str.bad(Char.to_u32(hh), False{}), False{}, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh,
+      sip.ectrl(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, T.str.bad(Char.to_u32(hh), False{}), False{}, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh,
           tt, eg, ep, eh, et)
     case True{}:
-      sip.ebs(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, Char.is_eq(hh, '\\'), True{}, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, et)
+      sip.ebs(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, Char.is_eq(hh, '\\'), True{}, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep,
+          eh, et)
 
 # the quote closes the span as a VSpan; any other character goes on
 def sip.eq(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   quote: Bool,
   +ba: Bool,
   +qq: Char,
@@ -50752,97 +50910,104 @@ def sip.eq(
   +at: Bool,
   +hh: Char,
   +tt: String,
-  +eg: {_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool},
-  +ep: {_sp(ct, nn, SCon{hh, tt}) == True{} : Bool},
+  +eg: {_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)) == True{} : Bool},
+  +ep: {_sp(gg, ct, nn, SCon{hh, tt}) == True{} : Bool},
   +eh: {_cp(hh) == True{} : Bool},
   +et: {_tx(SCon{hh, tt}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, T.eat.feed.q(quote, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.feed.q(quote, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
   match quote:
     case True{}:
-      _ol(bd, rw, hs, he, pt, qk, sk, un, lf, at, ct, nn, SCon{hh, tt}, eg, ep)
+      _ol(gg, bd, rw, hs, he, pt, qk, sk, un, lf, at, ct, nn, SCon{hh, tt}, eg, ep)
     case False{}:
-      sip.ebasic(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, et)
+      sip.ebasic(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, et)
 
 # every character keeps the mode's invariant
 def sip.mstep(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   +mode: T.Mode,
   +hh: Char,
   +tt: String,
-  +em: si.md(~_ii, ~_sp, mode, SCon{hh, tt}),
+  +em: si.md(~_GG, ~_ii, ~_sp, gg, mode, SCon{hh, tt}),
   +eh: {_cp(hh) == True{} : Bool},
   +et: {_tx(SCon{hh, tt}) == True{} : Bool}
-) -> si.md(~_ii, ~_sp, Laws.gd.next(mode, hh, tt), tt):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, Laws.gd.next(mode, hh, tt), tt):
   match mode:
     case T.MOpen{+ba, +qq, +qk, +bd, +rw, +hs, +he, +pt, +bf, +bk, +sk, +un, +lf, +at}:
-      sip.oq(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, Char.is_eq(hh, qq), ba, qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, bf, em, hh, tt, eh, et)
+      sip.oq(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
+        ~_ot, gg, Char.is_eq(hh, qq), ba, qq, qk, bd, rw, hs, he, pt, bk, sk, un, lf, at, bf, em, hh, tt, eh, et)
     case T.MEat{+ba, +qq, +ct, +nn, +bd, +rw, +hs, +he, +pt, +qk, +sk, +un, +lf, +at}:
-      sip.eq(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, Char.is_eq(hh, qq), ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt,
-        gd.l(_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)), _sp(ct, nn, SCon{hh, tt}), em),
-        gd.r(_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)), _sp(ct, nn, SCon{hh, tt}), em), eh, et)
+      sip.eq(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
+        ~_ot, gg, Char.is_eq(hh, qq), ba, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt,
+        gd.l(_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)), _sp(gg, ct, nn, SCon{hh, tt}), em),
+        gd.r(_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)), _sp(gg, ct, nn, SCon{hh, tt}), em), eh, et)
     case T.MScan{+st}:
-      sip.sdq(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, Char.is_eq(hh, '"'), Char.is_eq(hh, '\''), U32.is_eq(Char.to_u32(hh), 13), st, hh, tt, em, eh)
+      sip.sdq(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, Char.is_eq(hh, '"'), Char.is_eq(hh, '\''), U32.is_eq(Char.to_u32(hh), 13), st, hh, tt, em, eh)
     case T.MCr{+st}:
-      sip.dcr(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, Char.is_eq(hh, '\n'), st, hh, tt, em, eh)
+      sip.dcr(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, Char.is_eq(hh, '\n'), st, hh, tt, em, eh)
 
 # the text runs out: in a scanning state, after a carriage return, after an
 # opening quote, or in a span
 def sip.dend(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   mode: T.Mode,
-  +em: si.md(~_ii, ~_sp, mode, SNil{})
-) -> _pd(T.doc.read(SNil{}, mode)):
+  +em: si.md(~_GG, ~_ii, ~_sp, gg, mode, SNil{})
+) -> _pd(gg, T.doc.read(SNil{}, mode)):
   match mode:
     case T.MScan{+st}:
-      _of(T.read.once2(st), _oo(st, em))
+      _of(gg, T.read.once2(st), _oo(gg, st, em))
     case T.MCr{+st}:
-      _of(T.read.once2(T.st.err(st, "carriage return without line feed")), _oo(T.st.err(st,
-        "carriage return without line feed"), _oe(st, "carriage return without line feed", {==}, em)))
+      _of(gg, T.read.once2(T.st.err(st, "carriage return without line feed")), _oo(gg, T.st.err(st,
+        "carriage return without line feed"), _oe(gg, st, "carriage return without line feed", {==}, em)))
     case T.MOpen{_ba, _qq, +qk, +bd, +rw, +hs, +he, +pt, +bf, +bk, +sk, +un, +lf, +at}:
-      _of(T.read.once2(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}),
-        _oo(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}, em))
+      _of(gg, T.read.once2(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}),
+        _oo(gg, T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}, em))
     case T.MEat{_ba, _qq, +ct, +nn, +bd, +rw, +hs, +he, +pt, +qk, +sk, +un, +lf, +at}:
-      _ou(bd, rw, hs, he, pt, qk, sk, un, lf, at, gd.l(_ii(si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)),
-        _sp(ct, nn, SNil{}), em))
+      _ou(gg, bd, rw, hs, he, pt, qk, sk, un, lf, at, gd.l(_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)),
+        _sp(gg, ct, nn, SNil{}), em))
 
 # doc.read takes a character to the mode gd.next names
 def sip.next(
@@ -50864,39 +51029,44 @@ def sip.next(
 # that the obligations above keep, doc.read of a text the text predicate
 # allows, from a mode the invariant holds of, gives what pd asks
 def sip.read(
-  ~_ii: T.St -> Bool,
-  ~_sp: String -> U32 -> String -> Bool,
+  ~_GG: Data,
+  ~_ii: _GG -> T.St -> Bool,
+  ~_sp: _GG -> String -> U32 -> String -> Bool,
   ~_cp: Char -> Bool,
   ~_tx: String -> Bool,
-  ~_pd: T.Doc -> Type,
-  ~_os: si.OStep(~_ii, ~_cp),
-  ~_oo: si.OOnce(~_ii),
-  ~_oc: si.OCons(~_ii, ~_cp),
-  ~_oe: si.OErr(~_ii),
-  ~_oq: si.OOpen(~_ii),
-  ~_o1: si.OSp1(~_sp, ~_cp, ~_tx),
-  ~_oi: si.OSpInc(~_sp, ~_cp, ~_tx),
-  ~_ol: si.OClose(~_ii, ~_sp),
-  ~_oy: si.OCopy(~_ii, ~_sp),
-  ~_of: si.OFin(~_ii, ~_pd),
-  ~_ou: si.OUnc(~_ii, ~_pd),
+  ~_pd: _GG -> T.Doc -> Type,
+  ~_os: si.OStep(~_GG, ~_ii, ~_cp),
+  ~_oo: si.OOnce(~_GG, ~_ii),
+  ~_oc: si.OCons(~_GG, ~_ii, ~_cp),
+  ~_oe: si.OErr(~_GG, ~_ii),
+  ~_oq: si.OOpen(~_GG, ~_ii),
+  ~_o1: si.OSp1(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_oi: si.OSpInc(~_GG, ~_sp, ~_cp, ~_tx),
+  ~_ol: si.OClose(~_GG, ~_ii, ~_sp),
+  ~_oy: si.OCopy(~_GG, ~_ii, ~_sp),
+  ~_of: si.OFin(~_GG, ~_ii, ~_pd),
+  ~_ou: si.OUnc(~_GG, ~_ii, ~_pd),
   ~_oh: si.OTxH(~_cp, ~_tx),
   ~_ot: si.OTxT(~_tx),
+  +gg: _GG,
   +text: String,
   +mode: T.Mode,
-  +em: si.md(~_ii, ~_sp, mode, text),
+  +em: si.md(~_GG, ~_ii, ~_sp, gg, mode, text),
   +et: {_tx(text) == True{} : Bool}
-) -> _pd(T.doc.read(text, mode)):
+) -> _pd(gg, T.doc.read(text, mode)):
   match text:
     case SNil{}:
-      sip.dend(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, mode, em)
+      sip.dend(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, mode, em)
     case SCon{+hh, +tt}:
       %Equal.sym(T.Doc, T.doc.read(SCon{hh, tt}, mode), T.doc.read(tt, Laws.gd.next(mode, hh, tt)),
-        sip.next(mode, hh, tt)) : _pd(_)
-      sip.read(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh,
-        ~_ot, tt, Laws.gd.next(mode, hh, tt), sip.mstep(~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq,
-          ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh, ~_ot, mode, hh, tt, em, _oh(hh, tt, et), et),
+        sip.next(mode, hh, tt)) : _pd(gg, _)
+      sip.read(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
+        ~_oh,
+        ~_ot, gg, tt, Laws.gd.next(mode, hh, tt), sip.mstep(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc,
+          ~_oe, ~_oq,
+          ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou, ~_oh, ~_ot, gg, mode, hh, tt, em, _oh(hh, tt, et), et),
         _ot(hh, tt, et))
 
 # SCAN: TOML-RT-3 is an instance. With ii = good, a span checked by gd.sp and
@@ -51098,20 +51268,11398 @@ def sip3.parse_wf(
   +es: {Laws.short(text) == True{} : Bool},
   +eo: {String.is_empty(T.bad(T.parse(text))) == True{} : Bool}
 ) -> {T.wf(T.parse(text)) == True{} : Bool}:
-  sip.read(~Laws.good, ~(cut => nn => tx => sip3.sp(cut, nn, tx)), ~(cc => T.wf.char(cc)), ~(tx => sip3.tx(tx)),
-    ~(dd => sip3.pd(dd)), ~(st => eg => cc => ec => sip3.os(st, eg, cc, ec)), ~(st => eg => sip3.oo(st, eg)),
-    ~(a => b => c => d => e => f => g => h => i => j => k => l => m => cc => eg => ec => sip3.oc(a, b, c, d, e, f, g,
-      h, i, j, k, l, m, cc, eg, ec)),
-    ~(st => why => ew => eg => sip3.oe(st, why, ew, eg)),
-    ~(a => b => c => d => e => f => g => h => i => j => k => eg => sip3.oq(a, b, c, d, e, f, g, h, i, j, k, eg)),
-    ~(hh => tt => ec => et => sip3.o1(hh, tt, ec, et)),
-    ~(cut => nn => hh => tt => ep => ec => et => sip3.oi(cut, nn, hh, tt, ep, ec, et)),
-    ~(a => b => c => d => e => f => g => h => i => j => cut => nn => tx => eg => ep => sip3.ol(a, b, c, d, e, f, g, h,
-      i, j, cut, nn, tx, eg, ep)),
-    ~(a => b => c => d => e => f => g => h => i => j => cut => nn => tx => eg => ep => sip3.oy(a, b, c, d, e, f, g, h,
-      i, j, cut, nn, tx, eg, ep)),
-    ~(st => eg => sip3.of(st, eg)),
-    ~(a => b => c => d => e => f => g => h => i => j => eg => sip3.ou(a, b, c, d, e, f, g, h, i, j, eg)),
-    ~(hh => tt => et => sip3.oh(hh, tt, et)), ~(hh => tt => et => sip3.ot(hh, tt, et)), text, T.MScan{T.st.start()},
-    Laws.gd_start([], [], [], T.LTop{}, T.LTop{}, T.QBasic{}, 0, 0, False{}, True{}, {==}, {==}),
-    gd.tt(T.wf.text(text), Laws.short(text), ew, es))(eo)
+  sip.read(~Unit, ~(_g => st => Laws.good(st)), ~(_g => cut => nn => tx => sip3.sp(cut, nn, tx)),
+    ~(cc => T.wf.char(cc)), ~(tx => sip3.tx(tx)), ~(_g => dd => sip3.pd(dd)),
+    ~(_g => st => eg => cc => ec => sip3.os(st, eg, cc, ec)), ~(_g => st => eg => sip3.oo(st, eg)),
+    ~(_g => a => b => c => d => e => f => g => h => i => j => k => l => m => cc => eg => ec => sip3.oc(a, b, c, d, e,
+      f, g, h, i, j, k, l, m, cc, eg, ec)),
+    ~(_g => st => why => ew => eg => sip3.oe(st, why, ew, eg)),
+    ~(_g => a => b => c => d => e => f => g => h => i => j => k => eg => sip3.oq(a, b, c, d, e, f, g, h, i, j, k, eg)),
+    ~(_g => hh => tt => ec => et => sip3.o1(hh, tt, ec, et)),
+    ~(_g => cut => nn => hh => tt => ep => ec => et => sip3.oi(cut, nn, hh, tt, ep, ec, et)),
+    ~(_g => a => b => c => d => e => f => g => h => i => j => cut => nn => tx => eg => ep => sip3.ol(a, b, c, d, e, f,
+      g, h, i, j, cut, nn, tx, eg, ep)),
+    ~(_g => a => b => c => d => e => f => g => h => i => j => cut => nn => tx => eg => ep => sip3.oy(a, b, c, d, e, f,
+      g, h, i, j, cut, nn, tx, eg, ep)),
+    ~(_g => st => eg => sip3.of(st, eg)),
+    ~(_g => a => b => c => d => e => f => g => h => i => j => eg => sip3.ou(a, b, c, d, e, f, g, h, i, j, eg)),
+    ~(hh => tt => et => sip3.oh(hh, tt, et)), ~(hh => tt => et => sip3.ot(hh, tt, et)), Unit{}, text,
+    T.MScan{T.st.start()}, Laws.gd_start([], [], [], T.LTop{}, T.LTop{}, T.QBasic{}, 0, 0, False{}, True{}, {==},
+    {==}), gd.tt(T.wf.text(text), Laws.short(text), ew, es))(eo)
+
+# KEY-3: the lemmas of k3.has. A pair's value holds the rest of a path when
+# it is a table or an inline table whose rows do, or an array of tables or
+# an array one of whose elements does (kh.hv).
+
+# a pair's value holds the rest of a path
+def kh.hv(vv: T.Val, +path: List<&2, String>, +kk: String) -> Bool:
+  match vv:
+    case T.VHead{_q, rows}:
+      Laws.k3.has(rows, path, kk)
+    case T.VInl{rows}:
+      Laws.k3.has(rows, path, kk)
+    case T.VAots{_q, es}:
+      Laws.k3.h(es, Laws.KhSome{path}, kk)
+    case T.VArr{items}:
+      Laws.k3.h(items, Laws.KhSome{path}, kk)
+    case _v:
+      False{}
+
+# a Bool is itself or False
+def kh.orf(bb: Bool) -> {Bool.not(bb) == Bool.or(Bool.not(bb), False{}) : Bool}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# one pair of the rows seen for a name: its value holds the path unless its
+# name is another
+def kh.cons(
+  +mm: String,
+  +vv: T.Val,
+  +pp: List<&2, String>,
+  +tt: List<&2, T.Val>,
+  +nn: String,
+  +kk: String
+) -> {Laws.k3.h(T.VPair{mm, vv} <> tt, Laws.KhAll{nn, pp}, kk) == Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)),
+  kh.hv(vv, pp, kk)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}:
+  match vv:
+    case T.VHead{_q, _r}:
+      match pp:
+        case []:
+          {==}
+        case _n <> _p:
+          {==}
+    case T.VInl{_r}:
+      match pp:
+        case []:
+          {==}
+        case _n <> _p:
+          {==}
+    case T.VAots{_q, _e}:
+      {==}
+    case T.VArr{_i}:
+      {==}
+    case T.VStr{_a}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VSpan{_a, _b}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VInt{_a, _b}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VFlo{_a, _b}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VBool{_a}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VWhen{_a}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VAot{_a, _b}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+    case T.VPair{_a, _b}:
+      %kh.orf(T.str.eq(mm, nn)) : {Bool.and(Bool.not(T.str.eq(mm, nn)), Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk))
+        == Bool.and(_, Laws.k3.h(tt, Laws.KhAll{nn, pp}, kk)) : Bool}
+      {==}
+
+# a pair of the rows seen for a name holds the rest of the path, as k3.h asks
+# of it: its name is another, or its value holds the rest
+def kh.eA(xx: T.Val, +nn: String, +pp: List<&2, String>, +kk: String) -> Bool:
+  match xx:
+    case T.VPair{mm, vv}:
+      Bool.or(Bool.not(T.str.eq(mm, nn)), kh.hv(vv, pp, kk))
+    case _x:
+      True{}
+
+# an element of an array of tables or an item of an array holds the rest of
+# the path
+def kh.eS(xx: T.Val, +pp: List<&2, String>, +kk: String) -> Bool:
+  match xx:
+    case T.VAot{_q, rows}:
+      Laws.k3.has(rows, pp, kk)
+    case T.VInl{rows}:
+      Laws.k3.has(rows, pp, kk)
+    case T.VArr{items}:
+      Laws.k3.h(items, Laws.KhSome{pp}, kk)
+    case _x:
+      False{}
+
+# a value is a pair of this name
+def kh.eF(xx: T.Val, +nn: String) -> Bool:
+  match xx:
+    case T.VPair{mm, _v}:
+      T.str.eq(mm, nn)
+    case _x:
+      False{}
+
+# the rows seen for a name, one value at a time
+def kh.uA(
+  +xx: T.Val,
+  +pp: List<&2, String>,
+  +tt: List<&2, T.Val>,
+  +nn: String,
+  +kk: String
+) -> {Laws.k3.h(xx <> tt, Laws.KhAll{nn, pp}, kk) == Bool.and(kh.eA(xx, nn, pp, kk), Laws.k3.h(tt, Laws.KhAll{nn,
+  pp}, kk)) : Bool}:
+  match xx:
+    case T.VPair{+mm, +vv}:
+      kh.cons(mm, vv, pp, tt, nn, kk)
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+
+# the elements of an array of tables, or the items of an array, one at a time
+def kh.uS(
+  +xx: T.Val,
+  +pp: List<&2, String>,
+  +tt: List<&2, T.Val>,
+  +kk: String
+) -> {Laws.k3.h(xx <> tt, Laws.KhSome{pp}, kk) == Bool.or(kh.eS(xx, pp, kk), Laws.k3.h(tt, Laws.KhSome{pp}, kk))
+  : Bool}:
+  match xx:
+    case T.VAot{_q, _r}:
+      match pp:
+        case []:
+          {==}
+        case _n <> _p:
+          {==}
+    case T.VInl{_r}:
+      match pp:
+        case []:
+          {==}
+        case _n <> _p:
+          {==}
+    case T.VArr{_i}:
+      {==}
+    case T.VPair{_a, bb}:
+      match bb:
+        case T.VStr{_c}:
+          {==}
+        case T.VSpan{_c, _d}:
+          {==}
+        case T.VInt{_c, _d}:
+          {==}
+        case T.VFlo{_c, _d}:
+          {==}
+        case T.VBool{_c}:
+          {==}
+        case T.VWhen{_c}:
+          {==}
+        case T.VArr{_c}:
+          {==}
+        case T.VInl{_c}:
+          {==}
+        case T.VHead{_c, _d}:
+          {==}
+        case T.VAot{_c, _d}:
+          {==}
+        case T.VAots{_c, _d}:
+          {==}
+        case T.VPair{_c, _d}:
+          {==}
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+
+# the first pair found, as a Bool
+def kh.fstep(
+  bb: Bool,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +nn: String
+) -> {Laws.k3.found(T.find.step(bb, vv, _u => T.rows.find(tt, nn))) == Bool.or(bb, Laws.k3.found(T.get(tt, nn)))
+  : Bool}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a name found in rows, one value at a time
+def kh.uF(
+  +xx: T.Val,
+  +tt: List<&2, T.Val>,
+  +nn: String
+) -> {Laws.k3.found(T.get(xx <> tt, nn)) == Bool.or(kh.eF(xx, nn), Laws.k3.found(T.get(tt, nn))) : Bool}:
+  match xx:
+    case T.VPair{+mm, +vv}:
+      kh.fstep(T.str.eq(mm, nn), vv, tt, nn)
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+
+# a name found in rows
+def kh.F(xs: List<&2, T.Val>, +nn: String) -> Bool:
+  Laws.k3.found(T.get(xs, nn))
+
+# the rows seen for a name hold the rest of the path
+def kh.A(xs: List<&2, T.Val>, +nn: String, +pp: List<&2, String>, +kk: String) -> Bool:
+  Laws.k3.h(xs, Laws.KhAll{nn, pp}, kk)
+
+# some element or item holds the rest of the path
+def kh.S(xs: List<&2, T.Val>, +pp: List<&2, String>, +kk: String) -> Bool:
+  Laws.k3.h(xs, Laws.KhSome{pp}, kk)
+
+# or, with the first two swapped into a group
+def bo.or.sw(aa: Bool, bb: Bool, cc: Bool) -> {Bool.or(bb, Bool.or(aa, cc)) == Bool.or(Bool.or(aa, bb), cc) : Bool}:
+  match aa bb:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      {==}
+    case False{} True{}:
+      {==}
+    case False{} False{}:
+      {==}
+
+# and, with the first two swapped into a group
+def bo.and.sw(
+  aa: Bool,
+  bb: Bool,
+  cc: Bool
+) -> {Bool.and(bb, Bool.and(aa, cc)) == Bool.and(Bool.and(aa, bb), cc) : Bool}:
+  match aa bb:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      {==}
+    case False{} True{}:
+      {==}
+    case False{} False{}:
+      {==}
+
+# a name is found in a reversal onto a list when it is in either
+def kh.revF(
+  xs: List<&2, T.Val>,
+  +acc: List<&2, T.Val>,
+  +nn: String
+) -> {kh.F(List.reverse.go(&2, T.Val, xs, acc), nn) == Bool.or(kh.F(xs, nn), kh.F(acc, nn)) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case +xx <> +tt:
+      Equal.trans(Bool, kh.F(List.reverse.go(&2, T.Val, tt, xx <> acc), nn), Bool.or(kh.F(tt, nn), kh.F(xx <> acc,
+        nn)), Bool.or(kh.F(xx <> tt, nn), kh.F(acc, nn)), kh.revF(tt, xx <> acc, nn),
+        Equal.trans(Bool, Bool.or(kh.F(tt, nn), kh.F(xx <> acc, nn)), Bool.or(kh.F(tt, nn), Bool.or(kh.eF(xx, nn),
+          kh.F(acc, nn))), Bool.or(kh.F(xx <> tt, nn), kh.F(acc, nn)),
+          Equal.cong(Bool, Bool, zz => Bool.or(kh.F(tt, nn), zz), kh.F(xx <> acc, nn), Bool.or(kh.eF(xx, nn),
+            kh.F(acc, nn)), kh.uF(xx, acc, nn)),
+          Equal.trans(Bool, Bool.or(kh.F(tt, nn), Bool.or(kh.eF(xx, nn), kh.F(acc, nn))),
+            Bool.or(Bool.or(kh.eF(xx, nn), kh.F(tt, nn)), kh.F(acc, nn)), Bool.or(kh.F(xx <> tt, nn), kh.F(acc,
+              nn)), bo.or.sw(kh.eF(xx, nn), kh.F(tt, nn), kh.F(acc, nn)),
+            Equal.cong(Bool, Bool, zz => Bool.or(zz, kh.F(acc, nn)), Bool.or(kh.eF(xx, nn), kh.F(tt, nn)),
+              kh.F(xx <> tt, nn), Equal.sym(Bool, kh.F(xx <> tt, nn), Bool.or(kh.eF(xx, nn), kh.F(tt, nn)),
+                kh.uF(xx, tt, nn))))))
+
+# the rows seen for a name hold a path in a reversal onto a list when they
+# do in both
+def kh.revA(
+  xs: List<&2, T.Val>,
+  +acc: List<&2, T.Val>,
+  +nn: String,
+  +pp: List<&2, String>,
+  +kk: String
+) -> {kh.A(List.reverse.go(&2, T.Val, xs, acc), nn, pp, kk) == Bool.and(kh.A(xs, nn, pp, kk), kh.A(acc, nn, pp,
+  kk)) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case +xx <> +tt:
+      Equal.trans(Bool, kh.A(List.reverse.go(&2, T.Val, tt, xx <> acc), nn, pp, kk), Bool.and(kh.A(tt, nn, pp, kk),
+        kh.A(xx <> acc, nn, pp, kk)), Bool.and(kh.A(xx <> tt, nn, pp, kk), kh.A(acc, nn, pp, kk)),
+        kh.revA(tt, xx <> acc, nn, pp, kk),
+        Equal.trans(Bool, Bool.and(kh.A(tt, nn, pp, kk), kh.A(xx <> acc, nn, pp, kk)), Bool.and(kh.A(tt, nn, pp,
+          kk), Bool.and(kh.eA(xx, nn, pp, kk), kh.A(acc, nn, pp, kk))), Bool.and(kh.A(xx <> tt, nn, pp, kk),
+          kh.A(acc, nn, pp, kk)),
+          Equal.cong(Bool, Bool, zz => Bool.and(kh.A(tt, nn, pp, kk), zz), kh.A(xx <> acc, nn, pp, kk),
+            Bool.and(kh.eA(xx, nn, pp, kk), kh.A(acc, nn, pp, kk)), kh.uA(xx, pp, acc, nn, kk)),
+          Equal.trans(Bool, Bool.and(kh.A(tt, nn, pp, kk), Bool.and(kh.eA(xx, nn, pp, kk), kh.A(acc, nn, pp,
+            kk))), Bool.and(Bool.and(kh.eA(xx, nn, pp, kk), kh.A(tt, nn, pp, kk)), kh.A(acc, nn, pp, kk)),
+            Bool.and(kh.A(xx <> tt, nn, pp, kk), kh.A(acc, nn, pp, kk)), bo.and.sw(kh.eA(xx, nn, pp, kk), kh.A(tt,
+              nn, pp, kk), kh.A(acc, nn, pp, kk)),
+            Equal.cong(Bool, Bool, zz => Bool.and(zz, kh.A(acc, nn, pp, kk)), Bool.and(kh.eA(xx, nn, pp, kk),
+              kh.A(tt, nn, pp, kk)), kh.A(xx <> tt, nn, pp, kk), Equal.sym(Bool, kh.A(xx <> tt, nn, pp, kk),
+                Bool.and(kh.eA(xx, nn, pp, kk), kh.A(tt, nn, pp, kk)), kh.uA(xx, pp, tt, nn, kk))))))
+
+# some element holds a path in a reversal onto a list when one of either
+# does
+def kh.revS(
+  xs: List<&2, T.Val>,
+  +acc: List<&2, T.Val>,
+  +pp: List<&2, String>,
+  +kk: String
+) -> {kh.S(List.reverse.go(&2, T.Val, xs, acc), pp, kk) == Bool.or(kh.S(xs, pp, kk), kh.S(acc, pp, kk)) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case +xx <> +tt:
+      Equal.trans(Bool, kh.S(List.reverse.go(&2, T.Val, tt, xx <> acc), pp, kk), Bool.or(kh.S(tt, pp, kk),
+        kh.S(xx <> acc, pp, kk)), Bool.or(kh.S(xx <> tt, pp, kk), kh.S(acc, pp, kk)), kh.revS(tt, xx <> acc, pp,
+          kk),
+        Equal.trans(Bool, Bool.or(kh.S(tt, pp, kk), kh.S(xx <> acc, pp, kk)), Bool.or(kh.S(tt, pp, kk),
+          Bool.or(kh.eS(xx, pp, kk), kh.S(acc, pp, kk))), Bool.or(kh.S(xx <> tt, pp, kk), kh.S(acc, pp, kk)),
+          Equal.cong(Bool, Bool, zz => Bool.or(kh.S(tt, pp, kk), zz), kh.S(xx <> acc, pp, kk),
+            Bool.or(kh.eS(xx, pp, kk), kh.S(acc, pp, kk)), kh.uS(xx, pp, acc, kk)),
+          Equal.trans(Bool, Bool.or(kh.S(tt, pp, kk), Bool.or(kh.eS(xx, pp, kk), kh.S(acc, pp, kk))),
+            Bool.or(Bool.or(kh.eS(xx, pp, kk), kh.S(tt, pp, kk)), kh.S(acc, pp, kk)), Bool.or(kh.S(xx <> tt, pp,
+              kk), kh.S(acc, pp, kk)), bo.or.sw(kh.eS(xx, pp, kk), kh.S(tt, pp, kk), kh.S(acc, pp, kk)),
+            Equal.cong(Bool, Bool, zz => Bool.or(zz, kh.S(acc, pp, kk)), Bool.or(kh.eS(xx, pp, kk), kh.S(tt, pp,
+              kk)), kh.S(xx <> tt, pp, kk), Equal.sym(Bool, kh.S(xx <> tt, pp, kk), Bool.or(kh.eS(xx, pp, kk),
+                kh.S(tt, pp, kk)), kh.uS(xx, pp, tt, kk))))))
+
+# which of k3.h's readings a lemma is about: a name found, the rows seen
+# for a name, or some element or item
+type KSel is Data:
+  SlF{name: String}
+  SlA{name: String, path: List<&2, String>}
+  SlS{path: List<&2, String>}
+
+# the reading a selector names
+def kh.sl(sel: KSel, xs: List<&2, T.Val>, +kk: String) -> Bool:
+  match sel:
+    case SlF{nn}:
+      kh.F(xs, nn)
+    case SlA{nn, pp}:
+      kh.A(xs, nn, pp, kk)
+    case SlS{pp}:
+      kh.S(xs, pp, kk)
+
+# the reading of one value
+def kh.el(sel: KSel, xx: T.Val, +kk: String) -> Bool:
+  match sel:
+    case SlF{nn}:
+      kh.eF(xx, nn)
+    case SlA{nn, pp}:
+      kh.eA(xx, nn, pp, kk)
+    case SlS{pp}:
+      kh.eS(xx, pp, kk)
+
+# how the readings of the values join: found or some is an or, all is an and
+def kh.op(sel: KSel, aa: Bool, bb: Bool) -> Bool:
+  match sel:
+    case SlF{_n}:
+      Bool.or(aa, bb)
+    case SlA{_n, _p}:
+      Bool.and(aa, bb)
+    case SlS{_p}:
+      Bool.or(aa, bb)
+
+# a reading, one value at a time
+def kh.slu(
+  +sel: KSel,
+  +xx: T.Val,
+  +tt: List<&2, T.Val>,
+  +kk: String
+) -> {kh.sl(sel, xx <> tt, kk) == kh.op(sel, kh.el(sel, xx, kk), kh.sl(sel, tt, kk)) : Bool}:
+  match sel:
+    case SlF{+nn}:
+      kh.uF(xx, tt, nn)
+    case SlA{+nn, +pp}:
+      kh.uA(xx, pp, tt, nn, kk)
+    case SlS{+pp}:
+      kh.uS(xx, pp, tt, kk)
+
+# or False is the Bool
+def bo.or.f(aa: Bool) -> {Bool.or(aa, False{}) == aa : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# and True is the Bool
+def bo.and.t(aa: Bool) -> {Bool.and(aa, True{}) == aa : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# both sides of an and
+def bo.and.cong(
+  aa: Bool,
+  bb: Bool,
+  cc: Bool,
+  dd: Bool,
+  +e1: {aa == cc : Bool},
+  +e2: {bb == dd : Bool}
+) -> {Bool.and(aa, bb) == Bool.and(cc, dd) : Bool}:
+  Equal.trans(Bool, Bool.and(aa, bb), Bool.and(cc, bb), Bool.and(cc, dd),
+    Equal.cong(Bool, Bool, zz => Bool.and(zz, bb), aa, cc, e1),
+    Equal.cong(Bool, Bool, zz => Bool.and(cc, zz), bb, dd, e2))
+
+# both sides of an or
+def bo.or.cong(
+  aa: Bool,
+  bb: Bool,
+  cc: Bool,
+  dd: Bool,
+  +e1: {aa == cc : Bool},
+  +e2: {bb == dd : Bool}
+) -> {Bool.or(aa, bb) == Bool.or(cc, dd) : Bool}:
+  Equal.trans(Bool, Bool.or(aa, bb), Bool.or(cc, bb), Bool.or(cc, dd),
+    Equal.cong(Bool, Bool, zz => Bool.or(zz, bb), aa, cc, e1),
+    Equal.cong(Bool, Bool, zz => Bool.or(cc, zz), bb, dd, e2))
+
+# a reading does not see the order of the values
+def kh.slrev(
+  +sel: KSel,
+  +ys: List<&2, T.Val>,
+  +kk: String
+) -> {kh.sl(sel, List.reverse(&2, T.Val, ys), kk) == kh.sl(sel, ys, kk) : Bool}:
+  match sel:
+    case SlF{+nn}:
+      Equal.trans(Bool, kh.F(List.reverse(&2, T.Val, ys), nn), Bool.or(kh.F(ys, nn), False{}), kh.F(ys, nn),
+        kh.revF(ys, [], nn), bo.or.f(kh.F(ys, nn)))
+    case SlA{+nn, +pp}:
+      Equal.trans(Bool, kh.A(List.reverse(&2, T.Val, ys), nn, pp, kk), Bool.and(kh.A(ys, nn, pp, kk), True{}),
+        kh.A(ys, nn, pp, kk), kh.revA(ys, [], nn, pp, kk), bo.and.t(kh.A(ys, nn, pp, kk)))
+    case SlS{+pp}:
+      Equal.trans(Bool, kh.S(List.reverse(&2, T.Val, ys), pp, kk), Bool.or(kh.S(ys, pp, kk), False{}),
+        kh.S(ys, pp, kk), kh.revS(ys, [], pp, kk), bo.or.f(kh.S(ys, pp, kk)))
+
+# a reading of sealed rows, from the reading of the rows with every value
+# sealed
+def kh.slseal(
+  +sel: KSel,
+  +rr: List<&2, T.Val>,
+  +kk: String,
+  +ih: {kh.sl(sel, cv.smap(rr), kk) == kh.sl(sel, rr, kk) : Bool}
+) -> {kh.sl(sel, T.rows.seal(rr), kk) == kh.sl(sel, rr, kk) : Bool}:
+  Equal.trans(Bool, kh.sl(sel, T.rows.seal(rr), kk), kh.sl(sel, List.reverse(&2, T.Val, cv.smap(rr)), kk),
+    kh.sl(sel, rr, kk),
+    Equal.cong(List<&2, T.Val>, Bool, zs => kh.sl(sel, zs, kk), T.rows.seal(rr), List.reverse(&2, T.Val,
+      cv.smap(rr)), cv.seal.rs(rr)),
+    Equal.trans(Bool, kh.sl(sel, List.reverse(&2, T.Val, cv.smap(rr)), kk), kh.sl(sel, cv.smap(rr), kk),
+      kh.sl(sel, rr, kk), kh.slrev(sel, cv.smap(rr), kk), ih))
+
+# both sides of the join
+def kh.opcong(
+  +sel: KSel,
+  aa: Bool,
+  bb: Bool,
+  cc: Bool,
+  dd: Bool,
+  +e1: {aa == cc : Bool},
+  +e2: {bb == dd : Bool}
+) -> {kh.op(sel, aa, bb) == kh.op(sel, cc, dd) : Bool}:
+  match sel:
+    case SlF{_n}:
+      bo.or.cong(aa, bb, cc, dd, e1, e2)
+    case SlA{_n, _p}:
+      bo.and.cong(aa, bb, cc, dd, e1, e2)
+    case SlS{_p}:
+      bo.or.cong(aa, bb, cc, dd, e1, e2)
+
+# a reading of rows with every value sealed, one value at a time
+def kh.smstep(
+  +sel: KSel,
+  +xx: T.Val,
+  +tt: List<&2, T.Val>,
+  +kk: String,
+  +ee: {kh.el(sel, Laws.sealed(xx), kk) == kh.el(sel, xx, kk) : Bool},
+  +ih: {kh.sl(sel, cv.smap(tt), kk) == kh.sl(sel, tt, kk) : Bool}
+) -> {kh.sl(sel, Laws.sealed(xx) <> cv.smap(tt), kk) == kh.sl(sel, xx <> tt, kk) : Bool}:
+  Equal.trans(Bool, kh.sl(sel, Laws.sealed(xx) <> cv.smap(tt), kk), kh.op(sel, kh.el(sel, Laws.sealed(xx), kk),
+    kh.sl(sel, cv.smap(tt), kk)), kh.sl(sel, xx <> tt, kk), kh.slu(sel, Laws.sealed(xx), cv.smap(tt), kk),
+    Equal.trans(Bool, kh.op(sel, kh.el(sel, Laws.sealed(xx), kk), kh.sl(sel, cv.smap(tt), kk)), kh.op(sel,
+      kh.el(sel, xx, kk), kh.sl(sel, tt, kk)), kh.sl(sel, xx <> tt, kk), kh.opcong(sel, kh.el(sel,
+        Laws.sealed(xx), kk), kh.sl(sel, cv.smap(tt), kk), kh.el(sel, xx, kk), kh.sl(sel, tt, kk), ee, ih),
+      Equal.sym(Bool, kh.sl(sel, xx <> tt, kk), kh.op(sel, kh.el(sel, xx, kk), kh.sl(sel, tt, kk)), kh.slu(sel,
+        xx, tt, kk))))
+
+# sealed rows hold a path as the rows do, given that for their values
+def kh.hs(
+  pp: List<&2, String>,
+  +rr: List<&2, T.Val>,
+  +kk: String,
+  fF: @nm: String -> {kh.F(cv.smap(rr), nm) == kh.F(rr, nm) : Bool},
+  fA: @nm: String -> @qq: List<&2, String> -> {kh.A(cv.smap(rr), nm, qq, kk) == kh.A(rr, nm, qq, kk) : Bool}
+) -> {Laws.k3.has(T.rows.seal(rr), pp, kk) == Laws.k3.has(rr, pp, kk) : Bool}:
+  match pp:
+    case []:
+      kh.slseal(SlF{kk}, rr, kk, fF(kk))
+    case +n2 <> +q2:
+      bo.and.cong(kh.F(T.rows.seal(rr), n2), kh.A(T.rows.seal(rr), n2, q2, kk), kh.F(rr, n2), kh.A(rr, n2, q2,
+        kk), kh.slseal(SlF{n2}, rr, kk, fF(n2)), kh.slseal(SlA{n2, q2}, rr, kk, fA(n2, q2)))
+
+# a sealed array's items, in order again, hold a path as the items do
+def kh.ha(
+  +pp: List<&2, String>,
+  +rr: List<&2, T.Val>,
+  +kk: String,
+  +iS: {kh.S(cv.smap(rr), pp, kk) == kh.S(rr, pp, kk) : Bool}
+) -> {kh.S(List.reverse(&2, T.Val, T.rows.seal(rr)), pp, kk) == kh.S(rr, pp, kk) : Bool}:
+  Equal.trans(Bool, kh.S(List.reverse(&2, T.Val, T.rows.seal(rr)), pp, kk), kh.S(T.rows.seal(rr), pp, kk),
+    kh.S(rr, pp, kk), kh.slrev(SlS{pp}, T.rows.seal(rr), kk), kh.slseal(SlS{pp}, rr, kk, iS))
+
+# rows with every value sealed hold what the rows hold, read any way
+def kh.smapeq(
+  xs: List<&2, T.Val>,
+  +sel: KSel,
+  +kk: String
+) -> {kh.sl(sel, cv.smap(xs), kk) == kh.sl(sel, xs, kk) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+mm, T.VHead{+qq, +rr}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VHead{qq, rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VHead{qq, rr}}, tt, kk, bo.or.cong(Bool.not(T.str.eq(mm, nn)),
+            Laws.k3.has(T.rows.seal(rr), pp, kk), Bool.not(T.str.eq(mm, nn)), Laws.k3.has(rr, pp, kk), {==}, kh.hs(pp,
+              rr, kk, nm => kh.smapeq(rr, SlF{nm}, kk), nm => qq => kh.smapeq(rr, SlA{nm, qq}, kk))), kh.smapeq(tt,
+                sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VHead{qq, rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VInl{+rr}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VInl{rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VInl{rr}}, tt, kk, bo.or.cong(Bool.not(T.str.eq(mm, nn)),
+            Laws.k3.has(T.rows.seal(rr), pp, kk), Bool.not(T.str.eq(mm, nn)), Laws.k3.has(rr, pp, kk), {==}, kh.hs(pp,
+              rr, kk, nm => kh.smapeq(rr, SlF{nm}, kk), nm => qq => kh.smapeq(rr, SlA{nm, qq}, kk))), kh.smapeq(tt,
+                sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VInl{rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VAots{+qq, +rr}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VAots{qq, rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VAots{qq, rr}}, tt, kk, bo.or.cong(Bool.not(T.str.eq(mm, nn)),
+            kh.S(T.rows.seal(rr), pp, kk), Bool.not(T.str.eq(mm, nn)), kh.S(rr, pp, kk), {==}, kh.slseal(SlS{pp}, rr,
+              kk, kh.smapeq(rr, SlS{pp}, kk))), kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VAots{qq, rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VArr{+rr}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VArr{rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VArr{rr}}, tt, kk, bo.or.cong(Bool.not(T.str.eq(mm, nn)), kh.S(List.reverse(&2,
+            T.Val, T.rows.seal(rr)), pp, kk), Bool.not(T.str.eq(mm, nn)), kh.S(rr, pp, kk), {==}, kh.ha(pp, rr, kk,
+              kh.smapeq(rr, SlS{pp}, kk))), kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VArr{rr}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VStr{+a1}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VStr{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VStr{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VStr{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VSpan{+a1, +a2}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VSpan{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VSpan{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VSpan{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VInt{+a1, +a2}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VInt{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VInt{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VInt{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VFlo{+a1, +a2}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VFlo{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VFlo{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VFlo{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VBool{+a1}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VBool{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VBool{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VBool{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VWhen{+a1}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VWhen{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VWhen{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VWhen{a1}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VAot{+a1, +a2}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VAot{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VAot{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VAot{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VPair{+mm, T.VPair{+a1, +a2}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VPair{mm, T.VPair{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VPair{mm, T.VPair{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VPair{mm, T.VPair{a1, a2}}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VAot{+qq, +rr} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VAot{qq, rr}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VAot{qq, rr}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VAot{qq, rr}, tt, kk, kh.hs(pp, rr, kk, nm => kh.smapeq(rr, SlF{nm}, kk),
+            nm => qq => kh.smapeq(rr, SlA{nm, qq}, kk)), kh.smapeq(tt, sel, kk))
+    case T.VInl{+rr} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VInl{rr}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VInl{rr}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VInl{rr}, tt, kk, kh.hs(pp, rr, kk, nm => kh.smapeq(rr, SlF{nm}, kk),
+            nm => qq => kh.smapeq(rr, SlA{nm, qq}, kk)), kh.smapeq(tt, sel, kk))
+    case T.VArr{+rr} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VArr{rr}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VArr{rr}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VArr{rr}, tt, kk, kh.ha(pp, rr, kk, kh.smapeq(rr, SlS{pp}, kk)), kh.smapeq(tt, sel, kk))
+    case T.VStr{+a1} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VStr{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VStr{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VStr{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VSpan{+a1, +a2} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VSpan{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VSpan{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VSpan{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VInt{+a1, +a2} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VInt{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VInt{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VInt{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VFlo{+a1, +a2} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VFlo{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VFlo{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VFlo{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VBool{+a1} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VBool{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VBool{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VBool{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VWhen{+a1} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VWhen{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VWhen{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VWhen{a1}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VHead{+a1, +a2} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VHead{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VHead{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VHead{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+    case T.VAots{+a1, +a2} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.smstep(sel, T.VAots{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.smstep(sel, T.VAots{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.smstep(sel, T.VAots{a1, a2}, tt, kk, {==}, kh.smapeq(tt, sel, kk))
+
+# a reading of two lists, one value at a time: values read alike and rests
+# read alike
+def kh.mstep(
+  +sel: KSel,
+  +yy: T.Val,
+  +xx: T.Val,
+  +ys: List<&2, T.Val>,
+  +xs: List<&2, T.Val>,
+  +kk: String,
+  +ee: {kh.el(sel, yy, kk) == kh.el(sel, xx, kk) : Bool},
+  +ih: {kh.sl(sel, ys, kk) == kh.sl(sel, xs, kk) : Bool}
+) -> {kh.sl(sel, yy <> ys, kk) == kh.sl(sel, xx <> xs, kk) : Bool}:
+  Equal.trans(Bool, kh.sl(sel, yy <> ys, kk), kh.op(sel, kh.el(sel, yy, kk), kh.sl(sel, ys, kk)), kh.sl(sel, xx <>
+    xs, kk), kh.slu(sel, yy, ys, kk),
+    Equal.trans(Bool, kh.op(sel, kh.el(sel, yy, kk), kh.sl(sel, ys, kk)), kh.op(sel, kh.el(sel, xx, kk), kh.sl(sel,
+      xs, kk)), kh.sl(sel, xx <> xs, kk), kh.opcong(sel, kh.el(sel, yy, kk), kh.sl(sel, ys, kk), kh.el(sel, xx,
+        kk), kh.sl(sel, xs, kk), ee, ih),
+      Equal.sym(Bool, kh.sl(sel, xx <> xs, kk), kh.op(sel, kh.el(sel, xx, kk), kh.sl(sel, xs, kk)), kh.slu(sel, xx,
+        xs, kk))))
+
+# rows an inline table closed hold a path as the rows do, given that for
+# their values
+def kh.hi(
+  pp: List<&2, String>,
+  +rr: List<&2, T.Val>,
+  +kk: String,
+  fF: @nm: String -> {kh.F(T.inl.seal(rr), nm) == kh.F(rr, nm) : Bool},
+  fA: @nm: String -> @qq: List<&2, String> -> {kh.A(T.inl.seal(rr), nm, qq, kk) == kh.A(rr, nm, qq, kk) : Bool}
+) -> {Laws.k3.has(T.inl.seal(rr), pp, kk) == Laws.k3.has(rr, pp, kk) : Bool}:
+  match pp:
+    case []:
+      fF(kk)
+    case +n2 <> +q2:
+      bo.and.cong(kh.F(T.inl.seal(rr), n2), kh.A(T.inl.seal(rr), n2, q2, kk), kh.F(rr, n2), kh.A(rr, n2, q2,
+        kk), fF(n2), fA(n2, q2))
+
+# an inline table closed holds what its rows held, read any way
+def kh.inleq(
+  xs: List<&2, T.Val>,
+  +sel: KSel,
+  +kk: String
+) -> {kh.sl(sel, T.inl.seal(xs), kk) == kh.sl(sel, xs, kk) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+mm, T.VHead{+qq, +rr}} <> +tt:
+      match sel:
+        case SlF{+nn}:
+          kh.mstep(sel, T.VPair{mm, T.VInl{T.inl.seal(rr)}}, T.VPair{mm, T.VHead{qq, rr}}, T.inl.seal(tt), tt, kk,
+            {==}, kh.inleq(tt, sel, kk))
+        case SlA{+nn, +pp}:
+          kh.mstep(sel, T.VPair{mm, T.VInl{T.inl.seal(rr)}}, T.VPair{mm, T.VHead{qq, rr}}, T.inl.seal(tt), tt, kk,
+            bo.or.cong(Bool.not(T.str.eq(mm, nn)), Laws.k3.has(T.inl.seal(rr), pp, kk), Bool.not(T.str.eq(mm, nn)),
+              Laws.k3.has(rr, pp, kk), {==}, kh.hi(pp, rr, kk, nm => kh.inleq(rr, SlF{nm}, kk),
+                nm => qq2 => kh.inleq(rr, SlA{nm, qq2}, kk))), kh.inleq(tt, sel, kk))
+        case SlS{+pp}:
+          kh.mstep(sel, T.VPair{mm, T.VInl{T.inl.seal(rr)}}, T.VPair{mm, T.VHead{qq, rr}}, T.inl.seal(tt), tt, kk,
+            {==}, kh.inleq(tt, sel, kk))
+    case T.VPair{+mm, T.VStr{+a1}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VStr{a1}}, T.VPair{mm, T.VStr{a1}}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel,
+        kk))
+    case T.VPair{+mm, T.VSpan{+a1, +a2}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VSpan{a1, a2}}, T.VPair{mm, T.VSpan{a1, a2}}, T.inl.seal(tt), tt, kk, {==},
+        kh.inleq(tt, sel, kk))
+    case T.VPair{+mm, T.VInt{+a1, +a2}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VInt{a1, a2}}, T.VPair{mm, T.VInt{a1, a2}}, T.inl.seal(tt), tt, kk, {==},
+        kh.inleq(tt, sel, kk))
+    case T.VPair{+mm, T.VFlo{+a1, +a2}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VFlo{a1, a2}}, T.VPair{mm, T.VFlo{a1, a2}}, T.inl.seal(tt), tt, kk, {==},
+        kh.inleq(tt, sel, kk))
+    case T.VPair{+mm, T.VBool{+a1}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VBool{a1}}, T.VPair{mm, T.VBool{a1}}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt,
+        sel, kk))
+    case T.VPair{+mm, T.VWhen{+a1}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VWhen{a1}}, T.VPair{mm, T.VWhen{a1}}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt,
+        sel, kk))
+    case T.VPair{+mm, T.VArr{+a1}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VArr{a1}}, T.VPair{mm, T.VArr{a1}}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel,
+        kk))
+    case T.VPair{+mm, T.VInl{+a1}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VInl{a1}}, T.VPair{mm, T.VInl{a1}}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel,
+        kk))
+    case T.VPair{+mm, T.VAot{+a1, +a2}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VAot{a1, a2}}, T.VPair{mm, T.VAot{a1, a2}}, T.inl.seal(tt), tt, kk, {==},
+        kh.inleq(tt, sel, kk))
+    case T.VPair{+mm, T.VAots{+a1, +a2}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VAots{a1, a2}}, T.VPair{mm, T.VAots{a1, a2}}, T.inl.seal(tt), tt, kk, {==},
+        kh.inleq(tt, sel, kk))
+    case T.VPair{+mm, T.VPair{+a1, +a2}} <> +tt:
+      kh.mstep(sel, T.VPair{mm, T.VPair{a1, a2}}, T.VPair{mm, T.VPair{a1, a2}}, T.inl.seal(tt), tt, kk, {==},
+        kh.inleq(tt, sel, kk))
+    case T.VStr{+a1} <> +tt:
+      kh.mstep(sel, T.VStr{a1}, T.VStr{a1}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VSpan{+a1, +a2} <> +tt:
+      kh.mstep(sel, T.VSpan{a1, a2}, T.VSpan{a1, a2}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VInt{+a1, +a2} <> +tt:
+      kh.mstep(sel, T.VInt{a1, a2}, T.VInt{a1, a2}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VFlo{+a1, +a2} <> +tt:
+      kh.mstep(sel, T.VFlo{a1, a2}, T.VFlo{a1, a2}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VBool{+a1} <> +tt:
+      kh.mstep(sel, T.VBool{a1}, T.VBool{a1}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VWhen{+a1} <> +tt:
+      kh.mstep(sel, T.VWhen{a1}, T.VWhen{a1}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VArr{+a1} <> +tt:
+      kh.mstep(sel, T.VArr{a1}, T.VArr{a1}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VInl{+a1} <> +tt:
+      kh.mstep(sel, T.VInl{a1}, T.VInl{a1}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VHead{+a1, +a2} <> +tt:
+      kh.mstep(sel, T.VHead{a1, a2}, T.VHead{a1, a2}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VAot{+a1, +a2} <> +tt:
+      kh.mstep(sel, T.VAot{a1, a2}, T.VAot{a1, a2}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+    case T.VAots{+a1, +a2} <> +tt:
+      kh.mstep(sel, T.VAots{a1, a2}, T.VAots{a1, a2}, T.inl.seal(tt), tt, kk, {==}, kh.inleq(tt, sel, kk))
+
+# an or that answered False: its left half did
+def bo.or.fl(aa: Bool, bb: Bool, +ee: {Bool.or(aa, bb) == False{} : Bool}) -> {aa == False{} : Bool}:
+  match aa:
+    case True{}:
+      Eq.bit.absurd2(&2, {True{} == False{} : Bool}, ee)
+    case False{}:
+      {==}
+
+# and its right half did
+def bo.or.fr(aa: Bool, bb: Bool, +ee: {Bool.or(aa, bb) == False{} : Bool}) -> {bb == False{} : Bool}:
+  match aa:
+    case True{}:
+      Eq.bit.absurd2(&2, {bb == False{} : Bool}, ee)
+    case False{}:
+      ee
+
+# an or whose right half answered True
+def bo.or.tr(aa: Bool, bb: Bool, +ee: {bb == True{} : Bool}) -> {Bool.or(aa, bb) == True{} : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      ee
+
+# an or whose left half answered True
+def bo.or.tl(aa: Bool, bb: Bool, +ee: {aa == True{} : Bool}) -> {Bool.or(aa, bb) == True{} : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      Eq.bit.absurd(&2, {Bool.or(False{}, bb) == True{} : Bool}, ee)
+
+# a Bool that answered True, rewritten
+def bo.t(aa: Bool, bb: Bool, +ee: {aa == bb : Bool}, +et: {bb == True{} : Bool}) -> {aa == True{} : Bool}:
+  Equal.trans(Bool, aa, bb, True{}, ee, et)
+
+# a value that is no pair of the name holds any path for it
+def kh.eA.nf(
+  +xx: T.Val,
+  +nn: String,
+  +pp: List<&2, String>,
+  +kk: String,
+  +ee: {kh.eF(xx, nn) == False{} : Bool}
+) -> {kh.eA(xx, nn, pp, kk) == True{} : Bool}:
+  match xx:
+    case T.VPair{+mm, +vv}:
+      %Equal.sym(Bool, T.str.eq(mm, nn), False{}, ee) : {Bool.or(Bool.not(_), kh.hv(vv, pp, kk)) == True{} : Bool}
+      {==}
+    case T.VStr{_a}:
+      {==}
+    case T.VSpan{_a, _b}:
+      {==}
+    case T.VInt{_a, _b}:
+      {==}
+    case T.VFlo{_a, _b}:
+      {==}
+    case T.VBool{_a}:
+      {==}
+    case T.VWhen{_a}:
+      {==}
+    case T.VArr{_a}:
+      {==}
+    case T.VInl{_a}:
+      {==}
+    case T.VHead{_a, _b}:
+      {==}
+    case T.VAot{_a, _b}:
+      {==}
+    case T.VAots{_a, _b}:
+      {==}
+
+# a name not found in rows, one value at a time
+def kh.uF.f(
+  +xx: T.Val,
+  +tt: List<&2, T.Val>,
+  +nn: String,
+  +em: {kh.F(xx <> tt, nn) == False{} : Bool}
+) -> {Bool.or(kh.eF(xx, nn), kh.F(tt, nn)) == False{} : Bool}:
+  Equal.trans(Bool, Bool.or(kh.eF(xx, nn), kh.F(tt, nn)), kh.F(xx <> tt, nn), False{}, Equal.sym(Bool, kh.F(xx <>
+    tt, nn), Bool.or(kh.eF(xx, nn), kh.F(tt, nn)), kh.uF(xx, tt, nn)), em)
+
+# rows with no pair of a name hold any path through it for the pairs of it
+def kh.A.miss(
+  xs: List<&2, T.Val>,
+  +nn: String,
+  +pp: List<&2, String>,
+  +kk: String,
+  +em: {kh.F(xs, nn) == False{} : Bool}
+) -> {kh.A(xs, nn, pp, kk) == True{} : Bool}:
+  match xs:
+    case []:
+      {==}
+    case +xx <> +tt:
+      bo.t(kh.A(xx <> tt, nn, pp, kk), Bool.and(kh.eA(xx, nn, pp, kk), kh.A(tt, nn, pp, kk)), kh.uA(xx, pp, tt, nn,
+        kk), gd.tt(kh.eA(xx, nn, pp, kk), kh.A(tt, nn, pp, kk), kh.eA.nf(xx, nn, pp, kk, bo.or.fl(kh.eF(xx, nn),
+          kh.F(tt, nn), kh.uF.f(xx, tt, nn, em))), kh.A.miss(tt, nn, pp, kk, bo.or.fr(kh.eF(xx, nn), kh.F(tt, nn),
+            kh.uF.f(xx, tt, nn, em)))))
+
+# every path the first rows hold, the second hold too
+def kh.Ext(_xs: List<&2, T.Val>, _ys: List<&2, T.Val>, +_kk: String) -> Type:
+  @pp: List<&2, String> -> {Laws.k3.has(_xs, pp, _kk) == True{} : Bool} -> {Laws.k3.has(_ys, pp, _kk) == True{} : Bool}
+
+# a name found in rows is not one missing from them
+def kh.neq(
+  nn: String,
+  mm: String,
+  +vs: List<&2, T.Val>,
+  bb: Bool,
+  +ee: {T.str.eq(nn, mm) == bb : Bool},
+  +em: {kh.F(vs, nn) == False{} : Bool},
+  +ef: {kh.F(vs, mm) == True{} : Bool}
+) -> {bb == False{} : Bool}:
+  match bb:
+    case True{}:
+      Eq.bit.absurd(&2, {True{} == False{} : Bool}, Equal.trans(Bool, False{}, kh.F(vs, nn), True{}, Equal.sym(Bool,
+        kh.F(vs, nn), False{}, em), Equal.trans(Bool, kh.F(vs, nn), kh.F(vs, mm), True{}, Equal.cong(String, Bool,
+          zz => kh.F(vs, zz), nn, mm, str.eq.true(nn, mm, ee)), ef)))
+    case False{}:
+      {==}
+
+# a pair put in front of rows that had no pair of its name keeps every path
+# they held
+def kh.fresh.go(
+  pp: List<&2, String>,
+  +nn: String,
+  +vv: T.Val,
+  +vs: List<&2, T.Val>,
+  +kk: String,
+  +em: {kh.F(vs, nn) == False{} : Bool},
+  +eh: {Laws.k3.has(vs, pp, kk) == True{} : Bool}
+) -> {Laws.k3.has(T.VPair{nn, vv} <> vs, pp, kk) == True{} : Bool}:
+  match pp:
+    case []:
+      bo.t(kh.F(T.VPair{nn, vv} <> vs, kk), Bool.or(kh.eF(T.VPair{nn, vv}, kk), kh.F(vs, kk)), kh.uF(T.VPair{nn, vv},
+        vs, kk), bo.or.tr(kh.eF(T.VPair{nn, vv}, kk), kh.F(vs, kk), eh))
+    case +mm <> +qq:
+      gd.tt(kh.F(T.VPair{nn, vv} <> vs, mm), kh.A(T.VPair{nn, vv} <> vs, mm, qq, kk),
+        bo.t(kh.F(T.VPair{nn, vv} <> vs, mm), Bool.or(kh.eF(T.VPair{nn, vv}, mm), kh.F(vs, mm)), kh.uF(T.VPair{nn,
+          vv}, vs, mm), bo.or.tr(kh.eF(T.VPair{nn, vv}, mm), kh.F(vs, mm), gd.l(kh.F(vs, mm), kh.A(vs, mm, qq, kk),
+            eh))),
+        bo.t(kh.A(T.VPair{nn, vv} <> vs, mm, qq, kk), Bool.and(kh.eA(T.VPair{nn, vv}, mm, qq, kk), kh.A(vs, mm, qq,
+          kk)), kh.uA(T.VPair{nn, vv}, qq, vs, mm, kk), gd.tt(kh.eA(T.VPair{nn, vv}, mm, qq, kk), kh.A(vs, mm, qq,
+            kk), kh.eA.nf(T.VPair{nn, vv}, mm, qq, kk, kh.neq(nn, mm, vs, T.str.eq(nn, mm), {==}, em, gd.l(kh.F(vs,
+              mm), kh.A(vs, mm, qq, kk), eh))), gd.r(kh.F(vs, mm), kh.A(vs, mm, qq, kk), eh))))
+
+# and so as a promise for every path
+def kh.fresh(
+  +nn: String,
+  +vv: T.Val,
+  +vs: List<&2, T.Val>,
+  +kk: String,
+  +em: {kh.F(vs, nn) == False{} : Bool}
+) -> kh.Ext(vs, T.VPair{nn, vv} <> vs, kk):
+  pp => eh => kh.fresh.go(pp, nn, vv, vs, kk, em, eh)
+
+# a pair of the name, with a value that holds the path, holds it
+def kh.eA.same(
+  mm: String,
+  +nn: String,
+  +vv: T.Val,
+  +pp: List<&2, String>,
+  +kk: String,
+  +ee: {T.str.eq(mm, nn) == True{} : Bool},
+  +ev: {kh.hv(vv, pp, kk) == True{} : Bool}
+) -> {kh.eA(T.VPair{mm, vv}, nn, pp, kk) == True{} : Bool}:
+  %Equal.sym(Bool, T.str.eq(mm, nn), True{}, ee) : {Bool.or(Bool.not(_), kh.hv(vv, pp, kk)) == True{} : Bool}
+  ev
+
+# a pair put in front of rows that had no pair of its name is found there
+def kh.mk0(+nn: String, +vv: T.Val, +vs: List<&2, T.Val>) -> {kh.F(T.VPair{nn, vv} <> vs, nn) == True{} : Bool}:
+  bo.t(kh.F(T.VPair{nn, vv} <> vs, nn), Bool.or(T.str.eq(nn, nn), kh.F(vs, nn)), kh.uF(T.VPair{nn, vv}, vs, nn),
+    bo.or.tl(T.str.eq(nn, nn), kh.F(vs, nn), str.eq.self(nn)))
+
+# and holds, through its name, every path its value holds
+def kh.mk(
+  +nn: String,
+  +vv: T.Val,
+  +vs: List<&2, T.Val>,
+  +pp: List<&2, String>,
+  +kk: String,
+  +em: {kh.F(vs, nn) == False{} : Bool},
+  +ev: {kh.hv(vv, pp, kk) == True{} : Bool}
+) -> {Laws.k3.has(T.VPair{nn, vv} <> vs, nn <> pp, kk) == True{} : Bool}:
+  gd.tt(kh.F(T.VPair{nn, vv} <> vs, nn), kh.A(T.VPair{nn, vv} <> vs, nn, pp, kk), kh.mk0(nn, vv, vs),
+    bo.t(kh.A(T.VPair{nn, vv} <> vs, nn, pp, kk), Bool.and(kh.eA(T.VPair{nn, vv}, nn, pp, kk), kh.A(vs, nn, pp,
+      kk)), kh.uA(T.VPair{nn, vv}, pp, vs, nn, kk), gd.tt(kh.eA(T.VPair{nn, vv}, nn, pp, kk), kh.A(vs, nn, pp, kk),
+        kh.eA.same(nn, nn, vv, pp, kk, str.eq.self(nn), ev), kh.A.miss(vs, nn, pp, kk, em))))
+
+# the value of a pair to be replaced
+def kh.hitv(hh: T.Hit) -> T.Val:
+  match hh:
+    case T.Found{vv}:
+      vv
+    case T.Miss{}:
+      T.VBool{False{}}
+
+# what rows.look finds is what get finds, as a Look
+def kh.lk(hh: T.Hit) -> T.Look:
+  match hh:
+    case T.Found{vv}:
+      T.look.of(vv)
+    case T.Miss{}:
+      T.KMiss{}
+
+# one pair of the look
+def kh.look.st(
+  bb: Bool,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +aa: String,
+  +ih: {T.rows.look(tt, aa) == kh.lk(T.rows.find(tt, aa)) : T.Look}
+) -> {T.look.step(bb, vv, _u => T.rows.look(tt, aa)) == kh.lk(T.find.step(bb, vv, _u => T.rows.find(tt, aa)))
+  : T.Look}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      ih
+
+# rows.look finds the pair get finds
+def kh.look(xs: List<&2, T.Val>, +aa: String) -> {T.rows.look(xs, aa) == kh.lk(T.rows.find(xs, aa)) : T.Look}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+mm, +vv} <> +tt:
+      kh.look.st(T.str.eq(mm, aa), vv, tt, aa, kh.look(tt, aa))
+    case T.VStr{+a1} <> +tt:
+      kh.look(tt, aa)
+    case T.VSpan{+a1, +a2} <> +tt:
+      kh.look(tt, aa)
+    case T.VInt{+a1, +a2} <> +tt:
+      kh.look(tt, aa)
+    case T.VFlo{+a1, +a2} <> +tt:
+      kh.look(tt, aa)
+    case T.VBool{+a1} <> +tt:
+      kh.look(tt, aa)
+    case T.VWhen{+a1} <> +tt:
+      kh.look(tt, aa)
+    case T.VArr{+a1} <> +tt:
+      kh.look(tt, aa)
+    case T.VInl{+a1} <> +tt:
+      kh.look(tt, aa)
+    case T.VHead{+a1, +a2} <> +tt:
+      kh.look(tt, aa)
+    case T.VAot{+a1, +a2} <> +tt:
+      kh.look(tt, aa)
+    case T.VAots{+a1, +a2} <> +tt:
+      kh.look(tt, aa)
+
+# one pair of a replacement: a name get finds is found after it
+def kh.rF.st(
+  bb: Bool,
+  +mm: String,
+  +old: T.Val,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +aa: String,
+  +nn: String,
+  +ih: {kh.F(T.rows.repl(tt, aa, vv), nn) == kh.F(tt, nn) : Bool}
+) -> {kh.F(T.rows.repl.step(bb, mm, old, vv, _u => T.rows.repl(tt, aa, vv)), nn) == kh.F(T.VPair{mm, old} <> tt,
+  nn) : Bool}:
+  match bb:
+    case True{}:
+      kh.mstep(SlF{nn}, T.VPair{mm, vv}, T.VPair{mm, old}, T.rows.repl(tt, aa, vv), tt, nn, {==}, ih)
+    case False{}:
+      kh.mstep(SlF{nn}, T.VPair{mm, old}, T.VPair{mm, old}, T.rows.repl(tt, aa, vv), tt, nn, {==}, ih)
+
+# a replacement keeps every name found
+def kh.rF(
+  xs: List<&2, T.Val>,
+  +aa: String,
+  +vv: T.Val,
+  +nn: String
+) -> {kh.F(T.rows.repl(xs, aa, vv), nn) == kh.F(xs, nn) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+mm, +old} <> +tt:
+      kh.rF.st(T.str.eq(mm, aa), mm, old, vv, tt, aa, nn, kh.rF(tt, aa, vv, nn))
+    case T.VStr{+a1} <> +tt:
+      kh.mstep(SlF{nn}, T.VStr{a1}, T.VStr{a1}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VSpan{+a1, +a2} <> +tt:
+      kh.mstep(SlF{nn}, T.VSpan{a1, a2}, T.VSpan{a1, a2}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VInt{+a1, +a2} <> +tt:
+      kh.mstep(SlF{nn}, T.VInt{a1, a2}, T.VInt{a1, a2}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VFlo{+a1, +a2} <> +tt:
+      kh.mstep(SlF{nn}, T.VFlo{a1, a2}, T.VFlo{a1, a2}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VBool{+a1} <> +tt:
+      kh.mstep(SlF{nn}, T.VBool{a1}, T.VBool{a1}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VWhen{+a1} <> +tt:
+      kh.mstep(SlF{nn}, T.VWhen{a1}, T.VWhen{a1}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VArr{+a1} <> +tt:
+      kh.mstep(SlF{nn}, T.VArr{a1}, T.VArr{a1}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VInl{+a1} <> +tt:
+      kh.mstep(SlF{nn}, T.VInl{a1}, T.VInl{a1}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VHead{+a1, +a2} <> +tt:
+      kh.mstep(SlF{nn}, T.VHead{a1, a2}, T.VHead{a1, a2}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VAot{+a1, +a2} <> +tt:
+      kh.mstep(SlF{nn}, T.VAot{a1, a2}, T.VAot{a1, a2}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+    case T.VAots{+a1, +a2} <> +tt:
+      kh.mstep(SlF{nn}, T.VAots{a1, a2}, T.VAots{a1, a2}, T.rows.repl(tt, aa, vv), tt, nn, {==}, kh.rF(tt, aa, vv, nn))
+
+# a pair of the replaced name is no pair of another name
+def kh.ne.rep(
+  mm: String,
+  aa: String,
+  nn: String,
+  +em: {T.str.eq(mm, aa) == True{} : Bool},
+  +ea: {T.str.eq(aa, nn) == False{} : Bool}
+) -> {T.str.eq(mm, nn) == False{} : Bool}:
+  %Equal.sym(String, mm, aa, str.eq.true(mm, aa, em)) : {T.str.eq(_, nn) == False{} : Bool}
+  ea
+
+# one pair of a replacement, read for another name
+def kh.rA.st(
+  bb: Bool,
+  +mm: String,
+  +old: T.Val,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +aa: String,
+  +nn: String,
+  +qq: List<&2, String>,
+  +kk: String,
+  +eb: {T.str.eq(mm, aa) == bb : Bool},
+  +ea: {T.str.eq(aa, nn) == False{} : Bool},
+  +ih: {kh.A(T.rows.repl(tt, aa, vv), nn, qq, kk) == kh.A(tt, nn, qq, kk) : Bool}
+) -> {kh.A(T.rows.repl.step(bb, mm, old, vv, _u => T.rows.repl(tt, aa, vv)), nn, qq, kk) == kh.A(T.VPair{mm, old}
+  <> tt, nn, qq, kk) : Bool}:
+  match bb:
+    case True{}:
+      kh.mstep(SlA{nn, qq}, T.VPair{mm, vv}, T.VPair{mm, old}, T.rows.repl(tt, aa, vv), tt, kk,
+        Equal.trans(Bool, kh.eA(T.VPair{mm, vv}, nn, qq, kk), True{}, kh.eA(T.VPair{mm, old}, nn, qq, kk),
+          kh.eA.nf(T.VPair{mm, vv}, nn, qq, kk, kh.ne.rep(mm, aa, nn, eb, ea)), Equal.sym(Bool, kh.eA(T.VPair{mm,
+            old}, nn, qq, kk), True{}, kh.eA.nf(T.VPair{mm, old}, nn, qq, kk, kh.ne.rep(mm, aa, nn, eb, ea)))), ih)
+    case False{}:
+      kh.mstep(SlA{nn, qq}, T.VPair{mm, old}, T.VPair{mm, old}, T.rows.repl(tt, aa, vv), tt, kk, {==}, ih)
+
+# a replacement keeps what the rows seen for another name hold
+def kh.rA.o(
+  xs: List<&2, T.Val>,
+  +aa: String,
+  +vv: T.Val,
+  +nn: String,
+  +qq: List<&2, String>,
+  +kk: String,
+  +ea: {T.str.eq(aa, nn) == False{} : Bool}
+) -> {kh.A(T.rows.repl(xs, aa, vv), nn, qq, kk) == kh.A(xs, nn, qq, kk) : Bool}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+mm, +old} <> +tt:
+      kh.rA.st(T.str.eq(mm, aa), mm, old, vv, tt, aa, nn, qq, kk, {==}, ea, kh.rA.o(tt, aa, vv, nn, qq, kk, ea))
+    case T.VStr{+a1} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VStr{a1}, T.VStr{a1}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv, nn, qq,
+        kk, ea))
+    case T.VSpan{+a1, +a2} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VSpan{a1, a2}, T.VSpan{a1, a2}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa,
+        vv, nn, qq, kk, ea))
+    case T.VInt{+a1, +a2} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VInt{a1, a2}, T.VInt{a1, a2}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv,
+        nn, qq, kk, ea))
+    case T.VFlo{+a1, +a2} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VFlo{a1, a2}, T.VFlo{a1, a2}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv,
+        nn, qq, kk, ea))
+    case T.VBool{+a1} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VBool{a1}, T.VBool{a1}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv, nn,
+        qq, kk, ea))
+    case T.VWhen{+a1} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VWhen{a1}, T.VWhen{a1}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv, nn,
+        qq, kk, ea))
+    case T.VArr{+a1} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VArr{a1}, T.VArr{a1}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv, nn, qq,
+        kk, ea))
+    case T.VInl{+a1} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VInl{a1}, T.VInl{a1}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv, nn, qq,
+        kk, ea))
+    case T.VHead{+a1, +a2} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VHead{a1, a2}, T.VHead{a1, a2}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa,
+        vv, nn, qq, kk, ea))
+    case T.VAot{+a1, +a2} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VAot{a1, a2}, T.VAot{a1, a2}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa, vv,
+        nn, qq, kk, ea))
+    case T.VAots{+a1, +a2} <> +tt:
+      kh.mstep(SlA{nn, qq}, T.VAots{a1, a2}, T.VAots{a1, a2}, T.rows.repl(tt, aa, vv), tt, kk, {==}, kh.rA.o(tt, aa,
+        vv, nn, qq, kk, ea))
+
+# one pair of a replacement, read for its own name
+def kh.rS.st(
+  bb: Bool,
+  +mm: String,
+  +old: T.Val,
+  +vv: T.Val,
+  +tt: List<&2, T.Val>,
+  +aa: String,
+  +qq: List<&2, String>,
+  +kk: String,
+  +eb: {T.str.eq(mm, aa) == bb : Bool},
+  +ev: {kh.hv(vv, qq, kk) == True{} : Bool},
+  +ih: {kh.A(T.rows.repl(tt, aa, vv), aa, qq, kk) == True{} : Bool}
+) -> {kh.A(T.rows.repl.step(bb, mm, old, vv, _u => T.rows.repl(tt, aa, vv)), aa, qq, kk) == True{} : Bool}:
+  match bb:
+    case True{}:
+      bo.t(kh.A(T.VPair{mm, vv} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(kh.eA(T.VPair{mm, vv}, aa, qq,
+        kk), kh.A(T.rows.repl(tt, aa, vv), aa, qq, kk)), kh.uA(T.VPair{mm, vv}, qq, T.rows.repl(tt, aa, vv), aa, kk),
+        gd.tt(kh.eA(T.VPair{mm, vv}, aa, qq, kk), kh.A(T.rows.repl(tt, aa, vv), aa, qq, kk), kh.eA.same(mm, aa, vv,
+          qq, kk, eb, ev), ih))
+    case False{}:
+      bo.t(kh.A(T.VPair{mm, old} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(kh.eA(T.VPair{mm, old}, aa, qq,
+        kk), kh.A(T.rows.repl(tt, aa, vv), aa, qq, kk)), kh.uA(T.VPair{mm, old}, qq, T.rows.repl(tt, aa, vv), aa,
+          kk), gd.tt(kh.eA(T.VPair{mm, old}, aa, qq, kk), kh.A(T.rows.repl(tt, aa, vv), aa, qq, kk),
+            kh.eA.nf(T.VPair{mm,
+            old}, aa, qq, kk, eb), ih))
+
+# every pair of the replaced name holds what the new value holds
+def kh.rA.s(
+  xs: List<&2, T.Val>,
+  +aa: String,
+  +vv: T.Val,
+  +qq: List<&2, String>,
+  +kk: String,
+  +ev: {kh.hv(vv, qq, kk) == True{} : Bool}
+) -> {kh.A(T.rows.repl(xs, aa, vv), aa, qq, kk) == True{} : Bool}:
+  match xs:
+    case []:
+      {==}
+    case T.VPair{+mm, +old} <> +tt:
+      kh.rS.st(T.str.eq(mm, aa), mm, old, vv, tt, aa, qq, kk, {==}, ev, kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VStr{+a1} <> +tt:
+      bo.t(kh.A(T.VStr{a1} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv), aa,
+        qq, kk)), kh.uA(T.VStr{a1}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VSpan{+a1, +a2} <> +tt:
+      bo.t(kh.A(T.VSpan{a1, a2} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa,
+        vv), aa, qq, kk)), kh.uA(T.VSpan{a1, a2}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VInt{+a1, +a2} <> +tt:
+      bo.t(kh.A(T.VInt{a1, a2} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv),
+        aa, qq, kk)), kh.uA(T.VInt{a1, a2}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VFlo{+a1, +a2} <> +tt:
+      bo.t(kh.A(T.VFlo{a1, a2} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv),
+        aa, qq, kk)), kh.uA(T.VFlo{a1, a2}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VBool{+a1} <> +tt:
+      bo.t(kh.A(T.VBool{a1} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv),
+        aa, qq, kk)), kh.uA(T.VBool{a1}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VWhen{+a1} <> +tt:
+      bo.t(kh.A(T.VWhen{a1} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv),
+        aa, qq, kk)), kh.uA(T.VWhen{a1}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VArr{+a1} <> +tt:
+      bo.t(kh.A(T.VArr{a1} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv), aa,
+        qq, kk)), kh.uA(T.VArr{a1}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VInl{+a1} <> +tt:
+      bo.t(kh.A(T.VInl{a1} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv), aa,
+        qq, kk)), kh.uA(T.VInl{a1}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VHead{+a1, +a2} <> +tt:
+      bo.t(kh.A(T.VHead{a1, a2} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa,
+        vv), aa, qq, kk)), kh.uA(T.VHead{a1, a2}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VAot{+a1, +a2} <> +tt:
+      bo.t(kh.A(T.VAot{a1, a2} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa, vv),
+        aa, qq, kk)), kh.uA(T.VAot{a1, a2}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+    case T.VAots{+a1, +a2} <> +tt:
+      bo.t(kh.A(T.VAots{a1, a2} <> T.rows.repl(tt, aa, vv), aa, qq, kk), Bool.and(True{}, kh.A(T.rows.repl(tt, aa,
+        vv), aa, qq, kk)), kh.uA(T.VAots{a1, a2}, qq, T.rows.repl(tt, aa, vv), aa, kk), kh.rA.s(tt, aa, vv, qq, kk, ev))
+
+# a pair of the name that holds a path: its value does
+def kh.eA.get(
+  mm: String,
+  aa: String,
+  +vv: T.Val,
+  +qq: List<&2, String>,
+  +kk: String,
+  +eb: {T.str.eq(mm, aa) == True{} : Bool},
+  +ee: {kh.eA(T.VPair{mm, vv}, aa, qq, kk) == True{} : Bool}
+) -> {kh.hv(vv, qq, kk) == True{} : Bool}:
+  Equal.trans(Bool, kh.hv(vv, qq, kk), kh.eA(T.VPair{mm, vv}, aa, qq, kk), True{}, Equal.sym(Bool,
+    kh.eA(T.VPair{mm, vv}, aa, qq, kk), kh.hv(vv, qq, kk), Equal.cong(Bool, Bool, zz => Bool.or(Bool.not(zz),
+      kh.hv(vv, qq, kk)), T.str.eq(mm, aa), True{}, eb)), ee)
+
+# the first pair's search in the rest of the rows
+def kh.FirstIH(
+  _tt: List<&2, T.Val>,
+  +_aa: String,
+  _ww: T.Val,
+  +_qq: List<&2, String>,
+  +_kk: String
+) -> Type:
+  @e1: {T.rows.find(_tt, _aa) == T.Found{_ww} : T.Hit} -> @e2: {kh.A(_tt, _aa, _qq, _kk) == True{} : Bool} ->
+    {kh.hv(_ww, _qq, _kk) == True{} : Bool}
+
+# one pair of the first pair's search
+def kh.first.st(
+  bb: Bool,
+  +mm: String,
+  +old: T.Val,
+  +tt: List<&2, T.Val>,
+  +aa: String,
+  +ww: T.Val,
+  +qq: List<&2, String>,
+  +kk: String,
+  +eb: {T.str.eq(mm, aa) == bb : Bool},
+  +ef: {T.find.step(bb, old, _u => T.rows.find(tt, aa)) == T.Found{ww} : T.Hit},
+  +ea: {Bool.and(kh.eA(T.VPair{mm, old}, aa, qq, kk), kh.A(tt, aa, qq, kk)) == True{} : Bool},
+  ih: kh.FirstIH(tt, aa, ww, qq, kk)
+) -> {kh.hv(ww, qq, kk) == True{} : Bool}:
+  match bb:
+    case True{}:
+      %Equal.cong(T.Hit, T.Val, hh => kh.hitv(hh), T.Found{old}, T.Found{ww}, ef) :
+        {kh.hv(_, qq, kk) == True{} : Bool}
+      kh.eA.get(mm, aa, old, qq, kk, eb, gd.l(kh.eA(T.VPair{mm, old}, aa, qq, kk), kh.A(tt, aa, qq, kk), ea))
+    case False{}:
+      ih(ef, gd.r(kh.eA(T.VPair{mm, old}, aa, qq, kk), kh.A(tt, aa, qq, kk), ea))
+
+# whether a lookup found something, as False for a miss
+def kh.isf(hh: T.Hit) -> Bool:
+  match hh:
+    case T.Found{_v}:
+      True{}
+    case T.Miss{}:
+      False{}
+
+# the first pair of a name, when every pair of it holds a path, holds it
+def kh.first(
+  xs: List<&2, T.Val>,
+  +aa: String,
+  +ww: T.Val,
+  +qq: List<&2, String>,
+  +kk: String,
+  +ef: {T.rows.find(xs, aa) == T.Found{ww} : T.Hit},
+  +ea: {kh.A(xs, aa, qq, kk) == True{} : Bool}
+) -> {kh.hv(ww, qq, kk) == True{} : Bool}:
+  match xs:
+    case []:
+      Eq.bit.absurd(&2, {kh.hv(ww, qq, kk) == True{} : Bool}, Equal.cong(T.Hit, Bool, hh => kh.isf(hh), T.Miss{},
+        T.Found{ww}, ef))
+    case T.VPair{+mm, +old} <> +tt:
+      kh.first.st(T.str.eq(mm, aa), mm, old, tt, aa, ww, qq, kk, {==}, ef, bo.t(Bool.and(kh.eA(T.VPair{mm, old}, aa,
+        qq, kk), kh.A(tt, aa, qq, kk)), kh.A(T.VPair{mm, old} <> tt, aa, qq, kk), Equal.sym(Bool, kh.A(T.VPair{mm,
+          old} <> tt, aa, qq, kk), Bool.and(kh.eA(T.VPair{mm, old}, aa, qq, kk), kh.A(tt, aa, qq, kk)),
+          kh.uA(T.VPair{mm, old}, qq, tt, aa, kk)), ea), e1 => e2 => kh.first(tt, aa, ww, qq, kk, e1, e2))
+    case T.VStr{+a1} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VSpan{+a1, +a2} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VInt{+a1, +a2} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VFlo{+a1, +a2} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VBool{+a1} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VWhen{+a1} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VArr{+a1} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VInl{+a1} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VHead{+a1, +a2} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VAot{+a1, +a2} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+    case T.VAots{+a1, +a2} <> +tt:
+      kh.first(tt, aa, ww, qq, kk, ef, ea)
+
+# the rows seen for one name after a replacement, by whether the name is the
+# replaced one
+def kh.xrep.a(
+  bb: Bool,
+  +parent: List<&2, T.Val>,
+  +aa: String,
+  +mm: String,
+  +qq: List<&2, String>,
+  +ww: T.Val,
+  +vv: T.Val,
+  +kk: String,
+  +eb: {T.str.eq(aa, mm) == bb : Bool},
+  +ef: {T.rows.find(parent, aa) == T.Found{ww} : T.Hit},
+  ev: @q0: List<&2, String> -> {kh.hv(ww, q0, kk) == True{} : Bool} -> {kh.hv(vv, q0, kk) == True{} : Bool},
+  +ea: {kh.A(parent, mm, qq, kk) == True{} : Bool}
+) -> {kh.A(T.rows.repl(parent, aa, vv), mm, qq, kk) == True{} : Bool}:
+  match bb:
+    case True{}:
+      %str.eq.true(aa, mm, eb) : {kh.A(T.rows.repl(parent, aa, vv), _, qq, kk) == True{} : Bool}
+      kh.rA.s(parent, aa, vv, qq, kk, ev(qq, kh.first(parent, aa, ww, qq, kk, ef, Equal.trans(Bool, kh.A(parent, aa,
+        qq, kk), kh.A(parent, mm, qq, kk), True{}, Equal.cong(String, Bool, zz => kh.A(parent, zz, qq, kk), aa, mm,
+          str.eq.true(aa, mm, eb)), ea))))
+    case False{}:
+      bo.t(kh.A(T.rows.repl(parent, aa, vv), mm, qq, kk), kh.A(parent, mm, qq, kk), kh.rA.o(parent, aa, vv, mm, qq,
+        kk, eb), ea)
+
+# a replacement of every pair of a name found in rows, by a value that holds
+# every path the first pair's value held, keeps every path the rows held
+def kh.xrep.go(
+  pp: List<&2, String>,
+  +parent: List<&2, T.Val>,
+  +aa: String,
+  +ww: T.Val,
+  +vv: T.Val,
+  +kk: String,
+  +ef: {T.rows.find(parent, aa) == T.Found{ww} : T.Hit},
+  ev: @q0: List<&2, String> -> {kh.hv(ww, q0, kk) == True{} : Bool} -> {kh.hv(vv, q0, kk) == True{} : Bool},
+  +eh: {Laws.k3.has(parent, pp, kk) == True{} : Bool}
+) -> {Laws.k3.has(T.rows.repl(parent, aa, vv), pp, kk) == True{} : Bool}:
+  match pp:
+    case []:
+      bo.t(kh.F(T.rows.repl(parent, aa, vv), kk), kh.F(parent, kk), kh.rF(parent, aa, vv, kk), eh)
+    case +mm <> +qq:
+      gd.tt(kh.F(T.rows.repl(parent, aa, vv), mm), kh.A(T.rows.repl(parent, aa, vv), mm, qq, kk),
+        bo.t(kh.F(T.rows.repl(parent, aa, vv), mm), kh.F(parent, mm), kh.rF(parent, aa, vv, mm), gd.l(kh.F(parent,
+          mm), kh.A(parent, mm, qq, kk), eh)),
+        kh.xrep.a(T.str.eq(aa, mm), parent, aa, mm, qq, ww, vv, kk, {==}, ef, ev, gd.r(kh.F(parent, mm), kh.A(parent,
+          mm, qq, kk), eh)))
+
+# and so as a promise for every path
+def kh.xrep(
+  +parent: List<&2, T.Val>,
+  +aa: String,
+  +ww: T.Val,
+  +vv: T.Val,
+  +kk: String,
+  +ef: {T.rows.find(parent, aa) == T.Found{ww} : T.Hit},
+  ev: @q0: List<&2, String> -> {kh.hv(ww, q0, kk) == True{} : Bool} -> {kh.hv(vv, q0, kk) == True{} : Bool}
+) -> kh.Ext(parent, T.rows.repl(parent, aa, vv), kk):
+  pp => eh => kh.xrep.go(pp, parent, aa, ww, vv, kk, ef, ev, eh)
+
+# KEY-3: a walk keeps what the root held. A walk that ends with no error
+# gives back rows that hold every path the rows it started from held: a pair
+# is only put in front under a name the rows lack, a table's rows are only
+# replaced by rows that hold what they held, and an array of tables only
+# gains an element (kw.mono). kw.WI is the promise a walk carries down its
+# frames: whatever the current table's rows become, if they keep what they
+# held, putting the frames back keeps what the root held.
+
+# the root's rows once the frames are put back
+def kh.rb(stack: List<&2, T.Fr>, vs: List<&2, T.Val>) -> List<&2, T.Val>:
+  match stack:
+    case []:
+      vs
+    case fr <> tt:
+      kh.rb(tt, T.tree.wrap(fr, vs))
+
+# the rows a walk ends with
+def kw.evs(ee: T.End) -> List<&2, T.Val>:
+  match ee:
+    case T.End{vs, _b, _h}:
+      vs
+
+# the error a walk ends with
+def kw.ebad(ee: T.End) -> String:
+  match ee:
+    case T.End{_v, bad, _h}:
+      bad
+
+# a walk that ended with no error
+def kw.OK(ee: T.End) -> Data:
+  {String.is_empty(kw.ebad(ee)) == True{} : Bool}
+
+# putting the frames back gives the root's rows
+def kw.rbv(
+  stack: List<&2, T.Fr>,
+  vs: List<&2, T.Val>,
+  bad: String,
+  heads: List<&2, String>
+) -> {kw.evs(T.tree.rebuild(stack, vs, bad, heads)) == kh.rb(stack, vs) : List<&2, T.Val>}:
+  match stack:
+    case []:
+      {==}
+    case fr <> tt:
+      kw.rbv(tt, T.tree.wrap(fr, vs), bad, heads)
+
+# and keeps the error
+def kw.rbb(
+  stack: List<&2, T.Fr>,
+  vs: List<&2, T.Val>,
+  bad: String,
+  heads: List<&2, String>
+) -> {kw.ebad(T.tree.rebuild(stack, vs, bad, heads)) == bad : String}:
+  match stack:
+    case []:
+      {==}
+    case fr <> tt:
+      kw.rbb(tt, T.tree.wrap(fr, vs), bad, heads)
+
+# a walk's promise: the current rows, kept, keep the root
+def kw.WI(
+  _stack: List<&2, T.Fr>,
+  _vs: List<&2, T.Val>,
+  _root: List<&2, T.Val>,
+  +_kk: String
+) -> Type:
+  @v1: List<&2, T.Val> -> kh.Ext(_vs, v1, _kk) -> kh.Ext(_root, kh.rb(_stack, v1), _kk)
+
+# the promise while the walk has not failed
+def kw.T2(
+  ok: Bool,
+  stack: List<&2, T.Fr>,
+  vs: List<&2, T.Val>,
+  root: List<&2, T.Val>,
+  +kk: String
+) -> Type:
+  match ok:
+    case True{}:
+      kw.WI(stack, vs, root, kk)
+    case False{}:
+      {True{} == True{} : Bool}
+
+# the promise of a walk's state
+def kw.T(tw: T.Tw, root: List<&2, T.Val>, +kk: String) -> Type:
+  match tw:
+    case T.Tw{vs, _j, stack, +bad, _p, _h, _i}:
+      kw.T2(String.is_empty(bad), stack, vs, root, kk)
+
+# the first error, over a state with none, is the new one
+def kw.errf(
+  +bad: String,
+  +why: String,
+  +eo: {String.is_empty(bad) == True{} : Bool}
+) -> {String.is_empty(T.err.first(bad, why)) == String.is_empty(why) : Bool}:
+  %Equal.sym(Bool, String.is_empty(bad), True{}, eo) : {String.is_empty(T.err.first.go(_, bad, why))
+    == String.is_empty(why) : Bool}
+  {==}
+
+# the first error, by whether there was one
+def kw.efg(
+  bb: Bool,
+  +bad: String,
+  +why: String,
+  +eo: {String.is_empty(bad) == bb : Bool},
+  +ew: {String.is_empty(why) == False{} : Bool}
+) -> {String.is_empty(T.err.first.go(bb, bad, why)) == False{} : Bool}:
+  match bb:
+    case True{}:
+      ew
+    case False{}:
+      eo
+
+# the first error is never empty when the new one is not
+def kw.efne(
+  +bad: String,
+  +why: String,
+  +ew: {String.is_empty(why) == False{} : Bool}
+) -> {String.is_empty(T.err.first(bad, why)) == False{} : Bool}:
+  kw.efg(String.is_empty(bad), bad, why, {==}, ew)
+
+# a walk that ended well did not put the frames back with an error
+def kw.okrb(
+  +stack: List<&2, T.Fr>,
+  +vs: List<&2, T.Val>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +eb: {String.is_empty(kw.ebad(T.tree.rebuild(stack, vs, bad, heads))) == True{} : Bool}
+) -> {String.is_empty(bad) == True{} : Bool}:
+  Equal.trans(Bool, String.is_empty(bad), String.is_empty(kw.ebad(T.tree.rebuild(stack, vs, bad, heads))), True{},
+    Equal.cong(String, Bool, zz => String.is_empty(zz), bad, kw.ebad(T.tree.rebuild(stack, vs, bad, heads)),
+      Equal.sym(String, kw.ebad(T.tree.rebuild(stack, vs, bad, heads)), bad, kw.rbb(stack, vs, bad, heads))), eb)
+
+# nor with a new error
+def kw.nox(
+  +stack: List<&2, T.Fr>,
+  +vs: List<&2, T.Val>,
+  +bad: String,
+  +why: String,
+  +heads: List<&2, String>,
+  +ew: {String.is_empty(why) == False{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.rebuild(stack, vs, T.err.first(bad, why), heads))) == True{} : Bool}
+) -> {False{} == True{} : Bool}:
+  Equal.trans(Bool, False{}, String.is_empty(T.err.first(bad, why)), True{}, Equal.sym(Bool,
+    String.is_empty(T.err.first(bad, why)), False{}, kw.efne(bad, why, ew)), kw.okrb(stack, vs, T.err.first(bad,
+      why), heads, eb))
+
+# frames put back over rows that keep the current ones keep the root
+def kw.okx(
+  +stack: List<&2, T.Fr>,
+  +vs: List<&2, T.Val>,
+  +v1: List<&2, T.Val>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  wi: kw.WI(stack, vs, root, kk),
+  ex: kh.Ext(vs, v1, kk)
+) -> kh.Ext(root, kw.evs(T.tree.rebuild(stack, v1, bad, heads)), kk):
+  %Equal.sym(List<&2, T.Val>, kw.evs(T.tree.rebuild(stack, v1, bad, heads)), kh.rb(stack, v1), kw.rbv(stack, v1, bad,
+    heads)) : kh.Ext(root, _, kk)
+  wi(v1, ex)
+
+# a name get misses is not found
+def kw.miss(
+  +vs: List<&2, T.Val>,
+  +nn: String,
+  +eh: {T.rows.find(vs, nn) == T.Miss{} : T.Hit}
+) -> {kh.F(vs, nn) == False{} : Bool}:
+  Equal.cong(T.Hit, Bool, hh => Laws.k3.found(hh), T.rows.find(vs, nn), T.Miss{}, eh)
+
+# a name get finds is found
+def kw.hit(
+  +vs: List<&2, T.Val>,
+  +nn: String,
+  +ww: T.Val,
+  +eh: {T.rows.find(vs, nn) == T.Found{ww} : T.Hit}
+) -> {kh.F(vs, nn) == True{} : Bool}:
+  Equal.cong(T.Hit, Bool, hh => Laws.k3.found(hh), T.rows.find(vs, nn), T.Found{ww}, eh)
+
+# a put at the end of a walk
+def kw.put(
+  hit: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == hit : T.Hit},
+  wi: kw.WI(stack, vs, root, kk),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.put(hit, name, vs, val, stack, bad, heads))) == True{} : Bool}
+) -> kh.Ext(root, kw.evs(T.tree.leaf.put(hit, name, vs, val, stack, bad, heads)), kk):
+  match hit:
+    case T.Found{_v}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "duplicate key"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "duplicate key", heads, {==}, eb))
+    case T.Miss{}:
+      kw.okx(stack, vs, T.VPair{name, val} <> vs, bad, heads, root, kk, wi, kh.fresh(name, val, vs, kk, kw.miss(vs,
+        name, eh)))
+
+# an explicit header for a table that already exists
+def kw.dhead(
+  seen: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +p0: String,
+  +rows: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +path: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
+  wi: kw.WI(stack, vs, root, kk),
+  +eb: kw.OK(T.tree.leaf.def.head(seen, name, vs, rows, stack, bad, path, heads))
+) -> kh.Ext(root, kw.evs(T.tree.leaf.def.head(seen, name, vs, rows, stack, bad, path, heads)), kk):
+  match seen:
+    case True{}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "duplicate table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "duplicate table", heads, {==}, eb))
+    case False{}:
+      kw.okx(stack, vs, T.rows.repl(vs, name, T.VHead{path, rows}), bad, T.heads.by.head(path) <> heads, root, kk, wi,
+        kh.xrep(vs, name, T.VHead{p0, rows}, T.VHead{path, rows}, kk, eh, _q => ee => ee))
+
+# a table header at the end of a walk
+def kw.dhit(
+  hh: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +path: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == hh : T.Hit},
+  wi: kw.WI(stack, vs, root, kk),
+  +eb: kw.OK(T.tree.leaf.def.hit(kh.lk(hh), name, vs, stack, bad, path, heads))
+) -> kh.Ext(root, kw.evs(T.tree.leaf.def.hit(kh.lk(hh), name, vs, stack, bad, path, heads)), kk):
+  match hh:
+    case T.Miss{}:
+      kw.okx(stack, vs, T.VPair{name, T.VHead{path, []}} <> vs, bad, T.heads.by.head(path) <> heads, root, kk, wi,
+        kh.fresh(name, T.VHead{path, []}, vs, kk, kw.miss(vs, name, eh)))
+    case T.Found{T.VHead{+p0, +rows}}:
+      kw.dhead(T.heads.has(heads, path), name, vs, p0, rows, stack, bad, path, heads, root, kk, eh, wi, eb)
+    case T.Found{T.VInl{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad,
+        "inline table is closed"), heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad,
+          "inline table is closed", heads, {==}, eb))
+    case T.Found{T.VAots{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VStr{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VSpan{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VInt{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VFlo{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VBool{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VWhen{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VArr{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VAot{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VPair{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+
+# an array of tables that gains an element keeps what its elements held
+def kw.aotev(
+  +path: String,
+  +elems: List<&2, T.Val>,
+  +q0: List<&2, String>,
+  +kk: String,
+  +ee: {kh.S(elems, q0, kk) == True{} : Bool}
+) -> {kh.S(T.VAot{path, []} <> elems, q0, kk) == True{} : Bool}:
+  bo.t(kh.S(T.VAot{path, []} <> elems, q0, kk), Bool.or(kh.eS(T.VAot{path, []}, q0, kk), kh.S(elems, q0, kk)),
+    kh.uS(T.VAot{path, []}, q0, elems, kk), bo.or.tr(kh.eS(T.VAot{path, []}, q0, kk), kh.S(elems, q0, kk), ee))
+
+# an array-of-tables header at the end of a walk
+def kw.ahit(
+  hh: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +path: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == hh : T.Hit},
+  wi: kw.WI(stack, vs, root, kk),
+  +eb: kw.OK(T.tree.leaf.aot.hit(kh.lk(hh), name, vs, stack, bad, path, heads))
+) -> kh.Ext(root, kw.evs(T.tree.leaf.aot.hit(kh.lk(hh), name, vs, stack, bad, path, heads)), kk):
+  match hh:
+    case T.Miss{}:
+      kw.okx(stack, vs, T.VPair{name, T.VAots{path, [T.VAot{path, []}]}} <> vs, bad, heads, root, kk, wi,
+        kh.fresh(name, T.VAots{path, [T.VAot{path, []}]}, vs, kk, kw.miss(vs, name, eh)))
+    case T.Found{T.VAots{+p0, +elems}}:
+      kw.okx(stack, vs, T.rows.repl(vs, name, T.VAots{path, T.VAot{path, []} <> elems}), bad, T.heads.drop(heads, path
+        ++ "."), root, kk, wi, kh.xrep(vs, name, T.VAots{p0, elems}, T.VAots{path, T.VAot{path, []} <> elems}, kk, eh,
+          q0 => ee => kw.aotev(path, elems, q0, kk, ee)))
+    case T.Found{T.VHead{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VInl{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad,
+        "inline table is closed"), heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad,
+          "inline table is closed", heads, {==}, eb))
+    case T.Found{T.VStr{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VSpan{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VInt{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VFlo{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VBool{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VWhen{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VArr{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VAot{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VPair{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+
+# the job at the end of a walk
+def kw.job(
+  job: T.Job,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  wi: kw.WI(stack, vs, root, kk),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.job(job, name, vs, stack, bad, pre, heads))) == True{} : Bool}
+) -> kh.Ext(root, kw.evs(T.tree.leaf.job(job, name, vs, stack, bad, pre, heads)), kk):
+  match job:
+    case T.JPut{+val}:
+      kw.put(T.get(vs, name), name, vs, val, stack, bad, heads, root, kk, {==}, wi, eb)
+    case T.JDef{}:
+      %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
+        kh.Ext(root, kw.evs(T.tree.leaf.def.hit(_, name, vs, stack, bad, T.tree.pre(pre, name), heads)), kk)
+      kw.dhit(T.rows.find(vs, name), name, vs, stack, bad, T.tree.pre(pre, name), heads, root, kk, {==}, wi,
+        Equal.trans(Bool, String.is_empty(kw.ebad(T.tree.leaf.def.hit(kh.lk(T.rows.find(vs, name)), name, vs, stack,
+          bad, T.tree.pre(pre, name), heads))), String.is_empty(kw.ebad(T.tree.leaf.def.hit(T.rows.look(vs, name),
+            name, vs, stack, bad, T.tree.pre(pre, name), heads))), True{}, Equal.cong(T.Look, Bool, zz =>
+              String.is_empty(kw.ebad(T.tree.leaf.def.hit(zz, name, vs, stack, bad, T.tree.pre(pre, name), heads))),
+              kh.lk(T.rows.find(vs, name)), T.rows.look(vs, name), Equal.sym(T.Look, T.rows.look(vs, name),
+                kh.lk(T.rows.find(vs, name)), kh.look(vs, name))), eb))
+    case T.JAot{}:
+      %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
+        kh.Ext(root, kw.evs(T.tree.leaf.aot.hit(_, name, vs, stack, bad, T.tree.pre(pre, name), heads)), kk)
+      kw.ahit(T.rows.find(vs, name), name, vs, stack, bad, T.tree.pre(pre, name), heads, root, kk, {==}, wi,
+        Equal.trans(Bool, String.is_empty(kw.ebad(T.tree.leaf.aot.hit(kh.lk(T.rows.find(vs, name)), name, vs, stack,
+          bad, T.tree.pre(pre, name), heads))), String.is_empty(kw.ebad(T.tree.leaf.aot.hit(T.rows.look(vs, name),
+            name, vs, stack, bad, T.tree.pre(pre, name), heads))), True{}, Equal.cong(T.Look, Bool, zz =>
+              String.is_empty(kw.ebad(T.tree.leaf.aot.hit(zz, name, vs, stack, bad, T.tree.pre(pre, name), heads))),
+              kh.lk(T.rows.find(vs, name)), T.rows.look(vs, name), Equal.sym(T.Look, T.rows.look(vs, name),
+                kh.lk(T.rows.find(vs, name)), kh.look(vs, name))), eb))
+
+# the key at the end of a walk, by whether the walk failed
+def kw.leafok(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  wt: kw.T2(ok, stack, vs, root, kk),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.bad(ok, name, vs, job, stack, bad, pre, heads))) == True{} : Bool}
+) -> kh.Ext(root, kw.evs(T.tree.leaf.bad(ok, name, vs, job, stack, bad, pre, heads)), kk):
+  match ok:
+    case False{}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, bad, heads)), pp, kk) == True{}
+        : Bool}, Equal.trans(Bool, False{}, String.is_empty(bad), True{}, Equal.sym(Bool, String.is_empty(bad), False{},
+          eo), kw.okrb(stack, vs, bad, heads, eb)))
+    case True{}:
+      kw.job(job, name, vs, stack, bad, pre, heads, root, kk, wt, eb)
+
+# the key at the end of a walk
+def kw.leaf(
+  +name: String,
+  tw: T.Tw,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  wt: kw.T(tw, root, kk),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf(name, tw))) == True{} : Bool}
+) -> kh.Ext(root, kw.evs(T.tree.leaf(name, tw)), kk):
+  match tw:
+    case T.Tw{+vs, +job, +stack, +bad, +pre, +heads, _i}:
+      kw.leafok(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, root, kk, {==}, wt, eb)
+
+# a state a failed step leaves keeps the promise
+def kw.tfail(
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eo: {String.is_empty(bad) == False{} : Bool}
+) -> kw.T(T.Tw{vs, job, stack, bad, pre, heads, inl}, root, kk):
+  %Equal.sym(Bool, String.is_empty(bad), False{}, eo) : kw.T2(_, stack, vs, root, kk)
+  {==}
+
+# an or keeps True when its left half is replaced by one True whenever it is
+def bo.or.mono(
+  aa: Bool,
+  bb: Bool,
+  cc: Bool,
+  ff: @e1: {aa == True{} : Bool} -> {cc == True{} : Bool},
+  +ee: {Bool.or(aa, bb) == True{} : Bool}
+) -> {Bool.or(cc, bb) == True{} : Bool}:
+  match aa:
+    case True{}:
+      bo.or.tl(cc, bb, ff({==}))
+    case False{}:
+      bo.or.tr(cc, bb, ee)
+
+# a table entered or made by a walk
+def kw.hgo(
+  shut: Bool,
+  +p0: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
+  wi: kw.WI(stack, vs, root, kk)
+) -> kw.T(T.tree.sub.head.go(shut, p0, rows, name, vs, job, stack, pre, heads, inl, mark), root, kk):
+  match shut:
+    case True{}:
+      {==}
+    case False{}:
+      +v1 => ex => wi(T.rows.repl(vs, name, T.VHead{p0, v1}), kh.xrep(vs, name, T.VHead{p0, rows}, T.VHead{p0, v1}, kk,
+        eh, q0 => ee => ex(q0, ee)))
+
+# a table entered by a walk, by whether a dotted key asks
+def kw.hd(
+  dot: Bool,
+  +p0: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
+  wi: kw.WI(stack, vs, root, kk)
+) -> kw.T(T.tree.sub.head(dot, p0, rows, name, vs, job, stack, pre, heads, inl, mark), root, kk):
+  match dot:
+    case True{}:
+      kw.hgo(T.heads.head(heads, T.tree.pre(pre, name)), p0, rows, name, vs, job, stack, pre, heads, inl, mark, root,
+        kk, eh, wi)
+    case False{}:
+      kw.hgo(False{}, p0, rows, name, vs, job, stack, pre, heads, inl, mark, root, kk, eh, wi)
+
+# an element of an array of tables that holds a path, and the one that
+# replaces it holding what it held
+def kw.aotx(
+  +p0: String,
+  +p1: String,
+  +rows: List<&2, T.Val>,
+  +v1: List<&2, T.Val>,
+  +tt: List<&2, T.Val>,
+  +q0: List<&2, String>,
+  +kk: String,
+  ex: kh.Ext(rows, v1, kk),
+  +ee: {kh.S(T.VAot{p1, rows} <> tt, q0, kk) == True{} : Bool}
+) -> {kh.S(T.VAot{p0, v1} <> tt, q0, kk) == True{} : Bool}:
+  bo.t(kh.S(T.VAot{p0, v1} <> tt, q0, kk), Bool.or(Laws.k3.has(v1, q0, kk), kh.S(tt, q0, kk)), kh.uS(T.VAot{p0, v1},
+    q0, tt, kk), bo.or.mono(Laws.k3.has(rows, q0, kk), kh.S(tt, q0, kk), Laws.k3.has(v1, q0, kk), e1 => ex(q0, e1),
+      Equal.trans(Bool, Bool.or(Laws.k3.has(rows, q0, kk), kh.S(tt, q0, kk)), kh.S(T.VAot{p1, rows} <> tt, q0, kk),
+        True{}, Equal.sym(Bool, kh.S(T.VAot{p1, rows} <> tt, q0, kk), Bool.or(Laws.k3.has(rows, q0, kk), kh.S(tt, q0,
+          kk)), kh.uS(T.VAot{p1, rows}, q0, tt, kk)), ee)))
+
+# the newest element of an array of tables, entered by a walk
+def kw.last(
+  elems: List<&2, T.Val>,
+  +p0: String,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VAots{p0, elems}} : T.Hit},
+  wi: kw.WI(stack, vs, root, kk)
+) -> kw.T(T.tree.sub.aots(T.look.last(elems, p0), name, vs, job, stack, pre, heads, inl, p0), root, kk):
+  match elems:
+    case []:
+      {==}
+    case T.VAot{+p1, +rows} <> +tt:
+      +v1 => ex => wi(T.rows.repl(vs, name, T.VAots{p0, T.VAot{p0, v1} <> tt}), kh.xrep(vs, name, T.VAots{p0,
+        T.VAot{p1, rows} <> tt}, T.VAots{p0, T.VAot{p0, v1} <> tt}, kk, eh, q0 => ee => kw.aotx(p0, p1, rows, v1, tt,
+          q0, kk, ex, ee)))
+    case T.VStr{_a} <> _t:
+      {==}
+    case T.VSpan{_a, _b} <> _t:
+      {==}
+    case T.VInt{_a, _b} <> _t:
+      {==}
+    case T.VFlo{_a, _b} <> _t:
+      {==}
+    case T.VBool{_a} <> _t:
+      {==}
+    case T.VWhen{_a} <> _t:
+      {==}
+    case T.VArr{_a} <> _t:
+      {==}
+    case T.VInl{_a} <> _t:
+      {==}
+    case T.VHead{_a, _b} <> _t:
+      {==}
+    case T.VAots{_a, _b} <> _t:
+      {==}
+    case T.VPair{_a, _b} <> _t:
+      {==}
+
+# an array of tables entered by a walk, by whether a dotted key asks
+def kw.arr(
+  dot: Bool,
+  +p0: String,
+  +elems: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VAots{p0, elems}} : T.Hit},
+  wi: kw.WI(stack, vs, root, kk)
+) -> kw.T(T.tree.sub.arr(dot, p0, elems, name, vs, job, stack, pre, heads, inl), root, kk):
+  match dot:
+    case True{}:
+      {==}
+    case False{}:
+      kw.last(elems, p0, name, vs, job, stack, pre, heads, inl, root, kk, eh, wi)
+
+# one key a walk descends into
+def kw.shit(
+  hh: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == hh : T.Hit},
+  wi: kw.WI(stack, vs, root, kk)
+) -> kw.T(T.tree.sub.look(kh.lk(hh), name, vs, job, stack, pre, heads, inl, mark), root, kk):
+  match hh:
+    case T.Miss{}:
+      +v1 => _ex => wi(T.VPair{name, T.VHead{T.tree.pre(pre, name), v1}} <> vs, kh.fresh(name, T.VHead{T.tree.pre(pre,
+        name), v1}, vs, kk, kw.miss(vs, name, eh)))
+    case T.Found{T.VHead{+p0, +rows}}:
+      kw.hd(T.tree.sub.dot(T.tree.sub.job(mark, job)), p0, rows, name, vs, job, stack, pre, heads, inl, mark, root, kk,
+        eh, wi)
+    case T.Found{T.VAots{+p0, +elems}}:
+      kw.arr(T.tree.sub.dot(T.tree.sub.job(mark, job)), p0, elems, name, vs, job, stack, pre, heads, inl, root, kk, eh,
+        wi)
+    case T.Found{T.VStr{_a}}:
+      {==}
+    case T.Found{T.VSpan{_a, _b}}:
+      {==}
+    case T.Found{T.VInt{_a, _b}}:
+      {==}
+    case T.Found{T.VFlo{_a, _b}}:
+      {==}
+    case T.Found{T.VBool{_a}}:
+      {==}
+    case T.Found{T.VWhen{_a}}:
+      {==}
+    case T.Found{T.VArr{_a}}:
+      {==}
+    case T.Found{T.VInl{_a}}:
+      {==}
+    case T.Found{T.VAot{_a, _b}}:
+      {==}
+    case T.Found{T.VPair{_a, _b}}:
+      {==}
+
+# one key a walk descends into, by whether the walk failed
+def kw.subok(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  wt: kw.T2(ok, stack, vs, root, kk)
+) -> kw.T(T.tree.sub.bad(ok, name, vs, job, stack, bad, pre, heads, inl, mark), root, kk):
+  match ok:
+    case False{}:
+      kw.tfail(vs, job, stack, bad, pre, heads, inl, root, kk, eo)
+    case True{}:
+      %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
+        kw.T(T.tree.sub.look(_, name, vs, job, stack, pre, heads, inl, mark), root, kk)
+      kw.shit(T.rows.find(vs, name), name, vs, job, stack, pre, heads, inl, mark, root, kk, {==}, wt)
+
+# one key a walk descends into keeps the promise
+def kw.sub(
+  +name: String,
+  tw: T.Tw,
+  +mark: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  wt: kw.T(tw, root, kk)
+) -> kw.T(T.tree.sub(name, tw, mark), root, kk):
+  match tw:
+    case T.Tw{+vs, +job, +stack, +bad, +pre, +heads, +inl}:
+      kw.subok(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, inl, mark, root, kk, {==}, wt)
+
+# a walk with no key fails
+def kw.none(
+  tw: T.Tw,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eb: {String.is_empty(kw.ebad(T.tree.walk.none(tw))) == True{} : Bool}
+) -> kh.Ext(root, kw.evs(T.tree.walk.none(tw)), kk):
+  match tw:
+    case T.Tw{+vs, _j, +stack, +bad, _p, +heads, _i}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "empty key"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "empty key", heads, {==}, eb))
+
+# a walk that ends with no error keeps every path the root held
+def kw.walk(
+  path: List<&2, String>,
+  +tw: T.Tw,
+  +skip: U32,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  wt: kw.T(tw, root, kk),
+  +eb: {String.is_empty(kw.ebad(T.tree.walk(path, tw, skip))) == True{} : Bool}
+) -> kh.Ext(root, kw.evs(T.tree.walk(path, tw, skip)), kk):
+  match path:
+    case []:
+      kw.none(tw, root, kk, eb)
+    case +nm <> rest:
+      match rest:
+        case []:
+          kw.leaf(nm, tw, root, kk, wt, eb)
+        case _h <> _t:
+          kw.walk(rest, T.tree.sub(nm, tw, U32.is_zero(skip)), T.path.dec(skip), root, kk, kw.sub(nm, tw,
+            U32.is_zero(skip), root, kk, wt), eb)
+
+# the promise at the root
+def kw.wi0(
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +kk: String,
+  +eo: {String.is_empty(bad) == True{} : Bool}
+) -> kw.T2(String.is_empty(bad), [], rows, rows, kk):
+  %Equal.sym(Bool, String.is_empty(bad), True{}, eo) : kw.T2(_, [], rows, rows, kk)
+  _v1 => ex => ex
+
+# LEMMA: a walk from the root that ends with no error keeps every path the
+# root held
+def kw.mono(
+  path: List<&2, String>,
+  +rows: List<&2, T.Val>,
+  +job: T.Job,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +skip: U32,
+  +kk: String,
+  +eo: {String.is_empty(bad) == True{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.walk(path, T.Tw{rows, job, [], bad, pre, heads, inl}, skip))) == True{} : Bool}
+) -> kh.Ext(rows, kw.evs(T.tree.walk(path, T.Tw{rows, job, [], bad, pre, heads, inl}, skip)), kk):
+  kw.walk(path, T.Tw{rows, job, [], bad, pre, heads, inl}, skip, rows, kk, kw.wi0(bad, rows, kk, eo), eb)
+
+# KEY-3: a walk makes what it puts. A walk that ends with no error gives back
+# rows that hold, under the walk's names, the pair it put or the table it
+# opened (kc.tab), and, when it put a value, every path the value holds
+# below the pair (kc.put). kc.CI is the promise a walk carries down its
+# frames: whatever the current table's rows hold, the root holds under the
+# names walked so far, rp, reversed.
+
+# a walk's promise: the current rows hold under the names walked so far
+def kc.CI(_stack: List<&2, T.Fr>, _rp: List<&2, String>) -> Type:
+  @k1: String -> @v1: List<&2, T.Val> -> @q0: List<&2, String> -> {Laws.k3.has(v1, q0, k1) == True{} : Bool} ->
+    {Laws.k3.has(kh.rb(_stack, v1), List.reverse.go(&2, String, _rp, q0), k1) == True{} : Bool}
+
+# the promise while the walk has not failed
+def kc.T2(ok: Bool, stack: List<&2, T.Fr>, rp: List<&2, String>) -> Type:
+  match ok:
+    case True{}:
+      kc.CI(stack, rp)
+    case False{}:
+      {True{} == True{} : Bool}
+
+# the promise of a walk's state
+def kc.T(tw: T.Tw, rp: List<&2, String>) -> Type:
+  match tw:
+    case T.Tw{_v, _j, stack, +bad, _p, _h, _i}:
+      kc.T2(String.is_empty(bad), stack, rp)
+
+# a replacement of every pair of a name found in rows, by a value that holds
+# a path, holds the path through the name
+def kh.mkr(
+  +xs: List<&2, T.Val>,
+  +aa: String,
+  +vv: T.Val,
+  +qq: List<&2, String>,
+  +kk: String,
+  +ef: {kh.F(xs, aa) == True{} : Bool},
+  +ev: {kh.hv(vv, qq, kk) == True{} : Bool}
+) -> {Laws.k3.has(T.rows.repl(xs, aa, vv), aa <> qq, kk) == True{} : Bool}:
+  gd.tt(kh.F(T.rows.repl(xs, aa, vv), aa), kh.A(T.rows.repl(xs, aa, vv), aa, qq, kk), bo.t(kh.F(T.rows.repl(xs, aa,
+    vv), aa), kh.F(xs, aa), kh.rF(xs, aa, vv, aa), ef), kh.rA.s(xs, aa, vv, qq, kk, ev))
+
+# a new newest element holds what its rows hold
+def kc.aotin(
+  +p0: String,
+  +v1: List<&2, T.Val>,
+  +tt: List<&2, T.Val>,
+  +q0: List<&2, String>,
+  +kk: String,
+  +ee: {Laws.k3.has(v1, q0, kk) == True{} : Bool}
+) -> {kh.S(T.VAot{p0, v1} <> tt, q0, kk) == True{} : Bool}:
+  bo.t(kh.S(T.VAot{p0, v1} <> tt, q0, kk), Bool.or(Laws.k3.has(v1, q0, kk), kh.S(tt, q0, kk)), kh.uS(T.VAot{p0, v1},
+    q0, tt, kk), bo.or.tl(Laws.k3.has(v1, q0, kk), kh.S(tt, q0, kk), ee))
+
+# a state a failed step leaves keeps the promise
+def kc.tfail(
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +rp: List<&2, String>,
+  +eo: {String.is_empty(bad) == False{} : Bool}
+) -> kc.T(T.Tw{vs, job, stack, bad, pre, heads, inl}, rp):
+  %Equal.sym(Bool, String.is_empty(bad), False{}, eo) : kc.T2(_, stack, rp)
+  {==}
+
+# a table entered or made by a walk
+def kc.hgo(
+  shut: Bool,
+  +p0: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
+  wi: kc.CI(stack, rp)
+) -> kc.T(T.tree.sub.head.go(shut, p0, rows, name, vs, job, stack, pre, heads, inl, mark), name <> rp):
+  match shut:
+    case True{}:
+      {==}
+    case False{}:
+      +k1 => +v1 => +q0 => ee => wi(k1, T.rows.repl(vs, name, T.VHead{p0, v1}), name <> q0, kh.mkr(vs, name, T.VHead{p0,
+        v1}, q0, k1, kw.hit(vs, name, T.VHead{p0, rows}, eh), ee))
+
+# a table entered by a walk, by whether a dotted key asks
+def kc.hd(
+  dot: Bool,
+  +p0: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
+  wi: kc.CI(stack, rp)
+) -> kc.T(T.tree.sub.head(dot, p0, rows, name, vs, job, stack, pre, heads, inl, mark), name <> rp):
+  match dot:
+    case True{}:
+      kc.hgo(T.heads.head(heads, T.tree.pre(pre, name)), p0, rows, name, vs, job, stack, pre, heads, inl, mark, rp,
+        eh, wi)
+    case False{}:
+      kc.hgo(False{}, p0, rows, name, vs, job, stack, pre, heads, inl, mark, rp, eh, wi)
+
+# the newest element of an array of tables, entered by a walk
+def kc.last(
+  elems: List<&2, T.Val>,
+  +p0: String,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VAots{p0, elems}} : T.Hit},
+  wi: kc.CI(stack, rp)
+) -> kc.T(T.tree.sub.aots(T.look.last(elems, p0), name, vs, job, stack, pre, heads, inl, p0), name <> rp):
+  match elems:
+    case []:
+      {==}
+    case T.VAot{+p1, +rows} <> +tt:
+      +k1 => +v1 => +q0 => ee => wi(k1, T.rows.repl(vs, name, T.VAots{p0, T.VAot{p0, v1} <> tt}), name <> q0,
+        kh.mkr(vs, name, T.VAots{p0, T.VAot{p0, v1} <> tt}, q0, k1, kw.hit(vs, name, T.VAots{p0, T.VAot{p1, rows} <>
+          tt}, eh), kc.aotin(p0, v1, tt, q0, k1, ee)))
+    case T.VStr{_a} <> _t:
+      {==}
+    case T.VSpan{_a, _b} <> _t:
+      {==}
+    case T.VInt{_a, _b} <> _t:
+      {==}
+    case T.VFlo{_a, _b} <> _t:
+      {==}
+    case T.VBool{_a} <> _t:
+      {==}
+    case T.VWhen{_a} <> _t:
+      {==}
+    case T.VArr{_a} <> _t:
+      {==}
+    case T.VInl{_a} <> _t:
+      {==}
+    case T.VHead{_a, _b} <> _t:
+      {==}
+    case T.VAots{_a, _b} <> _t:
+      {==}
+    case T.VPair{_a, _b} <> _t:
+      {==}
+
+# an array of tables entered by a walk, by whether a dotted key asks
+def kc.arr(
+  dot: Bool,
+  +p0: String,
+  +elems: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VAots{p0, elems}} : T.Hit},
+  wi: kc.CI(stack, rp)
+) -> kc.T(T.tree.sub.arr(dot, p0, elems, name, vs, job, stack, pre, heads, inl), name <> rp):
+  match dot:
+    case True{}:
+      {==}
+    case False{}:
+      kc.last(elems, p0, name, vs, job, stack, pre, heads, inl, rp, eh, wi)
+
+# one key a walk descends into
+def kc.shit(
+  hh: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == hh : T.Hit},
+  wi: kc.CI(stack, rp)
+) -> kc.T(T.tree.sub.look(kh.lk(hh), name, vs, job, stack, pre, heads, inl, mark), name <> rp):
+  match hh:
+    case T.Miss{}:
+      +k1 => +v1 => +q0 => ee => wi(k1, T.VPair{name, T.VHead{T.tree.pre(pre, name), v1}} <> vs, name <> q0,
+        kh.mk(name, T.VHead{T.tree.pre(pre, name), v1}, vs, q0, k1, kw.miss(vs, name, eh), ee))
+    case T.Found{T.VHead{+p0, +rows}}:
+      kc.hd(T.tree.sub.dot(T.tree.sub.job(mark, job)), p0, rows, name, vs, job, stack, pre, heads, inl, mark, rp,
+        eh, wi)
+    case T.Found{T.VAots{+p0, +elems}}:
+      kc.arr(T.tree.sub.dot(T.tree.sub.job(mark, job)), p0, elems, name, vs, job, stack, pre, heads, inl, rp, eh,
+        wi)
+    case T.Found{T.VStr{_a}}:
+      {==}
+    case T.Found{T.VSpan{_a, _b}}:
+      {==}
+    case T.Found{T.VInt{_a, _b}}:
+      {==}
+    case T.Found{T.VFlo{_a, _b}}:
+      {==}
+    case T.Found{T.VBool{_a}}:
+      {==}
+    case T.Found{T.VWhen{_a}}:
+      {==}
+    case T.Found{T.VArr{_a}}:
+      {==}
+    case T.Found{T.VInl{_a}}:
+      {==}
+    case T.Found{T.VAot{_a, _b}}:
+      {==}
+    case T.Found{T.VPair{_a, _b}}:
+      {==}
+
+# one key a walk descends into, by whether the walk failed
+def kc.subok(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +rp: List<&2, String>,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  wt: kc.T2(ok, stack, rp)
+) -> kc.T(T.tree.sub.bad(ok, name, vs, job, stack, bad, pre, heads, inl, mark), name <> rp):
+  match ok:
+    case False{}:
+      kc.tfail(vs, job, stack, bad, pre, heads, inl, name <> rp, eo)
+    case True{}:
+      %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
+        kc.T(T.tree.sub.look(_, name, vs, job, stack, pre, heads, inl, mark), name <> rp)
+      kc.shit(T.rows.find(vs, name), name, vs, job, stack, pre, heads, inl, mark, rp, {==}, wt)
+
+# one key a walk descends into keeps the promise
+def kc.sub(
+  +name: String,
+  tw: T.Tw,
+  +mark: Bool,
+  +rp: List<&2, String>,
+  wt: kc.T(tw, rp)
+) -> kc.T(T.tree.sub(name, tw, mark), name <> rp):
+  match tw:
+    case T.Tw{+vs, +job, +stack, +bad, +pre, +heads, +inl}:
+      kc.subok(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, inl, mark, rp, {==}, wt)
+
+
+# a walk's job
+def kw.tjob(tw: T.Tw) -> T.Job:
+  match tw:
+    case T.Tw{_v, job, _s, _b, _p, _h, _i}:
+      job
+
+# the job a walk goes down with, after the newest element of an array of
+# tables is looked for
+def kc.jlast(
+  last: T.Last,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +path: String
+) -> {kw.tjob(T.tree.sub.aots(last, name, vs, job, stack, pre, heads, inl, path)) == job : T.Job}:
+  match last:
+    case T.LastSome{_p, _r, _w}:
+      {==}
+    case T.LastNo{_w}:
+      {==}
+
+# after an array of tables is entered
+def kc.jarr(
+  dot: Bool,
+  +path: String,
+  +elems: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool
+) -> {kw.tjob(T.tree.sub.arr(dot, path, elems, name, vs, job, stack, pre, heads, inl)) == job : T.Job}:
+  match dot:
+    case True{}:
+      {==}
+    case False{}:
+      kc.jlast(T.look.last(elems, path), name, vs, job, stack, pre, heads, inl, path)
+
+# after a table is entered
+def kc.jhgo(
+  shut: Bool,
+  +path: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool
+) -> {kw.tjob(T.tree.sub.head.go(shut, path, rows, name, vs, job, stack, pre, heads, inl, mark)) == job : T.Job}:
+  match shut:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# after a table is entered, by whether a dotted key asks
+def kc.jhd(
+  dot: Bool,
+  +path: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool
+) -> {kw.tjob(T.tree.sub.head(dot, path, rows, name, vs, job, stack, pre, heads, inl, mark)) == job : T.Job}:
+  match dot:
+    case True{}:
+      kc.jhgo(T.heads.head(heads, T.tree.pre(pre, name)), path, rows, name, vs, job, stack, pre, heads, inl, mark)
+    case False{}:
+      kc.jhgo(False{}, path, rows, name, vs, job, stack, pre, heads, inl, mark)
+
+# after one key is looked up
+def kc.jlook(
+  hit: T.Look,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool
+) -> {kw.tjob(T.tree.sub.look(hit, name, vs, job, stack, pre, heads, inl, mark)) == job : T.Job}:
+  match hit:
+    case T.KMiss{}:
+      {==}
+    case T.KHead{+path, +rows}:
+      kc.jhd(T.tree.sub.dot(T.tree.sub.job(mark, job)), path, rows, name, vs, job, stack, pre, heads, inl, mark)
+    case T.KInl{}:
+      {==}
+    case T.KAots{+path, +elems}:
+      kc.jarr(T.tree.sub.dot(T.tree.sub.job(mark, job)), path, elems, name, vs, job, stack, pre, heads, inl)
+    case T.KNo{_w}:
+      {==}
+
+# after one key, by whether the walk failed
+def kc.jok(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool
+) -> {kw.tjob(T.tree.sub.bad(ok, name, vs, job, stack, bad, pre, heads, inl, mark)) == job : T.Job}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      kc.jlook(T.rows.look(vs, name), name, vs, job, stack, pre, heads, inl, mark)
+
+# a walk goes down one key with its job
+def kc.subjob(+name: String, tw: T.Tw, +mark: Bool) -> {kw.tjob(T.tree.sub(name, tw, mark)) == kw.tjob(tw) : T.Job}:
+  match tw:
+    case T.Tw{+vs, +job, +stack, +bad, +pre, +heads, +inl}:
+      kc.jok(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, inl, mark)
+
+# the rows put back hold what the current rows did
+def kc.okx(
+  +stack: List<&2, T.Fr>,
+  +v1: List<&2, T.Val>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +q0: List<&2, String>,
+  +k1: String,
+  wi: kc.CI(stack, rp),
+  +ee: {Laws.k3.has(v1, q0, k1) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.rebuild(stack, v1, bad, heads)), List.reverse.go(&2, String, rp, q0), k1) == True{}
+  : Bool}:
+  %Equal.sym(List<&2, T.Val>, kw.evs(T.tree.rebuild(stack, v1, bad, heads)), kh.rb(stack, v1), kw.rbv(stack, v1, bad,
+    heads)) : {Laws.k3.has(_, List.reverse.go(&2, String, rp, q0), k1) == True{} : Bool}
+  wi(k1, v1, q0, ee)
+
+# a put at the end of a walk puts the pair
+def kc.tput(
+  hit: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +_eh: {T.rows.find(vs, name) == hit : T.Hit},
+  wi: kc.CI(stack, rp),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.put(hit, name, vs, val, stack, bad, heads))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.put(hit, name, vs, val, stack, bad, heads)), List.reverse.go(&2, String, rp, []),
+  name) == True{} : Bool}:
+  match hit:
+    case T.Found{_v}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "duplicate key"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "duplicate key", heads,
+          {==}, eb))
+    case T.Miss{}:
+      kc.okx(stack, T.VPair{name, val} <> vs, bad, heads, rp, [], name, wi, kh.mk0(name, val, vs))
+
+# an explicit header for a table that already exists
+def kc.tdhead(
+  seen: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +p0: String,
+  +rows: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +path: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
+  wi: kc.CI(stack, rp),
+  +eb: kw.OK(T.tree.leaf.def.head(seen, name, vs, rows, stack, bad, path, heads))
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.def.head(seen, name, vs, rows, stack, bad, path, heads)), List.reverse.go(&2,
+  String, rp, []), name) == True{} : Bool}:
+  match seen:
+    case True{}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "duplicate table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "duplicate table", heads,
+          {==}, eb))
+    case False{}:
+      kc.okx(stack, T.rows.repl(vs, name, T.VHead{path, rows}), bad, T.heads.by.head(path) <> heads, rp, [], name, wi,
+        bo.t(kh.F(T.rows.repl(vs, name, T.VHead{path, rows}), name), kh.F(vs, name), kh.rF(vs, name, T.VHead{path,
+          rows}, name), kw.hit(vs, name, T.VHead{p0, rows}, eh)))
+
+# a table header at the end of a walk opens the table
+def kc.tdhit(
+  hh: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +path: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == hh : T.Hit},
+  wi: kc.CI(stack, rp),
+  +eb: kw.OK(T.tree.leaf.def.hit(kh.lk(hh), name, vs, stack, bad, path, heads))
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.def.hit(kh.lk(hh), name, vs, stack, bad, path, heads)), List.reverse.go(&2,
+  String, rp, []), name) == True{} : Bool}:
+  match hh:
+    case T.Miss{}:
+      kc.okx(stack, T.VPair{name, T.VHead{path, []}} <> vs, bad, T.heads.by.head(path) <> heads, rp, [], name, wi,
+        kh.mk0(name, T.VHead{path, []}, vs))
+    case T.Found{T.VHead{+p0, +rows}}:
+      kc.tdhead(T.heads.has(heads, path), name, vs, p0, rows, stack, bad, path, heads, rp, eh, wi, eb)
+    case T.Found{T.VInl{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "inline table is closed"),
+        heads)), List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad,
+          "inline table is closed", heads, {==}, eb))
+    case T.Found{T.VStr{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VSpan{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VInt{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VFlo{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VBool{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VWhen{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VArr{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VAot{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VAots{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VPair{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+
+# an array-of-tables header at the end of a walk opens the array
+def kc.tahit(
+  hh: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +path: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == hh : T.Hit},
+  wi: kc.CI(stack, rp),
+  +eb: kw.OK(T.tree.leaf.aot.hit(kh.lk(hh), name, vs, stack, bad, path, heads))
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.aot.hit(kh.lk(hh), name, vs, stack, bad, path, heads)), List.reverse.go(&2,
+  String, rp, []), name) == True{} : Bool}:
+  match hh:
+    case T.Miss{}:
+      kc.okx(stack, T.VPair{name, T.VAots{path, [T.VAot{path, []}]}} <> vs, bad, heads, rp, [], name, wi,
+        kh.mk0(name, T.VAots{path, [T.VAot{path, []}]}, vs))
+    case T.Found{T.VAots{+p0, +elems}}:
+      kc.okx(stack, T.rows.repl(vs, name, T.VAots{path, T.VAot{path, []} <> elems}), bad, T.heads.drop(heads, path
+        ++ "."), rp, [], name, wi, bo.t(kh.F(T.rows.repl(vs, name, T.VAots{path, T.VAot{path, []} <> elems}), name),
+          kh.F(vs, name), kh.rF(vs, name, T.VAots{path, T.VAot{path, []} <> elems}, name), kw.hit(vs, name,
+            T.VAots{p0, elems}, eh)))
+    case T.Found{T.VInl{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "inline table is closed"),
+        heads)), List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad,
+          "inline table is closed", heads, {==}, eb))
+    case T.Found{T.VStr{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VSpan{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VInt{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VFlo{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VBool{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VWhen{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VArr{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VHead{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VAot{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VPair{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+
+# the job at the end of a walk makes what it names
+def kc.tjob(
+  job: T.Job,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  wi: kc.CI(stack, rp),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.job(job, name, vs, stack, bad, pre, heads))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.job(job, name, vs, stack, bad, pre, heads)), List.reverse.go(&2, String, rp, []),
+  name) == True{} : Bool}:
+  match job:
+    case T.JPut{+val}:
+      kc.tput(T.get(vs, name), name, vs, val, stack, bad, heads, rp, {==}, wi, eb)
+    case T.JDef{}:
+      %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
+        {Laws.k3.has(kw.evs(T.tree.leaf.def.hit(_, name, vs, stack, bad, T.tree.pre(pre, name), heads)),
+          List.reverse.go(&2, String, rp, []), name) == True{} : Bool}
+      kc.tdhit(T.rows.find(vs, name), name, vs, stack, bad, T.tree.pre(pre, name), heads, rp, {==}, wi,
+        Equal.trans(Bool, String.is_empty(kw.ebad(T.tree.leaf.def.hit(kh.lk(T.rows.find(vs, name)), name, vs, stack,
+          bad, T.tree.pre(pre, name), heads))), String.is_empty(kw.ebad(T.tree.leaf.def.hit(T.rows.look(vs, name),
+            name, vs, stack, bad, T.tree.pre(pre, name), heads))), True{}, Equal.cong(T.Look, Bool, zz =>
+              String.is_empty(kw.ebad(T.tree.leaf.def.hit(zz, name, vs, stack, bad, T.tree.pre(pre, name), heads))),
+              kh.lk(T.rows.find(vs, name)), T.rows.look(vs, name), Equal.sym(T.Look, T.rows.look(vs, name),
+                kh.lk(T.rows.find(vs, name)), kh.look(vs, name))), eb))
+    case T.JAot{}:
+      %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
+        {Laws.k3.has(kw.evs(T.tree.leaf.aot.hit(_, name, vs, stack, bad, T.tree.pre(pre, name), heads)),
+          List.reverse.go(&2, String, rp, []), name) == True{} : Bool}
+      kc.tahit(T.rows.find(vs, name), name, vs, stack, bad, T.tree.pre(pre, name), heads, rp, {==}, wi,
+        Equal.trans(Bool, String.is_empty(kw.ebad(T.tree.leaf.aot.hit(kh.lk(T.rows.find(vs, name)), name, vs, stack,
+          bad, T.tree.pre(pre, name), heads))), String.is_empty(kw.ebad(T.tree.leaf.aot.hit(T.rows.look(vs, name),
+            name, vs, stack, bad, T.tree.pre(pre, name), heads))), True{}, Equal.cong(T.Look, Bool, zz =>
+              String.is_empty(kw.ebad(T.tree.leaf.aot.hit(zz, name, vs, stack, bad, T.tree.pre(pre, name), heads))),
+              kh.lk(T.rows.find(vs, name)), T.rows.look(vs, name), Equal.sym(T.Look, T.rows.look(vs, name),
+                kh.lk(T.rows.find(vs, name)), kh.look(vs, name))), eb))
+
+# the key at the end of a walk, by whether the walk failed
+def kc.tleafok(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  wt: kc.T2(ok, stack, rp),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.bad(ok, name, vs, job, stack, bad, pre, heads))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.bad(ok, name, vs, job, stack, bad, pre, heads)), List.reverse.go(&2, String, rp,
+  []), name) == True{} : Bool}:
+  match ok:
+    case False{}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, bad, heads)), List.reverse.go(&2, String, rp,
+        []), name) == True{} : Bool}, Equal.trans(Bool, False{},
+        String.is_empty(bad), True{}, Equal.sym(Bool, String.is_empty(bad), False{}, eo), kw.okrb(stack, vs, bad, heads,
+          eb)))
+    case True{}:
+      kc.tjob(job, name, vs, stack, bad, pre, heads, rp, wt, eb)
+
+# the key at the end of a walk
+def kc.tleaf(
+  +name: String,
+  tw: T.Tw,
+  +rp: List<&2, String>,
+  wt: kc.T(tw, rp),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf(name, tw))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf(name, tw)), List.reverse.go(&2, String, rp, []), name) == True{} : Bool}:
+  match tw:
+    case T.Tw{+vs, +job, +stack, +bad, +pre, +heads, _i}:
+      kc.tleafok(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, rp, {==}, wt, eb)
+
+# whether a job is a put
+def kc.isput(job: T.Job) -> Bool:
+  match job:
+    case T.JPut{_v}:
+      True{}
+    case _j:
+      False{}
+
+# the value a put puts
+def kc.jval(job: T.Job) -> T.Val:
+  match job:
+    case T.JPut{vv}:
+      vv
+    case _j:
+      T.VBool{False{}}
+
+# a put at the end of a walk puts a value that holds what it held
+def kc.pput(
+  hit: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +q0: List<&2, String>,
+  +k1: String,
+  +eh: {T.rows.find(vs, name) == hit : T.Hit},
+  wi: kc.CI(stack, rp),
+  +ev: {kh.hv(val, q0, k1) == True{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.put(hit, name, vs, val, stack, bad, heads))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.put(hit, name, vs, val, stack, bad, heads)), List.reverse.go(&2, String, rp,
+  name <> q0), k1) == True{} : Bool}:
+  match hit:
+    case T.Found{_v}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "duplicate key"), heads)),
+        List.reverse.go(&2, String, rp, name <> q0), k1) == True{} : Bool},
+        kw.nox(stack, vs, bad, "duplicate key", heads, {==}, eb))
+    case T.Miss{}:
+      kc.okx(stack, T.VPair{name, val} <> vs, bad, heads, rp, name <> q0, k1, wi, kh.mk(name, val, vs, q0, k1,
+        kw.miss(vs, name, eh), ev))
+
+# the put at the end of a walk, whatever the job was said to be
+def kc.pjob(
+  job: T.Job,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +val: T.Val,
+  +q0: List<&2, String>,
+  +k1: String,
+  wi: kc.CI(stack, rp),
+  +ej: {job == T.JPut{val} : T.Job},
+  +ev: {kh.hv(val, q0, k1) == True{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.job(job, name, vs, stack, bad, pre, heads))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.job(job, name, vs, stack, bad, pre, heads)), List.reverse.go(&2, String, rp,
+  name <> q0), k1) == True{} : Bool}:
+  match job:
+    case T.JPut{+v2}:
+      kc.pput(T.get(vs, name), name, vs, v2, stack, bad, heads, rp, q0, k1, {==}, wi, Equal.trans(Bool, kh.hv(v2, q0,
+        k1), kh.hv(val, q0, k1), True{}, Equal.cong(T.Val, Bool, zz => kh.hv(zz, q0, k1), v2, val, Equal.cong(T.Job,
+          T.Val, jj => kc.jval(jj), T.JPut{v2}, T.JPut{val}, ej)), ev), eb)
+    case T.JDef{}:
+      Eq.bit.absurd2(&2, {Laws.k3.has(kw.evs(T.tree.leaf.job(T.JDef{}, name, vs, stack, bad, pre, heads)),
+        List.reverse.go(&2, String, rp, name <> q0), k1) == True{} : Bool},
+        Equal.cong(T.Job, Bool, jj => Bool.not(kc.isput(jj)), T.JDef{}, T.JPut{val}, ej))
+    case T.JAot{}:
+      Eq.bit.absurd2(&2, {Laws.k3.has(kw.evs(T.tree.leaf.job(T.JAot{}, name, vs, stack, bad, pre, heads)),
+        List.reverse.go(&2, String, rp, name <> q0), k1) == True{} : Bool},
+        Equal.cong(T.Job, Bool, jj => Bool.not(kc.isput(jj)), T.JAot{}, T.JPut{val}, ej))
+
+# the put at the end of a walk, by whether the walk failed
+def kc.pleafok(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +val: T.Val,
+  +q0: List<&2, String>,
+  +k1: String,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  wt: kc.T2(ok, stack, rp),
+  +ej: {job == T.JPut{val} : T.Job},
+  +ev: {kh.hv(val, q0, k1) == True{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.bad(ok, name, vs, job, stack, bad, pre, heads))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.bad(ok, name, vs, job, stack, bad, pre, heads)), List.reverse.go(&2, String, rp,
+  name <> q0), k1) == True{} : Bool}:
+  match ok:
+    case False{}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, bad, heads)), List.reverse.go(&2, String, rp,
+        name <> q0), k1) == True{} : Bool}, Equal.trans(Bool, False{},
+        String.is_empty(bad), True{}, Equal.sym(Bool, String.is_empty(bad), False{}, eo), kw.okrb(stack, vs, bad, heads,
+          eb)))
+    case True{}:
+      kc.pjob(job, name, vs, stack, bad, pre, heads, rp, val, q0, k1, wt, ej, ev, eb)
+
+# the put at the end of a walk
+def kc.pleaf(
+  +name: String,
+  tw: T.Tw,
+  +rp: List<&2, String>,
+  +val: T.Val,
+  +q0: List<&2, String>,
+  +k1: String,
+  wt: kc.T(tw, rp),
+  +ej: {kw.tjob(tw) == T.JPut{val} : T.Job},
+  +ev: {kh.hv(val, q0, k1) == True{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf(name, tw))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf(name, tw)), List.reverse.go(&2, String, rp, name <> q0), k1) == True{} : Bool}:
+  match tw:
+    case T.Tw{+vs, +job, +stack, +bad, +pre, +heads, _i}:
+      kc.pleafok(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, rp, val, q0, k1, {==}, wt, ej, ev, eb)
+
+# all but the last name of a path
+def kc.initn(path: List<&2, String>) -> List<&2, String>:
+  match path:
+    case []:
+      []
+    case +nm <> rest:
+      match rest:
+        case []:
+          []
+        case _h <> _t:
+          nm <> kc.initn(rest)
+
+# the last name of a path
+def kc.lastn(path: List<&2, String>) -> String:
+  match path:
+    case []:
+      ""
+    case +nm <> rest:
+      match rest:
+        case []:
+          nm
+        case _h <> _t:
+          kc.lastn(rest)
+
+# a walk with no key fails
+def kc.none(
+  tw: T.Tw,
+  +goal: Bool,
+  +eb: {String.is_empty(kw.ebad(T.tree.walk.none(tw))) == True{} : Bool}
+) -> {goal == True{} : Bool}:
+  match tw:
+    case T.Tw{+vs, _j, +stack, +bad, _p, +heads, _i}:
+      Eq.bit.absurd(&2, {goal == True{} : Bool}, kw.nox(stack, vs, bad, "empty key", heads, {==}, eb))
+
+# LEMMA: a walk that ends with no error makes the pair or table it names,
+# under its other names
+def kc.wtab(
+  path: List<&2, String>,
+  +tw: T.Tw,
+  +skip: U32,
+  +rp: List<&2, String>,
+  wt: kc.T(tw, rp),
+  +eb: {String.is_empty(kw.ebad(T.tree.walk(path, tw, skip))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.walk(path, tw, skip)), List.reverse.go(&2, String, rp, kc.initn(path)), kc.lastn(path))
+  == True{} : Bool}:
+  match path:
+    case []:
+      kc.none(tw, Laws.k3.has(kw.evs(T.tree.walk.none(tw)), List.reverse.go(&2, String, rp, []), ""), eb)
+    case +nm <> rest:
+      match rest:
+        case []:
+          kc.tleaf(nm, tw, rp, wt, eb)
+        case _h <> _t:
+          kc.wtab(rest, T.tree.sub(nm, tw, U32.is_zero(skip)), T.path.dec(skip), nm <> rp, kc.sub(nm, tw,
+            U32.is_zero(skip), rp, wt), eb)
+
+# LEMMA: a put's walk that ends with no error puts its value, and every path
+# the value holds, under the walk's names
+def kc.wput(
+  path: List<&2, String>,
+  +tw: T.Tw,
+  +skip: U32,
+  +rp: List<&2, String>,
+  +val: T.Val,
+  +q0: List<&2, String>,
+  +k1: String,
+  wt: kc.T(tw, rp),
+  +ej: {kw.tjob(tw) == T.JPut{val} : T.Job},
+  +ev: {kh.hv(val, q0, k1) == True{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.walk(path, tw, skip))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.walk(path, tw, skip)), List.reverse.go(&2, String, rp, List.append(&2, String, path,
+  q0)), k1) == True{} : Bool}:
+  match path:
+    case []:
+      kc.none(tw, Laws.k3.has(kw.evs(T.tree.walk.none(tw)), List.reverse.go(&2, String, rp, q0), k1), eb)
+    case +nm <> rest:
+      match rest:
+        case []:
+          kc.pleaf(nm, tw, rp, val, q0, k1, wt, ej, ev, eb)
+        case _h <> _t:
+          kc.wput(rest, T.tree.sub(nm, tw, U32.is_zero(skip)), T.path.dec(skip), nm <> rp, val, q0, k1, kc.sub(nm, tw,
+            U32.is_zero(skip), rp, wt), Equal.trans(T.Job, kw.tjob(T.tree.sub(nm, tw, U32.is_zero(skip))), kw.tjob(tw),
+              T.JPut{val}, kc.subjob(nm, tw, U32.is_zero(skip)), ej), ev, eb)
+
+# KEY-3: the invariant. gg names the key: the table path tp it is to be put
+# in and its name. A state keeps the invariant when it has failed, or when a
+# header could not throw away an open array or inline table (kk.S: a state
+# that reads a header has none open), and the key is pending as the value
+# being read (kk.pend), or as the key an open array or inline table will be
+# put under (kk.PF), or is already held by the root or an open frame
+# (kk.L). A lex state's class says which of these it may rely on: a value's
+# (KcV), a header's or a line's (KcH), or another (KcO).
+
+# the key a document is read for: the table's path and the key's name
+type K3G is Data:
+  K3G{tp: List<&2, String>, key: String}
+
+# the key's table path
+def kk.tp(gg: K3G) -> List<&2, String>:
+  match gg:
+    case K3G{tp, _k}:
+      tp
+
+# the key's name
+def kk.key(gg: K3G) -> String:
+  match gg:
+    case K3G{_t, key}:
+      key
+
+# a lex state's class
+type KC is Data:
+  KcV{}
+  KcH{}
+  KcO{}
+
+# the class of a lex state
+def kk.cls0(lex: T.Lex) -> KC:
+  match lex:
+    case T.LTop{}:
+      KcH{}
+    case T.LLine{}:
+      KcH{}
+    case T.LKey{}:
+      KcO{}
+    case T.LKeyDot{}:
+      KcO{}
+    case T.LAfter{}:
+      KcO{}
+    case T.LKeyQ{}:
+      KcO{}
+    case T.LKeyE{}:
+      KcO{}
+    case T.LKeyU{}:
+      KcO{}
+    case T.LVal{}:
+      KcV{}
+    case T.LQ{}:
+      KcV{}
+    case T.LQ2{}:
+      KcV{}
+    case T.LStr{}:
+      KcV{}
+    case T.LEsc{}:
+      KcV{}
+    case T.LUni{}:
+      KcV{}
+    case T.LFold{}:
+      KcV{}
+    case T.LMq{}:
+      KcV{}
+    case T.LMqEnd{}:
+      KcV{}
+    case T.LTrim{}:
+      KcV{}
+    case T.LTrim2{}:
+      KcV{}
+    case T.LBare{}:
+      KcV{}
+    case T.LDate{}:
+      KcV{}
+    case T.LCom{}:
+      KcO{}
+    case T.LHead{}:
+      KcH{}
+    case T.LHeadGap{}:
+      KcH{}
+    case T.LHeadDot{}:
+      KcH{}
+    case T.LHeadQ{}:
+      KcH{}
+    case T.LHeadE{}:
+      KcH{}
+    case T.LHeadU{}:
+      KcH{}
+    case T.LHeadR{}:
+      KcH{}
+    case T.LArr{}:
+      KcO{}
+    case T.LArrC{}:
+      KcO{}
+    case T.LInl{}:
+      KcO{}
+    case T.LInlK{}:
+      KcO{}
+    case T.LInlC{}:
+      KcO{}
+    case T.LSink{}:
+      KcO{}
+
+# the class of a state's lex, a comment taking its return state's
+def kk.cls(lex: T.Lex, back: T.Lex) -> KC:
+  match lex:
+    case T.LCom{}:
+      kk.cls0(back)
+    case other:
+      kk.cls0(other)
+
+# a value's class
+def kk.isv(cc: KC) -> Bool:
+  match cc:
+    case KcV{}:
+      True{}
+    case _c:
+      False{}
+
+# a header's or a line's class
+def kk.ish(cc: KC) -> Bool:
+  match cc:
+    case KcH{}:
+      True{}
+    case _c:
+      False{}
+
+# a step may go from one class to another without touching the fields:
+# a value's stays a value's, and none goes to a header's but a header's
+def kk.c1(cc: KC, dd: KC) -> Bool:
+  match cc:
+    case KcV{}:
+      kk.isv(dd)
+    case KcH{}:
+      True{}
+    case KcO{}:
+      Bool.not(kk.ish(dd))
+
+# and with the key's fields changed, when it was not a value's
+def kk.c2(+cc: KC, dd: KC) -> Bool:
+  Bool.and(Bool.not(kk.isv(cc)), kk.c1(cc, dd))
+
+# the class of a state
+def kk.cl(st: T.St) -> KC:
+  match st:
+    case T.St{_b, _r, _h, _e, _p, _f, lex, back, _q, _s, _o, _u, _l, _a, _d}:
+      kk.cls(lex, back)
+
+# two paths with the same names
+def kk.leq(aa: List<&2, String>, bb: List<&2, String>) -> Bool:
+  match aa bb:
+    case [] Nil{}:
+      True{}
+    case +xx <> xs +yy <> ys:
+      Bool.and(T.str.eq(xx, yy), kk.leq(xs, ys))
+    case _a _b:
+      False{}
+
+
+# the key is the value to be taken next: its last part is the key's name
+# and the others lead to the key's table, and it is no array's item
+def kk.pend2(
+  +gg: K3G,
+  stack: List<&2, T.Ctx>,
+  +here: List<&2, String>,
+  parts: List<&2, String>
+) -> Bool:
+  match parts:
+    case []:
+      False{}
+    case +nn <> ps:
+      Bool.and(T.str.eq(nn, kk.key(gg)), kk.leq(Laws.k3.pl(stack, here, ps, []), kk.tp(gg)))
+
+# and no array is open around it
+def kk.pend(
+  +gg: K3G,
+  stack: List<&2, T.Ctx>,
+  +here: List<&2, String>,
+  parts: List<&2, String>
+) -> Bool:
+  match stack:
+    case []:
+      kk.pend2(gg, [], here, parts)
+    case T.CArr{_i, _p, _h} <> _t:
+      False{}
+    case T.CInl{+rr, +sp, +sh} <> +rest:
+      kk.pend2(gg, T.CInl{rr, sp, sh} <> rest, here, parts)
+
+# what holds the key below a path: a table's rows, an array's items, or a
+# value
+type KHold is Data:
+  HRows{rows: List<&2, T.Val>}
+  HItems{items: List<&2, T.Val>}
+  HVal{val: T.Val}
+
+# a value taken holds a path when it is an inline table or an array that
+# does
+def kk.vh(vv: T.Val, +pp: List<&2, String>, +kk: String) -> Bool:
+  match vv:
+    case T.VInl{rows}:
+      Laws.k3.has(rows, pp, kk)
+    case T.VArr{items}:
+      kh.S(items, pp, kk)
+    case _v:
+      False{}
+
+# what holds a path
+def kk.hold(hd: KHold, +pp: List<&2, String>, +kk: String) -> Bool:
+  match hd:
+    case HRows{rows}:
+      Laws.k3.has(rows, pp, kk)
+    case HItems{items}:
+      kh.S(items, pp, kk)
+    case HVal{vv}:
+      kk.vh(vv, pp, kk)
+
+# a path starts with the given names and the rest is held
+def kk.sfx(aa: List<&2, String>, tt: List<&2, String>, hd: KHold, +kk: String) -> Bool:
+  match aa tt:
+    case [] +t0:
+      kk.hold(hd, t0, kk)
+    case +xx <> xs +yy <> ys:
+      Bool.and(T.str.eq(xx, yy), kk.sfx(xs, ys, hd, kk))
+    case _a _t:
+      False{}
+
+# an open frame holds the key
+def kk.fh(+gg: K3G, fr: T.Ctx, rest: List<&2, T.Ctx>) -> Bool:
+  match fr:
+    case T.CArr{items, sp, sh}:
+      kk.sfx(Laws.k3.pl(rest, sh, sp, []), kk.tp(gg), HItems{items}, kk.key(gg))
+    case T.CInl{inl, sp, sh}:
+      kk.sfx(Laws.k3.pl(rest, sh, sp, []), kk.tp(gg), HRows{inl}, kk.key(gg))
+
+# the root or an open frame holds the key
+def kk.L(+gg: K3G, stack: List<&2, T.Ctx>, rows: List<&2, T.Val>) -> Bool:
+  match stack:
+    case []:
+      Laws.k3.has(rows, kk.tp(gg), kk.key(gg))
+    case +fr <> +rest:
+      Bool.or(kk.fh(gg, fr, rest), kk.L(gg, rest, rows))
+
+# an open frame will be put under the key
+def kk.PF(+gg: K3G, stack: List<&2, T.Ctx>) -> Bool:
+  match stack:
+    case []:
+      False{}
+    case T.CArr{_i, sp, sh} <> +rest:
+      Bool.or(kk.pend(gg, rest, sh, sp), kk.PF(gg, rest))
+    case T.CInl{_r, sp, sh} <> +rest:
+      Bool.or(kk.pend(gg, rest, sh, sp), kk.PF(gg, rest))
+
+# the invariant, from its parts: failed, or no frame open where a header
+# may be read, and pending or held
+def kk.Kb(+cc: KC, aa: Bool, ss: Bool, pp: Bool, xx: Bool) -> Bool:
+  Bool.or(aa, Bool.and(Bool.or(Bool.not(kk.ish(cc)), ss), Bool.or(Bool.and(kk.isv(cc), pp), xx)))
+
+# the invariant of a state's fields
+def kk.Kc(
+  +gg: K3G,
+  cc: KC,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +stack: List<&2, T.Ctx>
+) -> Bool:
+  kk.Kb(cc, Bool.not(String.is_empty(bad)), List.is_empty(&2, T.Ctx, stack), kk.pend(gg, stack, here, parts),
+    Bool.or(kk.PF(gg, stack), kk.L(gg, stack, rows)))
+
+# KEY-3's invariant of a scanner state
+def kk.K(+gg: K3G, st: T.St) -> Bool:
+  match st:
+    case T.St{bad, rows, _h, here, parts, _f, lex, back, _q, stack, _o, _u, _l, _a, _d}:
+      kk.Kc(gg, kk.cls(lex, back), bad, rows, here, parts, stack)
+
+# an or whose right half is replaced by one True whenever it is
+def kk.bimp(
+  aa: Bool,
+  yy: Bool,
+  zz: Bool,
+  ff: @e1: {yy == True{} : Bool} -> {zz == True{} : Bool},
+  +ee: {Bool.or(aa, yy) == True{} : Bool}
+) -> {Bool.or(aa, zz) == True{} : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      ff(ee)
+
+# a step between classes keeps the invariant's parts, when c1 allows it
+def kk.b1(
+  cc: KC,
+  dd: KC,
+  +aa: Bool,
+  +ss: Bool,
+  +pp: Bool,
+  +xx: Bool,
+  +e1: {kk.c1(cc, dd) == True{} : Bool},
+  +ek: {kk.Kb(cc, aa, ss, pp, xx) == True{} : Bool}
+) -> {kk.Kb(dd, aa, ss, pp, xx) == True{} : Bool}:
+  match cc dd:
+    case KcV{} KcV{}:
+      ek
+    case KcV{} KcH{}:
+      Eq.bit.absurd(&2, {kk.Kb(KcH{}, aa, ss, pp, xx) == True{} : Bool}, e1)
+    case KcV{} KcO{}:
+      Eq.bit.absurd(&2, {kk.Kb(KcO{}, aa, ss, pp, xx) == True{} : Bool}, e1)
+    case KcH{} KcV{}:
+      kk.bimp(aa, Bool.and(ss, xx), Bool.or(pp, xx), e2 => bo.or.tr(pp, xx, gd.r(ss, xx, e2)), ek)
+    case KcH{} KcH{}:
+      ek
+    case KcH{} KcO{}:
+      kk.bimp(aa, Bool.and(ss, xx), xx, e2 => gd.r(ss, xx, e2), ek)
+    case KcO{} KcV{}:
+      kk.bimp(aa, xx, Bool.or(pp, xx), e2 => bo.or.tr(pp, xx, e2), ek)
+    case KcO{} KcH{}:
+      Eq.bit.absurd(&2, {kk.Kb(KcH{}, aa, ss, pp, xx) == True{} : Bool}, e1)
+    case KcO{} KcO{}:
+      ek
+
+# and with the key's fields changed, when c2 allows it
+def kk.b2(
+  cc: KC,
+  dd: KC,
+  +aa: Bool,
+  +ss: Bool,
+  pp: Bool,
+  +p2: Bool,
+  +xx: Bool,
+  +e2: {kk.c2(cc, dd) == True{} : Bool},
+  +ek: {kk.Kb(cc, aa, ss, pp, xx) == True{} : Bool}
+) -> {kk.Kb(dd, aa, ss, p2, xx) == True{} : Bool}:
+  match cc dd:
+    case KcV{} _d:
+      Eq.bit.absurd(&2, {kk.Kb(_d, aa, ss, p2, xx) == True{} : Bool}, e2)
+    case KcH{} KcV{}:
+      kk.bimp(aa, Bool.and(ss, xx), Bool.or(p2, xx), e3 => bo.or.tr(p2, xx, gd.r(ss, xx, e3)), ek)
+    case KcH{} KcH{}:
+      ek
+    case KcH{} KcO{}:
+      kk.bimp(aa, Bool.and(ss, xx), xx, e3 => gd.r(ss, xx, e3), ek)
+    case KcO{} KcV{}:
+      kk.bimp(aa, xx, Bool.or(p2, xx), e3 => bo.or.tr(p2, xx, e3), ek)
+    case KcO{} KcH{}:
+      Eq.bit.absurd(&2, {kk.Kb(KcH{}, aa, ss, p2, xx) == True{} : Bool}, e2)
+    case KcO{} KcO{}:
+      ek
+
+# a state's invariant at another class, with the same fields
+def kk.lift1(
+  +gg: K3G,
+  cc: KC,
+  dd: KC,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +stack: List<&2, T.Ctx>,
+  +e1: {kk.c1(cc, dd) == True{} : Bool},
+  +ek: {kk.Kc(gg, cc, bad, rows, here, parts, stack) == True{} : Bool}
+) -> {kk.Kc(gg, dd, bad, rows, here, parts, stack) == True{} : Bool}:
+  kk.b1(cc, dd, Bool.not(String.is_empty(bad)), List.is_empty(&2, T.Ctx, stack), kk.pend(gg, stack, here, parts),
+    Bool.or(kk.PF(gg, stack), kk.L(gg, stack, rows)), e1, ek)
+
+# and with the key's fields changed
+def kk.lift2(
+  +gg: K3G,
+  cc: KC,
+  dd: KC,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +h2: List<&2, String>,
+  +p2: List<&2, String>,
+  +stack: List<&2, T.Ctx>,
+  +e2: {kk.c2(cc, dd) == True{} : Bool},
+  +ek: {kk.Kc(gg, cc, bad, rows, here, parts, stack) == True{} : Bool}
+) -> {kk.Kc(gg, dd, bad, rows, h2, p2, stack) == True{} : Bool}:
+  kk.b2(cc, dd, Bool.not(String.is_empty(bad)), List.is_empty(&2, T.Ctx, stack), kk.pend(gg, stack, here, parts),
+    kk.pend(gg, stack, h2, p2), Bool.or(kk.PF(gg, stack), kk.L(gg, stack, rows)), e2, ek)
+
+# a state's return lex
+def kk.bk(st: T.St) -> T.Lex:
+  match st:
+    case T.St{_b, _r, _h, _e, _p, _f, _x, back, _q, _s, _o, _u, _l, _a, _d}:
+      back
+
+# a comment's return state read as the lex state has its class
+def kk.clsbb(bb: T.Lex) -> {kk.cls(bb, bb) == kk.cls0(bb) : KC}:
+  match bb:
+    case T.LTop{}:
+      {==}
+    case T.LLine{}:
+      {==}
+    case T.LKey{}:
+      {==}
+    case T.LKeyDot{}:
+      {==}
+    case T.LAfter{}:
+      {==}
+    case T.LKeyQ{}:
+      {==}
+    case T.LKeyE{}:
+      {==}
+    case T.LKeyU{}:
+      {==}
+    case T.LVal{}:
+      {==}
+    case T.LQ{}:
+      {==}
+    case T.LQ2{}:
+      {==}
+    case T.LStr{}:
+      {==}
+    case T.LEsc{}:
+      {==}
+    case T.LUni{}:
+      {==}
+    case T.LFold{}:
+      {==}
+    case T.LMq{}:
+      {==}
+    case T.LMqEnd{}:
+      {==}
+    case T.LTrim{}:
+      {==}
+    case T.LTrim2{}:
+      {==}
+    case T.LBare{}:
+      {==}
+    case T.LDate{}:
+      {==}
+    case T.LCom{}:
+      {==}
+    case T.LHead{}:
+      {==}
+    case T.LHeadGap{}:
+      {==}
+    case T.LHeadDot{}:
+      {==}
+    case T.LHeadQ{}:
+      {==}
+    case T.LHeadE{}:
+      {==}
+    case T.LHeadU{}:
+      {==}
+    case T.LHeadR{}:
+      {==}
+    case T.LArr{}:
+      {==}
+    case T.LArrC{}:
+      {==}
+    case T.LInl{}:
+      {==}
+    case T.LInlK{}:
+      {==}
+    case T.LInlC{}:
+      {==}
+    case T.LSink{}:
+      {==}
+
+# two paths leq calls equal are one path
+def kk.leq.eq(
+  aa: List<&2, String>,
+  bb: List<&2, String>,
+  +ee: {kk.leq(aa, bb) == True{} : Bool}
+) -> {aa == bb : List<&2, String>}:
+  match aa bb:
+    case [] Nil{}:
+      {==}
+    case +xx <> +xs +yy <> +ys:
+      Equal.trans(List<&2, String>, xx <> xs, yy <> xs, yy <> ys, Equal.cong(String, List<&2, String>, zz => zz <> xs,
+        xx, yy, str.eq.true(xx, yy, gd.l(T.str.eq(xx, yy), kk.leq(xs, ys), ee))), Equal.cong(List<&2, String>,
+          List<&2, String>, zs => yy <> zs, xs, ys, kk.leq.eq(xs, ys, gd.r(T.str.eq(xx, yy), kk.leq(xs, ys), ee))))
+    case [] _h <> _t:
+      Eq.bit.absurd(&2, {[] == _h <> _t : List<&2, String>}, ee)
+    case _h <> _t Nil{}:
+      Eq.bit.absurd(&2, {_h <> _t == [] : List<&2, String>}, ee)
+
+# the rest of a path after the given names
+def kk.drop(aa: List<&2, String>, tt: List<&2, String>) -> List<&2, String>:
+  match aa tt:
+    case [] +t0:
+      t0
+    case _x <> xs _y <> ys:
+      kk.drop(xs, ys)
+    case _a _t:
+      []
+
+# a path that starts with the given names is them, then the rest
+def kk.sfx.eq(
+  aa: List<&2, String>,
+  tt: List<&2, String>,
+  +hd: KHold,
+  +kk: String,
+  +ee: {kk.sfx(aa, tt, hd, kk) == True{} : Bool}
+) -> {tt == List.append(&2, String, aa, kk.drop(aa, tt)) : List<&2, String>}:
+  match aa tt:
+    case [] _t:
+      {==}
+    case +xx <> +xs +yy <> +ys:
+      Equal.trans(List<&2, String>, yy <> ys, xx <> ys, xx <> List.append(&2, String, xs, kk.drop(xs, ys)),
+        Equal.cong(String, List<&2, String>, zz => zz <> ys, yy, xx, Equal.sym(String, xx, yy, str.eq.true(xx, yy,
+          gd.l(T.str.eq(xx, yy), kk.sfx(xs, ys, hd, kk), ee)))), Equal.cong(List<&2, String>, List<&2, String>, zs =>
+            xx <> zs, ys, List.append(&2, String, xs, kk.drop(xs, ys)), kk.sfx.eq(xs, ys, hd, kk,
+              gd.r(T.str.eq(xx, yy), kk.sfx(xs, ys, hd, kk), ee))))
+    case _h <> _t Nil{}:
+      Eq.bit.absurd(&2, {[] == List.append(&2, String, _h <> _t, kk.drop(_h <> _t, [])) : List<&2, String>}, ee)
+
+# and the rest is held
+def kk.sfx.h(
+  aa: List<&2, String>,
+  tt: List<&2, String>,
+  +hd: KHold,
+  +kk: String,
+  +ee: {kk.sfx(aa, tt, hd, kk) == True{} : Bool}
+) -> {kk.hold(hd, kk.drop(aa, tt), kk) == True{} : Bool}:
+  match aa tt:
+    case [] _t:
+      ee
+    case +xx <> +xs +yy <> +ys:
+      kk.sfx.h(xs, ys, hd, kk, gd.r(T.str.eq(xx, yy), kk.sfx(xs, ys, hd, kk), ee))
+    case _h <> _t Nil{}:
+      Eq.bit.absurd(&2, {kk.hold(hd, kk.drop(_h <> _t, []), kk) == True{} : Bool}, ee)
+
+# the given names, then a path held, start a path held
+def kk.sfx.mk(
+  aa: List<&2, String>,
+  +dd: List<&2, String>,
+  +hd: KHold,
+  +kk: String,
+  +ee: {kk.hold(hd, dd, kk) == True{} : Bool}
+) -> {kk.sfx(aa, List.append(&2, String, aa, dd), hd, kk) == True{} : Bool}:
+  match aa:
+    case []:
+      ee
+    case +xx <> +xs:
+      gd.tt(T.str.eq(xx, xx), kk.sfx(xs, List.append(&2, String, xs, dd), hd, kk), str.eq.self(xx), kk.sfx.mk(xs, dd,
+        hd,
+        kk, ee))
+
+# a path held one way, and so held another
+def kk.sfx.mono(
+  aa: List<&2, String>,
+  tt: List<&2, String>,
+  +hd: KHold,
+  +h2: KHold,
+  +kk: String,
+  ff: @q0: List<&2, String> -> {kk.hold(hd, q0, kk) == True{} : Bool} -> {kk.hold(h2, q0, kk) == True{} : Bool},
+  +ee: {kk.sfx(aa, tt, hd, kk) == True{} : Bool}
+) -> {kk.sfx(aa, tt, h2, kk) == True{} : Bool}:
+  match aa tt:
+    case [] +t0:
+      ff(t0, ee)
+    case +xx <> +xs +yy <> +ys:
+      gd.tt(T.str.eq(xx, yy), kk.sfx(xs, ys, h2, kk), gd.l(T.str.eq(xx, yy), kk.sfx(xs, ys, hd, kk), ee),
+        kk.sfx.mono(xs,
+        ys, hd, h2, kk, ff, gd.r(T.str.eq(xx, yy), kk.sfx(xs, ys, hd, kk), ee)))
+    case _h <> _t Nil{}:
+      ee
+
+# the path of a value taken, then more names
+def kk.pl.app(
+  stack: List<&2, T.Ctx>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +aa: List<&2, String>,
+  +pp: List<&2, String>
+) -> {Laws.k3.pl(stack, here, parts, List.append(&2, String, aa, pp)) == List.append(&2, String, Laws.k3.pl(stack,
+  here, parts,
+  aa), pp) : List<&2, String>}:
+  match stack:
+    case []:
+      Equal.sym(List<&2, String>, List.append(&2, String, List.append(&2, String, List.append(&2, String, here,
+        List.reverse(&2, String, parts)), aa), pp), List.append(&2, String, List.append(&2, String, here,
+          List.reverse(&2, String, parts)), List.append(&2, String, aa, pp)), la.assoc(List.append(&2, String, here,
+            List.reverse(&2, String, parts)), aa, pp))
+    case T.CArr{_i, +sp, +sh} <> rest:
+      kk.pl.app(rest, sh, sp, aa, pp)
+    case T.CInl{_r, +sp, +sh} <> rest:
+      Equal.trans(List<&2, String>, Laws.k3.pl(rest, sh, sp, List.append(&2, String, List.reverse(&2, String, parts),
+        List.append(&2, String, aa, pp))), Laws.k3.pl(rest, sh, sp, List.append(&2, String, List.append(&2, String,
+          List.reverse(&2, String, parts), aa), pp)), List.append(&2, String, Laws.k3.pl(rest, sh, sp, List.append(&2,
+            String, List.reverse(&2, String, parts), aa)), pp), Equal.cong(List<&2, String>, List<&2, String>, zs =>
+              Laws.k3.pl(rest, sh, sp, zs), List.append(&2, String, List.reverse(&2, String, parts), List.append(&2,
+                String,
+                aa, pp)), List.append(&2, String, List.append(&2, String, List.reverse(&2, String, parts), aa), pp),
+              Equal.sym(List<&2, String>, List.append(&2, String, List.append(&2, String, List.reverse(&2, String,
+                parts), aa), pp), List.append(&2, String, List.reverse(&2, String, parts), List.append(&2, String, aa,
+                  pp)), la.assoc(List.reverse(&2, String, parts), aa, pp))), kk.pl.app(rest, sh, sp, List.append(&2,
+                    String, List.reverse(&2, String, parts), aa), pp))
+
+# a reversal onto a list is the reversal, then the list
+def kk.rga(
+  zs: List<&2, String>,
+  +bb: List<&2, String>,
+  +acc: List<&2, String>
+) -> {List.reverse.go(&2, String, zs, List.append(&2, String, bb, acc)) == List.append(&2, String,
+  List.reverse.go(&2, String, zs, bb), acc) : List<&2, String>}:
+  match zs:
+    case []:
+      {==}
+    case +hh <> tt:
+      kk.rga(tt, hh <> bb, acc)
+
+# a key's parts reversed are its other parts reversed, then its last part
+def kk.rev1(
+  +nn: String,
+  +ps: List<&2, String>
+) -> {List.reverse(&2, String, nn <> ps) == List.append(&2, String, List.reverse(&2, String, ps), [nn]) : List<&2,
+  String>}:
+  kk.rga(ps, [], [nn])
+
+# all but the last name of a path that ends with a name
+def kk.initn(
+  +aa: List<&2, String>,
+  +nn: String
+) -> {kc.initn(List.append(&2, String, aa, [nn])) == aa : List<&2, String>}:
+  match aa:
+    case []:
+      {==}
+    case +xx <> +xs:
+      match xs:
+        case []:
+          {==}
+        case _y <> _ys:
+          Equal.cong(List<&2, String>, List<&2, String>, zs => xx <> zs, kc.initn(List.append(&2, String, xs, [nn])),
+            xs,
+            kk.initn(xs, nn))
+
+# the last name of a path that ends with a name
+def kk.lastn(+aa: List<&2, String>, +nn: String) -> {kc.lastn(List.append(&2, String, aa, [nn])) == nn : String}:
+  match aa:
+    case []:
+      {==}
+    case _x <> +xs:
+      match xs:
+        case []:
+          {==}
+        case _y <> _ys:
+          kk.lastn(xs, nn)
+
+# a value taken that holds a path holds it as a pair's value
+def kk.vh.hv(
+  +vv: T.Val,
+  +pp: List<&2, String>,
+  +kk: String,
+  +ee: {kk.vh(vv, pp, kk) == True{} : Bool}
+) -> {kh.hv(vv, pp, kk) == True{} : Bool}:
+  match vv:
+    case T.VInl{_r}:
+      ee
+    case T.VArr{_i}:
+      ee
+    case T.VStr{_a}:
+      Eq.bit.absurd(&2, {kh.hv(T.VStr{_a}, pp, kk) == True{} : Bool}, ee)
+    case T.VSpan{_a, _b}:
+      Eq.bit.absurd(&2, {kh.hv(T.VSpan{_a, _b}, pp, kk) == True{} : Bool}, ee)
+    case T.VInt{_a, _b}:
+      Eq.bit.absurd(&2, {kh.hv(T.VInt{_a, _b}, pp, kk) == True{} : Bool}, ee)
+    case T.VFlo{_a, _b}:
+      Eq.bit.absurd(&2, {kh.hv(T.VFlo{_a, _b}, pp, kk) == True{} : Bool}, ee)
+    case T.VBool{_a}:
+      Eq.bit.absurd(&2, {kh.hv(T.VBool{_a}, pp, kk) == True{} : Bool}, ee)
+    case T.VWhen{_a}:
+      Eq.bit.absurd(&2, {kh.hv(T.VWhen{_a}, pp, kk) == True{} : Bool}, ee)
+    case T.VHead{_a, _b}:
+      Eq.bit.absurd(&2, {kh.hv(T.VHead{_a, _b}, pp, kk) == True{} : Bool}, ee)
+    case T.VAot{_a, _b}:
+      Eq.bit.absurd(&2, {kh.hv(T.VAot{_a, _b}, pp, kk) == True{} : Bool}, ee)
+    case T.VAots{_a, _b}:
+      Eq.bit.absurd(&2, {kh.hv(T.VAots{_a, _b}, pp, kk) == True{} : Bool}, ee)
+    case T.VPair{_a, _b}:
+      Eq.bit.absurd(&2, {kh.hv(T.VPair{_a, _b}, pp, kk) == True{} : Bool}, ee)
+
+# and as an array's item
+def kk.vh.es(
+  +vv: T.Val,
+  +pp: List<&2, String>,
+  +kk: String,
+  +ee: {kk.vh(vv, pp, kk) == True{} : Bool}
+) -> {kh.eS(vv, pp, kk) == True{} : Bool}:
+  match vv:
+    case T.VInl{_r}:
+      ee
+    case T.VArr{_i}:
+      ee
+    case T.VStr{_a}:
+      Eq.bit.absurd(&2, {kh.eS(T.VStr{_a}, pp, kk) == True{} : Bool}, ee)
+    case T.VSpan{_a, _b}:
+      Eq.bit.absurd(&2, {kh.eS(T.VSpan{_a, _b}, pp, kk) == True{} : Bool}, ee)
+    case T.VInt{_a, _b}:
+      Eq.bit.absurd(&2, {kh.eS(T.VInt{_a, _b}, pp, kk) == True{} : Bool}, ee)
+    case T.VFlo{_a, _b}:
+      Eq.bit.absurd(&2, {kh.eS(T.VFlo{_a, _b}, pp, kk) == True{} : Bool}, ee)
+    case T.VBool{_a}:
+      Eq.bit.absurd(&2, {kh.eS(T.VBool{_a}, pp, kk) == True{} : Bool}, ee)
+    case T.VWhen{_a}:
+      Eq.bit.absurd(&2, {kh.eS(T.VWhen{_a}, pp, kk) == True{} : Bool}, ee)
+    case T.VHead{_a, _b}:
+      Eq.bit.absurd(&2, {kh.eS(T.VHead{_a, _b}, pp, kk) == True{} : Bool}, ee)
+    case T.VAot{_a, _b}:
+      Eq.bit.absurd(&2, {kh.eS(T.VAot{_a, _b}, pp, kk) == True{} : Bool}, ee)
+    case T.VAots{_a, _b}:
+      Eq.bit.absurd(&2, {kh.eS(T.VAots{_a, _b}, pp, kk) == True{} : Bool}, ee)
+    case T.VPair{_a, _b}:
+      Eq.bit.absurd(&2, {kh.eS(T.VPair{_a, _b}, pp, kk) == True{} : Bool}, ee)
+
+# the invariant of a value about to be taken: failed, or the key pending as
+# the value or a frame, held, or held by the value
+def kk.Kt(
+  +gg: K3G,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +stack: List<&2, T.Ctx>,
+  +vv: T.Val
+) -> Bool:
+  Bool.or(Bool.not(String.is_empty(bad)), Bool.or(kk.pend(gg, stack, here, parts), Bool.or(kk.PF(gg, stack),
+    Bool.or(kk.L(gg, stack, rows), kk.sfx(Laws.k3.pl(stack, here, parts, []), kk.tp(gg), HVal{vv}, kk.key(gg))))))
+
+# one of two held, and so one of three
+def kk.fl(
+  ff: Bool,
+  +ll: Bool,
+  +ww: Bool,
+  +ee: {Bool.or(ff, ll) == True{} : Bool}
+) -> {Bool.or(ff, Bool.or(ll, ww)) == True{} : Bool}:
+  match ff:
+    case True{}:
+      {==}
+    case False{}:
+      bo.or.tl(ll, ww, ee)
+
+# pending as a value's key, or held
+def kk.ktb2(
+  vv: Bool,
+  +pp: Bool,
+  +ff: Bool,
+  +ll: Bool,
+  +ww: Bool,
+  +ee: {Bool.or(Bool.and(vv, pp), Bool.or(ff, ll)) == True{} : Bool}
+) -> {Bool.or(pp, Bool.or(ff, Bool.or(ll, ww))) == True{} : Bool}:
+  match vv:
+    case True{}:
+      match pp:
+        case True{}:
+          {==}
+        case False{}:
+          kk.fl(ff, ll, ww, ee)
+    case False{}:
+      bo.or.tr(pp, Bool.or(ff, Bool.or(ll, ww)), kk.fl(ff, ll, ww, ee))
+
+# a state's invariant gives the invariant of any value it takes
+def kk.tokt(
+  +gg: K3G,
+  +cc: KC,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +stack: List<&2, T.Ctx>,
+  +vv: T.Val,
+  +ek: {kk.Kc(gg, cc, bad, rows, here, parts, stack) == True{} : Bool}
+) -> {kk.Kt(gg, bad, rows, here, parts, stack, vv) == True{} : Bool}:
+  kk.bimp(Bool.not(String.is_empty(bad)), Bool.and(Bool.or(Bool.not(kk.ish(cc)), List.is_empty(&2, T.Ctx, stack)),
+    Bool.or(Bool.and(kk.isv(cc), kk.pend(gg, stack, here, parts)), Bool.or(kk.PF(gg, stack), kk.L(gg, stack, rows)))),
+    Bool.or(kk.pend(gg, stack, here, parts), Bool.or(kk.PF(gg, stack), Bool.or(kk.L(gg, stack, rows),
+      kk.sfx(Laws.k3.pl(stack, here, parts, []), kk.tp(gg), HVal{vv}, kk.key(gg))))), e1 => kk.ktb2(kk.isv(cc),
+        kk.pend(gg, stack, here, parts), kk.PF(gg, stack), kk.L(gg, stack, rows), kk.sfx(Laws.k3.pl(stack, here,
+          parts, []),
+          kk.tp(gg), HVal{vv}, kk.key(gg)), gd.r(Bool.or(Bool.not(kk.ish(cc)), List.is_empty(&2, T.Ctx, stack)),
+            Bool.or(Bool.and(kk.isv(cc), kk.pend(gg, stack, here, parts)), Bool.or(kk.PF(gg, stack), kk.L(gg, stack,
+              rows))), e1)), ek)
+
+# one of four, each giving the same
+def kk.or4(
+  pp: Bool,
+  ff: Bool,
+  ll: Bool,
+  ww: Bool,
+  +xx: Bool,
+  +ee: {Bool.or(pp, Bool.or(ff, Bool.or(ll, ww))) == True{} : Bool},
+  g1: @e1: {pp == True{} : Bool} -> {xx == True{} : Bool},
+  g2: @e1: {ff == True{} : Bool} -> {xx == True{} : Bool},
+  g3: @e1: {ll == True{} : Bool} -> {xx == True{} : Bool},
+  g4: @e1: {ww == True{} : Bool} -> {xx == True{} : Bool}
+) -> {xx == True{} : Bool}:
+  match pp:
+    case True{}:
+      g1({==})
+    case False{}:
+      match ff:
+        case True{}:
+          g2({==})
+        case False{}:
+          match ll:
+            case True{}:
+              g3({==})
+            case False{}:
+              g4(ee)
+
+# a path held rewritten
+def kk.has2(
+  +xs: List<&2, T.Val>,
+  aa: List<&2, String>,
+  bb: String,
+  a2: List<&2, String>,
+  b2: String,
+  +ea: {aa == a2 : List<&2, String>},
+  +eb: {bb == b2 : String},
+  +ee: {Laws.k3.has(xs, a2, b2) == True{} : Bool}
+) -> {Laws.k3.has(xs, aa, bb) == True{} : Bool}:
+  %Equal.sym(List<&2, String>, aa, a2, ea) : {Laws.k3.has(xs, _, bb) == True{} : Bool}
+  %Equal.sym(String, bb, b2, eb) : {Laws.k3.has(xs, a2, _) == True{} : Bool}
+  ee
+
+# a walk's end holds the key, or failed
+def kk.KE(+gg: K3G, ee: T.End) -> Bool:
+  match ee:
+    case T.End{vs, +bad, _h}:
+      Bool.or(Bool.not(String.is_empty(bad)), Laws.k3.has(vs, kk.tp(gg), kk.key(gg)))
+
+# read off a walk's end
+def kk.KE.u(
+  +gg: K3G,
+  ee: T.End
+) -> {kk.KE(gg, ee) == Bool.or(Bool.not(String.is_empty(kw.ebad(ee))), Laws.k3.has(kw.evs(ee), kk.tp(gg),
+  kk.key(gg))) : Bool}:
+  match ee:
+    case T.End{_v, _b, _h}:
+      {==}
+
+# by whether it failed
+def kk.KE.mk2(
+  bb: Bool,
+  +hv: Bool,
+  +_eb: {bb == bb : Bool},
+  hh: @e1: {bb == True{} : Bool} -> {hv == True{} : Bool}
+) -> {Bool.or(Bool.not(bb), hv) == True{} : Bool}:
+  match bb:
+    case True{}:
+      hh({==})
+    case False{}:
+      {==}
+
+# a walk's end holds the key when it did not fail
+def kk.KEH(+_gg: K3G, +_ee: T.End) -> Type:
+  @e1: {String.is_empty(kw.ebad(_ee)) == True{} : Bool} -> {Laws.k3.has(kw.evs(_ee), kk.tp(_gg), kk.key(_gg)) == True{}
+    : Bool}
+
+# a walk's end that holds the key, when it did not fail
+def kk.KE.mk(
+  +gg: K3G,
+  +ee: T.End,
+  hh: kk.KEH(gg, ee)
+) -> {kk.KE(gg, ee) == True{} : Bool}:
+  bo.t(kk.KE(gg, ee), Bool.or(Bool.not(String.is_empty(kw.ebad(ee))), Laws.k3.has(kw.evs(ee), kk.tp(gg), kk.key(gg))),
+    kk.KE.u(gg, ee), kk.KE.mk2(String.is_empty(kw.ebad(ee)), Laws.k3.has(kw.evs(ee), kk.tp(gg), kk.key(gg)), {==}, hh))
+
+# a take at the root
+def kk.troot(
+  +gg: K3G,
+  end: T.End,
+  +here: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +lead: Bool,
+  +ee: {kk.KE(gg, end) == True{} : Bool}
+) -> {kk.K(gg, T.take.root(end, here, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+  match end:
+    case T.End{+vs, +bad, +hs}:
+      ee
+
+# the promise a walk from the root starts with
+def kk.ci0(
+  +rows: List<&2, T.Val>,
+  +job: T.Job,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +eo: {String.is_empty(bad) == True{} : Bool}
+) -> kc.T(T.Tw{rows, job, [], bad, pre, heads, inl}, []):
+  %Equal.sym(Bool, String.is_empty(bad), True{}, eo) : kc.T2(_, [], [])
+  _k1 => _v1 => _q0 => e1 => e1
+
+# a walk from the root that puts a value
+def kk.WR(
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +rows: List<&2, T.Val>,
+  +vv: T.Val,
+  +bad: String,
+  +heads: List<&2, String>
+) -> T.End:
+  T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}}, T.path.len(here, 0))
+
+# a failed state's first error, over what it said
+def kk.okor(
+  +bad: String,
+  +xx: Bool,
+  +eo: {String.is_empty(bad) == True{} : Bool},
+  +ee: {Bool.or(Bool.not(String.is_empty(bad)), xx) == True{} : Bool}
+) -> {xx == True{} : Bool}:
+  Equal.trans(Bool, xx, Bool.or(Bool.not(String.is_empty(bad)), xx), True{}, Equal.cong(Bool, Bool, zz =>
+    Bool.or(Bool.not(zz), xx), True{}, String.is_empty(bad), Equal.sym(Bool, String.is_empty(bad), True{}, eo)), ee)
+
+# the path of a key at the root: the current table, the other parts, the
+# last
+def kk.pc1(
+  +here: List<&2, String>,
+  +nn: String,
+  +ps: List<&2, String>
+) -> {T.path.cat(here, nn <> ps) == List.append(&2, String, List.append(&2, String, here, List.reverse(&2, String,
+  ps)), [nn]) : List<&2, String>}:
+  Equal.trans(List<&2, String>, List.append(&2, String, here, List.reverse(&2, String, nn <> ps)), List.append(&2,
+    String, here, List.append(&2, String, List.reverse(&2, String, ps), [nn])), List.append(&2, String,
+      List.append(&2, String, here, List.reverse(&2, String, ps)), [nn]), Equal.cong(List<&2, String>, List<&2,
+        String>, zs => List.append(&2, String, here, zs), List.reverse(&2, String, nn <> ps), List.append(&2, String,
+          List.reverse(&2, String, ps), [nn]), kk.rev1(nn, ps)), Equal.sym(List<&2, String>, List.append(&2, String,
+            List.append(&2, String, here, List.reverse(&2, String, ps)), [nn]), List.append(&2, String, here,
+              List.append(&2, String, List.reverse(&2, String, ps), [nn])), la.assoc(here, List.reverse(&2, String, ps),
+                [nn])))
+
+# a key pending at the root is put where it says
+def kk.kroot.pend(
+  +gg: K3G,
+  parts: List<&2, String>,
+  +here: List<&2, String>,
+  +rows: List<&2, T.Val>,
+  +vv: T.Val,
+  +bad: String,
+  +heads: List<&2, String>,
+  +eo: {String.is_empty(bad) == True{} : Bool},
+  +eb: kw.OK(kk.WR(here, parts, rows, vv, bad, heads)),
+  +ep: {kk.pend2(gg, [], here, parts) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+  T.path.len(here, 0))), kk.tp(gg), kk.key(gg)) == True{} : Bool}:
+  match parts:
+    case []:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.walk(T.path.cat(here, []), T.Tw{rows, T.JPut{vv}, [], bad, "",
+        heads, False{}}, T.path.len(here, 0))), kk.tp(gg), kk.key(gg)) == True{} : Bool}, ep)
+    case +nn <> +ps:
+      kk.has2(kw.evs(T.tree.walk(T.path.cat(here, nn <> ps), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+        T.path.len(here, 0))), kk.tp(gg), kk.key(gg), kc.initn(T.path.cat(here, nn <> ps)), kc.lastn(T.path.cat(here,
+          nn <> ps)),
+        Equal.trans(List<&2, String>, kk.tp(gg), List.append(&2, String, here, List.reverse(&2, String, ps)),
+          kc.initn(T.path.cat(here, nn <> ps)),
+          Equal.trans(List<&2, String>, kk.tp(gg), List.append(&2, String, List.append(&2, String, here,
+            List.reverse(&2, String, ps)), []), List.append(&2, String, here, List.reverse(&2, String, ps)),
+            Equal.sym(List<&2, String>, List.append(&2, String, List.append(&2, String, here, List.reverse(&2, String,
+              ps)), []), kk.tp(gg), kk.leq.eq(List.append(&2,
+              String, List.append(&2, String, here, List.reverse(&2, String, ps)), []), kk.tp(gg), gd.r(T.str.eq(nn,
+                kk.key(gg)), kk.leq(List.append(&2, String, List.append(&2, String, here, List.reverse(&2, String, ps)),
+                []), kk.tp(gg)), ep))), wh.lnil(List.append(&2, String, here, List.reverse(&2, String, ps)))),
+          Equal.sym(List<&2, String>, kc.initn(T.path.cat(here, nn <> ps)), List.append(&2, String, here,
+            List.reverse(&2, String, ps)), Equal.trans(List<&2, String>, kc.initn(T.path.cat(here, nn <> ps)),
+            kc.initn(List.append(&2, String, List.append(&2, String, here, List.reverse(&2, String, ps)), [nn])),
+              List.append(&2, String, here, List.reverse(&2, String, ps)), Equal.cong(List<&2, String>, List<&2,
+                String>,
+              zs => kc.initn(zs), T.path.cat(here, nn <> ps), List.append(&2, String, List.append(&2, String, here,
+                List.reverse(&2, String, ps)), [nn]), kk.pc1(here, nn, ps)),
+              kk.initn(List.append(&2, String, here, List.reverse(&2, String, ps)), nn)))),
+        Equal.trans(String, kk.key(gg), nn, kc.lastn(T.path.cat(here, nn <> ps)), Equal.sym(String, nn, kk.key(gg),
+          str.eq.true(nn,
+          kk.key(gg), gd.l(T.str.eq(nn, kk.key(gg)), kk.leq(List.append(&2, String, List.append(&2, String, here,
+            List.reverse(&2, String, ps)), []), kk.tp(gg)), ep))),
+          Equal.sym(String, kc.lastn(T.path.cat(here, nn <> ps)), nn, Equal.trans(String, kc.lastn(T.path.cat(here,
+            nn <> ps)), kc.lastn(List.append(&2,
+            String, List.append(&2, String, here, List.reverse(&2, String, ps)), [nn])), nn, Equal.cong(List<&2,
+              String>, String, zs => kc.lastn(zs), T.path.cat(here, nn <> ps),
+              List.append(&2, String, List.append(&2, String, here, List.reverse(&2, String, ps)), [nn]), kk.pc1(here,
+                nn, ps)), kk.lastn(List.append(&2, String, here, List.reverse(&2, String, ps)), nn)))),
+        kc.wtab(T.path.cat(here, nn <> ps), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}}, T.path.len(here, 0),
+          [], kk.ci0(rows,
+          T.JPut{vv}, bad, "", heads, False{}, eo), eb))
+
+# a value that holds the key, taken at the root, puts it where it says
+def kk.kroot.vh(
+  +gg: K3G,
+  +parts: List<&2, String>,
+  +here: List<&2, String>,
+  +rows: List<&2, T.Val>,
+  +vv: T.Val,
+  +bad: String,
+  +heads: List<&2, String>,
+  +eo: {String.is_empty(bad) == True{} : Bool},
+  +eb: kw.OK(kk.WR(here, parts, rows, vv, bad, heads)),
+  +ev: {kk.sfx(Laws.k3.pl([], here, parts, []), kk.tp(gg), HVal{vv}, kk.key(gg)) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+  T.path.len(here, 0))), kk.tp(gg), kk.key(gg)) == True{} : Bool}:
+  kk.has2(kw.evs(T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+    T.path.len(here, 0))), kk.tp(gg), kk.key(gg), List.append(&2, String, T.path.cat(here, parts),
+    kk.drop(Laws.k3.pl([], here, parts, []), kk.tp(gg))), kk.key(gg), Equal.trans(List<&2, String>, kk.tp(gg),
+      List.append(&2, String, Laws.k3.pl([], here, parts, []), kk.drop(Laws.k3.pl([], here, parts, []), kk.tp(gg))),
+      List.append(&2, String, T.path.cat(here, parts), kk.drop(Laws.k3.pl([], here, parts, []), kk.tp(gg))),
+      kk.sfx.eq(Laws.k3.pl([], here, parts, []), kk.tp(gg), HVal{vv}, kk.key(gg), ev), Equal.cong(List<&2, String>,
+        List<&2, String>, zs => List.append(&2, String, zs, kk.drop(Laws.k3.pl([], here, parts, []), kk.tp(gg))),
+        List.append(&2, String, T.path.cat(here, parts), []), T.path.cat(here, parts), wh.lnil(T.path.cat(here,
+          parts)))), {==}, kc.wput(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+            T.path.len(here, 0), [], vv, kk.drop(Laws.k3.pl([], here, parts, []), kk.tp(gg)), kk.key(gg), kk.ci0(rows,
+              T.JPut{vv}, bad, "", heads, False{}, eo), {==}, kk.vh.hv(vv, kk.drop(Laws.k3.pl([], here, parts, []),
+                kk.tp(gg)), kk.key(gg), kk.sfx.h(Laws.k3.pl([], here, parts, []), kk.tp(gg), HVal{vv}, kk.key(gg), ev)),
+            eb))
+
+# a walk at the root, by whether the state had failed
+def kk.kroot.b(
+  ok: Bool,
+  +gg: K3G,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +vv: T.Val,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  +et: {kk.Kt(gg, bad, rows, here, parts, [], vv) == True{} : Bool}
+) -> {kk.KE(gg, T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+  T.path.len(here, 0))) == True{} : Bool}:
+  match ok:
+    case False{}:
+      %Equal.sym(T.End, T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+        T.path.len(here, 0)), T.End{rows, bad, heads}, Laws.failed_walk_changes_nothing(T.path.cat(here, parts),
+        rows, T.JPut{vv}, bad, "", heads, False{}, T.path.len(here, 0), eo)) : {kk.KE(gg, _) == True{} : Bool}
+      %Equal.sym(Bool, String.is_empty(bad), False{}, eo) : {Bool.or(Bool.not(_), Laws.k3.has(rows, kk.tp(gg),
+        kk.key(gg))) == True{} : Bool}
+      {==}
+    case True{}:
+      kk.KE.mk(gg, T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+        T.path.len(here, 0)), +eb => kk.or4(kk.pend(gg, [], here, parts), kk.PF(gg, []), kk.L(gg, [], rows),
+        kk.sfx(Laws.k3.pl([], here, parts, []), kk.tp(gg), HVal{vv}, kk.key(gg)),
+          Laws.k3.has(kw.evs(T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+            T.path.len(here, 0))), kk.tp(gg),
+          kk.key(gg)), kk.okor(bad, Bool.or(kk.pend(gg, [], here, parts), Bool.or(kk.PF(gg, []), Bool.or(kk.L(gg, [],
+            rows), kk.sfx(Laws.k3.pl([], here, parts, []), kk.tp(gg), HVal{vv}, kk.key(gg))))), eo, et),
+          e1 => kk.kroot.pend(gg, parts, here, rows, vv, bad, heads, eo, eb, e1),
+          e1 => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [],
+            bad, "", heads, False{}}, T.path.len(here, 0))), kk.tp(gg), kk.key(gg)) == True{} : Bool}, e1),
+          e1 => kw.mono(T.path.cat(here, parts), rows, T.JPut{vv}, bad, "", heads, False{}, T.path.len(here, 0),
+            kk.key(gg), eo, eb)(kk.tp(gg), e1),
+          e1 => kk.kroot.vh(gg, parts, here, rows, vv, bad, heads, eo, eb, e1)))
+
+# an array's items with a value in front hold what the items held
+def kk.itm(
+  +vv: T.Val,
+  +items: List<&2, T.Val>,
+  +q0: List<&2, String>,
+  +kk: String,
+  +ee: {kh.S(items, q0, kk) == True{} : Bool}
+) -> {kh.S(vv <> items, q0, kk) == True{} : Bool}:
+  bo.t(kh.S(vv <> items, q0, kk), Bool.or(kh.eS(vv, q0, kk), kh.S(items, q0, kk)), kh.uS(vv, q0, items, kk),
+    bo.or.tr(kh.eS(vv, q0, kk), kh.S(items, q0, kk), ee))
+
+# and what the value held
+def kk.itv(
+  +vv: T.Val,
+  +items: List<&2, T.Val>,
+  +q0: List<&2, String>,
+  +kk: String,
+  +ee: {kk.vh(vv, q0, kk) == True{} : Bool}
+) -> {kh.S(vv <> items, q0, kk) == True{} : Bool}:
+  bo.t(kh.S(vv <> items, q0, kk), Bool.or(kh.eS(vv, q0, kk), kh.S(items, q0, kk)), kh.uS(vv, q0, items, kk),
+    bo.or.tl(kh.eS(vv, q0, kk), kh.S(items, q0, kk), kk.vh.es(vv, q0, kk, ee)))
+
+# a frame held, pending or put below, stays so when the frame gains
+def kk.arrb(
+  pf: Bool,
+  fi: Bool,
+  +lr: Bool,
+  ww: Bool,
+  +f2: Bool,
+  g1: @e1: {fi == True{} : Bool} -> {f2 == True{} : Bool},
+  g2: @e1: {ww == True{} : Bool} -> {f2 == True{} : Bool},
+  +ee: {Bool.or(pf, Bool.or(Bool.or(fi, lr), ww)) == True{} : Bool}
+) -> {Bool.or(pf, Bool.or(f2, lr)) == True{} : Bool}:
+  match pf:
+    case True{}:
+      {==}
+    case False{}:
+      match fi:
+        case True{}:
+          bo.or.tl(f2, lr, g1({==}))
+        case False{}:
+          match lr:
+            case True{}:
+              bo.or.tr(f2, True{}, {==})
+            case False{}:
+              bo.or.tl(f2, False{}, g2(ee))
+
+# a value taken into an open array
+def kk.tarr(
+  +gg: K3G,
+  +items: List<&2, T.Val>,
+  +saved: List<&2, String>,
+  +at: List<&2, String>,
+  +rest: List<&2, T.Ctx>,
+  +vv: T.Val,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +lead: Bool,
+  +et: {kk.Kt(gg, bad, rows, here, parts, T.CArr{items, saved, at} <> rest, vv) == True{} : Bool}
+) -> {kk.K(gg, T.take.top(T.CArr{items, saved, at} <> rest, vv, bad, rows, heads, here, parts, back, qkind, uni,
+  left, arrtab, lead)) == True{} : Bool}:
+  kk.bimp(Bool.not(String.is_empty(bad)), Bool.or(kk.PF(gg, T.CArr{items, saved, at} <> rest), Bool.or(kk.L(gg,
+    T.CArr{items, saved, at} <> rest, rows), kk.sfx(Laws.k3.pl(rest, at, saved, []), kk.tp(gg), HVal{vv}, kk.key(gg)))),
+      Bool.or(kk.PF(gg,
+      T.CArr{vv <> items, saved, at} <> rest), kk.L(gg, T.CArr{vv <> items, saved, at} <> rest, rows)), e1 =>
+      kk.arrb(kk.PF(gg, T.CArr{items, saved, at} <> rest), kk.sfx(Laws.k3.pl(rest, at, saved, []), kk.tp(gg),
+        HItems{items}, kk.key(gg)),
+        kk.L(gg, rest, rows), kk.sfx(Laws.k3.pl(rest, at, saved, []), kk.tp(gg), HVal{vv}, kk.key(gg)),
+          kk.sfx(Laws.k3.pl(rest,
+          at, saved, []), kk.tp(gg), HItems{vv <>
+          items}, kk.key(gg)), e2 => kk.sfx.mono(Laws.k3.pl(rest, at, saved, []), kk.tp(gg), HItems{items},
+            HItems{vv <> items}, kk.key(gg),
+            q0 => e3 => kk.itm(vv, items, q0, kk.key(gg), e3), e2), e2 => kk.sfx.mono(Laws.k3.pl(rest, at, saved, []),
+              kk.tp(gg), HVal{vv},
+              HItems{vv <> items}, kk.key(gg), q0 => e3 => kk.itv(vv, items, q0, kk.key(gg), e3), e2), e1), et)
+
+# a walk's end in an inline table holds the key, or failed
+def kk.KI(
+  +gg: K3G,
+  ee: T.End,
+  +rows: List<&2, T.Val>,
+  +at: List<&2, String>,
+  +saved: List<&2, String>,
+  +rest: List<&2, T.Ctx>
+) -> Bool:
+  match ee:
+    case T.End{vs, +bad, _h}:
+      Bool.or(Bool.not(String.is_empty(bad)), Bool.or(Bool.or(kk.pend(gg, rest, at, saved), kk.PF(gg, rest)),
+        Bool.or(kk.sfx(Laws.k3.pl(rest, at, saved, []), kk.tp(gg), HRows{vs}, kk.key(gg)), kk.L(gg, rest, rows))))
+
+# a value taken into an open inline table
+def kk.tinl(
+  +gg: K3G,
+  end: T.End,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +at: List<&2, String>,
+  +saved: List<&2, String>,
+  +rest: List<&2, T.Ctx>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +lead: Bool,
+  +ee: {kk.KI(gg, end, rows, at, saved, rest) == True{} : Bool}
+) -> {kk.K(gg, T.take.inl(end, rows, heads, at, saved, rest, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+  match end:
+    case T.End{+vs, +bad, _h}:
+      ee
+
+# read off a walk's end in an inline table
+def kk.KI.u(
+  +gg: K3G,
+  ee: T.End,
+  +rows: List<&2, T.Val>,
+  +at: List<&2, String>,
+  +saved: List<&2, String>,
+  +rest: List<&2, T.Ctx>
+) -> {kk.KI(gg, ee, rows, at, saved, rest) == Bool.or(Bool.not(String.is_empty(kw.ebad(ee))),
+  Bool.or(Bool.or(kk.pend(gg, rest, at, saved), kk.PF(gg, rest)), Bool.or(kk.sfx(Laws.k3.pl(rest, at, saved, []),
+    kk.tp(gg), HRows{kw.evs(ee)},
+    kk.key(gg)), kk.L(gg, rest, rows)))) : Bool}:
+  match ee:
+    case T.End{_v, _b, _h}:
+      {==}
+
+# a key pending in an inline table is put where it says
+def kk.kinl.pend(
+  +gg: K3G,
+  parts: List<&2, String>,
+  +inl: List<&2, T.Val>,
+  +saved: List<&2, String>,
+  +at: List<&2, String>,
+  +rest: List<&2, T.Ctx>,
+  +here: List<&2, String>,
+  +vv: T.Val,
+  +bad: String,
+  +eo: {String.is_empty(bad) == True{} : Bool},
+  +eb: kw.OK(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0)),
+  +ep: {kk.pend2(gg, T.CInl{inl, saved, at} <> rest, here, parts) == True{} : Bool}
+) -> {kk.sfx(Laws.k3.pl(rest, at, saved, []), kk.tp(gg), HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts),
+  T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0))}, kk.key(gg)) == True{} : Bool}:
+  match parts:
+    case []:
+      Eq.bit.absurd(&2, {kk.sfx(Laws.k3.pl(rest, at, saved, []), kk.tp(gg), HRows{kw.evs(T.tree.walk(List.reverse(&2,
+        String, []), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0))}, kk.key(gg)) == True{} : Bool}, ep)
+    case +nn <> +ps:
+      %Equal.sym(List<&2, String>, kk.tp(gg), List.append(&2, String, Laws.k3.pl(rest, at, saved, []), List.append(&2,
+        String, List.reverse(&2, String, ps), [])),
+        Equal.trans(List<&2, String>, kk.tp(gg), Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2,
+          String, ps), [])),
+          List.append(&2, String, Laws.k3.pl(rest, at, saved, []), List.append(&2, String, List.reverse(&2, String, ps),
+            [])), Equal.sym(List<&2, String>,
+            Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2, String, ps), [])), kk.tp(gg),
+              kk.leq.eq(Laws.k3.pl(rest, at, saved,
+              List.append(&2, String, List.reverse(&2, String, ps), [])), kk.tp(gg), gd.r(T.str.eq(nn, kk.key(gg)),
+                kk.leq(Laws.k3.pl(rest, at,
+                saved, List.append(&2, String, List.reverse(&2, String, ps), [])), kk.tp(gg)), ep))), kk.pl.app(rest,
+                  at, saved, [],
+                  List.append(&2, String, List.reverse(&2, String, ps), [])))) : {kk.sfx(Laws.k3.pl(rest, at, saved,
+                    []),
+                    _, HRows{kw.evs(T.tree.walk(List.reverse(&2, String, nn <> ps), T.Tw{inl, T.JPut{vv}, [], bad, "",
+                      [], True{}}, 0))}, kk.key(gg))
+                    == True{} : Bool}
+      kk.sfx.mk(Laws.k3.pl(rest, at, saved, []), List.append(&2, String, List.reverse(&2, String, ps), []),
+        HRows{kw.evs(T.tree.walk(List.reverse(&2, String, nn <> ps), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}},
+          0))}, kk.key(gg),
+        kk.has2(kw.evs(T.tree.walk(List.reverse(&2, String, nn <> ps), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}},
+          0)), List.append(&2, String, List.reverse(&2, String, ps), []), kk.key(gg), kc.initn(List.reverse(&2, String,
+          nn <> ps)), kc.lastn(List.reverse(&2, String, nn <> ps)), Equal.trans(List<&2, String>, List.append(&2,
+            String, List.reverse(&2, String, ps), []), List.reverse(&2, String, ps), kc.initn(List.reverse(&2, String,
+              nn <> ps)), wh.lnil(List.reverse(&2, String, ps)),
+            Equal.sym(List<&2, String>, kc.initn(List.reverse(&2, String, nn <> ps)), List.reverse(&2, String, ps),
+              Equal.trans(List<&2,
+              String>, kc.initn(List.reverse(&2, String, nn <> ps)), kc.initn(List.append(&2, String, List.reverse(&2,
+                String, ps), [nn])),
+              List.reverse(&2, String, ps), Equal.cong(List<&2, String>, List<&2, String>, zs => kc.initn(zs),
+                List.reverse(&2, String, nn <>
+                ps), List.append(&2, String, List.reverse(&2, String, ps), [nn]), kk.rev1(nn, ps)),
+                  kk.initn(List.reverse(&2, String, ps), nn)))),
+          Equal.trans(String, kk.key(gg), nn, kc.lastn(List.reverse(&2, String, nn <> ps)), Equal.sym(String, nn,
+            kk.key(gg), str.eq.true(nn, kk.key(gg), gd.l(T.str.eq(nn, kk.key(gg)), kk.leq(Laws.k3.pl(rest, at, saved,
+              List.append(&2, String, List.reverse(&2, String, ps), [])), kk.tp(gg)), ep))), Equal.sym(String,
+                kc.lastn(List.reverse(&2,
+                String, nn <> ps)), nn, Equal.trans(String, kc.lastn(List.reverse(&2, String, nn <> ps)),
+                kc.lastn(List.append(&2, String, List.reverse(&2, String, ps), [nn])), nn, Equal.cong(List<&2,
+                  String>, String, zs =>
+                  kc.lastn(zs), List.reverse(&2, String, nn <> ps), List.append(&2, String, List.reverse(&2, String,
+                    ps), [nn]),
+                  kk.rev1(nn, ps)), kk.lastn(List.reverse(&2, String, ps), nn)))),
+          kc.wtab(List.reverse(&2, String, nn <> ps), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0, [],
+            kk.ci0(inl, T.JPut{vv}, bad, "", [], True{}, eo), eb)))
+
+# a value taken into an inline table holds the key
+def kk.VI(
+  +gg: K3G,
+  +rest: List<&2, T.Ctx>,
+  +at: List<&2, String>,
+  +saved: List<&2, String>,
+  +parts: List<&2, String>,
+  +vv: T.Val
+) -> Bool:
+  kk.sfx(Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2, String, parts), [])), kk.tp(gg), HVal{vv},
+    kk.key(gg))
+
+# the key's table path, when a value taken into an inline table holds it
+def kk.kinl.tp(
+  +gg: K3G,
+  +rest: List<&2, T.Ctx>,
+  +at: List<&2, String>,
+  +saved: List<&2, String>,
+  +parts: List<&2, String>,
+  +vv: T.Val,
+  +ev: {kk.VI(gg, rest, at, saved, parts, vv) == True{} : Bool}
+) -> {kk.tp(gg) == List.append(&2, String, Laws.k3.pl(rest, at, saved, []), List.append(&2, String, List.reverse(&2,
+  String, parts), kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2, String, parts), [])),
+    kk.tp(gg)))) : List<&2, String>}:
+  Equal.trans(List<&2, String>, kk.tp(gg), List.append(&2, String, Laws.k3.pl(rest, at, saved, List.append(&2, String,
+    List.reverse(&2, String, parts), [])), kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2,
+      String, parts), [])), kk.tp(gg))), List.append(&2, String, Laws.k3.pl(rest, at, saved, []), List.append(&2,
+        String,
+        List.reverse(&2, String, parts), kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2,
+          String, parts), [])), kk.tp(gg)))),
+    kk.sfx.eq(Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2, String, parts), [])), kk.tp(gg),
+      HVal{vv}, kk.key(gg), ev),
+    Equal.trans(List<&2, String>, List.append(&2, String, Laws.k3.pl(rest, at, saved, List.append(&2, String,
+      List.reverse(&2, String, parts), [])),
+      kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2, String, parts), [])), kk.tp(gg))),
+        List.append(&2, String, List.append(&2, String, Laws.k3.pl(rest, at, saved, []), List.append(&2, String,
+          List.reverse(&2, String, parts), [])), kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2, String,
+            List.reverse(&2, String, parts), [])), kk.tp(gg))),
+      List.append(&2, String, Laws.k3.pl(rest, at, saved, []), List.append(&2, String, List.reverse(&2, String, parts),
+        kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2, String, parts), [])), kk.tp(gg)))),
+          Equal.cong(List<&2, String>, List<&2,
+        String>, zs => List.append(&2, String, zs, kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2, String,
+          List.reverse(&2, String, parts), [])), kk.tp(gg))), Laws.k3.pl(rest, at, saved, List.append(&2, String,
+            List.reverse(&2, String, parts), [])),
+        List.append(&2, String, Laws.k3.pl(rest, at, saved, []), List.append(&2, String, List.reverse(&2, String,
+          parts),
+          [])), kk.pl.app(rest, at, saved, [],
+          List.append(&2, String, List.reverse(&2, String, parts), []))), Equal.trans(List<&2, String>,
+            List.append(&2, String, List.append(&2,
+            String, Laws.k3.pl(rest, at, saved, []), List.append(&2, String, List.reverse(&2, String, parts), [])),
+              kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2, String, parts), [])),
+                kk.tp(gg))), List.append(&2, String, Laws.k3.pl(rest, at, saved, []), List.append(&2,
+              String, List.append(&2, String, List.reverse(&2, String, parts), []), kk.drop(Laws.k3.pl(rest, at, saved,
+                List.append(&2, String, List.reverse(&2, String, parts), [])), kk.tp(gg)))), List.append(&2, String,
+                  Laws.k3.pl(rest, at, saved, []), List.append(&2,
+                String, List.reverse(&2, String, parts), kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2, String,
+                  List.reverse(&2, String, parts), [])), kk.tp(gg)))), la.assoc(Laws.k3.pl(rest, at, saved, []),
+                    List.append(&2, String, List.reverse(&2, String, parts), []), kk.drop(Laws.k3.pl(rest, at, saved,
+                      List.append(&2, String, List.reverse(&2, String, parts), [])), kk.tp(gg))),
+        Equal.cong(List<&2, String>, List<&2, String>, zs => List.append(&2, String, Laws.k3.pl(rest, at, saved, []),
+          List.append(&2, String, zs,
+          kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2, String, parts), [])),
+            kk.tp(gg)))),
+            List.append(&2, String, List.reverse(&2, String, parts), []), List.reverse(&2, String, parts),
+              wh.lnil(List.reverse(&2, String, parts))))))
+
+# a value that holds the key, taken into an inline table, puts it where it
+# says
+def kk.kinl.vh(
+  +gg: K3G,
+  +parts: List<&2, String>,
+  +inl: List<&2, T.Val>,
+  +saved: List<&2, String>,
+  +at: List<&2, String>,
+  +rest: List<&2, T.Ctx>,
+  +vv: T.Val,
+  +bad: String,
+  +eo: {String.is_empty(bad) == True{} : Bool},
+  +eb: kw.OK(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0)),
+  +ev: {kk.VI(gg, rest, at, saved, parts, vv) == True{} : Bool}
+) -> {kk.sfx(Laws.k3.pl(rest, at, saved, []), kk.tp(gg), HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts),
+  T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0))}, kk.key(gg)) == True{} : Bool}:
+  %Equal.sym(List<&2, String>, kk.tp(gg), List.append(&2, String, Laws.k3.pl(rest, at, saved, []), List.append(&2,
+    String,
+    List.reverse(&2, String, parts), kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2,
+      String,
+      parts), [])), kk.tp(gg)))),
+    kk.kinl.tp(gg, rest, at, saved, parts, vv, ev)) : {kk.sfx(Laws.k3.pl(rest, at, saved, []), _,
+      HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0))},
+        kk.key(gg)) == True{}
+      : Bool}
+  kk.sfx.mk(Laws.k3.pl(rest, at, saved, []), List.append(&2, String, List.reverse(&2, String, parts),
+    kk.drop(Laws.k3.pl(rest,
+    at, saved, List.append(&2, String, List.reverse(&2, String, parts), [])), kk.tp(gg))),
+      HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0))},
+        kk.key(gg), kc.wput(List.reverse(&2, String, parts),
+    T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0, [], vv, kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2,
+      String,
+      List.reverse(&2, String, parts), [])), kk.tp(gg)), kk.key(gg), kk.ci0(inl, T.JPut{vv}, bad, "", [],
+      True{}, eo), {==}, kk.vh.hv(vv, kk.drop(Laws.k3.pl(rest, at, saved, List.append(&2, String, List.reverse(&2,
+        String,
+        parts), [])), kk.tp(gg)), kk.key(gg), kk.sfx.h(Laws.k3.pl(rest, at, saved, List.append(&2, String,
+        List.reverse(&2, String, parts), [])), kk.tp(gg), HVal{vv}, kk.key(gg), ev)), eb))
+
+# an or with False first
+def kk.or0(
+  +xx: Bool,
+  +ee: {Bool.or(False{}, xx) == True{} : Bool}
+) -> {Bool.or(False{}, Bool.or(xx, False{})) == True{} : Bool}:
+  bo.or.tl(xx, False{}, ee)
+
+# a walk in an inline table, by whether the state had failed
+def kk.kinl.b(
+  ok: Bool,
+  +gg: K3G,
+  +inl: List<&2, T.Val>,
+  +saved: List<&2, String>,
+  +at: List<&2, String>,
+  +rest: List<&2, T.Ctx>,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +vv: T.Val,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  +et: {kk.Kt(gg, bad, rows, here, parts, T.CInl{inl, saved, at} <> rest, vv) == True{} : Bool}
+) -> {kk.KI(gg, T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0), rows,
+  at, saved, rest) == True{} : Bool}:
+  match ok:
+    case False{}:
+      %Equal.sym(T.End, T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}},
+        0), T.End{inl, bad, []}, Laws.failed_walk_changes_nothing(List.reverse(&2, String, parts), inl, T.JPut{vv},
+          bad, "",
+        [], True{}, 0, eo)) : {kk.KI(gg, _, rows, at, saved, rest) == True{} : Bool}
+      %Equal.sym(Bool, String.is_empty(bad), False{}, eo) : {Bool.or(Bool.not(_), Bool.or(Bool.or(kk.pend(gg, rest,
+        at, saved), kk.PF(gg, rest)), Bool.or(kk.sfx(Laws.k3.pl(rest, at, saved, []), kk.tp(gg), HRows{inl},
+          kk.key(gg)),
+          kk.L(gg, rest, rows))))
+          == True{} : Bool}
+      {==}
+    case True{}:
+      bo.t(kk.KI(gg, T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0),
+        rows, at, saved, rest), Bool.or(Bool.not(String.is_empty(kw.ebad(T.tree.walk(List.reverse(&2, String, parts),
+          T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0)))),
+        Bool.or(Bool.or(kk.pend(gg, rest, at, saved), kk.PF(gg, rest)), Bool.or(kk.sfx(Laws.k3.pl(rest, at, saved, []),
+          kk.tp(gg),
+          HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}},
+            0))}, kk.key(gg)), kk.L(gg, rest, rows)))), kk.KI.u(gg, T.tree.walk(List.reverse(&2, String, parts),
+              T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0), rows, at, saved, rest),
+        kk.KE.mk2(String.is_empty(kw.ebad(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad,
+          "", [], True{}}, 0))), Bool.or(Bool.or(kk.pend(gg, rest, at, saved), kk.PF(gg, rest)),
+          Bool.or(kk.sfx(Laws.k3.pl(rest, at, saved, []), kk.tp(gg), HRows{kw.evs(T.tree.walk(List.reverse(&2, String,
+            parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0))}, kk.key(gg)), kk.L(gg, rest, rows))), {==},
+              +eb =>
+            kk.or4(kk.pend(gg, T.CInl{inl, saved, at} <> rest, here, parts), kk.PF(gg, T.CInl{inl, saved,
+              at} <> rest), kk.L(gg, T.CInl{inl, saved, at} <> rest, rows), kk.sfx(Laws.k3.pl(T.CInl{inl, saved,
+                at} <> rest,
+              here, parts, []), kk.tp(gg), HVal{vv}, kk.key(gg)), Bool.or(Bool.or(kk.pend(gg, rest, at, saved),
+                kk.PF(gg, rest)), Bool.or(kk.sfx(Laws.k3.pl(rest, at, saved, []), kk.tp(gg),
+                  HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [],
+                    True{}}, 0))}, kk.key(gg)), kk.L(gg, rest,
+                  rows))), kk.okor(bad, Bool.or(kk.pend(gg, T.CInl{inl, saved, at} <> rest, here, parts),
+                    Bool.or(kk.PF(gg, T.CInl{inl, saved, at} <> rest),
+                    Bool.or(kk.L(gg, T.CInl{inl, saved, at} <> rest, rows), kk.sfx(Laws.k3.pl(T.CInl{inl, saved,
+                      at} <> rest, here, parts, []), kk.tp(gg), HVal{vv},
+                      kk.key(gg))))), eo, et),
+              e1 => bo.or.tr(Bool.or(kk.pend(gg, rest, at, saved), kk.PF(gg, rest)), Bool.or(kk.sfx(Laws.k3.pl(rest, at,
+                saved, []), kk.tp(gg),
+                HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [],
+                  True{}}, 0))}, kk.key(gg)), kk.L(gg, rest, rows)), bo.or.tl(kk.sfx(Laws.k3.pl(rest, at, saved, []),
+                    kk.tp(gg),
+                  HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [],
+                    True{}}, 0))}, kk.key(gg)), kk.L(gg, rest, rows), kk.kinl.pend(gg, parts, inl, saved, at,
+                    rest, here, vv, bad, eo, eb, e1))),
+              e1 => bo.or.tl(Bool.or(kk.pend(gg, rest, at, saved), kk.PF(gg, rest)), Bool.or(kk.sfx(Laws.k3.pl(rest, at,
+                saved, []), kk.tp(gg),
+                HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [],
+                  True{}}, 0))}, kk.key(gg)), kk.L(gg, rest, rows)), e1),
+              e1 => bo.or.tr(Bool.or(kk.pend(gg, rest, at, saved), kk.PF(gg, rest)), Bool.or(kk.sfx(Laws.k3.pl(rest, at,
+                saved, []), kk.tp(gg),
+                HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [],
+                  True{}}, 0))}, kk.key(gg)), kk.L(gg, rest, rows)), kk.arrb(False{}, kk.sfx(Laws.k3.pl(rest, at, saved,
+                    []), kk.tp(gg),
+                  HRows{inl}, kk.key(gg)), kk.L(gg, rest, rows), False{}, kk.sfx(Laws.k3.pl(rest, at, saved, []),
+                    kk.tp(gg),
+                    HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [],
+                      True{}}, 0))}, kk.key(gg)), e2 => kk.sfx.mono(Laws.k3.pl(rest, at, saved, []), kk.tp(gg),
+                        HRows{inl},
+                      HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [],
+                        True{}}, 0))}, kk.key(gg), kw.mono(List.reverse(&2, String, parts), inl, T.JPut{vv}, bad, "",
+                          [], True{}, 0,
+                        kk.key(gg), eo, eb), e2), e2 => Eq.bit.absurd(&2, {kk.sfx(Laws.k3.pl(rest, at, saved, []),
+                          kk.tp(gg),
+                          HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "",
+                            [], True{}}, 0))}, kk.key(gg)) == True{} : Bool}, e2),
+                              kk.or0(Bool.or(kk.sfx(Laws.k3.pl(rest,
+                              at, saved, []),
+                            kk.tp(gg), HRows{inl}, kk.key(gg)), kk.L(gg, rest, rows)), e1))),
+              e1 => bo.or.tr(Bool.or(kk.pend(gg, rest, at, saved), kk.PF(gg, rest)), Bool.or(kk.sfx(Laws.k3.pl(rest, at,
+                saved, []), kk.tp(gg),
+                HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [],
+                  True{}}, 0))}, kk.key(gg)), kk.L(gg, rest, rows)), bo.or.tl(kk.sfx(Laws.k3.pl(rest, at, saved, []),
+                    kk.tp(gg),
+                  HRows{kw.evs(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [],
+                    True{}}, 0))}, kk.key(gg)), kk.L(gg, rest, rows), kk.kinl.vh(gg, parts, inl, saved, at, rest,
+                    vv, bad, eo, eb, e1))))))
+
+# a value taken where the state says
+def kk.ttop(
+  +gg: K3G,
+  stack: List<&2, T.Ctx>,
+  +vv: T.Val,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +lead: Bool,
+  +et: {kk.Kt(gg, bad, rows, here, parts, stack, vv) == True{} : Bool}
+) -> {kk.K(gg, T.take.top(stack, vv, bad, rows, heads, here, parts, back, qkind, uni, left, arrtab, lead)) == True{}
+  : Bool}:
+  match stack:
+    case []:
+      kk.troot(gg, T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+        T.path.len(here, 0)), here, back, qkind, uni, left, arrtab, lead, kk.kroot.b(String.is_empty(bad), gg, bad,
+          rows,
+        heads, here, parts, vv, {==}, et))
+    case T.CArr{+items, +saved, +at} <> +rest:
+      kk.tarr(gg, items, saved, at, rest, vv, bad, rows, heads, here, parts, back, qkind, uni, left, arrtab, lead, et)
+    case T.CInl{+inl, +saved, +at} <> +rest:
+      kk.tinl(gg, T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0),
+        rows, heads, at, saved, rest, back, qkind, uni, left, arrtab, lead,
+        kk.kinl.b(String.is_empty(bad), gg, inl, saved, at, rest, bad, rows, here, parts, vv, {==}, et))
+
+# LEMMA: a value taken keeps the invariant, from any state that keeps it
+def kg.take(
+  +gg: K3G,
+  +st: T.St,
+  +vv: T.Val,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.val.take(st, vv)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, _f, +lex, +back, +qkind, +stack, _o, +uni, +left, +arrtab, +lead}:
+      kk.ttop(gg, stack, vv, bad, rows, heads, here, parts, back, qkind, uni, left, arrtab, lead, kk.tokt(gg,
+        kk.cls(lex, back), bad, rows, here, parts, stack, vv, eg))
+
+# the fields the invariant reads, besides the lex state
+type KF is Data:
+  KF{bad: String, rows: List<&2, T.Val>, here: List<&2, String>, parts: List<&2, String>, stack: List<&2, T.Ctx>}
+
+# the fields the invariant reads outside the key being read
+type KF2 is Data:
+  KF2{bad: String, rows: List<&2, T.Val>, stack: List<&2, T.Ctx>}
+
+# a state's fields the invariant reads
+def kk.flds(st: T.St) -> KF:
+  match st:
+    case T.St{bad, rows, _h, here, parts, _f, _x, _k, _q, stack, _o, _u, _l, _a, _d}:
+      KF{bad, rows, here, parts, stack}
+
+# and those outside the key
+def kk.flds2(st: T.St) -> KF2:
+  match st:
+    case T.St{bad, rows, _h, _e, _p, _f, _x, _k, _q, stack, _o, _u, _l, _a, _d}:
+      KF2{bad, rows, stack}
+
+# the invariant over the fields
+def kk.Kc2(+gg: K3G, cc: KC, ff: KF) -> Bool:
+  match ff:
+    case KF{bad, rows, here, parts, stack}:
+      kk.Kc(gg, cc, bad, rows, here, parts, stack)
+
+# the invariant, read off a state
+def kk.K.u(+gg: K3G, st: T.St) -> {kk.K(gg, st) == kk.Kc2(gg, kk.cl(st), kk.flds(st)) : Bool}:
+  match st:
+    case T.St{_b, _r, _h, _e, _p, _f, _x, _k, _q, _s, _o, _u, _l, _a, _d}:
+      {==}
+
+# the invariant over the fields, at a class c1 allows
+def kk.lf1(
+  +gg: K3G,
+  cc: KC,
+  dd: KC,
+  ff: KF,
+  +e1: {kk.c1(cc, dd) == True{} : Bool},
+  +ek: {kk.Kc2(gg, cc, ff) == True{} : Bool}
+) -> {kk.Kc2(gg, dd, ff) == True{} : Bool}:
+  match ff:
+    case KF{+bad, +rows, +here, +parts, +stack}:
+      kk.lift1(gg, cc, dd, bad, rows, here, parts, stack, e1, ek)
+
+# a class that equals another
+def kk.c1r(
+  cc: KC,
+  +d0: KC,
+  +dd: KC,
+  +ecl: {d0 == cc : KC},
+  +ok: {kk.c1(cc, dd) == True{} : Bool}
+) -> {kk.c1(d0, dd) == True{} : Bool}:
+  %Equal.sym(KC, d0, cc, ecl) : {kk.c1(_, dd) == True{} : Bool}
+  ok
+
+# and for c2
+def kk.c2r(
+  cc: KC,
+  +d0: KC,
+  +dd: KC,
+  +ecl: {d0 == cc : KC},
+  +ok: {kk.c2(cc, dd) == True{} : Bool}
+) -> {kk.c2(d0, dd) == True{} : Bool}:
+  %Equal.sym(KC, d0, cc, ecl) : {kk.c2(_, dd) == True{} : Bool}
+  ok
+
+# LEMMA: a step that keeps the fields the invariant reads, between classes
+# c1 allows, keeps it
+def kk.l1(
+  +gg: K3G,
+  +st: T.St,
+  +s2: T.St,
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +ok: {kk.c1(cc, kk.cl(s2)) == True{} : Bool},
+  +ef: {kk.flds(s2) == kk.flds(st) : KF},
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, s2) == True{} : Bool}:
+  bo.t(kk.K(gg, s2), kk.Kc2(gg, kk.cl(s2), kk.flds(s2)), kk.K.u(gg, s2), bo.t(kk.Kc2(gg, kk.cl(s2), kk.flds(s2)),
+    kk.Kc2(gg, kk.cl(s2), kk.flds(st)), Equal.cong(KF, Bool, zz => kk.Kc2(gg, kk.cl(s2), zz), kk.flds(s2),
+      kk.flds(st), ef),
+    kk.lf1(gg, kk.cl(st), kk.cl(s2), kk.flds(st), kk.c1r(cc, kk.cl(st), kk.cl(s2), ecl, ok), Equal.trans(Bool,
+      kk.Kc2(gg, kk.cl(st), kk.flds(st)), kk.K(gg, st), True{}, Equal.sym(Bool, kk.K(gg, st), kk.Kc2(gg, kk.cl(st),
+        kk.flds(st)), kk.K.u(gg, st)), eg))))
+
+# the fields outside the key
+def kk.kf2(ff: KF) -> KF2:
+  match ff:
+    case KF{bad, rows, _h, _p, stack}:
+      KF2{bad, rows, stack}
+
+# the error of the fields outside the key
+def kk.f2b(ff: KF2) -> String:
+  match ff:
+    case KF2{bad, _r, _s}:
+      bad
+
+# their rows
+def kk.f2r(ff: KF2) -> List<&2, T.Val>:
+  match ff:
+    case KF2{_b, rows, _s}:
+      rows
+
+# their frames
+def kk.f2s(ff: KF2) -> List<&2, T.Ctx>:
+  match ff:
+    case KF2{_b, _r, stack}:
+      stack
+
+# the invariant over the fields, with the key's fields changed, at a class
+# c2 allows
+def kk.lf2(
+  +gg: K3G,
+  cc: KC,
+  dd: KC,
+  ff: KF,
+  f2: KF,
+  +ef: {kk.kf2(f2) == kk.kf2(ff) : KF2},
+  +e2: {kk.c2(cc, dd) == True{} : Bool},
+  +ek: {kk.Kc2(gg, cc, ff) == True{} : Bool}
+) -> {kk.Kc2(gg, dd, f2) == True{} : Bool}:
+  match ff f2:
+    case KF{+bad, +rows, +here, +parts, +stack} KF{+b2, +r2, +h2, +p2, +s2}:
+      %Equal.sym(String, b2, bad, Equal.cong(KF2, String, zz => kk.f2b(zz), KF2{b2, r2, s2}, KF2{bad, rows, stack},
+        ef)) : {kk.Kc(gg, dd, _, r2,
+        h2, p2, s2) == True{} : Bool}
+      %Equal.sym(List<&2, T.Val>, r2, rows, Equal.cong(KF2, List<&2, T.Val>, zz => kk.f2r(zz), KF2{b2, r2, s2},
+        KF2{bad, rows, stack}, ef)) : {kk.Kc(gg, dd,
+        bad, _, h2, p2, s2) == True{} : Bool}
+      %Equal.sym(List<&2, T.Ctx>, s2, stack, Equal.cong(KF2, List<&2, T.Ctx>, zz => kk.f2s(zz), KF2{b2, r2, s2},
+        KF2{bad, rows, stack}, ef)) : {kk.Kc(gg, dd,
+        bad, rows, h2, p2, _) == True{} : Bool}
+      kk.lift2(gg, cc, dd, bad, rows, here, parts, h2, p2, stack, e2, ek)
+
+# LEMMA: a step that keeps the fields the invariant reads outside the key,
+# between classes c2 allows, keeps it
+def kk.l2(
+  +gg: K3G,
+  +st: T.St,
+  +s2: T.St,
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +ok: {kk.c2(cc, kk.cl(s2)) == True{} : Bool},
+  +ef: {kk.kf2(kk.flds(s2)) == kk.kf2(kk.flds(st)) : KF2},
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, s2) == True{} : Bool}:
+  bo.t(kk.K(gg, s2), kk.Kc2(gg, kk.cl(s2), kk.flds(s2)), kk.K.u(gg, s2), kk.lf2(gg, kk.cl(st), kk.cl(s2),
+    kk.flds(st), kk.flds(s2), ef, kk.c2r(cc, kk.cl(st), kk.cl(s2), ecl, ok), Equal.trans(Bool, kk.Kc2(gg, kk.cl(st),
+      kk.flds(st)), kk.K(gg, st), True{}, Equal.sym(Bool, kk.K(gg, st), kk.Kc2(gg, kk.cl(st), kk.flds(st)),
+        kk.K.u(gg, st)), eg)))
+
+# a step that only moves the lex state
+def kg.lex(
+  +gg: K3G,
+  +st: T.St,
+  +lex2: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +ok: {kk.c1(cc, kk.cls(lex2, kk.bk(st))) == True{} : Bool}
+) -> {kk.K(gg, T.st.lex(st, lex2)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.st.lex(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+          lex2), cc, ecl, ok, {==}, eg)
+
+# a step that pushes a character
+def kg.push(
+  +gg: K3G,
+  +st: T.St,
+  +ch: Char,
+  +lex2: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +ok: {kk.c1(cc, kk.cls(lex2, kk.bk(st))) == True{} : Bool}
+) -> {kk.K(gg, T.st.push(st, ch, lex2)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.st.push(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+          ch, lex2), cc, ecl, ok, {==}, eg)
+
+# a step that opens a quoted segment
+def kg.qkey(
+  +gg: K3G,
+  +st: T.St,
+  +kind: T.QKind,
+  +lex2: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +ok: {kk.c1(cc, kk.cls(lex2, kk.bk(st))) == True{} : Bool}
+) -> {kk.K(gg, T.lex.qkey(st, kind, lex2)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.lex.qkey(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+          kind, lex2), cc, ecl, ok, {==}, eg)
+
+# a step that holds a character
+def kg.hold(
+  +gg: K3G,
+  +st: T.St,
+  +lex2: T.Lex,
+  +ch: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +ok: {kk.c1(cc, kk.cls(lex2, lex2)) == True{} : Bool}
+) -> {kk.K(gg, T.st.hold(st, lex2, ch)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.st.hold(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+          lex2, ch), cc, ecl, ok, {==}, eg)
+
+# a comment starts
+def kg.com(
+  +gg: K3G,
+  +st: T.St,
+  +back2: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +ok: {kk.c1(cc, kk.cls0(back2)) == True{} : Bool}
+) -> {kk.K(gg, T.com.enter(st, back2)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.com.enter(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+          back2), cc, ecl, ok, {==}, eg)
+
+# a step that ends a segment
+def kg.seg(
+  +gg: K3G,
+  +st: T.St,
+  +lex2: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +ok: {kk.c2(cc, kk.cls(lex2, kk.bk(st))) == True{} : Bool}
+) -> {kk.K(gg, T.seg.push(st, lex2)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l2(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.seg.push(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+          lex2), cc, ecl, ok, {==}, eg)
+
+# a key starts clear
+def kg.kclear(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +ok: {kk.c2(cc, kk.cls0(T.LKey{})) == True{} : Bool}
+) -> {kk.K(gg, T.lex.key.clear(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l2(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.lex.key.clear(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+          lead}), cc, ecl, ok, {==}, eg)
+
+# a header starts clear
+def kg.bracket(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +ok: {kk.c2(cc, kk.cls0(T.LHead{})) == True{} : Bool}
+) -> {kk.K(gg, T.lex.bracket(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l2(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.lex.bracket(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+          lead}), cc, ecl, ok, {==}, eg)
+
+# a step that fails keeps the invariant
+def kg.err(
+  +gg: K3G,
+  +st: T.St,
+  +why: String,
+  +ew: {String.is_empty(why) == False{} : Bool},
+  +_eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.st.err(st, why)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      bo.or.tl(Bool.not(String.is_empty(T.err.first(bad, why))), Bool.and(Bool.or(Bool.not(kk.ish(kk.cls0(T.LSink{}))),
+        List.is_empty(&2, T.Ctx, stack)), Bool.or(Bool.and(kk.isv(kk.cls0(T.LSink{})), kk.pend(gg, stack, here,
+          parts)), Bool.or(kk.PF(gg, stack), kk.L(gg, stack, rows)))), Equal.cong(Bool, Bool, zz => Bool.not(zz),
+            String.is_empty(T.err.first(bad, why)), False{}, kw.efne(bad, why, ew)))
+
+# a held character keeps the invariant
+def kg.holdon(
+  +gg: K3G,
+  +st: T.St,
+  +ch: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.bare.hold.on(st, ch)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      eg
+
+# a state's lex state
+def kk.lx(st: T.St) -> T.Lex:
+  match st:
+    case T.St{_b, _r, _h, _e, _p, _f, lex, _k, _q, _s, _o, _u, _l, _a, _d}:
+      lex
+
+# a newline read again in the state a comment returns to
+def kg.comnl(
+  +gg: K3G,
+  +st: T.St,
+  +ch: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +el: {kk.lx(st) == T.LCom{} : T.Lex}
+) -> {kk.K(gg, T.lex.com.nl(st, ch)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      %Equal.sym(KC, kk.cls(back, back), kk.cls0(back), kk.clsbb(back)) : {kk.Kc(gg, _, bad, rows, here, parts, stack)
+        == True{} : Bool}
+      Equal.trans(Bool, kk.Kc(gg, kk.cls(T.LCom{}, back), bad, rows, here, parts, stack), kk.Kc(gg, kk.cls(lex, back),
+        bad, rows, here, parts, stack), True{}, Equal.cong(T.Lex, Bool, zz => kk.Kc(gg, kk.cls(zz, back), bad, rows,
+          here, parts, stack), T.LCom{}, lex, Equal.sym(T.Lex, lex, T.LCom{}, el)), eg)
+
+# pending, pending below or held, and so pending in a new frame or held
+def kk.pushb2(
+  pp: Bool,
+  ff: Bool,
+  vv: Bool,
+  ll: Bool,
+  +fh: Bool,
+  +ee: {Bool.or(Bool.and(vv, pp), Bool.or(ff, ll)) == True{} : Bool}
+) -> {Bool.or(Bool.or(pp, ff), Bool.or(fh, ll)) == True{} : Bool}:
+  match pp:
+    case True{}:
+      {==}
+    case False{}:
+      match ff:
+        case True{}:
+          {==}
+        case False{}:
+          match vv:
+            case True{}:
+              bo.or.tr(fh, ll, ee)
+            case False{}:
+              bo.or.tr(fh, ll, ee)
+
+# an array opens a frame
+def kg.array(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.lex.array(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.bimp(Bool.not(String.is_empty(bad)), Bool.and(Bool.or(Bool.not(kk.ish(kk.cls(lex, back))), List.is_empty(&2,
+        T.Ctx, stack)), Bool.or(Bool.and(kk.isv(kk.cls(lex, back)), kk.pend(gg, stack, here, parts)), Bool.or(kk.PF(gg,
+          stack), kk.L(gg, stack, rows)))), Bool.or(Bool.or(kk.pend(gg, stack, here, parts), kk.PF(gg, stack)),
+            Bool.or(kk.fh(gg, T.CArr{[], parts, here}, stack), kk.L(gg, stack, rows))),
+              e1 => kk.pushb2(kk.pend(gg, stack, here, parts), kk.PF(gg,
+              stack), kk.isv(kk.cls(lex, back)), kk.L(gg, stack, rows), kk.fh(gg, T.CArr{[],
+                parts, here}, stack), gd.r(Bool.or(Bool.not(kk.ish(kk.cls(lex, back))), List.is_empty(&2, T.Ctx,
+                  stack)), Bool.or(Bool.and(kk.isv(kk.cls(lex, back)), kk.pend(gg, stack, here, parts)),
+                    Bool.or(kk.PF(gg, stack), kk.L(gg, stack, rows))), e1)), eg)
+
+# an inline table opens a frame
+def kg.inline(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.lex.inline(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.bimp(Bool.not(String.is_empty(bad)), Bool.and(Bool.or(Bool.not(kk.ish(kk.cls(lex, back))), List.is_empty(&2,
+        T.Ctx, stack)), Bool.or(Bool.and(kk.isv(kk.cls(lex, back)), kk.pend(gg, stack, here, parts)), Bool.or(kk.PF(gg,
+          stack), kk.L(gg, stack, rows)))), Bool.or(Bool.or(kk.pend(gg, stack, here, parts), kk.PF(gg, stack)),
+            Bool.or(kk.fh(gg, T.CInl{[], parts, here}, stack), kk.L(gg, stack, rows))),
+              e1 => kk.pushb2(kk.pend(gg, stack, here, parts), kk.PF(gg,
+              stack), kk.isv(kk.cls(lex, back)), kk.L(gg, stack, rows), kk.fh(gg, T.CInl{[],
+                parts, here}, stack), gd.r(Bool.or(Bool.not(kk.ish(kk.cls(lex, back))), List.is_empty(&2, T.Ctx,
+                  stack)), Bool.or(Bool.and(kk.isv(kk.cls(lex, back)), kk.pend(gg, stack, here, parts)),
+                    Bool.or(kk.PF(gg, stack), kk.L(gg, stack, rows))), e1)), eg)
+
+# a failed step's state keeps the invariant
+def kk.kerr(
+  +gg: K3G,
+  +bad: String,
+  +why: String,
+  +rows: List<&2, T.Val>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  +stack: List<&2, T.Ctx>,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +ew: {String.is_empty(why) == False{} : Bool}
+) -> {kk.Kc(gg, kk.cls(lx, bk), T.err.first(bad, why), rows, here, parts, stack) == True{} : Bool}:
+  bo.or.tl(Bool.not(String.is_empty(T.err.first(bad, why))), Bool.and(Bool.or(Bool.not(kk.ish(kk.cls(lx, bk))),
+    List.is_empty(&2, T.Ctx, stack)), Bool.or(Bool.and(kk.isv(kk.cls(lx, bk)), kk.pend(gg, stack, here, parts)),
+      Bool.or(kk.PF(gg, stack), kk.L(gg, stack, rows)))), Equal.cong(Bool, Bool, zz => Bool.not(zz),
+        String.is_empty(T.err.first(bad, why)), False{}, kw.efne(bad, why, ew)))
+
+# the same, the value's key read off
+def kk.popb2(
+  pp: Bool,
+  ff: Bool,
+  fi: Bool,
+  +ll: Bool,
+  +ww: Bool,
+  gw: @e1: {fi == True{} : Bool} -> {ww == True{} : Bool},
+  +ee: {Bool.or(Bool.or(pp, ff), Bool.or(fi, ll)) == True{} : Bool}
+) -> {Bool.or(pp, Bool.or(ff, Bool.or(ll, ww))) == True{} : Bool}:
+  match pp:
+    case True{}:
+      {==}
+    case False{}:
+      match ff:
+        case True{}:
+          {==}
+        case False{}:
+          match fi:
+            case True{}:
+              bo.or.tr(ll, ww, gw({==}))
+            case False{}:
+              bo.or.tl(ll, ww, ee)
+
+# a frame closed: pending below it or held, or held by it and so by its value
+def kk.popb(
+  vp: Bool,
+  pp: Bool,
+  ff: Bool,
+  fi: Bool,
+  +ll: Bool,
+  +ww: Bool,
+  +evp: {vp == False{} : Bool},
+  gw: @e1: {fi == True{} : Bool} -> {ww == True{} : Bool},
+  +ee: {Bool.or(vp, Bool.or(Bool.or(pp, ff), Bool.or(fi, ll))) == True{} : Bool}
+) -> {Bool.or(pp, Bool.or(ff, Bool.or(ll, ww))) == True{} : Bool}:
+  kk.popb2(pp, ff, fi, ll, ww, gw, Equal.trans(Bool, Bool.or(Bool.or(pp, ff), Bool.or(fi, ll)), Bool.or(vp,
+    Bool.or(Bool.or(pp, ff), Bool.or(fi, ll))), True{}, Equal.cong(Bool, Bool, zz => Bool.or(zz, Bool.or(Bool.or(pp,
+      ff), Bool.or(fi, ll))), False{}, vp, Equal.sym(Bool, vp, False{}, evp)), ee))
+
+# and with False
+def kk.andf(bb: Bool) -> {Bool.and(bb, False{}) == False{} : Bool}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# not a value's class, and so no key pending as a value
+def kk.andv(
+  cc: KC,
+  +xx: Bool,
+  +ev: {kk.isv(cc) == False{} : Bool}
+) -> {Bool.and(kk.isv(cc), xx) == False{} : Bool}:
+  %Equal.sym(Bool, kk.isv(cc), False{}, ev) : {Bool.and(_, xx) == False{} : Bool}
+  {==}
+
+# an array closed
+def kk.arrtop(
+  +gg: K3G,
+  stack: List<&2, T.Ctx>,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +lead: Bool,
+  +cc: KC,
+  +h0: List<&2, String>,
+  +p0: List<&2, String>,
+  +ek: {kk.Kc(gg, cc, bad, rows, h0, p0, stack) == True{} : Bool}
+) -> {kk.K(gg, T.arr.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+  match stack:
+    case T.CArr{+xs, +parts, +here} <> +rest:
+      kk.ttop(gg, rest, T.VArr{List.reverse(&2, T.Val, xs)}, bad, rows, heads, here, parts, back, qkind, uni, left,
+        arrtab, lead,
+        kk.bimp(Bool.not(String.is_empty(bad)), Bool.and(Bool.or(Bool.not(kk.ish(cc)), False{}),
+          Bool.or(Bool.and(kk.isv(cc),
+          False{}), Bool.or(Bool.or(kk.pend(gg, rest, here, parts), kk.PF(gg, rest)), Bool.or(kk.sfx(Laws.k3.pl(rest,
+            here,
+            parts, []), kk.tp(gg), HItems{xs}, kk.key(gg)), kk.L(gg, rest, rows))))), Bool.or(kk.pend(gg, rest, here,
+              parts),
+              Bool.or(kk.PF(gg, rest), Bool.or(kk.L(gg, rest, rows), kk.sfx(Laws.k3.pl(rest, here, parts, []),
+                kk.tp(gg),
+                HVal{T.VArr{List.reverse(&2, T.Val, xs)}}, kk.key(gg))))), e1 => kk.popb(Bool.and(kk.isv(cc),
+                  False{}), kk.pend(gg, rest,
+                  here, parts), kk.PF(gg, rest),
+                  kk.sfx(Laws.k3.pl(rest, here, parts, []), kk.tp(gg), HItems{xs}, kk.key(gg)), kk.L(gg, rest, rows),
+                    kk.sfx(Laws.k3.pl(rest, here, parts, []), kk.tp(gg), HVal{T.VArr{List.reverse(&2, T.Val, xs)}},
+                      kk.key(gg)), kk.andf(kk.isv(cc)), e2 =>
+                      kk.sfx.mono(Laws.k3.pl(rest, here, parts, []), kk.tp(gg), HItems{xs}, HVal{T.VArr{List.reverse(&2,
+                        T.Val, xs)}}, kk.key(gg), +q0 => e3 =>
+                        bo.t(kh.S(List.reverse(&2, T.Val, xs), q0, kk.key(gg)), kh.S(xs, q0, kk.key(gg)),
+                          kh.slrev(SlS{q0}, xs, kk.key(gg)), e3), e2), gd.r(Bool.or(Bool.not(kk.ish(cc)), False{}),
+                            Bool.or(Bool.and(kk.isv(cc), False{}),
+                          Bool.or(Bool.or(kk.pend(gg, rest, here, parts), kk.PF(gg, rest)),
+                            Bool.or(kk.sfx(Laws.k3.pl(rest,
+                            here, parts, []), kk.tp(gg), HItems{xs}, kk.key(gg)), kk.L(gg, rest, rows)))), e1)), ek))
+    case T.CInl{_i, _p, _h} <> _t:
+      kk.kerr(gg, bad, "unclosed", rows, [], [], [], T.LSink{}, back, {==})
+    case []:
+      kk.kerr(gg, bad, "unclosed", rows, [], [], [], T.LSink{}, back, {==})
+
+# an inline table closed
+def kk.inltop(
+  +gg: K3G,
+  stack: List<&2, T.Ctx>,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +arrtab: Bool,
+  +lead: Bool,
+  +cc: KC,
+  +h0: List<&2, String>,
+  +p0: List<&2, String>,
+  +env: {kk.isv(cc) == False{} : Bool},
+  +ek: {kk.Kc(gg, cc, bad, rows, h0, p0, stack) == True{} : Bool}
+) -> {kk.K(gg, T.inl.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+  match stack:
+    case T.CInl{+xs, +parts, +here} <> +rest:
+      kk.ttop(gg, rest, T.VInl{T.inl.seal(xs)}, bad, rows, heads, here, parts, back, qkind, uni, left, arrtab, lead,
+        kk.bimp(Bool.not(String.is_empty(bad)), Bool.and(Bool.or(Bool.not(kk.ish(cc)), False{}),
+          Bool.or(Bool.and(kk.isv(cc), kk.pend2(gg, T.CInl{xs, parts, here} <> rest, h0, p0)),
+            Bool.or(Bool.or(kk.pend(gg, rest, here, parts), kk.PF(gg, rest)), Bool.or(kk.sfx(Laws.k3.pl(rest, here,
+            parts, []), kk.tp(gg), HRows{xs}, kk.key(gg)), kk.L(gg, rest, rows))))), Bool.or(kk.pend(gg, rest, here,
+              parts),
+              Bool.or(kk.PF(gg, rest), Bool.or(kk.L(gg, rest, rows), kk.sfx(Laws.k3.pl(rest, here, parts, []),
+                kk.tp(gg),
+                HVal{T.VInl{T.inl.seal(xs)}}, kk.key(gg))))), e1 => kk.popb(Bool.and(kk.isv(cc), kk.pend2(gg,
+                  T.CInl{xs, parts, here} <> rest, h0, p0)), kk.pend(gg, rest, here,
+                  parts), kk.PF(gg, rest),
+                  kk.sfx(Laws.k3.pl(rest, here, parts, []), kk.tp(gg), HRows{xs}, kk.key(gg)), kk.L(gg, rest, rows),
+                    kk.sfx(Laws.k3.pl(rest, here, parts, []), kk.tp(gg), HVal{T.VInl{T.inl.seal(xs)}}, kk.key(gg)),
+                      kk.andv(cc, kk.pend2(gg, T.CInl{xs, parts, here} <> rest, h0, p0), env), e2 =>
+                      kk.sfx.mono(Laws.k3.pl(rest, here, parts, []), kk.tp(gg), HRows{xs}, HVal{T.VInl{T.inl.seal(xs)}},
+                        kk.key(gg), +q0 => e3 =>
+                        bo.t(Laws.k3.has(T.inl.seal(xs), q0, kk.key(gg)), Laws.k3.has(xs, q0, kk.key(gg)), kh.hi(q0,
+                          xs, kk.key(gg), nm => kh.inleq(xs, SlF{nm}, kk.key(gg)), nm => qq => kh.inleq(xs, SlA{nm,
+                            qq}, kk.key(gg))), e3), e2), gd.r(Bool.or(Bool.not(kk.ish(cc)), False{}),
+                              Bool.or(Bool.and(kk.isv(cc), kk.pend2(gg, T.CInl{xs, parts, here} <> rest, h0, p0)),
+                          Bool.or(Bool.or(kk.pend(gg, rest, here, parts), kk.PF(gg, rest)),
+                            Bool.or(kk.sfx(Laws.k3.pl(rest,
+                            here, parts, []), kk.tp(gg), HRows{xs}, kk.key(gg)), kk.L(gg, rest, rows)))), e1)), ek))
+    case T.CArr{_i, _p, _h} <> _t:
+      kk.kerr(gg, bad, "unclosed", rows, [], [], [], T.LSink{}, back, {==})
+    case []:
+      kk.kerr(gg, bad, "unclosed", rows, [], [], [], T.LSink{}, back, {==})
+
+# a class equal to one not a value's is not
+def kk.isvr(
+  cc: KC,
+  +d0: KC,
+  +ecl: {d0 == cc : KC},
+  +ev: {kk.isv(cc) == False{} : Bool}
+) -> {kk.isv(d0) == False{} : Bool}:
+  %Equal.sym(KC, d0, cc, ecl) : {kk.isv(_) == False{} : Bool}
+  ev
+
+# ] closes an array
+def kg.arrclose(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.arr.close(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.arrtop(gg, stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead, kk.cls(lex, back), here, parts, eg)
+
+# } closes an inline table
+def kg.inlclose(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +env: {kk.isv(cc) == False{} : Bool}
+) -> {kk.K(gg, T.inl.close(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.inltop(gg, stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead, kk.cls(lex, back), here, parts,
+        kk.isvr(cc, kk.cls(lex, back), ecl, env), eg)
+
+# a step that keeps the class and the fields the invariant reads keeps it
+def kk.l0(
+  +gg: K3G,
+  +st: T.St,
+  +s2: T.St,
+  +ec: {kk.cl(s2) == kk.cl(st) : KC},
+  +ef: {kk.flds(s2) == kk.flds(st) : KF},
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, s2) == True{} : Bool}:
+  bo.t(kk.K(gg, s2), kk.Kc2(gg, kk.cl(s2), kk.flds(s2)), kk.K.u(gg, s2), bo.t(kk.Kc2(gg, kk.cl(s2), kk.flds(s2)),
+    kk.Kc2(gg, kk.cl(st), kk.flds(st)), Equal.trans(Bool, kk.Kc2(gg, kk.cl(s2), kk.flds(s2)), kk.Kc2(gg, kk.cl(st),
+      kk.flds(s2)), kk.Kc2(gg, kk.cl(st), kk.flds(st)), Equal.cong(KC, Bool, zz => kk.Kc2(gg, zz, kk.flds(s2)),
+        kk.cl(s2), kk.cl(st), ec), Equal.cong(KF, Bool, zz => kk.Kc2(gg, kk.cl(st), zz), kk.flds(s2), kk.flds(st),
+          ef)), Equal.trans(Bool, kk.Kc2(gg, kk.cl(st), kk.flds(st)), kk.K(gg, st), True{}, Equal.sym(Bool, kk.K(gg,
+            st), kk.Kc2(gg, kk.cl(st), kk.flds(st)), kk.K.u(gg, st)), eg)))
+
+# a multiline string starts
+def kg.multi(
+  +gg: K3G,
+  +st: T.St,
+  +kind: T.QKind,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.multi(st, kind)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.lex.multi(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+          kind), KcV{}, ecl, {==}, {==}, eg)
+
+# closing quotes counted
+def kg.mq(
+  +gg: K3G,
+  +st: T.St,
+  +nn: U32,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.mq(st, nn)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.lex.mq(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+          nn), KcV{}, ecl, {==}, {==}, eg)
+
+# a closing delimiter read
+def kg.mqshut(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.mq.shut(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.lex.mq.shut(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+          lead}), KcV{}, ecl, {==}, {==}, eg)
+
+# quotes that were no closer
+def kg.mqback(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +b2: List<&2, Char>,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.mq.back(st, cc, b2)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.lex.mq.back(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+          lead}, cc, b2), KcV{}, ecl, {==}, {==}, eg)
+
+# a datetime's space and digit
+def kg.datedig(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.date.digit(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.lex.date.digit(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+          lead}, cc), KcV{}, ecl, {==}, {==}, eg)
+
+# a folded newline seen
+def kg.foldsaw(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.lex.fold.saw(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l0(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.lex.fold.saw(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+          lead}), {==}, {==}, eg)
+
+# a quote after a closer
+def kg.mqmore(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.lex.mq.more(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.l0(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.lex.mq.more(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+          lead}, cc), {==}, {==}, eg)
+
+# a comment in a header, or a refusal
+def kg.hash(
+  +gg: K3G,
+  hash: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.hash(hash, st)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      match st:
+        case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+          +lead}:
+          kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+            T.lex.head.hash(True{}, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
+              arrtab, lead}), KcH{}, ecl, {==}, {==}, eg)
+    case False{}:
+      kg.err(gg, st, "invalid header", {==}, eg)
+
+# [[ marks an array of tables once
+def kg.br2(
+  +gg: K3G,
+  once: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.br2(once, st)) == True{} : Bool}:
+  match once:
+    case False{}:
+      kg.err(gg, st, "invalid header", {==}, eg)
+    case True{}:
+      match st:
+        case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+          +lead}:
+          kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+            T.lex.head.br2(True{}, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
+              arrtab, lead}), KcH{}, ecl, {==}, {==}, eg)
+
+# a quoted segment's escape: a basic segment escapes, a literal one keeps the
+# backslash
+def kg.kqesc(
+  +gg: K3G,
+  basic: Bool,
+  +st: T.St,
+  +stay: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +os: {kk.c1(cc, kk.cls(stay, kk.bk(st))) == True{} : Bool},
+  +oe: {kk.c1(cc, kk.cls(T.lex.esc.lex(stay), stay)) == True{} : Bool}
+) -> {kk.K(gg, T.lex.kq.esc(basic, st, stay)) == True{} : Bool}:
+  match basic:
+    case True{}:
+      match st:
+        case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+          +lead}:
+          kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+            T.lex.kq.esc(True{}, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
+              arrtab, lead}, stay), cc, ecl, oe, {==}, eg)
+    case False{}:
+      kg.push(gg, st, '\\', stay, eg, cc, ecl, os)
+
+# a quoted segment's character
+def kg.kqch(
+  +gg: K3G,
+  bad: Bool,
+  +st: T.St,
+  +ch: Char,
+  +stay: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +os: {kk.c1(cc, kk.cls(stay, kk.bk(st))) == True{} : Bool}
+) -> {kk.K(gg, T.lex.kq.char.go(bad, st, ch, stay)) == True{} : Bool}:
+  match bad:
+    case True{}:
+      kg.err(gg, st, "invalid control", {==}, eg)
+    case False{}:
+      kg.push(gg, st, ch, stay, eg, cc, ecl, os)
+
+# a newline in a quoted segment
+def kg.kqnl(
+  +gg: K3G,
+  nl: Bool,
+  +st: T.St,
+  +ch: Char,
+  +stay: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +os: {kk.c1(cc, kk.cls(stay, kk.bk(st))) == True{} : Bool}
+) -> {kk.K(gg, T.lex.kq.nl(nl, st, ch, stay)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      kg.err(gg, st, "newline in key", {==}, eg)
+    case False{}:
+      kg.kqch(gg, T.str.bad(Char.to_u32(ch), False{}), st, ch, stay, eg, cc, ecl, os)
+
+# a backslash in a quoted segment
+def kg.kqbs(
+  +gg: K3G,
+  bs: Bool,
+  +basic: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +ch: Char,
+  +stay: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +os: {kk.c1(cc, kk.cls(stay, kk.bk(st))) == True{} : Bool},
+  +oe: {kk.c1(cc, kk.cls(T.lex.esc.lex(stay), stay)) == True{} : Bool}
+) -> {kk.K(gg, T.lex.kq.bs(bs, basic, nl, st, ch, stay)) == True{} : Bool}:
+  match bs:
+    case True{}:
+      kg.kqesc(gg, basic, st, stay, eg, cc, ecl, os, oe)
+    case False{}:
+      kg.kqnl(gg, nl, st, ch, stay, eg, cc, ecl, os)
+
+# the closer, an escape, or a character
+def kg.kqgo(
+  +gg: K3G,
+  quote: Bool,
+  +bs: Bool,
+  +basic: Bool,
+  +nl: Bool,
+  +st: T.St,
+  +ch: Char,
+  +done: T.Lex,
+  +stay: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +od: {kk.c2(cc, kk.cls(done, kk.bk(st))) == True{} : Bool},
+  +os: {kk.c1(cc, kk.cls(stay, kk.bk(st))) == True{} : Bool},
+  +oe: {kk.c1(cc, kk.cls(T.lex.esc.lex(stay), stay)) == True{} : Bool}
+) -> {kk.K(gg, T.lex.kq.go(quote, bs, basic, nl, st, ch, done, stay)) == True{} : Bool}:
+  match quote:
+    case True{}:
+      kg.seg(gg, st, done, eg, cc, ecl, od)
+    case False{}:
+      kg.kqbs(gg, bs, basic, nl, st, ch, stay, eg, cc, ecl, os, oe)
+
+# a quoted segment, a key's or a header's
+def kg.kq(
+  +gg: K3G,
+  +st: T.St,
+  +ch: Char,
+  +done: T.Lex,
+  +stay: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +od: {kk.c2(cc, kk.cls(done, kk.bk(st))) == True{} : Bool},
+  +os: {kk.c1(cc, kk.cls(stay, kk.bk(st))) == True{} : Bool},
+  +oe: {kk.c1(cc, kk.cls(T.lex.esc.lex(stay), stay)) == True{} : Bool}
+) -> {kk.K(gg, T.lex.kq(st, ch, done, stay)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kg.kqgo(gg, Char.is_eq(ch, T.q.char(qkind)), Char.is_eq(ch, '\\'), T.q.basic(qkind), T.ch.nl(ch), T.St{bad,
+        rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, ch, done,
+        stay, eg, cc, ecl, od, os, oe)
+
+# a \u escape finished
+def kg.ufin(
+  +gg: K3G,
+  ok: Bool,
+  +st: T.St,
+  +uu: U32,
+  +back2: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +od: {kk.c1(cc, kk.cls(back2, kk.bk(st))) == True{} : Bool}
+) -> {kk.K(gg, T.uni.finish(ok, st, uu, back2)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      match st:
+        case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+          +lead}:
+          kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+            T.uni.finish.on(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+              lead}, uu, back2), cc, ecl, od, {==}, eg)
+    case False{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+
+# a \u escape's digit, the last or not
+def kg.unext(
+  +gg: K3G,
+  last: Bool,
+  +st: T.St,
+  +uu: U32,
+  +back2: T.Lex,
+  +left2: U32,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +od: {kk.c1(cc, kk.cls(back2, kk.bk(st))) == True{} : Bool}
+) -> {kk.K(gg, T.uni.next(last, st, uu, back2, left2)) == True{} : Bool}:
+  match last:
+    case True{}:
+      kg.ufin(gg, T.uni.ok(uu), st, uu, back2, eg, cc, ecl, od)
+    case False{}:
+      match st:
+        case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+          +lead}:
+          kk.l0(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+            T.uni.next.more(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+              lead}, uu, left2), {==}, {==}, eg)
+
+# a \u escape's digit
+def kg.ugo(
+  +gg: K3G,
+  ok: Bool,
+  +st: T.St,
+  +ch: Char,
+  +back2: T.Lex,
+  +u0: U32,
+  +left2: U32,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +od: {kk.c1(cc, kk.cls(back2, kk.bk(st))) == True{} : Bool}
+) -> {kk.K(gg, T.uni.go(ok, st, ch, back2, u0, left2)) == True{} : Bool}:
+  match ok:
+    case False{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case True{}:
+      kg.unext(gg, U32.is_eq(left2, 1), st, U32.add(U32.mul(u0, 16), T.dig.val(ch)), back2, left2, eg, cc, ecl, od)
+
+# a hex digit of a \u escape
+def kg.uni(
+  +gg: K3G,
+  +st: T.St,
+  +ch: Char,
+  +back2: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +od: {kk.c1(cc, kk.cls(back2, kk.bk(st))) == True{} : Bool}
+) -> {kk.K(gg, T.uni.step(st, ch, back2)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kg.ugo(gg, T.dig.ok(T.dig.val(ch), 16), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold,
+        uni, left, arrtab, lead}, ch, back2, uni, left, eg, cc, ecl, od)
+
+# a folded newline is a string's only
+def kk.fok(+cc: KC, back2: T.Lex) -> Bool:
+  match back2:
+    case T.LStr{}:
+      kk.c1(cc, KcV{})
+    case _b:
+      True{}
+
+# a line-ending backslash belongs to a string only
+def kg.fold(
+  +gg: K3G,
+  back2: T.Lex,
+  +st: T.St,
+  +saw: Bool,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +of: {kk.fok(cc, back2) == True{} : Bool}
+) -> {kk.K(gg, T.esc.fold.use(back2, st, saw)) == True{} : Bool}:
+  match back2:
+    case T.LStr{}:
+      match st:
+        case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+          +lead}:
+          kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+            T.esc.fold.on(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+              lead}, saw), cc, ecl, of, {==}, eg)
+    case T.LTop{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LLine{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LKey{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LKeyDot{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LAfter{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LKeyQ{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LKeyE{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LKeyU{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LVal{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LQ{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LQ2{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LEsc{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LUni{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LFold{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LMq{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LMqEnd{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LTrim{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LTrim2{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LBare{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LDate{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LCom{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LHead{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LHeadGap{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LHeadDot{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LHeadQ{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LHeadE{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LHeadU{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LHeadR{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LArr{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LArrC{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LInl{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LInlK{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LInlC{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+    case T.LSink{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+# an escape applied
+def kg.esc(
+  +gg: K3G,
+  ee: T.Esc,
+  +st: T.St,
+  +back2: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +cc: KC,
+  +ecl: {kk.cl(st) == cc : KC},
+  +op: {kk.c1(cc, kk.cls(back2, kk.bk(st))) == True{} : Bool},
+  +ou: {kk.c1(cc, kk.cls(T.esc.uni.lex(back2), kk.bk(st))) == True{} : Bool},
+  +of: {kk.fok(cc, back2) == True{} : Bool}
+) -> {kk.K(gg, T.esc.use(ee, st, back2)) == True{} : Bool}:
+  match ee:
+    case T.EChar{+c0}:
+      kg.push(gg, st, c0, back2, eg, cc, ecl, op)
+    case T.EUni{+n0}:
+      match st:
+        case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+          +lead}:
+          kk.l1(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+            T.esc.uni(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+              lead}, back2, n0), cc, ecl, ou, {==}, eg)
+    case T.EFold{+saw}:
+      kg.fold(gg, back2, st, saw, eg, cc, ecl, of)
+    case T.EBad{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+
+# KEY-3: a bare word the scanner refuses is refused with a reason
+# (bare_word_refusal_says_why). A datetime's refusals are literal reasons or
+# pass one on (kn.wne); a numeral's scan keeps a reason once it fails
+# (kn.ok); and word.val routes to one of the two or gives a value.
+
+# a datetime's result says why when it refuses
+def kn.wne(ww: T.WhenOut) -> Bool:
+  match ww:
+    case T.WFail{why}:
+      Bool.not(String.is_empty(why))
+    case _w:
+      True{}
+
+# a failed numeral scan
+def kn.nb(nk: T.NK) -> Bool:
+  match nk:
+    case T.NBad{}:
+      True{}
+    case _n:
+      False{}
+
+# a numeral's scan says why once it fails
+def kn.ok2(nk: T.NK, +why: String) -> Bool:
+  match nk:
+    case T.NBad{}:
+      Bool.not(String.is_empty(why))
+    case _n:
+      True{}
+
+# a numeral's scan state says why once it fails
+def kn.ok(st: T.Num) -> Bool:
+  match st:
+    case T.Num{nk, _s, _b, _d, _u, _w, why}:
+      kn.ok2(nk, why)
+
+# a digit joined to a scan that has not failed
+def kn.dok(
+  nk: T.NK,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +enk: {kn.nb(nk) == False{} : Bool}
+) -> {kn.ok(T.Num{nk, sign, base, ds, False{}, True{}, ""}) == True{} : Bool}:
+  match nk:
+    case T.NBad{}:
+      Eq.bit.absurd2(&2, {kn.ok(T.Num{T.NBad{}, sign, base, ds, False{}, True{}, ""}) == True{} : Bool}, enk)
+    case T.NLead{}:
+      {==}
+    case T.NSign{}:
+      {==}
+    case T.NZero{}:
+      {==}
+    case T.NDig{}:
+      {==}
+    case T.NBase{}:
+      {==}
+    case T.NFrac{}:
+      {==}
+    case T.NExp{}:
+      {==}
+    case T.NEDig{}:
+      {==}
+
+# a base prefix read
+def kn.base(+st: T.Num, +bb: U32) -> {kn.ok(T.num.base(st, bb)) == True{} : Bool}:
+  match st:
+    case T.Num{_k, _s, _b, _d, _u, _w, _y}:
+      {==}
+
+# an exponent's sign read
+def kn.expsign(+st: T.Num) -> {kn.ok(T.num.exp.sign(st)) == True{} : Bool}:
+  match st:
+    case T.Num{_k, _s, _b, _d, _u, _w, _y}:
+      {==}
+
+# a finished local datetime, or one with a zone still to read
+def kw2.done(
+  +_date: T.Date,
+  +_clock: T.Clock,
+  +ww: T.When
+) -> {kn.wne(T.when.done(_date, _clock, ww)) == True{} : Bool}:
+  {==}
+
+# Z ends the token
+def kw2.zone.z(
+  +tt: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone.z(tt, clock, date)) == True{} : Bool}:
+  match tt:
+    case []:
+      {==}
+    case _ <> _:
+      {==}
+
+# the offset minute is in range
+def kw2.zone.mm.ok2(
+  +mi_ok: Bool,
+  +sign: T.Sign,
+  +hh: U32,
+  +mi: U32,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone.mm.ok2(mi_ok, sign, hh, mi, clock, date)) == True{} : Bool}:
+  match mi_ok:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+# the offset fields are in range
+def kw2.zone.mm.ok(
+  +h_ok: Bool,
+  +mi_ok: Bool,
+  +sign: T.Sign,
+  +hh: U32,
+  +mi: U32,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone.mm.ok(h_ok, mi_ok, sign, hh, mi, clock, date)) == True{} : Bool}:
+  match h_ok:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.zone.mm.ok2(mi_ok, sign, hh, mi, clock, date)
+
+# nothing follows an offset, and its fields are in range
+def kw2.zone.mm.end(
+  +cs: List<&2, Char>,
+  +h_ok: Bool,
+  +mi_ok: Bool,
+  +sign: T.Sign,
+  +hh: U32,
+  +mi: U32,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone.mm.end(cs, h_ok, mi_ok, sign, hh, mi, clock, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      kw2.zone.mm.ok(h_ok, mi_ok, sign, hh, mi, clock, date)
+    case _ <> _:
+      {==}
+
+# the offset minute is in range
+def kw2.zone.mm.go(
+  +dd: T.Dig,
+  +sign: T.Sign,
+  +hh: U32,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone.mm.go(dd, sign, hh, clock, date)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+n, cs}:
+      kw2.zone.mm.end(cs, T.bound.rng(hh, 0, 23), T.bound.rng(n, 0, 59), sign, hh, n, clock, date)
+
+# the offset minute
+def kw2.zone.mm(
+  +hit: Bool,
+  +dd: T.Dig,
+  +sign: T.Sign,
+  +hh: U32,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone.mm(hit, dd, sign, hh, clock, date)) == True{} : Bool}:
+  match hit:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.zone.mm.go(dd, sign, hh, clock, date)
+
+# the colon in an offset
+def kw2.zone.hh.colon(
+  +cs: List<&2, Char>,
+  +sign: T.Sign,
+  +hh: U32,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone.hh.colon(cs, sign, hh, clock, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +c <> t:
+      kw2.zone.mm(Char.is_eq(c, ':'), T.take.n(2n, t, 0, True{}), sign, hh, clock, date)
+
+# the offset hour
+def kw2.zone.hh(
+  +dd: T.Dig,
+  +sign: T.Sign,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone.hh(dd, sign, clock, date)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+n, +cs}:
+      kw2.zone.hh.colon(cs, sign, n, clock, date)
+
+# HH:MM of a numeric offset
+def kw2.zone.off(
+  +sign: T.Sign,
+  +tt: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone.off(sign, tt, clock, date)) == True{} : Bool}:
+  kw2.zone.hh(T.take.n(2n, tt, 0, True{}), sign, clock, date)
+
+# a minus starts a numeric offset
+def kw2.zone.minus(
+  +minus: Bool,
+  +tt: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone.minus(minus, tt, clock, date)) == True{} : Bool}:
+  match minus:
+    case True{}:
+      kw2.zone.off(T.Minus{}, tt, clock, date)
+    case False{}:
+      {==}
+
+# a plus or a minus starts a numeric offset
+def kw2.zone.sign(
+  +plus: Bool,
+  +minus: Bool,
+  +tt: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone.sign(plus, minus, tt, clock, date)) == True{} : Bool}:
+  match plus:
+    case True{}:
+      kw2.zone.off(T.Plus{}, tt, clock, date)
+    case False{}:
+      kw2.zone.minus(minus, tt, clock, date)
+
+# Z, or a signed numeric offset
+def kw2.zone.go(
+  +zee: Bool,
+  +plus: Bool,
+  +minus: Bool,
+  +tt: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone.go(zee, plus, minus, tt, clock, date)) == True{} : Bool}:
+  match zee:
+    case True{}:
+      kw2.zone.z(tt, clock, date)
+    case False{}:
+      kw2.zone.sign(plus, minus, tt, clock, date)
+
+# a zone, or the end of a local datetime
+def kw2.zone(
+  +cs: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.zone(cs, clock, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +c <> t:
+      kw2.zone.go(Bool.or(Char.is_eq(c, 'Z'), Char.is_eq(c, 'z')), Char.is_eq(c, '+'), Char.is_eq(c, '-'), t, clock,
+        date)
+
+# the fraction must hold a digit
+def kw2.frac.end.go(
+  +some: Bool,
+  +rev: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +rest: List<&2, Char>
+) -> {kn.wne(T.when.frac.end.go(some, rev, clock, date, rest)) == True{} : Bool}:
+  match some:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.zone(rest, T.clock.with(clock, String.from_list(List.reverse(&2, Char, rev))), date)
+
+# the fraction must hold a digit
+def kw2.frac.end(
+  +rev: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +rest: List<&2, Char>
+) -> {kn.wne(T.when.frac.end(rev, clock, date, rest)) == True{} : Bool}:
+  kw2.frac.end.go(T.cs.some(rev), rev, clock, date, rest)
+
+# one fractional digit, or the end of the fraction
+def kw2.frac.digit(
+  +digit: Bool,
+  +cc: Char,
+  +tt: List<&2, Char>,
+  +rev: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  _more: Unit -> T.WhenOut,
+  +em: {kn.wne(_more(Unit{})) == True{} : Bool}
+) -> {kn.wne(T.when.frac.digit(digit, cc, tt, rev, clock, date, _more)) == True{} : Bool}:
+  match digit:
+    case True{}:
+      em
+    case False{}:
+      kw2.frac.end(rev, clock, date, cc <> tt)
+
+# fractional digits
+def kw2.frac.digits(
+  +cs: List<&2, Char>,
+  +rev: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.frac.digits(cs, rev, clock, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      kw2.frac.end(rev, clock, date, [])
+    case +c <> +t:
+      kw2.frac.digit(Char.is_digit(c), c, t, rev, clock, date, _u => T.when.frac.digits(t, c <> rev, clock, date),
+        kw2.frac.digits(t, c <> rev, clock, date))
+
+# a dot starts a fraction; anything else is a zone
+def kw2.frac.go(
+  +dot: Bool,
+  +tt: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date,
+  +cc: Char
+) -> {kn.wne(T.when.frac.go(dot, tt, clock, date, cc)) == True{} : Bool}:
+  match dot:
+    case True{}:
+      kw2.frac.digits(tt, [], clock, date)
+    case False{}:
+      kw2.zone(cc <> tt, clock, date)
+
+# an optional fractional second
+def kw2.frac(
+  +cs: List<&2, Char>,
+  +clock: T.Clock,
+  +date: T.Date
+) -> {kn.wne(T.when.frac(cs, clock, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      kw2.done(date, clock, T.WLocal{date, clock})
+    case +c <> t:
+      kw2.frac.go(Char.is_eq(c, '.'), t, clock, date, c)
+
+# the second is in range, then the fraction and the zone
+def kw2.clock.range.s(
+  +s_ok: Bool,
+  +hh: U32,
+  +mi: U32,
+  +ss: U32,
+  +cs: List<&2, Char>,
+  +date: T.Date
+) -> {kn.wne(T.when.clock.range.s(s_ok, hh, mi, ss, cs, date)) == True{} : Bool}:
+  match s_ok:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.frac(cs, T.Clock{hh, mi, ss, ""}, date)
+
+# minute and second are in range
+def kw2.clock.range.m(
+  +mi_ok: Bool,
+  +s_ok: Bool,
+  +hh: U32,
+  +mi: U32,
+  +ss: U32,
+  +cs: List<&2, Char>,
+  +date: T.Date
+) -> {kn.wne(T.when.clock.range.m(mi_ok, s_ok, hh, mi, ss, cs, date)) == True{} : Bool}:
+  match mi_ok:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.clock.range.s(s_ok, hh, mi, ss, cs, date)
+
+# hour, minute, and second are in range
+def kw2.clock.range(
+  +h_ok: Bool,
+  +mi_ok: Bool,
+  +s_ok: Bool,
+  +hh: U32,
+  +mi: U32,
+  +ss: U32,
+  +cs: List<&2, Char>,
+  +date: T.Date
+) -> {kn.wne(T.when.clock.range(h_ok, mi_ok, s_ok, hh, mi, ss, cs, date)) == True{} : Bool}:
+  match h_ok:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.clock.range.m(mi_ok, s_ok, hh, mi, ss, cs, date)
+
+# seconds, then an optional fraction and zone
+def kw2.clock.ss.go(
+  +dd: T.Dig,
+  +hh: U32,
+  +mi: U32,
+  +date: T.Date
+) -> {kn.wne(T.when.clock.ss.go(dd, hh, mi, date)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+n, cs}:
+      kw2.clock.range(T.bound.rng(hh, 0, 23), T.bound.rng(mi, 0, 59), T.bound.rng(n, 0, 60), hh, mi, n, cs, date)
+
+# seconds after the colon
+def kw2.clock.ss(
+  +hit: Bool,
+  +dd: T.Dig,
+  +hh: U32,
+  +mi: U32,
+  +date: T.Date
+) -> {kn.wne(T.when.clock.ss(hit, dd, hh, mi, date)) == True{} : Bool}:
+  match hit:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.clock.ss.go(dd, hh, mi, date)
+
+# the colon after the minutes
+def kw2.clock.mm.colon(
+  +cs: List<&2, Char>,
+  +hh: U32,
+  +mi: U32,
+  +date: T.Date
+) -> {kn.wne(T.when.clock.mm.colon(cs, hh, mi, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +c <> t:
+      kw2.clock.ss(Char.is_eq(c, ':'), T.take.n(2n, t, 0, True{}), hh, mi, date)
+
+# minutes, then seconds
+def kw2.clock.mm(
+  +dd: T.Dig,
+  +hh: U32,
+  +date: T.Date
+) -> {kn.wne(T.when.clock.mm(dd, hh, date)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+n, +cs}:
+      kw2.clock.mm.colon(cs, hh, n, date)
+
+# the colon after the hour
+def kw2.clock.colon.go(
+  +hit: Bool,
+  +hh: U32,
+  +tt: List<&2, Char>,
+  +date: T.Date
+) -> {kn.wne(T.when.clock.colon.go(hit, hh, tt, date)) == True{} : Bool}:
+  match hit:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.clock.mm(T.take.n(2n, tt, 0, True{}), hh, date)
+
+# the colon after the hour
+def kw2.clock.colon(
+  +cs: List<&2, Char>,
+  +hh: U32,
+  +date: T.Date
+) -> {kn.wne(T.when.clock.colon(cs, hh, date)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +c <> t:
+      kw2.clock.colon.go(Char.is_eq(c, ':'), hh, t, date)
+
+# a clock following a date
+def kw2.clock.of(
+  +dd: T.Dig,
+  +date: T.Date
+) -> {kn.wne(T.when.clock.of(dd, date)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+n, +cs}:
+      kw2.clock.colon(cs, n, date)
+
+# a space separates a date from a time
+def kw2.after.sp(
+  +sp: Bool,
+  +date: T.Date,
+  +tt: List<&2, Char>
+) -> {kn.wne(T.when.after.sp(sp, date, tt)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      kw2.clock.of(T.take.n(2n, tt, 0, True{}), date)
+    case False{}:
+      {==}
+
+# T or a space separates a date from a time
+def kw2.after.sep(
+  +tee: Bool,
+  +sp: Bool,
+  +date: T.Date,
+  +tt: List<&2, Char>
+) -> {kn.wne(T.when.after.sep(tee, sp, date, tt)) == True{} : Bool}:
+  match tee:
+    case True{}:
+      kw2.clock.of(T.take.n(2n, tt, 0, True{}), date)
+    case False{}:
+      kw2.after.sp(sp, date, tt)
+
+# the character after a date: nothing, T, or a space, and then a time
+def kw2.after.date(
+  +date: T.Date,
+  +cs: List<&2, Char>
+) -> {kn.wne(T.when.after.date(date, cs)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +c <> t:
+      kw2.after.sep(Bool.or(Char.is_eq(c, 'T'), Char.is_eq(c, 't')), Char.is_eq(c, ' '), date, t)
+
+# the day is in range, then the rest of the token is a time or nothing
+def kw2.date.ok.d(
+  +d_ok: Bool,
+  +yy: U32,
+  +mo: U32,
+  +dd: U32,
+  +cs: List<&2, Char>
+) -> {kn.wne(T.when.date.ok.d(d_ok, yy, mo, dd, cs)) == True{} : Bool}:
+  match d_ok:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.after.date(T.Date{yy, mo, dd}, cs)
+
+# a date whose fields are in range
+def kw2.date.ok.go(
+  +mo_ok: Bool,
+  +d_ok: Bool,
+  +yy: U32,
+  +mo: U32,
+  +dd: U32,
+  +cs: List<&2, Char>
+) -> {kn.wne(T.when.date.ok.go(mo_ok, d_ok, yy, mo, dd, cs)) == True{} : Bool}:
+  match mo_ok:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.date.ok.d(d_ok, yy, mo, dd, cs)
+
+# a date whose fields are in range: the day within its month in that year
+def kw2.date.ok(
+  +yy: U32,
+  +mo: U32,
+  +dd: U32,
+  +cs: List<&2, Char>
+) -> {kn.wne(T.when.date.ok(yy, mo, dd, cs)) == True{} : Bool}:
+  kw2.date.ok.go(T.bound.rng(mo, 1, 12), T.bound.rng(dd, 1, T.when.days(yy, mo)), yy, mo, dd, cs)
+
+# a local time: HH:MM:SS, with the hour already taken
+def kw2.time.rest(
+  +tt: List<&2, Char>,
+  +hh: U32
+) -> {kn.wne(T.when.time.rest(tt, hh)) == True{} : Bool}:
+  kw2.clock.mm(T.take.n(2n, tt, 0, True{}), hh, T.Date{0, 1, 1})
+
+# a local time uses a dummy date and then keeps only the clock
+def kw2.time.only(
+  +ww: T.WhenOut,
+  +ew: {kn.wne(ww) == True{} : Bool}
+) -> {kn.wne(T.when.time.only(ww)) == True{} : Bool}:
+  match ww:
+    case T.WSome{T.WLocal{_d, _c}}:
+      {==}
+    case T.WSome{T.WOff{_d, _c, _z}}:
+      {==}
+    case T.WSome{T.WDate{_d}}:
+      {==}
+    case T.WSome{T.WTime{_c}}:
+      {==}
+    case T.WFail{_w}:
+      ew
+    case T.WSkip{}:
+      {==}
+
+# a complete date, then whatever follows it
+def kw2.day.end(
+  +dd: T.Dig,
+  +yy: U32,
+  +mo: U32
+) -> {kn.wne(T.when.day.end(dd, yy, mo)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+n, +cs}:
+      kw2.date.ok(yy, mo, n, cs)
+
+# the day is two digits
+def kw2.day.go(
+  +hit: Bool,
+  +dd: T.Dig,
+  +yy: U32,
+  +mo: U32
+) -> {kn.wne(T.when.day.go(hit, dd, yy, mo)) == True{} : Bool}:
+  match hit:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.day.end(dd, yy, mo)
+
+# the day
+def kw2.day(
+  +cs: List<&2, Char>,
+  +yy: U32,
+  +mo: U32
+) -> {kn.wne(T.when.day(cs, yy, mo)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +c <> t:
+      kw2.day.go(Char.is_eq(c, '-'), T.take.n(2n, t, 0, True{}), yy, mo)
+
+# the dash after the month
+def kw2.month.go(
+  +dd: T.Dig,
+  +yy: U32
+) -> {kn.wne(T.when.month.go(dd, yy)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+n, +cs}:
+      kw2.day(cs, yy, n)
+
+# the month
+def kw2.month(
+  +hit: Bool,
+  +dd: T.Dig,
+  +yy: U32
+) -> {kn.wne(T.when.month(hit, dd, yy)) == True{} : Bool}:
+  match hit:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.month.go(dd, yy)
+
+# the dash after the year
+def kw2.year.dash(
+  +cs: List<&2, Char>,
+  +yy: U32
+) -> {kn.wne(T.when.year.dash(cs, yy)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +c <> t:
+      kw2.month(Char.is_eq(c, '-'), T.take.n(2n, t, 0, True{}), yy)
+
+# the fourth year digit, then the month
+def kw2.year4(
+  +dd: T.Dig
+) -> {kn.wne(T.when.year4(dd)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+n, +cs}:
+      kw2.year.dash(cs, n)
+
+# two more year digits, then a dash
+def kw2.year.more(
+  +digit: Bool,
+  +nn: U32,
+  +cc: Char,
+  +tt: List<&2, Char>
+) -> {kn.wne(T.when.year.more(digit, nn, cc, tt)) == True{} : Bool}:
+  match digit:
+    case False{}:
+      {==}
+    case True{}:
+      kw2.year4(T.take.n(1n, tt, U32.add(U32.mul(nn, 10), T.dig.val(cc)), True{}))
+
+# a colon means a local time; another digit continues a year
+def kw2.branch(
+  +colon: Bool,
+  +digit: Bool,
+  +nn: U32,
+  +cc: Char,
+  +tt: List<&2, Char>
+) -> {kn.wne(T.when.branch(colon, digit, nn, cc, tt)) == True{} : Bool}:
+  match colon:
+    case True{}:
+      kw2.time.only(T.when.time.rest(tt, nn), kw2.time.rest(tt, nn))
+    case False{}:
+      kw2.year.more(digit, nn, cc, tt)
+
+# two digits decide a time or a date
+def kw2.after2.go(
+  +cs: List<&2, Char>,
+  +nn: U32
+) -> {kn.wne(T.when.after2.go(cs, nn)) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +c <> t:
+      kw2.branch(Char.is_eq(c, ':'), Char.is_digit(c), nn, c, t)
+
+# two digits decide a time (HH:) or a date (YYYY-)
+def kw2.after2(
+  +dd: T.Dig
+) -> {kn.wne(T.when.after2(dd)) == True{} : Bool}:
+  match dd:
+    case T.DigBad{}:
+      {==}
+    case T.DigOk{+n, +cs}:
+      kw2.after2.go(cs, n)
+
+# a datetime token
+def kw2.read(
+  +cs: List<&2, Char>
+) -> {kn.wne(T.when.read(cs)) == True{} : Bool}:
+  kw2.after2(T.take.n(2n, cs, 0, True{}))
+
+# a digit that fits the base
+def kn.digit.ok(
+  +ok: Bool,
+  +cc: Char,
+  +nk: T.NK,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +enk: {kn.nb(nk) == False{} : Bool}
+) -> {kn.ok(T.num.digit.ok(ok, cc, nk, sign, base, ds)) == True{} : Bool}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      kn.dok(nk, sign, base, T.dec.go(ds, base, T.dig.val(cc)), enk)
+
+# a decimal digit joined to the numeral
+def kn.digit.go(
+  +st: T.Num,
+  +cc: Char,
+  +nk: T.NK,
+  +_en: {kn.ok(st) == True{} : Bool},
+  +enk: {kn.nb(nk) == False{} : Bool}
+) -> {kn.ok(T.num.digit.go(st, cc, nk)) == True{} : Bool}:
+  match st:
+    case T.Num{_nk, +sign, +base, +ds, _us, _saw, _why}:
+      kn.digit.ok(T.dig.ok(T.dig.val(cc), base), cc, nk, sign, base, ds, enk)
+
+# a decimal digit joined to the numeral
+def kn.digit(
+  +st: T.Num,
+  +cc: Char,
+  +nk: T.NK,
+  +en: {kn.ok(st) == True{} : Bool},
+  +enk: {kn.nb(nk) == False{} : Bool}
+) -> {kn.ok(T.num.digit(st, cc, nk)) == True{} : Bool}:
+  kn.digit.go(st, cc, nk, en, enk)
+
+# an underscore between digits
+def kn.us.go(
+  +ok: Bool,
+  +nk: T.NK,
+  +sign: T.Sign,
+  +base: U32,
+  +ds: List<&2, U32>,
+  +why: String,
+  +en: {kn.ok2(nk, why) == True{} : Bool}
+) -> {kn.ok(T.num.us.go(ok, nk, sign, base, ds, why)) == True{} : Bool}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      en
+
+# an underscore between digits
+def kn.us(
+  +st: T.Num,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.us(st)) == True{} : Bool}:
+  match st:
+    case T.Num{+nk, +sign, +base, +ds, +us, +saw, +why}:
+      kn.us.go(Bool.and(saw, Bool.not(us)), nk, sign, base, ds, why, en)
+
+# a dot begins the fraction
+def kn.dot.go(
+  +ok: Bool,
+  +sign: T.Sign
+) -> {kn.ok(T.num.dot.go(ok, sign)) == True{} : Bool}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+# a dot begins the fraction
+def kn.dot(
+  +st: T.Num,
+  +_en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.dot(st)) == True{} : Bool}:
+  match st:
+    case T.Num{_nk, +sign, _b, _ds, +us, +saw, _why}:
+      kn.dot.go(Bool.and(saw, Bool.not(us)), sign)
+
+# an exponent marker
+def kn.exp.go(
+  +ok: Bool,
+  +sign: T.Sign
+) -> {kn.ok(T.num.exp.go(ok, sign)) == True{} : Bool}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+# an exponent marker
+def kn.exp(
+  +st: T.Num,
+  +_en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.exp(st)) == True{} : Bool}:
+  match st:
+    case T.Num{_nk, +sign, _b, _ds, +us, +saw, _why}:
+      kn.exp.go(Bool.and(saw, Bool.not(us)), sign)
+
+# a first digit
+def kn.lead.digit(
+  +digit: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.lead.digit(digit, st, cc)) == True{} : Bool}:
+  match digit:
+    case True{}:
+      kn.digit(st, cc, T.NDig{}, en, {==})
+    case False{}:
+      {==}
+
+# a leading zero, or another digit
+def kn.lead.zero(
+  +zero: Bool,
+  +digit: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.lead.zero(zero, digit, st, cc)) == True{} : Bool}:
+  match zero:
+    case True{}:
+      {==}
+    case False{}:
+      kn.lead.digit(digit, st, cc, en)
+
+# a minus, a zero, or a digit
+def kn.lead.minus(
+  +minus: Bool,
+  +zero: Bool,
+  +digit: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.lead.minus(minus, zero, digit, st, cc)) == True{} : Bool}:
+  match minus:
+    case True{}:
+      {==}
+    case False{}:
+      kn.lead.zero(zero, digit, st, cc, en)
+
+# a sign, a zero, or a digit
+def kn.lead.go(
+  +plus: Bool,
+  +minus: Bool,
+  +zero: Bool,
+  +digit: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.lead.go(plus, minus, zero, digit, st, cc)) == True{} : Bool}:
+  match plus:
+    case True{}:
+      {==}
+    case False{}:
+      kn.lead.minus(minus, zero, digit, st, cc, en)
+
+# the first character after an optional sign
+def kn.lead(
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.lead(st, cc)) == True{} : Bool}:
+  kn.lead.go(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'), Char.is_eq(cc, '0'), Char.is_digit(cc), st, cc, en)
+
+# a second sign is refused; any other character is read as the first one of
+# an unsigned numeral, with the sign kept
+def kn.after.sign.go(
+  +twice: Bool,
+  +sign: T.Sign,
+  +cc: Char
+) -> {kn.ok(T.num.after.sign.go(twice, sign, cc)) == True{} : Bool}:
+  match twice:
+    case True{}:
+      {==}
+    case False{}:
+      kn.lead(T.Num{T.NLead{}, sign, 10, [], False{}, False{}, ""}, cc, {==})
+
+# the character after a sign
+def kn.after.sign(
+  +st: T.Num,
+  +cc: Char,
+  +_en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.after.sign(st, cc)) == True{} : Bool}:
+  kn.after.sign.go(Bool.or(Char.is_eq(cc, '+'), Char.is_eq(cc, '-')), T.num.sign.of(st), cc)
+
+# a capital exponent; any other character is refused, since a digit or an
+# underscore after a leading zero (`01`, `0_1`) would hide it
+def kn.zero.exp2(
+  +ee: Bool,
+  +st: T.Num,
+  +_c: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.zero.exp2(ee, st, _c)) == True{} : Bool}:
+  match ee:
+    case True{}:
+      kn.exp(st, en)
+    case False{}:
+      {==}
+
+# an exponent after zero, or a rejected extra digit
+def kn.zero.exp(
+  +eee: Bool,
+  +ee: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.zero.exp(eee, ee, st, cc)) == True{} : Bool}:
+  match eee:
+    case True{}:
+      kn.exp(st, en)
+    case False{}:
+      kn.zero.exp2(ee, st, cc, en)
+
+# a fraction or an exponent after zero
+def kn.zero.dot(
+  +dot: Bool,
+  +eee: Bool,
+  +ee: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.zero.dot(dot, eee, ee, st, cc)) == True{} : Bool}:
+  match dot:
+    case True{}:
+      kn.dot(st, en)
+    case False{}:
+      kn.zero.exp(eee, ee, st, cc, en)
+
+# a binary prefix, or a float
+def kn.zero.b(
+  +bb: Bool,
+  +dot: Bool,
+  +eee: Bool,
+  +ee: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.zero.b(bb, dot, eee, ee, st, cc)) == True{} : Bool}:
+  match bb:
+    case True{}:
+      kn.base(st, 2)
+    case False{}:
+      kn.zero.dot(dot, eee, ee, st, cc, en)
+
+# an octal prefix, or the rest
+def kn.zero.o(
+  +oo: Bool,
+  +bb: Bool,
+  +dot: Bool,
+  +eee: Bool,
+  +ee: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.zero.o(oo, bb, dot, eee, ee, st, cc)) == True{} : Bool}:
+  match oo:
+    case True{}:
+      kn.base(st, 8)
+    case False{}:
+      kn.zero.b(bb, dot, eee, ee, st, cc, en)
+
+# a base prefix, a fraction, or an exponent
+def kn.zero.go(
+  +xx: Bool,
+  +oo: Bool,
+  +bb: Bool,
+  +dot: Bool,
+  +eee: Bool,
+  +ee: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.zero.go(xx, oo, bb, dot, eee, ee, st, cc)) == True{} : Bool}:
+  match xx:
+    case True{}:
+      kn.base(st, 16)
+    case False{}:
+      kn.zero.o(oo, bb, dot, eee, ee, st, cc, en)
+
+# the character after a lone zero
+def kn.zero(
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.zero(st, cc)) == True{} : Bool}:
+  kn.zero.go(Char.is_eq(cc, 'x'), Char.is_eq(cc, 'o'), Char.is_eq(cc, 'b'), Char.is_eq(cc, '.'), Char.is_eq(cc, 'e'),
+    Char.is_eq(cc, 'E'), st, cc, en)
+
+# a capital exponent, or a rejected character
+def kn.digs.exp2(
+  +ee: Bool,
+  +st: T.Num,
+  +_c: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.digs.exp2(ee, st, _c)) == True{} : Bool}:
+  match ee:
+    case True{}:
+      kn.exp(st, en)
+    case False{}:
+      {==}
+
+# an exponent
+def kn.digs.exp(
+  +eee: Bool,
+  +ee: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.digs.exp(eee, ee, st, cc)) == True{} : Bool}:
+  match eee:
+    case True{}:
+      kn.exp(st, en)
+    case False{}:
+      kn.digs.exp2(ee, st, cc, en)
+
+# a dot or an exponent
+def kn.digs.dot(
+  +dot: Bool,
+  +eee: Bool,
+  +ee: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.digs.dot(dot, eee, ee, st, cc)) == True{} : Bool}:
+  match dot:
+    case True{}:
+      kn.dot(st, en)
+    case False{}:
+      kn.digs.exp(eee, ee, st, cc, en)
+
+# an underscore, a dot, or an exponent
+def kn.digs.us(
+  +us: Bool,
+  +dot: Bool,
+  +eee: Bool,
+  +ee: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.digs.us(us, dot, eee, ee, st, cc)) == True{} : Bool}:
+  match us:
+    case True{}:
+      kn.us(st, en)
+    case False{}:
+      kn.digs.dot(dot, eee, ee, st, cc, en)
+
+# a decimal digit, an underscore, a dot, or an exponent
+def kn.digs.go(
+  +digit: Bool,
+  +us: Bool,
+  +dot: Bool,
+  +eee: Bool,
+  +ee: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.digs.go(digit, us, dot, eee, ee, st, cc)) == True{} : Bool}:
+  match digit:
+    case True{}:
+      kn.digit(st, cc, T.NDig{}, en, {==})
+    case False{}:
+      kn.digs.us(us, dot, eee, ee, st, cc, en)
+
+# a decimal digit, an underscore, a dot, or an exponent
+def kn.digs(
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.digs(st, cc)) == True{} : Bool}:
+  kn.digs.go(Char.is_digit(cc), Char.is_eq(cc, '_'), Char.is_eq(cc, '.'), Char.is_eq(cc, 'e'), Char.is_eq(cc, 'E'),
+    st, cc, en)
+
+# an underscore, or a digit of the base
+def kn.based.go(
+  +us: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.based.go(us, st, cc)) == True{} : Bool}:
+  match us:
+    case True{}:
+      kn.us(st, en)
+    case False{}:
+      kn.digit(st, cc, T.NBase{}, en, {==})
+
+# a digit of a prefixed integer, or an underscore
+def kn.based(
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.based(st, cc)) == True{} : Bool}:
+  kn.based.go(Char.is_eq(cc, '_'), st, cc, en)
+
+# a capital exponent, or a rejected character
+def kn.frac.exp2(
+  +ee: Bool,
+  +st: T.Num,
+  +_c: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.frac.exp2(ee, st, _c)) == True{} : Bool}:
+  match ee:
+    case True{}:
+      kn.exp(st, en)
+    case False{}:
+      {==}
+
+# an exponent in a fraction
+def kn.frac.exp(
+  +eee: Bool,
+  +ee: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.frac.exp(eee, ee, st, cc)) == True{} : Bool}:
+  match eee:
+    case True{}:
+      kn.exp(st, en)
+    case False{}:
+      kn.frac.exp2(ee, st, cc, en)
+
+# an underscore or an exponent in a fraction
+def kn.frac.us(
+  +us: Bool,
+  +eee: Bool,
+  +ee: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.frac.us(us, eee, ee, st, cc)) == True{} : Bool}:
+  match us:
+    case True{}:
+      kn.us(st, en)
+    case False{}:
+      kn.frac.exp(eee, ee, st, cc, en)
+
+# a fraction digit, an underscore, or an exponent
+def kn.frac.go(
+  +digit: Bool,
+  +us: Bool,
+  +eee: Bool,
+  +ee: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.frac.go(digit, us, eee, ee, st, cc)) == True{} : Bool}:
+  match digit:
+    case True{}:
+      kn.digit(st, cc, T.NFrac{}, en, {==})
+    case False{}:
+      kn.frac.us(us, eee, ee, st, cc, en)
+
+# a fraction digit, an underscore, or an exponent
+def kn.frac(
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.frac(st, cc)) == True{} : Bool}:
+  kn.frac.go(Char.is_digit(cc), Char.is_eq(cc, '_'), Char.is_eq(cc, 'e'), Char.is_eq(cc, 'E'), st, cc, en)
+
+# a digit of the exponent
+def kn.expon.digit(
+  +digit: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.expon.digit(digit, st, cc)) == True{} : Bool}:
+  match digit:
+    case True{}:
+      kn.digit(st, cc, T.NEDig{}, en, {==})
+    case False{}:
+      {==}
+
+# a minus or a digit in an exponent
+def kn.expon.minus(
+  +minus: Bool,
+  +digit: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.expon.minus(minus, digit, st, cc)) == True{} : Bool}:
+  match minus:
+    case True{}:
+      kn.expsign(st)
+    case False{}:
+      kn.expon.digit(digit, st, cc, en)
+
+# the sign or the first digit of an exponent
+def kn.expon.go(
+  +plus: Bool,
+  +minus: Bool,
+  +digit: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.expon.go(plus, minus, digit, st, cc)) == True{} : Bool}:
+  match plus:
+    case True{}:
+      kn.expsign(st)
+    case False{}:
+      kn.expon.minus(minus, digit, st, cc, en)
+
+# the sign or the first digit of an exponent
+def kn.expon(
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.expon(st, cc)) == True{} : Bool}:
+  kn.expon.go(Char.is_eq(cc, '+'), Char.is_eq(cc, '-'), Char.is_digit(cc), st, cc, en)
+
+# an underscore in an exponent
+def kn.edig.us(
+  +us: Bool,
+  +st: T.Num,
+  +_c: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.edig.us(us, st, _c)) == True{} : Bool}:
+  match us:
+    case True{}:
+      kn.us(st, en)
+    case False{}:
+      {==}
+
+# an exponent digit or an underscore
+def kn.edig.go(
+  +digit: Bool,
+  +us: Bool,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.edig.go(digit, us, st, cc)) == True{} : Bool}:
+  match digit:
+    case True{}:
+      kn.digit(st, cc, T.NEDig{}, en, {==})
+    case False{}:
+      kn.edig.us(us, st, cc, en)
+
+# an exponent digit or an underscore
+def kn.edig(
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.edig(st, cc)) == True{} : Bool}:
+  kn.edig.go(Char.is_digit(cc), Char.is_eq(cc, '_'), st, cc, en)
+
+# one character of a numeral
+def kn.on(
+  +nk: T.NK,
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.on(nk, st, cc)) == True{} : Bool}:
+  match nk:
+    case T.NLead{}:
+      kn.lead(st, cc, en)
+    case T.NSign{}:
+      kn.after.sign(st, cc, en)
+    case T.NZero{}:
+      kn.zero(st, cc, en)
+    case T.NDig{}:
+      kn.digs(st, cc, en)
+    case T.NBase{}:
+      kn.based(st, cc, en)
+    case T.NFrac{}:
+      kn.frac(st, cc, en)
+    case T.NExp{}:
+      kn.expon(st, cc, en)
+    case T.NEDig{}:
+      kn.edig(st, cc, en)
+    case T.NBad{}:
+      en
+
+# one character of a numeral
+def kn.step.go(
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.step.go(st, cc)) == True{} : Bool}:
+  match st:
+    case T.Num{+nk, +sign, +base, +ds, +us, +saw, +why}:
+      kn.on(nk, T.Num{nk, sign, base, ds, us, saw, why}, cc, en)
+
+# one character of a numeral
+def kn.step(
+  +st: T.Num,
+  +cc: Char,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.step(st, cc)) == True{} : Bool}:
+  kn.step.go(st, cc, en)
+
+# the walk over a numeral
+def kn.go(
+  +cs: List<&2, Char>,
+  +st: T.Num,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {kn.ok(T.num.go(cs, st)) == True{} : Bool}:
+  match cs:
+    case []:
+      en
+    case +h <> t:
+      kn.go(t, T.num.step(st, h), kn.step(st, h, en))
+
+# a datetime's result as a bare word's
+def kn.fw(
+  ww: T.WhenOut,
+  +ee: {kn.wne(ww) == True{} : Bool}
+) -> {Laws.k3.why(T.word.from.when(ww)) == True{} : Bool}:
+  match ww:
+    case T.WSome{_w}:
+      {==}
+    case T.WFail{_y}:
+      ee
+    case T.WSkip{}:
+      {==}
+
+# an integer's range
+def kn.frange(
+  ok: Bool,
+  +sign: T.Sign,
+  +digits: String
+) -> {Laws.k3.why(T.num.fin.range(ok, sign, digits)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a finished integer
+def kn.fint(
+  saw: Bool,
+  +sign: T.Sign,
+  +digits: String
+) -> {Laws.k3.why(T.num.fin.int(saw, sign, digits)) == True{} : Bool}:
+  match saw:
+    case False{}:
+      {==}
+    case True{}:
+      kn.frange(T.i64.fits(sign, digits), sign, digits)
+
+# a numeral's last run
+def kn.fsaw(saw: Bool, +val: T.Val) -> {Laws.k3.why(T.num.fin.saw(saw, val)) == True{} : Bool}:
+  match saw:
+    case False{}:
+      {==}
+    case True{}:
+      {==}
+
+# a prefixed integer
+def kn.fbase(
+  signed: Bool,
+  +saw: Bool,
+  +sign: T.Sign,
+  +ds: List<&2, U32>
+) -> {Laws.k3.why(T.num.fin.base(signed, saw, sign, ds)) == True{} : Bool}:
+  match signed:
+    case True{}:
+      {==}
+    case False{}:
+      kn.fint(saw, sign, T.dec.text(ds))
+
+# the kind a numeral's scan finished in
+def kn.fnk(
+  nk: T.NK,
+  +sign: T.Sign,
+  +ds: List<&2, U32>,
+  +saw: Bool,
+  +why: String,
+  +cs: List<&2, Char>,
+  +en: {kn.ok2(nk, why) == True{} : Bool}
+) -> {Laws.k3.why(T.num.fin.nk(nk, sign, ds, saw, why, cs)) == True{} : Bool}:
+  match nk:
+    case T.NBad{}:
+      en
+    case T.NLead{}:
+      {==}
+    case T.NSign{}:
+      {==}
+    case T.NZero{}:
+      {==}
+    case T.NDig{}:
+      kn.fint(saw, sign, T.dec.text(ds))
+    case T.NBase{}:
+      kn.fbase(T.num.signed(cs), saw, sign, ds)
+    case T.NFrac{}:
+      kn.fsaw(saw, T.VFlo{sign, T.word.body(cs)})
+    case T.NExp{}:
+      {==}
+    case T.NEDig{}:
+      kn.fsaw(saw, T.VFlo{sign, T.word.body(cs)})
+
+# a trailing underscore
+def kn.fus(
+  us: Bool,
+  +nk: T.NK,
+  +sign: T.Sign,
+  +ds: List<&2, U32>,
+  +saw: Bool,
+  +why: String,
+  +cs: List<&2, Char>,
+  +en: {kn.ok2(nk, why) == True{} : Bool}
+) -> {Laws.k3.why(T.num.fin.us(us, nk, sign, ds, saw, why, cs)) == True{} : Bool}:
+  match us:
+    case True{}:
+      {==}
+    case False{}:
+      kn.fnk(nk, sign, ds, saw, why, cs, en)
+
+# a finished numeral
+def kn.fin(
+  +st: T.Num,
+  +cs: List<&2, Char>,
+  +en: {kn.ok(st) == True{} : Bool}
+) -> {Laws.k3.why(T.num.fin(st, cs)) == True{} : Bool}:
+  match st:
+    case T.Num{+nk, +sign, _b, +ds, +us, +saw, +why}:
+      kn.fus(us, nk, sign, ds, saw, why, cs, en)
+
+# a datetime token, or a numeral
+def kn.rdate(
+  date: Bool,
+  +cs: List<&2, Char>
+) -> {Laws.k3.why(T.word.route.date(date, cs)) == True{} : Bool}:
+  match date:
+    case True{}:
+      kn.fw(T.when.read(cs), kw2.read(cs))
+    case False{}:
+      kn.fin(T.num.go(cs, T.num.start()), cs, kn.go(cs, T.num.start(), {==}))
+
+# a special word, or a routed one
+def kn.route(
+  gg: T.Got,
+  +date: Bool,
+  +cs: List<&2, Char>
+) -> {Laws.k3.why(T.word.route(gg, date, cs)) == True{} : Bool}:
+  match gg:
+    case T.GotVal{_v}:
+      {==}
+    case T.GotBad{_w}:
+      kn.rdate(T.word.as_date(date, T.word.ee(cs)), cs)
+
+# a word that may be special, or not
+def kn.pick(
+  special: Bool,
+  +cs: List<&2, Char>
+) -> {Laws.k3.why(T.word.val.pick(special, cs)) == True{} : Bool}:
+  match special:
+    case True{}:
+      kn.route(T.word.spec(String.from_list(cs)), T.word.or(T.word.colon(cs), T.word.dash(cs, True{})), cs)
+    case False{}:
+      kn.route(T.GotBad{""}, T.word.or(T.word.colon(cs), T.word.dash(cs, True{})), cs)
+
+def Laws.bare_word_refusal_says_why(cs):
+  kn.pick(T.word.lead(cs), cs)
+
+
+# a state's class, from its lex state
+def kk.cllx(+st: T.St, +ll: T.Lex, +el: {kk.lx(st) == ll : T.Lex}) -> {kk.cl(st) == kk.cls(ll, kk.bk(st)) : KC}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      Equal.cong(T.Lex, KC, zz => kk.cls(zz, back), lex, ll, el)
+
+# a newline that ended a root value moves the line on; any other state stays
+def kg.blex(
+  +gg: K3G,
+  lex: T.Lex,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +el: {kk.lx(st) == lex : T.Lex}
+) -> {kk.K(gg, T.bare.line.lex(lex, st)) == True{} : Bool}:
+  match lex:
+    case T.LTop{}:
+      eg
+    case T.LLine{}:
+      kg.lex(gg, st, T.LTop{}, eg, kk.cls(T.LLine{}, kk.bk(st)), kk.cllx(st, T.LLine{}, el), {==})
+    case T.LKey{}:
+      eg
+    case T.LKeyDot{}:
+      eg
+    case T.LAfter{}:
+      eg
+    case T.LKeyQ{}:
+      eg
+    case T.LKeyE{}:
+      eg
+    case T.LKeyU{}:
+      eg
+    case T.LVal{}:
+      eg
+    case T.LQ{}:
+      eg
+    case T.LQ2{}:
+      eg
+    case T.LStr{}:
+      eg
+    case T.LEsc{}:
+      eg
+    case T.LUni{}:
+      eg
+    case T.LFold{}:
+      eg
+    case T.LMq{}:
+      eg
+    case T.LMqEnd{}:
+      eg
+    case T.LTrim{}:
+      eg
+    case T.LTrim2{}:
+      eg
+    case T.LBare{}:
+      eg
+    case T.LDate{}:
+      eg
+    case T.LCom{}:
+      eg
+    case T.LHead{}:
+      eg
+    case T.LHeadGap{}:
+      eg
+    case T.LHeadDot{}:
+      eg
+    case T.LHeadQ{}:
+      eg
+    case T.LHeadE{}:
+      eg
+    case T.LHeadU{}:
+      eg
+    case T.LHeadR{}:
+      eg
+    case T.LArr{}:
+      eg
+    case T.LArrC{}:
+      eg
+    case T.LInl{}:
+      eg
+    case T.LInlK{}:
+      eg
+    case T.LInlC{}:
+      eg
+    case T.LSink{}:
+      eg
+# the newline, read off the state
+def kg.blgo(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.bare.line.go(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kg.blex(gg, lex, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+        lead}, eg, {==})
+
+# a newline, or another delimiter
+def kg.bline(
+  +gg: K3G,
+  nl: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.bare.line(st, nl)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      kg.blgo(gg, st, eg)
+    case False{}:
+      eg
+
+# the delimiter held, or not
+def kg.bhold(
+  +gg: K3G,
+  +st: T.St,
+  +ch: Char,
+  hold: Bool,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.bare.hold(st, ch, hold)) == True{} : Bool}:
+  match hold:
+    case False{}:
+      kg.bline(gg, T.ch.nl(ch), st, eg)
+    case True{}:
+      kg.holdon(gg, st, ch, eg)
+
+# a bare word classified: refused with a reason, or taken
+def kg.bgot(
+  +gg: K3G,
+  g0: T.Got,
+  +st: T.St,
+  +ch: Char,
+  +hold: Bool,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ew: {Laws.k3.why(g0) == True{} : Bool}
+) -> {kk.K(gg, T.bare.got(g0, st, ch, hold)) == True{} : Bool}:
+  match g0:
+    case T.GotBad{+why}:
+      kg.err(gg, st, why, Eq.not.true(String.is_empty(why), ew), eg)
+    case T.GotVal{+val}:
+      kg.bhold(gg, T.val.take(st, val), ch, hold, kg.take(gg, st, val, eg))
+
+# a bare word finished
+def kg.bfin(
+  +gg: K3G,
+  +st: T.St,
+  +ch: Char,
+  +hd: Bool,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.bare.finish(st, ch, hd)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kg.bgot(gg, T.word.val(List.reverse(&2, Char, buf)), T.St{bad, rows, heads, here, parts, [], lex, back, qkind,
+        stack, hold, uni, left, arrtab, lead}, ch, hd, eg,
+        Laws.bare_word_refusal_says_why(List.reverse(&2, Char, buf)))
+
+# a string finished
+def kg.strfin(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.str.fin(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kg.take(gg, T.St{bad, rows, heads, here, parts, [], lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        T.VStr{T.buf.str(buf)}, eg)
+
+# a third quote starts a multiline string; two quotes are an empty string
+def kg.q2go(
+  +gg: K3G,
+  same: Bool,
+  +st: T.St,
+  +ch: Char,
+  +kind: T.QKind,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.q2.go(same, st, ch, kind)) == True{} : Bool}:
+  match same:
+    case True{}:
+      kg.multi(gg, st, kind, eg, ecl)
+    case False{}:
+      kg.bhold(gg, T.val.take(st, T.VStr{""}), ch, True{}, kg.take(gg, st, T.VStr{""}, eg))
+
+# two quotes have been seen
+def kg.q2(
+  +gg: K3G,
+  +st: T.St,
+  +ch: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.q2(st, ch)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kg.q2go(gg, Char.is_eq(ch, T.q.char(qkind)), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack,
+        hold, uni, left, arrtab, lead}, ch, qkind, eg, ecl)
+
+# the second quote waits; the third is a closing delimiter
+def kg.mqone(
+  +gg: K3G,
+  one: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.mq.one(one, st)) == True{} : Bool}:
+  match one:
+    case True{}:
+      kg.mq(gg, st, 2, eg, ecl)
+    case False{}:
+      kg.mqshut(gg, st, eg, ecl)
+
+# a quote continues the closer; anything else is content
+def kg.mqgo(
+  +gg: K3G,
+  quote: Bool,
+  +one: Bool,
+  +st: T.St,
+  +ch: Char,
+  +b2: List<&2, Char>,
+  +kind: T.QKind,
+  +l2: U32,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.mq.go(quote, one, st, ch, b2, kind, l2)) == True{} : Bool}:
+  match quote:
+    case True{}:
+      kg.mqone(gg, one, st, eg, ecl)
+    case False{}:
+      kg.mqback(gg, st, ch, T.mq.put(one, T.q.char(kind), b2), eg, ecl)
+
+# one character while closing a multiline string
+def kg.mqstep(
+  +gg: K3G,
+  +st: T.St,
+  +ch: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.mq.step(st, ch)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kg.mqgo(gg, Char.is_eq(ch, T.q.char(qkind)), U32.is_eq(left, 1), T.St{bad, rows, heads, here, parts, buf, lex,
+        back, qkind, stack, hold, uni, left, arrtab, lead}, ch, buf, qkind, left, eg, ecl)
+
+# a comment's control: a tab is kept, anything else refused
+def kg.ctab(
+  +gg: K3G,
+  tab: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.lex.com.tab(tab, st)) == True{} : Bool}:
+  match tab:
+    case True{}:
+      eg
+    case False{}:
+      kg.err(gg, st, "invalid control in comment", {==}, eg)
+
+# a comment's character
+def kg.cctl(
+  +gg: K3G,
+  ctl: Bool,
+  +tab: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.lex.com.ctl(ctl, tab, st)) == True{} : Bool}:
+  match ctl:
+    case False{}:
+      eg
+    case True{}:
+      kg.ctab(gg, tab, st, eg)
+
+# a comment: a newline ends it, a control is refused
+def kg.cgo(
+  +gg: K3G,
+  nl: Bool,
+  +ctl: Bool,
+  +tab: Bool,
+  +st: T.St,
+  +ch: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +el: {kk.lx(st) == T.LCom{} : T.Lex}
+) -> {kk.K(gg, T.lex.com.go(nl, ctl, tab, st, ch)) == True{} : Bool}:
+  match nl:
+    case False{}:
+      kg.cctl(gg, ctl, tab, st, eg)
+    case True{}:
+      kg.comnl(gg, st, ch, eg, el)
+
+# a header's walk done: the root it returned, and the header's table current
+def kk.happly(
+  +gg: K3G,
+  end: T.End,
+  +segs: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +lead: Bool,
+  +ee: {kk.KE(gg, end) == True{} : Bool}
+) -> {kk.K(gg, T.head.apply(end, segs, back, qkind, uni, left, lead)) == True{} : Bool}:
+  match end:
+    case T.End{+vs, +bad, +hs}:
+      ee
+
+# a header's walk from a root that holds the key holds it, or fails
+def kk.hke(
+  ok: Bool,
+  +gg: K3G,
+  +segs: List<&2, String>,
+  +rows: List<&2, T.Val>,
+  +job: T.Job,
+  +bad: String,
+  +heads: List<&2, String>,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  +ee: {Bool.or(Bool.not(String.is_empty(bad)), Laws.k3.has(rows, kk.tp(gg), kk.key(gg))) == True{} : Bool}
+) -> {kk.KE(gg, T.tree.walk(segs, T.Tw{rows, job, [], bad, "", heads, False{}}, 0)) == True{} : Bool}:
+  match ok:
+    case False{}:
+      %Equal.sym(T.End, T.tree.walk(segs, T.Tw{rows, job, [], bad, "", heads, False{}}, 0), T.End{rows, bad, heads},
+        Laws.failed_walk_changes_nothing(segs, rows, job, bad, "", heads, False{}, 0, eo)) : {kk.KE(gg, _) == True{}
+          : Bool}
+      ee
+    case True{}:
+      kk.KE.mk(gg, T.tree.walk(segs, T.Tw{rows, job, [], bad, "", heads, False{}}, 0), eb => kw.mono(segs, rows, job,
+        bad, "", heads, False{}, 0, kk.key(gg), eo, eb)(kk.tp(gg), kk.okor(bad, Laws.k3.has(rows, kk.tp(gg),
+          kk.key(gg)), eo, ee)))
+
+# an array-of-tables header, or a table header
+def kk.hjob(
+  +gg: K3G,
+  arr: Bool,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +segs: List<&2, String>,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +lead: Bool,
+  +ee: {Bool.or(Bool.not(String.is_empty(bad)), Laws.k3.has(rows, kk.tp(gg), kk.key(gg))) == True{} : Bool}
+) -> {kk.K(gg, T.head.job(arr, bad, rows, heads, segs, back, qkind, uni, left, lead)) == True{} : Bool}:
+  match arr:
+    case True{}:
+      kk.happly(gg, T.tree.walk(segs, T.Tw{rows, T.JAot{}, [], bad, "", heads, False{}}, 0), segs, back, qkind, uni,
+        left, lead, kk.hke(String.is_empty(bad), gg, segs, rows, T.JAot{}, bad,
+        heads, {==}, ee))
+    case False{}:
+      kk.happly(gg, T.tree.walk(segs, T.Tw{rows, T.JDef{}, [], bad, "", heads, False{}}, 0), segs, back, qkind, uni,
+        left, lead, kk.hke(String.is_empty(bad), gg, segs, rows, T.JDef{}, bad,
+        heads, {==}, ee))
+
+# a header's state's invariant: failed, or no frame open and pending below
+# or held
+def kk.HR(+gg: K3G, +stack: List<&2, T.Ctx>, +rows: List<&2, T.Val>, aa: Bool) -> Bool:
+  Bool.or(aa, Bool.and(List.is_empty(&2, T.Ctx, stack), Bool.or(kk.PF(gg, stack), kk.L(gg, stack, rows))))
+
+# a header's state: no frame is open, so the root holds the key
+def kk.hroot(
+  +gg: K3G,
+  stack: List<&2, T.Ctx>,
+  +rows: List<&2, T.Val>,
+  +aa: Bool,
+  +ee: {kk.HR(gg, stack, rows, aa) == True{} : Bool}
+) -> {Bool.or(aa, Laws.k3.has(rows, kk.tp(gg), kk.key(gg))) == True{} : Bool}:
+  match stack:
+    case []:
+      ee
+    case _f <> _t:
+      kk.bimp(aa, False{}, Laws.k3.has(rows, kk.tp(gg), kk.key(gg)), e1 => Eq.bit.absurd(&2, {Laws.k3.has(rows,
+        kk.tp(gg), kk.key(gg)) == True{} : Bool}, e1), ee)
+
+# open the table or the array of tables the header names
+def kg.on(
+  +gg: K3G,
+  +st: T.St,
+  +segs: List<&2, String>,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.head.on(st, segs)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.hjob(gg, arrtab, bad, rows, heads, segs, back, qkind, uni, left, lead, kk.hroot(gg, stack, rows,
+        Bool.not(String.is_empty(bad)), Equal.trans(Bool, kk.Kc(gg, KcH{}, bad, rows, here, parts, stack), kk.Kc(gg,
+          kk.cls(lex, back), bad, rows, here, parts, stack), True{}, Equal.cong(KC, Bool, zz => kk.Kc(gg, zz, bad, rows,
+            here, parts, stack), KcH{}, kk.cls(lex, back), Equal.sym(KC, kk.cls(lex, back), KcH{}, ecl)), eg)))
+
+# the header's key is ready, or empty
+def kg.go(
+  +gg: K3G,
+  empty: Bool,
+  +st: T.St,
+  +segs: List<&2, String>,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.head.go(empty, st, segs)) == True{} : Bool}:
+  match empty:
+    case True{}:
+      kg.err(gg, st, "empty key", {==}, eg)
+    case False{}:
+      kg.on(gg, st, segs, eg, ecl)
+
+# the segments pushed: the header's key
+def kg.use(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.head.use(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kg.go(gg, List.is_empty(&2, String, parts), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack,
+        hold, uni, left, arrtab, lead}, List.reverse(&2, String, parts), eg, ecl)
+
+# a segment pushed at a header's end leaves a header's state
+def kk.clseg(+st: T.St) -> {kk.cl(T.seg.push(st, T.LTop{})) == KcH{} : KC}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      {==}
+
+# the buffer is the last segment when it holds one
+def kg.finbuf(
+  +gg: K3G,
+  empty: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.head.fin.buf(empty, st)) == True{} : Bool}:
+  match empty:
+    case True{}:
+      kg.use(gg, st, eg, ecl)
+    case False{}:
+      kg.use(gg, T.seg.push(st, T.LTop{}), kg.seg(gg, st, T.LTop{}, eg, KcH{}, ecl, {==}), kk.clseg(st))
+
+# a header closed
+def kg.fin(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.head.fin(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kg.finbuf(gg, List.is_empty(&2, Char, buf), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack,
+        hold, uni, left, arrtab, lead}, eg, ecl)
+
+# a segment pushed leaves the state's class the new lex state's
+def kk.clsx(+st: T.St, +ll: T.Lex) -> {kk.cl(T.seg.push(st, ll)) == kk.cls(ll, kk.bk(st)) : KC}:
+  match st:
+    case T.St{_b, _r, _h, _e, _p, _f, _x, _k, _q, _s, _o, _u, _l, _a, _d}:
+      {==}
+
+# and a step that moves the lex state
+def kk.clst(+st: T.St, +ll: T.Lex) -> {kk.cl(T.st.lex(st, ll)) == kk.cls(ll, kk.bk(st)) : KC}:
+  match st:
+    case T.St{_b, _r, _h, _e, _p, _f, _x, _k, _q, _s, _o, _u, _l, _a, _d}:
+      {==}
+
+# a key's segment ended before a comment: a key's class, or failed
+def kk.clke2(empty: Bool, +st: T.St) -> {kk.cl(T.lex.key.end.go(empty, st, T.LAfter{})) == KcO{} : KC}:
+  match empty:
+    case True{}:
+      match st:
+        case T.St{_b, _r, _h, _e, _p, _f, _x, _k, _q, _s, _o, _u, _l, _a, _d}:
+          {==}
+    case False{}:
+      match st:
+        case T.St{_b, _r, _h, _e, _p, _f, _x, _k, _q, _s, _o, _u, _l, _a, _d}:
+          {==}
+
+# and read off the state
+def kk.clke(+st: T.St) -> {kk.cl(T.lex.key.end(st, T.LAfter{})) == KcO{} : KC}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.clke2(List.is_empty(&2, Char, buf), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold,
+        uni,
+        left, arrtab, lead})
+
+# a key cleared leaves a key's class
+def kk.clkc(+st: T.St) -> {kk.cl(T.lex.key.clear(st)) == KcO{} : KC}:
+  match st:
+    case T.St{_b, _r, _h, _e, _p, _f, _x, _k, _q, _s, _o, _u, _l, _a, _d}:
+      {==}
+
+# ] with an array of tables waits for the second
+def kg.close2(
+  +gg: K3G,
+  arr: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.close2(arr, st)) == True{} : Bool}:
+  match arr:
+    case True{}:
+      kg.lex(gg, st, T.LHeadR{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.fin(gg, st, eg, ecl)
+
+# ] pushes the open segment first
+def kg.closego(
+  +gg: K3G,
+  empty: Bool,
+  arr: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.close.go(empty, arr, st)) == True{} : Bool}:
+  match empty:
+    case True{}:
+      kg.close2(gg, arr, st, eg, ecl)
+    case False{}:
+      kg.close2(gg, arr, T.seg.push(st, T.LHead{}), kg.seg(gg, st, T.LHead{}, eg, KcH{}, ecl, {==}), kk.clsx(st,
+        T.LHead{}))
+
+# ]
+def kg.close(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.close(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.closego(gg, List.is_empty(&2, Char, buf), arrtab, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind,
+        stack, hold, uni, left, arrtab, lead}, eg, ecl)
+
+# a quote opens a segment only at the start
+def kg.quotego(
+  +gg: K3G,
+  fresh: Bool,
+  +st: T.St,
+  +kind: T.QKind,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.quote.go(fresh, st, kind)) == True{} : Bool}:
+  match fresh:
+    case True{}:
+      kg.qkey(gg, st, kind, T.LHeadQ{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.err(gg, st, "invalid header", {==}, eg)
+
+# the step quote
+def kg.quote(
+  +gg: K3G,
+  +st: T.St,
+  +kind: T.QKind,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.quote(st, kind)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.quotego(gg, Bool.and(List.is_empty(&2, Char, buf), List.is_empty(&2, String, parts)), T.St{bad, rows, heads,
+        here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, kind, eg, ecl)
+
+# the step brgo
+def kg.brgo(
+  +gg: K3G,
+  fresh: Bool,
+  once: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.br.go(fresh, once, st)) == True{} : Bool}:
+  match fresh:
+    case False{}:
+      kg.err(gg, st, "invalid header", {==}, eg)
+    case True{}:
+      kg.br2(gg, once, st, eg, ecl)
+
+# the step br
+def kg.br(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.br(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.brgo(gg, Bool.and(List.is_empty(&2, String, parts), List.is_empty(&2, Char, buf)), Bool.not(arrtab),
+        T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, eg, ecl)
+
+# a bare character: a segment goes on, or starts
+def kg.chgo(
+  +gg: K3G,
+  gap: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.ch.go(gap, st, cc)) == True{} : Bool}:
+  match gap:
+    case True{}:
+      kg.err(gg, st, "invalid header", {==}, eg)
+    case False{}:
+      kg.push(gg, st, cc, T.LHead{}, eg, KcH{}, ecl, {==})
+
+# the step ch
+def kg.ch(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.ch(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.chgo(gg, Bool.and(Bool.not(List.is_empty(&2, String, parts)), List.is_empty(&2, Char, buf)), T.St{bad, rows,
+        heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc, eg, ecl)
+
+# blank space ends an open segment
+def kg.gapgo(
+  +gg: K3G,
+  empty: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.gap.go(empty, st)) == True{} : Bool}:
+  match empty:
+    case True{}:
+      kg.lex(gg, st, T.LHeadDot{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.seg(gg, st, T.LHeadGap{}, eg, KcH{}, ecl, {==})
+
+# the step gap
+def kg.gap(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.gap(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.gapgo(gg, List.is_empty(&2, Char, buf), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack,
+        hold, uni, left, arrtab, lead}, eg, ecl)
+
+# a dot ends the open segment
+def kg.dot3(
+  +gg: K3G,
+  empty: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.dot3(empty, st)) == True{} : Bool}:
+  match empty:
+    case True{}:
+      kg.err(gg, st, "empty key", {==}, eg)
+    case False{}:
+      kg.seg(gg, st, T.LHeadDot{}, eg, KcH{}, ecl, {==})
+
+# the step dot2
+def kg.dot2(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.dot2(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.dot3(gg, List.is_empty(&2, Char, buf), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack,
+        hold, uni, left, arrtab, lead}, eg, ecl)
+
+# LHead's dispatch, one test at a time
+def kg.hlit(
+  +gg: K3G,
+  lit: Bool,
+  hash: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.lit(lit, hash, st)) == True{} : Bool}:
+  match lit:
+    case True{}:
+      kg.quote(gg, st, T.QLit{}, eg, ecl)
+    case False{}:
+      kg.hash(gg, hash, st, eg, ecl)
+
+# the step hq
+def kg.hq(
+  +gg: K3G,
+  qq: Bool,
+  lit: Bool,
+  hash: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.q(qq, lit, hash, st, cc)) == True{} : Bool}:
+  match qq:
+    case True{}:
+      kg.quote(gg, st, T.QBasic{}, eg, ecl)
+    case False{}:
+      kg.hlit(gg, lit, hash, st, eg, ecl)
+
+# the step hend
+def kg.hend(
+  +gg: K3G,
+  end: Bool,
+  qq: Bool,
+  lit: Bool,
+  hash: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.end(end, qq, lit, hash, st, cc)) == True{} : Bool}:
+  match end:
+    case True{}:
+      kg.close(gg, st, eg, ecl)
+    case False{}:
+      kg.hq(gg, qq, lit, hash, st, cc, eg, ecl)
+
+# the step hdot
+def kg.hdot(
+  +gg: K3G,
+  dot: Bool,
+  end: Bool,
+  qq: Bool,
+  lit: Bool,
+  hash: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.dot(dot, end, qq, lit, hash, st, cc)) == True{} : Bool}:
+  match dot:
+    case True{}:
+      kg.dot2(gg, st, eg, ecl)
+    case False{}:
+      kg.hend(gg, end, qq, lit, hash, st, cc, eg, ecl)
+
+# the step hsp
+def kg.hsp(
+  +gg: K3G,
+  sp: Bool,
+  dot: Bool,
+  end: Bool,
+  qq: Bool,
+  lit: Bool,
+  hash: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.sp(sp, dot, end, qq, lit, hash, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      kg.gap(gg, st, eg, ecl)
+    case False{}:
+      kg.hdot(gg, dot, end, qq, lit, hash, st, cc, eg, ecl)
+
+# the step hbare
+def kg.hbare(
+  +gg: K3G,
+  bare: Bool,
+  sp: Bool,
+  dot: Bool,
+  end: Bool,
+  qq: Bool,
+  lit: Bool,
+  hash: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.bare(bare, sp, dot, end, qq, lit, hash, st, cc)) == True{} : Bool}:
+  match bare:
+    case True{}:
+      kg.ch(gg, st, cc, eg, ecl)
+    case False{}:
+      kg.hsp(gg, sp, dot, end, qq, lit, hash, st, cc, eg, ecl)
+
+# the step hgo
+def kg.hgo(
+  +gg: K3G,
+  br: Bool,
+  bare: Bool,
+  sp: Bool,
+  dot: Bool,
+  end: Bool,
+  qq: Bool,
+  lit: Bool,
+  hash: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.go(br, bare, sp, dot, end, qq, lit, hash, st, cc)) == True{} : Bool}:
+  match br:
+    case True{}:
+      kg.br(gg, st, eg, ecl)
+    case False{}:
+      kg.hbare(gg, bare, sp, dot, end, qq, lit, hash, st, cc, eg, ecl)
+
+# LHead
+def kg.head(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head(st, cc)) == True{} : Bool}:
+  kg.hgo(gg, Char.is_eq(cc, '['), T.bare.at(cc), T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, ']'), Char.is_eq(cc,
+    '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '#'), st, cc, eg, ecl)
+
+# LHeadGap
+def kg.hgend(
+  +gg: K3G,
+  end: Bool,
+  hash: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.hgap.end(end, hash, st)) == True{} : Bool}:
+  match end:
+    case True{}:
+      kg.close(gg, st, eg, ecl)
+    case False{}:
+      kg.hash(gg, hash, st, eg, ecl)
+
+# the step hgdot
+def kg.hgdot(
+  +gg: K3G,
+  dot: Bool,
+  end: Bool,
+  hash: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.hgap.dot(dot, end, hash, st)) == True{} : Bool}:
+  match dot:
+    case True{}:
+      kg.lex(gg, st, T.LHeadDot{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.hgend(gg, end, hash, st, eg, ecl)
+
+# the step hgap
+def kg.hgap(
+  +gg: K3G,
+  sp: Bool,
+  dot: Bool,
+  end: Bool,
+  hash: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.hgap(sp, dot, end, hash, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.hgdot(gg, dot, end, hash, st, eg, ecl)
+
+# LHeadDot
+def kg.hdlit(
+  +gg: K3G,
+  lit: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.hdot.lit(lit, st, cc)) == True{} : Bool}:
+  match lit:
+    case True{}:
+      kg.qkey(gg, st, T.QLit{}, T.LHeadQ{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.err(gg, st, "invalid header", {==}, eg)
+
+# the step hdq
+def kg.hdq(
+  +gg: K3G,
+  qq: Bool,
+  lit: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.hdot.q(qq, lit, st, cc)) == True{} : Bool}:
+  match qq:
+    case True{}:
+      kg.qkey(gg, st, T.QBasic{}, T.LHeadQ{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.hdlit(gg, lit, st, cc, eg, ecl)
+
+# the step hdbare
+def kg.hdbare(
+  +gg: K3G,
+  bare: Bool,
+  qq: Bool,
+  lit: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.hdot.bare(bare, qq, lit, st, cc)) == True{} : Bool}:
+  match bare:
+    case True{}:
+      kg.push(gg, st, cc, T.LHead{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.hdq(gg, qq, lit, st, cc, eg, ecl)
+
+# the step hdot2
+def kg.hdot2(
+  +gg: K3G,
+  sp: Bool,
+  bare: Bool,
+  qq: Bool,
+  lit: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.hdot(sp, bare, qq, lit, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.hdbare(gg, bare, qq, lit, st, cc, eg, ecl)
+
+# LHeadR
+def kg.hr(
+  +gg: K3G,
+  end: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.head.r.go(end, st)) == True{} : Bool}:
+  match end:
+    case True{}:
+      kg.fin(gg, st, eg, ecl)
+    case False{}:
+      kg.err(gg, st, "invalid header", {==}, eg)
+
+# the step tbare
+def kg.tbare(
+  +gg: K3G,
+  bare: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.top.bare(bare, st, cc)) == True{} : Bool}:
+  match bare:
+    case True{}:
+      kg.push(gg, st, cc, T.LKey{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.err(gg, st, "invalid key", {==}, eg)
+
+# the step tlit
+def kg.tlit(
+  +gg: K3G,
+  lit: Bool,
+  bare: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.top.lit(lit, bare, st, cc)) == True{} : Bool}:
+  match lit:
+    case True{}:
+      kg.qkey(gg, st, T.QLit{}, T.LKeyQ{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.tbare(gg, bare, st, cc, eg, ecl)
+
+# the step tq
+def kg.tq(
+  +gg: K3G,
+  qq: Bool,
+  lit: Bool,
+  bare: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.top.q(qq, lit, bare, st, cc)) == True{} : Bool}:
+  match qq:
+    case True{}:
+      kg.qkey(gg, st, T.QBasic{}, T.LKeyQ{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.tlit(gg, lit, bare, st, cc, eg, ecl)
+
+# the step tbr
+def kg.tbr(
+  +gg: K3G,
+  br: Bool,
+  qq: Bool,
+  lit: Bool,
+  bare: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.top.br(br, qq, lit, bare, st, cc)) == True{} : Bool}:
+  match br:
+    case True{}:
+      kg.bracket(gg, st, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.tq(gg, qq, lit, bare, st, cc, eg, ecl)
+
+# the step thash
+def kg.thash(
+  +gg: K3G,
+  hash: Bool,
+  br: Bool,
+  qq: Bool,
+  lit: Bool,
+  bare: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.top.hash(hash, br, qq, lit, bare, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      kg.com(gg, st, T.LTop{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.tbr(gg, br, qq, lit, bare, st, cc, eg, ecl)
+
+# the step tnl
+def kg.tnl(
+  +gg: K3G,
+  nl: Bool,
+  hash: Bool,
+  br: Bool,
+  qq: Bool,
+  lit: Bool,
+  bare: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.top.nl(nl, hash, br, qq, lit, bare, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      eg
+    case False{}:
+      kg.thash(gg, hash, br, qq, lit, bare, st, cc, eg, ecl)
+
+# the step tgo
+def kg.tgo(
+  +gg: K3G,
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  br: Bool,
+  qq: Bool,
+  lit: Bool,
+  bare: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.top.go(sp, nl, hash, br, qq, lit, bare, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.tnl(gg, nl, hash, br, qq, lit, bare, st, cc, eg, ecl)
+
+# the step lnl
+def kg.lnl(
+  +gg: K3G,
+  nl: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.line.nl(nl, st)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      kg.lex(gg, st, T.LTop{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.err(gg, st, "newline required", {==}, eg)
+
+# the step lhash
+def kg.lhash(
+  +gg: K3G,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.line.hash(hash, nl, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      kg.com(gg, st, T.LLine{}, eg, KcH{}, ecl, {==})
+    case False{}:
+      kg.lnl(gg, nl, st, eg, ecl)
+
+# the step lgo
+def kg.lgo(
+  +gg: K3G,
+  sp: Bool,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcH{} : KC}
+) -> {kk.K(gg, T.lex.line.go(sp, hash, nl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.lhash(gg, hash, nl, st, cc, eg, ecl)
+
+# the step kendgo
+def kg.kendgo(
+  +gg: K3G,
+  empty: Bool,
+  +st: T.St,
+  +next: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC},
+  +on: {kk.c2(KcO{}, kk.cls(next, kk.bk(st))) == True{} : Bool}
+) -> {kk.K(gg, T.lex.key.end.go(empty, st, next)) == True{} : Bool}:
+  match empty:
+    case True{}:
+      kg.err(gg, st, "empty key", {==}, eg)
+    case False{}:
+      kg.seg(gg, st, next, eg, KcO{}, ecl, on)
+
+# the step kend
+def kg.kend(
+  +gg: K3G,
+  +st: T.St,
+  +next: T.Lex,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC},
+  +on: {kk.c2(KcO{}, kk.cls(next, kk.bk(st))) == True{} : Bool}
+) -> {kk.K(gg, T.lex.key.end(st, next)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.kendgo(gg, List.is_empty(&2, Char, buf), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack,
+        hold, uni, left, arrtab, lead}, next, eg, ecl, on)
+
+# the step knl
+def kg.knl(
+  +gg: K3G,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +_ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.key.nl(nl, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      kg.err(gg, st, "newline in key", {==}, eg)
+    case False{}:
+      kg.err(gg, st, "invalid key", {==}, eg)
+
+# the step khash
+def kg.khash(
+  +gg: K3G,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.key.hash(hash, nl, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      kg.com(gg, T.lex.key.end(st, T.LAfter{}), T.LAfter{}, kg.kend(gg, st, T.LAfter{}, eg, ecl, {==}), KcO{},
+        kk.clke(st), {==})
+    case False{}:
+      kg.knl(gg, nl, st, cc, eg, ecl)
+
+# the step keq
+def kg.keq(
+  +gg: K3G,
+  eq: Bool,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.key.eq(eq, hash, nl, st, cc)) == True{} : Bool}:
+  match eq:
+    case True{}:
+      kg.kend(gg, st, T.LVal{}, eg, ecl, {==})
+    case False{}:
+      kg.khash(gg, hash, nl, st, cc, eg, ecl)
+
+# the step kdot
+def kg.kdot(
+  +gg: K3G,
+  dot: Bool,
+  eq: Bool,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.key.dot(dot, eq, hash, nl, st, cc)) == True{} : Bool}:
+  match dot:
+    case True{}:
+      kg.kend(gg, st, T.LKeyDot{}, eg, ecl, {==})
+    case False{}:
+      kg.keq(gg, eq, hash, nl, st, cc, eg, ecl)
+
+# the step ksp
+def kg.ksp(
+  +gg: K3G,
+  sp: Bool,
+  dot: Bool,
+  eq: Bool,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.key.sp(sp, dot, eq, hash, nl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      kg.kend(gg, st, T.LAfter{}, eg, ecl, {==})
+    case False{}:
+      kg.kdot(gg, dot, eq, hash, nl, st, cc, eg, ecl)
+
+# the step kgo
+def kg.kgo(
+  +gg: K3G,
+  bare: Bool,
+  sp: Bool,
+  dot: Bool,
+  eq: Bool,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.key.go(bare, sp, dot, eq, hash, nl, st, cc)) == True{} : Bool}:
+  match bare:
+    case True{}:
+      kg.push(gg, st, cc, T.LKey{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.ksp(gg, sp, dot, eq, hash, nl, st, cc, eg, ecl)
+
+# the step anl
+def kg.anl(
+  +gg: K3G,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +_ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.after.nl(nl, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      kg.err(gg, st, "newline in key", {==}, eg)
+    case False{}:
+      kg.err(gg, st, "invalid key", {==}, eg)
+
+# the step ahash
+def kg.ahash(
+  +gg: K3G,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.after.hash(hash, nl, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      kg.com(gg, st, T.LAfter{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.anl(gg, nl, st, cc, eg, ecl)
+
+# the step aeq
+def kg.aeq(
+  +gg: K3G,
+  eq: Bool,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.after.eq(eq, hash, nl, st, cc)) == True{} : Bool}:
+  match eq:
+    case True{}:
+      kg.lex(gg, st, T.LVal{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.ahash(gg, hash, nl, st, cc, eg, ecl)
+
+# the step adot
+def kg.adot(
+  +gg: K3G,
+  dot: Bool,
+  eq: Bool,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.after.dot(dot, eq, hash, nl, st, cc)) == True{} : Bool}:
+  match dot:
+    case True{}:
+      kg.lex(gg, st, T.LKeyDot{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.aeq(gg, eq, hash, nl, st, cc, eg, ecl)
+
+# the step ago
+def kg.ago(
+  +gg: K3G,
+  sp: Bool,
+  dot: Bool,
+  eq: Bool,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.after.go(sp, dot, eq, hash, nl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.adot(gg, dot, eq, hash, nl, st, cc, eg, ecl)
+
+# the step dnl
+def kg.dnl(
+  +gg: K3G,
+  nl: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +_ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.kdot.nl(nl, st)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      kg.err(gg, st, "newline in key", {==}, eg)
+    case False{}:
+      kg.err(gg, st, "invalid key", {==}, eg)
+
+# the step ddot
+def kg.ddot(
+  +gg: K3G,
+  dot: Bool,
+  nl: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.kdot.dot(dot, nl, st)) == True{} : Bool}:
+  match dot:
+    case True{}:
+      kg.err(gg, st, "empty key", {==}, eg)
+    case False{}:
+      kg.dnl(gg, nl, st, eg, ecl)
+
+# the step dbare
+def kg.dbare(
+  +gg: K3G,
+  bare: Bool,
+  dot: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.kdot.bare(bare, dot, nl, st, cc)) == True{} : Bool}:
+  match bare:
+    case True{}:
+      kg.push(gg, st, cc, T.LKey{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.ddot(gg, dot, nl, st, eg, ecl)
+
+# the step dlit
+def kg.dlit(
+  +gg: K3G,
+  lit: Bool,
+  dot: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.kdot.lit(lit, dot, nl, st, cc)) == True{} : Bool}:
+  match lit:
+    case True{}:
+      kg.qkey(gg, st, T.QLit{}, T.LKeyQ{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.dbare(gg, T.bare.at(cc), dot, nl, st, cc, eg, ecl)
+
+# the step dq
+def kg.dq(
+  +gg: K3G,
+  qq: Bool,
+  lit: Bool,
+  dot: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.kdot.q(qq, lit, dot, nl, st, cc)) == True{} : Bool}:
+  match qq:
+    case True{}:
+      kg.qkey(gg, st, T.QBasic{}, T.LKeyQ{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.dlit(gg, lit, dot, nl, st, cc, eg, ecl)
+
+# the step dgo
+def kg.dgo(
+  +gg: K3G,
+  sp: Bool,
+  qq: Bool,
+  lit: Bool,
+  dot: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.kdot.go(sp, qq, lit, dot, nl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.dq(gg, qq, lit, dot, nl, st, cc, eg, ecl)
+
+# the step vnl3
+def kg.vnl3(
+  +gg: K3G,
+  inside: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +_ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.val.nl3(inside, st)) == True{} : Bool}:
+  match inside:
+    case True{}:
+      kg.err(gg, st, "newline in inline table", {==}, eg)
+    case False{}:
+      kg.err(gg, st, "newline before value", {==}, eg)
+
+# the step vnl2
+def kg.vnl2(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.val.nl2(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.vnl3(gg, T.inl.open(stack), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
+        arrtab, lead}, eg, ecl)
+
+# the step vinl
+def kg.vinl(
+  +gg: K3G,
+  inl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.val.inl(inl, st, cc)) == True{} : Bool}:
+  match inl:
+    case True{}:
+      kg.inline(gg, st, eg)
+    case False{}:
+      kg.push(gg, st, cc, T.LBare{}, eg, KcV{}, ecl, {==})
+
+# the step vbr
+def kg.vbr(
+  +gg: K3G,
+  br: Bool,
+  inl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.val.br(br, inl, st, cc)) == True{} : Bool}:
+  match br:
+    case True{}:
+      kg.array(gg, st, eg)
+    case False{}:
+      kg.vinl(gg, inl, st, cc, eg, ecl)
+
+# the step vlit
+def kg.vlit(
+  +gg: K3G,
+  lit: Bool,
+  br: Bool,
+  inl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.val.lit(lit, br, inl, st, cc)) == True{} : Bool}:
+  match lit:
+    case True{}:
+      kg.qkey(gg, st, T.QLit{}, T.LQ{}, eg, KcV{}, ecl, {==})
+    case False{}:
+      kg.vbr(gg, br, inl, st, cc, eg, ecl)
+
+# the step vq
+def kg.vq(
+  +gg: K3G,
+  qq: Bool,
+  lit: Bool,
+  br: Bool,
+  inl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.val.q(qq, lit, br, inl, st, cc)) == True{} : Bool}:
+  match qq:
+    case True{}:
+      kg.qkey(gg, st, T.QBasic{}, T.LQ{}, eg, KcV{}, ecl, {==})
+    case False{}:
+      kg.vlit(gg, lit, br, inl, st, cc, eg, ecl)
+
+# the step vhash
+def kg.vhash(
+  +gg: K3G,
+  hash: Bool,
+  qq: Bool,
+  lit: Bool,
+  br: Bool,
+  inl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.val.hash(hash, qq, lit, br, inl, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      kg.com(gg, st, T.LVal{}, eg, KcV{}, ecl, {==})
+    case False{}:
+      kg.vq(gg, qq, lit, br, inl, st, cc, eg, ecl)
+
+# the step vnl
+def kg.vnl(
+  +gg: K3G,
+  nl: Bool,
+  hash: Bool,
+  qq: Bool,
+  lit: Bool,
+  br: Bool,
+  inl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.val.nl(nl, hash, qq, lit, br, inl, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      kg.vnl2(gg, st, cc, eg, ecl)
+    case False{}:
+      kg.vhash(gg, hash, qq, lit, br, inl, st, cc, eg, ecl)
+
+# the step vgo
+def kg.vgo(
+  +gg: K3G,
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  qq: Bool,
+  lit: Bool,
+  br: Bool,
+  inl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.val.go(sp, nl, hash, qq, lit, br, inl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.vnl(gg, nl, hash, qq, lit, br, inl, st, cc, eg, ecl)
+
+# the step qgo
+def kg.qgo(
+  +gg: K3G,
+  same: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.q.go(same, st, cc)) == True{} : Bool}:
+  match same:
+    case True{}:
+      kg.lex(gg, st, T.LQ2{}, eg, KcV{}, ecl, {==})
+    case False{}:
+      kg.hold(gg, T.st.lex(st, T.LStr{}), T.LStr{}, cc, kg.lex(gg, st, T.LStr{}, eg, KcV{}, ecl, {==}), KcV{},
+        kk.clst(st, T.LStr{}), {==})
+
+# the step q
+def kg.q(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.q(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.qgo(gg, Char.is_eq(cc, T.q.char(qkind)), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack,
+        hold,
+        uni, left, arrtab, lead}, cc, eg, ecl)
+
+# the step schgo
+def kg.schgo(
+  +gg: K3G,
+  bad: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.str.char.go(bad, st, cc)) == True{} : Bool}:
+  match bad:
+    case True{}:
+      kg.err(gg, st, "invalid control", {==}, eg)
+    case False{}:
+      kg.push(gg, st, cc, T.LStr{}, eg, KcV{}, ecl, {==})
+
+# the step sch
+def kg.sch(
+  +gg: K3G,
+  +multi: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.str.char(multi, st, cc)) == True{} : Bool}:
+  kg.schgo(gg, T.str.bad(Char.to_u32(cc), multi), st, cc, eg, ecl)
+
+# the step sbs
+def kg.sbs(
+  +gg: K3G,
+  bs: Bool,
+  +multi: Bool,
+  +st: T.St,
+  +cc: Char,
+  +kind: T.QKind,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.str.bs(bs, multi, st, cc, kind)) == True{} : Bool}:
+  match bs:
+    case True{}:
+      kg.lex(gg, st, T.LEsc{}, eg, KcV{}, ecl, {==})
+    case False{}:
+      kg.sch(gg, multi, st, cc, eg, ecl)
+
+# the step sesc
+def kg.sesc(
+  +gg: K3G,
+  basic: Bool,
+  +multi: Bool,
+  +st: T.St,
+  +cc: Char,
+  +kind: T.QKind,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.str.esc(basic, multi, st, cc, kind)) == True{} : Bool}:
+  match basic:
+    case True{}:
+      kg.sbs(gg, Char.is_eq(cc, '\\'), multi, st, cc, kind, eg, ecl)
+    case False{}:
+      kg.sch(gg, multi, st, cc, eg, ecl)
+
+# the step squote
+def kg.squote(
+  +gg: K3G,
+  multi: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.str.quote(multi, st)) == True{} : Bool}:
+  match multi:
+    case False{}:
+      kg.strfin(gg, st, eg)
+    case True{}:
+      kg.mq(gg, st, 1, eg, ecl)
+
+# the step sgo
+def kg.sgo(
+  +gg: K3G,
+  quote: Bool,
+  +multi: Bool,
+  +basic: Bool,
+  +st: T.St,
+  +cc: Char,
+  +kind: T.QKind,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.str.go(quote, multi, basic, st, cc, kind)) == True{} : Bool}:
+  match quote:
+    case True{}:
+      kg.squote(gg, multi, st, eg, ecl)
+    case False{}:
+      kg.sesc(gg, basic, multi, st, cc, kind, eg, ecl)
+
+# the step str
+def kg.str(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.str(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.sgo(gg, Char.is_eq(cc, T.q.char(qkind)), T.q.multi(qkind), T.q.basic(qkind), T.St{bad, rows, heads, here,
+        parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead}, cc, qkind, eg, ecl)
+
+# the step fendgo
+def kg.fendgo(
+  +gg: K3G,
+  saw: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.fold.end.go(saw, st, cc)) == True{} : Bool}:
+  match saw:
+    case True{}:
+      kg.hold(gg, T.st.lex(st, T.LStr{}), T.LStr{}, cc, kg.lex(gg, st, T.LStr{}, eg, KcV{}, ecl, {==}), KcV{},
+        kk.clst(st, T.LStr{}), {==})
+    case False{}:
+      kg.err(gg, st, "invalid escape", {==}, eg)
+
+# the step fend
+def kg.fend(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.fold.end(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.fendgo(gg, U32.is_eq(left, 1), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni,
+        left, arrtab, lead}, cc, eg, ecl)
+
+# the step fnl
+def kg.fnl(
+  +gg: K3G,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.fold.nl(nl, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      kg.foldsaw(gg, st, eg)
+    case False{}:
+      kg.fend(gg, st, cc, eg, ecl)
+
+# the step fgo
+def kg.fgo(
+  +gg: K3G,
+  sp: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.fold.go(sp, nl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.fnl(gg, nl, st, cc, eg, ecl)
+
+# the step mqfin
+def kg.mqfin(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +_ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.mq.fin(st, cc)) == True{} : Bool}:
+  kg.holdon(gg, T.str.fin(st), cc, kg.strfin(gg, st, eg))
+
+# the step mqroom
+def kg.mqroom(
+  +gg: K3G,
+  room: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.mq.room(room, st, cc)) == True{} : Bool}:
+  match room:
+    case True{}:
+      kg.mqmore(gg, st, cc, eg)
+    case False{}:
+      kg.mqfin(gg, st, cc, eg, ecl)
+
+# the step mqendgo
+def kg.mqendgo(
+  +gg: K3G,
+  quote: Bool,
+  +room: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.mq.end.go(quote, room, st, cc)) == True{} : Bool}:
+  match quote:
+    case True{}:
+      kg.mqroom(gg, room, st, cc, eg, ecl)
+    case False{}:
+      kg.mqfin(gg, st, cc, eg, ecl)
+
+# the step mqend
+def kg.mqend(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.mq.end(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.mqendgo(gg, Char.is_eq(cc, T.q.char(qkind)), U32.is_lt(left, 2), T.St{bad, rows, heads, here, parts, buf, lex,
+        back, qkind, stack, hold, uni, left, arrtab, lead}, cc, eg, ecl)
+
+# the step tnl2
+def kg.tnl2(
+  +gg: K3G,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.trim.nl(nl, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      kg.lex(gg, st, T.LStr{}, eg, KcV{}, ecl, {==})
+    case False{}:
+      kg.hold(gg, T.st.lex(st, T.LStr{}), T.LStr{}, cc, kg.lex(gg, st, T.LStr{}, eg, KcV{}, ecl, {==}), KcV{},
+        kk.clst(st, T.LStr{}), {==})
+
+# the step trimgo
+def kg.trimgo(
+  +gg: K3G,
+  cr: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.trim.go(cr, nl, st, cc)) == True{} : Bool}:
+  match cr:
+    case True{}:
+      kg.lex(gg, st, T.LTrim2{}, eg, KcV{}, ecl, {==})
+    case False{}:
+      kg.tnl2(gg, nl, st, cc, eg, ecl)
+
+# the step trim2go
+def kg.trim2go(
+  +gg: K3G,
+  lf: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.trim2.go(lf, st, cc)) == True{} : Bool}:
+  match lf:
+    case True{}:
+      kg.lex(gg, st, T.LStr{}, eg, KcV{}, ecl, {==})
+    case False{}:
+      kg.hold(gg, T.st.lex(st, T.LStr{}), T.LStr{}, cc, kg.lex(gg, st, T.LStr{}, eg, KcV{}, ecl, {==}), KcV{},
+        kk.clst(st, T.LStr{}), {==})
+
+# the step aend
+def kg.aend(
+  +gg: K3G,
+  end: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.arr.end(end, st, cc)) == True{} : Bool}:
+  match end:
+    case True{}:
+      kg.arrclose(gg, st, eg)
+    case False{}:
+      kg.hold(gg, T.st.lex(st, T.LVal{}), T.LVal{}, cc, kg.lex(gg, st, T.LVal{}, eg, KcO{}, ecl, {==}), KcV{},
+        kk.clst(st, T.LVal{}), {==})
+
+# the step aahash
+def kg.aahash(
+  +gg: K3G,
+  hash: Bool,
+  end: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.arr.hash(hash, end, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      kg.com(gg, st, T.LArr{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.aend(gg, end, st, cc, eg, ecl)
+
+# the step aanl
+def kg.aanl(
+  +gg: K3G,
+  nl: Bool,
+  hash: Bool,
+  end: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.arr.nl(nl, hash, end, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      eg
+    case False{}:
+      kg.aahash(gg, hash, end, st, cc, eg, ecl)
+
+# the step aago
+def kg.aago(
+  +gg: K3G,
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  end: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.arr.go(sp, nl, hash, end, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.aanl(gg, nl, hash, end, st, cc, eg, ecl)
+
+# the step acend
+def kg.acend(
+  +gg: K3G,
+  end: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +_ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.arrc.end(end, st)) == True{} : Bool}:
+  match end:
+    case True{}:
+      kg.arrclose(gg, st, eg)
+    case False{}:
+      kg.err(gg, st, "invalid array", {==}, eg)
+
+# the step accomma
+def kg.accomma(
+  +gg: K3G,
+  comma: Bool,
+  end: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.arrc.comma(comma, end, st)) == True{} : Bool}:
+  match comma:
+    case True{}:
+      kg.lex(gg, st, T.LArr{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.acend(gg, end, st, eg, ecl)
+
+# the step achash
+def kg.achash(
+  +gg: K3G,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.arrc.hash(hash, comma, end, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      kg.com(gg, st, T.LArrC{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.accomma(gg, comma, end, st, eg, ecl)
+
+# the step acnl
+def kg.acnl(
+  +gg: K3G,
+  nl: Bool,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.arrc.nl(nl, hash, comma, end, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      eg
+    case False{}:
+      kg.achash(gg, hash, comma, end, st, cc, eg, ecl)
+
+# the step acgo
+def kg.acgo(
+  +gg: K3G,
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.arrc.go(sp, nl, hash, comma, end, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.acnl(gg, nl, hash, comma, end, st, cc, eg, ecl)
+
+# the step kbare
+def kg.kbare(
+  +gg: K3G,
+  ok: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.key.bare(ok, st, cc)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      kg.push(gg, st, cc, T.LKey{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.err(gg, st, "invalid key", {==}, eg)
+
+# the step klit
+def kg.klit(
+  +gg: K3G,
+  lit: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.key.lit(lit, st, cc)) == True{} : Bool}:
+  match lit:
+    case True{}:
+      kg.qkey(gg, st, T.QLit{}, T.LKeyQ{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.kbare(gg, T.bare.at(cc), st, cc, eg, ecl)
+
+# the step kq0
+def kg.kq0(
+  +gg: K3G,
+  qq: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.key.q(qq, st, cc)) == True{} : Bool}:
+  match qq:
+    case True{}:
+      kg.qkey(gg, st, T.QBasic{}, T.LKeyQ{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.klit(gg, Char.is_eq(cc, '\''), st, cc, eg, ecl)
+
+# the step kstart
+def kg.kstart(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.key.start(st, cc)) == True{} : Bool}:
+  kg.kq0(gg, Char.is_eq(cc, '"'), T.lex.key.clear(st), cc, kg.kclear(gg, st, eg, KcO{}, ecl, {==}), kk.clkc(st))
+
+# the step inlnl
+def kg.inlnl(
+  +gg: K3G,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.inl.nl(nl, st, cc)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      kg.err(gg, st, "newline in inline table", {==}, eg)
+    case False{}:
+      kg.kstart(gg, st, cc, eg, ecl)
+
+# the step inlend
+def kg.inlend(
+  +gg: K3G,
+  end: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.inl.end(end, nl, st, cc)) == True{} : Bool}:
+  match end:
+    case True{}:
+      kg.inlclose(gg, st, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.inlnl(gg, nl, st, cc, eg, ecl)
+
+# the step inlhash
+def kg.inlhash(
+  +gg: K3G,
+  hash: Bool,
+  end: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.inl.hash(hash, end, nl, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      kg.com(gg, st, T.LInl{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.inlend(gg, end, nl, st, cc, eg, ecl)
+
+# the step inlgo
+def kg.inlgo(
+  +gg: K3G,
+  sp: Bool,
+  hash: Bool,
+  end: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.inl.go(sp, hash, end, nl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.inlhash(gg, hash, end, nl, st, cc, eg, ecl)
+
+# the step ikhash
+def kg.ikhash(
+  +gg: K3G,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.inlk.hash(hash, nl, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      kg.com(gg, st, T.LInlK{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.inlnl(gg, nl, st, cc, eg, ecl)
+
+# the step ikgo
+def kg.ikgo(
+  +gg: K3G,
+  sp: Bool,
+  hash: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.inlk.go(sp, hash, nl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.ikhash(gg, hash, nl, st, cc, eg, ecl)
+
+# the step icnl
+def kg.icnl(
+  +gg: K3G,
+  nl: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +_ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.inlc.nl(nl, st)) == True{} : Bool}:
+  match nl:
+    case True{}:
+      kg.err(gg, st, "newline in inline table", {==}, eg)
+    case False{}:
+      kg.err(gg, st, "invalid inline table", {==}, eg)
+
+# the step icend
+def kg.icend(
+  +gg: K3G,
+  end: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.inlc.end(end, nl, st, cc)) == True{} : Bool}:
+  match end:
+    case True{}:
+      kg.inlclose(gg, st, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.icnl(gg, nl, st, eg, ecl)
+
+# the step iccomma
+def kg.iccomma(
+  +gg: K3G,
+  comma: Bool,
+  end: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.inlc.comma(comma, end, nl, st, cc)) == True{} : Bool}:
+  match comma:
+    case True{}:
+      kg.lex(gg, st, T.LInlK{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.icend(gg, end, nl, st, cc, eg, ecl)
+
+# the step ichash
+def kg.ichash(
+  +gg: K3G,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.inlc.hash(hash, comma, end, nl, st, cc)) == True{} : Bool}:
+  match hash:
+    case True{}:
+      kg.com(gg, st, T.LInlC{}, eg, KcO{}, ecl, {==})
+    case False{}:
+      kg.iccomma(gg, comma, end, nl, st, cc, eg, ecl)
+
+# the step icgo
+def kg.icgo(
+  +gg: K3G,
+  sp: Bool,
+  hash: Bool,
+  comma: Bool,
+  end: Bool,
+  nl: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcO{} : KC}
+) -> {kk.K(gg, T.lex.inlc.go(sp, hash, comma, end, nl, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      eg
+    case False{}:
+      kg.ichash(gg, hash, comma, end, nl, st, cc, eg, ecl)
+
+# a step of a bare word: bdgo
+def kg.bdgo(
+  +gg: K3G,
+  date: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.bare.date.go(date, st, cc)) == True{} : Bool}:
+  match date:
+    case True{}:
+      kg.lex(gg, st, T.LDate{}, eg, KcV{}, ecl, {==})
+    case False{}:
+      kg.bfin(gg, st, cc, False{}, eg)
+
+# a step of a bare word: bdate
+def kg.bdate(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.bare.date(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.bdgo(gg, T.date.shaped(buf), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
+        arrtab, lead}, cc, eg, ecl)
+
+# a step of a bare word: bend
+def kg.bend(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +_ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.bare.end(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left,
+      +arrtab, +lead}:
+      kg.bfin(gg, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        cc, T.lex.bare.hold(T.ch.skip(cc), T.ch.nl(cc), T.inl.open(stack)), eg)
+
+# a step of a bare word: bsp
+def kg.bsp(
+  +gg: K3G,
+  sp: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.bare.sp(sp, st, cc)) == True{} : Bool}:
+  match sp:
+    case True{}:
+      kg.bdate(gg, st, cc, eg, ecl)
+    case False{}:
+      kg.bend(gg, st, cc, eg, ecl)
+
+# a step of a bare word: bgo
+def kg.bgo(
+  +gg: K3G,
+  delim: Bool,
+  +sp: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.bare.go(delim, sp, st, cc)) == True{} : Bool}:
+  match delim:
+    case False{}:
+      kg.push(gg, st, cc, T.LBare{}, eg, KcV{}, ecl, {==})
+    case True{}:
+      kg.bsp(gg, sp, st, cc, eg, ecl)
+
+# a step of a bare word: datego
+def kg.datego(
+  +gg: K3G,
+  digit: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ecl: {kk.cl(st) == KcV{} : KC}
+) -> {kk.K(gg, T.lex.date.go(digit, st, cc)) == True{} : Bool}:
+  match digit:
+    case True{}:
+      kg.datedig(gg, st, cc, eg, ecl)
+    case False{}:
+      kg.bfin(gg, st, cc, True{}, eg)
+
+# one character in any state keeps KEY-3's invariant
+def kk.on(
+  +gg: K3G,
+  lex: T.Lex,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +el: {kk.lx(st) == lex : T.Lex}
+) -> {kk.K(gg, T.read.on(lex, st, cc)) == True{} : Bool}:
+  match lex:
+    case T.LTop{}:
+      kg.tgo(gg, T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '['), Char.is_eq(cc, '"'),
+        Char.is_eq(cc, '\''), T.bare.at(cc), st, cc, eg, kk.cllx(st, T.LTop{}, el))
+    case T.LLine{}:
+      kg.lgo(gg, T.ch.sp(cc), Char.is_eq(cc, '#'), T.ch.nl(cc), st, cc, eg, kk.cllx(st, T.LLine{}, el))
+    case T.LKey{}:
+      kg.kgo(gg, T.bare.at(cc), T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc, '#'),
+        T.ch.nl(cc), st, cc, eg, kk.cllx(st, T.LKey{}, el))
+    case T.LKeyDot{}:
+      kg.dgo(gg, T.ch.sp(cc), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '.'), T.ch.nl(cc), st, cc, eg,
+        kk.cllx(st, T.LKeyDot{}, el))
+    case T.LAfter{}:
+      kg.ago(gg, T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='), Char.is_eq(cc, '#'), T.ch.nl(cc), st, cc, eg,
+        kk.cllx(st, T.LAfter{}, el))
+    case T.LKeyQ{}:
+      kg.kq(gg, st, cc, T.LAfter{}, T.LKeyQ{}, eg, KcO{}, kk.cllx(st, T.LKeyQ{}, el), {==}, {==}, {==})
+    case T.LKeyE{}:
+      kg.esc(gg, T.esc.of(cc), st, T.LKeyQ{}, eg, KcO{}, kk.cllx(st, T.LKeyE{}, el), {==}, {==}, {==})
+    case T.LKeyU{}:
+      kg.uni(gg, st, cc, T.LKeyQ{}, eg, KcO{}, kk.cllx(st, T.LKeyU{}, el), {==})
+    case T.LVal{}:
+      kg.vgo(gg, T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
+        Char.is_eq(cc, '['), Char.is_eq(cc, '{'), st, cc, eg, kk.cllx(st, T.LVal{}, el))
+    case T.LQ{}:
+      kg.q(gg, st, cc, eg, kk.cllx(st, T.LQ{}, el))
+    case T.LQ2{}:
+      kg.q2(gg, st, cc, eg, kk.cllx(st, T.LQ2{}, el))
+    case T.LStr{}:
+      kg.str(gg, st, cc, eg, kk.cllx(st, T.LStr{}, el))
+    case T.LEsc{}:
+      kg.esc(gg, T.esc.of(cc), st, T.LStr{}, eg, KcV{}, kk.cllx(st, T.LEsc{}, el), {==}, {==}, {==})
+    case T.LUni{}:
+      kg.uni(gg, st, cc, T.LStr{}, eg, KcV{}, kk.cllx(st, T.LUni{}, el), {==})
+    case T.LFold{}:
+      kg.fgo(gg, T.ch.sp(cc), T.ch.nl(cc), st, cc, eg, kk.cllx(st, T.LFold{}, el))
+    case T.LMq{}:
+      kg.mqstep(gg, st, cc, eg, kk.cllx(st, T.LMq{}, el))
+    case T.LMqEnd{}:
+      kg.mqend(gg, st, cc, eg, kk.cllx(st, T.LMqEnd{}, el))
+    case T.LTrim{}:
+      kg.trimgo(gg, U32.is_eq(Char.to_u32(cc), 13), T.ch.nl(cc), st, cc, eg, kk.cllx(st, T.LTrim{}, el))
+    case T.LTrim2{}:
+      kg.trim2go(gg, U32.is_eq(Char.to_u32(cc), 10), st, cc, eg, kk.cllx(st, T.LTrim2{}, el))
+    case T.LBare{}:
+      kg.bgo(gg, T.ch.delim(cc), T.ch.sp(cc), st, cc, eg, kk.cllx(st, T.LBare{}, el))
+    case T.LDate{}:
+      kg.datego(gg, Char.is_digit(cc), st, cc, eg, kk.cllx(st, T.LDate{}, el))
+    case T.LCom{}:
+      kg.cgo(gg, T.ch.nl(cc), T.ch.ctl(cc), U32.is_eq(Char.to_u32(cc), 9), st, cc, eg, el)
+    case T.LHead{}:
+      kg.head(gg, st, cc, eg, kk.cllx(st, T.LHead{}, el))
+    case T.LHeadGap{}:
+      kg.hgap(gg, T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, ']'), Char.is_eq(cc, '#'), st, cc, eg, kk.cllx(st,
+        T.LHeadGap{}, el))
+    case T.LHeadDot{}:
+      kg.hdot2(gg, T.ch.sp(cc), T.bare.at(cc), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), st, cc, eg, kk.cllx(st,
+        T.LHeadDot{}, el))
+    case T.LHeadQ{}:
+      kg.kq(gg, st, cc, T.LHeadGap{}, T.LHeadQ{}, eg, KcH{}, kk.cllx(st, T.LHeadQ{}, el), {==}, {==}, {==})
+    case T.LHeadE{}:
+      kg.esc(gg, T.esc.of(cc), st, T.LHeadQ{}, eg, KcH{}, kk.cllx(st, T.LHeadE{}, el), {==}, {==}, {==})
+    case T.LHeadU{}:
+      kg.uni(gg, st, cc, T.LHeadQ{}, eg, KcH{}, kk.cllx(st, T.LHeadU{}, el), {==})
+    case T.LHeadR{}:
+      kg.hr(gg, Char.is_eq(cc, ']'), st, eg, kk.cllx(st, T.LHeadR{}, el))
+    case T.LArr{}:
+      kg.aago(gg, T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ']'), st, cc, eg, kk.cllx(st,
+        T.LArr{}, el))
+    case T.LArrC{}:
+      kg.acgo(gg, T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, ']'), st, cc, eg,
+        kk.cllx(st, T.LArrC{}, el))
+    case T.LInl{}:
+      kg.inlgo(gg, T.ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '}'), T.ch.nl(cc), st, cc, eg, kk.cllx(st,
+        T.LInl{}, el))
+    case T.LInlK{}:
+      kg.ikgo(gg, T.ch.sp(cc), Char.is_eq(cc, '#'), T.ch.nl(cc), st, cc, eg, kk.cllx(st, T.LInlK{}, el))
+    case T.LInlC{}:
+      kg.icgo(gg, T.ch.sp(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, ','), Char.is_eq(cc, '}'), T.ch.nl(cc), st, cc, eg,
+        kk.cllx(st, T.LInlC{}, el))
+    case T.LSink{}:
+      eg
+
+# one character, the state read off
+def kk.onst(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.read.on.st(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.on(gg, lex, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead},
+        cc, eg, {==})
+
+# a byte-order mark is dropped
+def kk.sbom(
+  +gg: K3G,
+  bom: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.read.step.bom(bom, st, cc)) == True{} : Bool}:
+  match bom:
+    case True{}:
+      eg
+    case False{}:
+      kk.onst(gg, st, cc, eg)
+
+# the first character may be a byte-order mark
+def kk.slead(
+  +gg: K3G,
+  lead: Bool,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.read.step.lead(lead, st, cc)) == True{} : Bool}:
+  match lead:
+    case False{}:
+      kk.onst(gg, st, cc, eg)
+    case True{}:
+      kk.sbom(gg, U32.is_eq(Char.to_u32(cc), 65279), st, cc, eg)
+
+# LEMMA: one character of the document by the full step keeps KEY-3's
+# invariant
+def kk.step(
+  +gg: K3G,
+  +st: T.St,
+  +cc: Char,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.read.step(st, cc)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.slead(gg, lead, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+        False{}}, cc, eg)
+
+# a held character is read once
+def kk.ohold(
+  +gg: K3G,
+  hold: T.Hold,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.read.once.hold(hold, st)) == True{} : Bool}:
+  match hold:
+    case T.HNone{}:
+      eg
+    case T.HChar{+c0}:
+      kk.step(gg, st, c0, eg)
+
+# and so does reading a held character
+def kk.once2(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.read.once2(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.ohold(gg, hold, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, T.HNone{}, uni, left,
+        arrtab, lead}, eg)
+
+# what a parsed document says of the key: when it has no error, its root
+# holds the key in its table
+def kk.pd(+gg: K3G, +dd: T.Doc) -> Type:
+  {String.is_empty(T.bad(dd)) == True{} : Bool} -> {Laws.k3.has(T.root(dd), kk.tp(gg), kk.key(gg)) == True{} : Bool}
+
+# not a value's class, the root holds the key or failed
+def kk.fdb(
+  cc: KC,
+  +aa: Bool,
+  +pp: Bool,
+  +xx: Bool,
+  +ev: {kk.isv(cc) == False{} : Bool},
+  +ee: {kk.Kb(cc, aa, True{}, pp, xx) == True{} : Bool}
+) -> {Bool.or(aa, xx) == True{} : Bool}:
+  match cc:
+    case KcV{}:
+      Eq.bit.absurd2(&2, {Bool.or(aa, xx) == True{} : Bool}, ev)
+    case KcH{}:
+      ee
+    case KcO{}:
+      ee
+
+# a document of a state with no frame open holds the key, or has an error
+def kk.fdoc(
+  +gg: K3G,
+  +cc: KC,
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +here: List<&2, String>,
+  +parts: List<&2, String>,
+  stack: List<&2, T.Ctx>,
+  +ev: {kk.isv(cc) == False{} : Bool},
+  +ek: {kk.Kc(gg, cc, bad, rows, here, parts, stack) == True{} : Bool}
+) -> kk.pd(gg, T.read.fin.stack(stack, bad, rows)):
+  match stack:
+    case []:
+      eo => bo.t(Laws.k3.has(T.rows.seal(rows), kk.tp(gg), kk.key(gg)), Laws.k3.has(rows, kk.tp(gg), kk.key(gg)),
+        kh.hs(kk.tp(gg), rows, kk.key(gg), nm => kh.smapeq(rows, SlF{nm}, kk.key(gg)), nm => qq => kh.smapeq(rows,
+          SlA{nm, qq}, kk.key(gg))), kk.okor(bad, Laws.k3.has(rows, kk.tp(gg), kk.key(gg)), eo, kk.fdb(cc,
+            Bool.not(String.is_empty(bad)), kk.pend(gg, [], here, parts), Laws.k3.has(rows, kk.tp(gg), kk.key(gg)), ev,
+              ek)))
+    case _f <> _t:
+      eo => Eq.bit.absurd(&2, {Laws.k3.has(T.rows.seal(rows), kk.tp(gg), kk.key(gg)) == True{} : Bool},
+        Equal.trans(Bool, False{}, String.is_empty(T.err.first(bad, "unclosed")), True{}, Equal.sym(Bool,
+          String.is_empty(T.err.first(bad, "unclosed")), False{}, kw.efne(bad, "unclosed", {==})), eo))
+
+# an unfinished document has an error
+def kk.func(
+  +gg: K3G,
+  +st: T.St
+) -> kk.pd(gg, T.read.fin.unclosed(st)):
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      eo => Eq.bit.absurd(&2, {Laws.k3.has(T.rows.seal(rows), kk.tp(gg), kk.key(gg)) == True{} : Bool},
+        Equal.trans(Bool, False{}, String.is_empty(T.err.first(bad, "unclosed")), True{}, Equal.sym(Bool,
+          String.is_empty(T.err.first(bad, "unclosed")), False{}, kw.efne(bad, "unclosed", {==})), eo))
+
+# a finished document from a state
+def kk.fdocst(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +ev: {kk.isv(kk.cl(st)) == False{} : Bool}
+) -> kk.pd(gg, T.read.fin.doc(st)):
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.fdoc(gg, kk.cls(lex, back), bad, rows, here, parts, stack, ev, eg)
+
+# a comment's return state that may end a document is no value's
+def kk.fendv(
+  back: T.Lex,
+  +ee: {T.read.fin.end(back) == True{} : Bool}
+) -> {kk.isv(kk.cls0(back)) == False{} : Bool}:
+  match back:
+    case T.LTop{}:
+      {==}
+    case T.LLine{}:
+      {==}
+    case T.LKey{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LKey{})) == False{} : Bool}, ee)
+    case T.LKeyDot{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LKeyDot{})) == False{} : Bool}, ee)
+    case T.LAfter{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LAfter{})) == False{} : Bool}, ee)
+    case T.LKeyQ{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LKeyQ{})) == False{} : Bool}, ee)
+    case T.LKeyE{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LKeyE{})) == False{} : Bool}, ee)
+    case T.LKeyU{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LKeyU{})) == False{} : Bool}, ee)
+    case T.LVal{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LVal{})) == False{} : Bool}, ee)
+    case T.LQ{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LQ{})) == False{} : Bool}, ee)
+    case T.LQ2{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LQ2{})) == False{} : Bool}, ee)
+    case T.LStr{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LStr{})) == False{} : Bool}, ee)
+    case T.LEsc{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LEsc{})) == False{} : Bool}, ee)
+    case T.LUni{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LUni{})) == False{} : Bool}, ee)
+    case T.LFold{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LFold{})) == False{} : Bool}, ee)
+    case T.LMq{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LMq{})) == False{} : Bool}, ee)
+    case T.LMqEnd{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LMqEnd{})) == False{} : Bool}, ee)
+    case T.LTrim{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LTrim{})) == False{} : Bool}, ee)
+    case T.LTrim2{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LTrim2{})) == False{} : Bool}, ee)
+    case T.LBare{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LBare{})) == False{} : Bool}, ee)
+    case T.LDate{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LDate{})) == False{} : Bool}, ee)
+    case T.LCom{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LCom{})) == False{} : Bool}, ee)
+    case T.LHead{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LHead{})) == False{} : Bool}, ee)
+    case T.LHeadGap{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LHeadGap{})) == False{} : Bool}, ee)
+    case T.LHeadDot{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LHeadDot{})) == False{} : Bool}, ee)
+    case T.LHeadQ{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LHeadQ{})) == False{} : Bool}, ee)
+    case T.LHeadE{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LHeadE{})) == False{} : Bool}, ee)
+    case T.LHeadU{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LHeadU{})) == False{} : Bool}, ee)
+    case T.LHeadR{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LHeadR{})) == False{} : Bool}, ee)
+    case T.LArr{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LArr{})) == False{} : Bool}, ee)
+    case T.LArrC{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LArrC{})) == False{} : Bool}, ee)
+    case T.LInl{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LInl{})) == False{} : Bool}, ee)
+    case T.LInlK{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LInlK{})) == False{} : Bool}, ee)
+    case T.LInlC{}:
+      Eq.bit.absurd(&2, {kk.isv(kk.cls0(T.LInlC{})) == False{} : Bool}, ee)
+    case T.LSink{}:
+      {==}
+# a comment at the end, by whether it may end the document
+def kk.fcom(
+  +gg: K3G,
+  ok: Bool,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  ev: @e1: {ok == True{} : Bool} -> {kk.isv(kk.cl(st)) == False{} : Bool}
+) -> kk.pd(gg, T.read.fin.com(ok, st)):
+  match ok:
+    case True{}:
+      kk.fdocst(gg, st, eg, ev({==}))
+    case False{}:
+      kk.func(gg, st)
+
+# a state's class not a value's, from its lex state
+def kk.nv(
+  +st: T.St,
+  ll: T.Lex,
+  +el: {kk.lx(st) == ll : T.Lex},
+  +ev: {kk.isv(kk.cls(ll, kk.bk(st))) == False{} : Bool}
+) -> {kk.isv(kk.cl(st)) == False{} : Bool}:
+  Equal.trans(Bool, kk.isv(kk.cl(st)), kk.isv(kk.cls(ll, kk.bk(st))), False{}, Equal.cong(KC, Bool, zz => kk.isv(zz),
+    kk.cl(st), kk.cls(ll, kk.bk(st)), kk.cllx(st, ll, el)), ev)
+
+# the states that may end a document
+def kk.fdone(
+  +gg: K3G,
+  lex: T.Lex,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool},
+  +el: {kk.lx(st) == lex : T.Lex}
+) -> kk.pd(gg, T.read.fin.ok(lex, st)):
+  match lex:
+    case T.LTop{}:
+      kk.fdocst(gg, st, eg, kk.nv(st, T.LTop{}, el, {==}))
+    case T.LLine{}:
+      kk.fdocst(gg, st, eg, kk.nv(st, T.LLine{}, el, {==}))
+    case T.LKey{}:
+      kk.func(gg, st)
+    case T.LKeyDot{}:
+      kk.func(gg, st)
+    case T.LAfter{}:
+      kk.func(gg, st)
+    case T.LKeyQ{}:
+      kk.func(gg, st)
+    case T.LKeyE{}:
+      kk.func(gg, st)
+    case T.LKeyU{}:
+      kk.func(gg, st)
+    case T.LVal{}:
+      kk.func(gg, st)
+    case T.LQ{}:
+      kk.func(gg, st)
+    case T.LQ2{}:
+      kk.func(gg, st)
+    case T.LStr{}:
+      kk.func(gg, st)
+    case T.LEsc{}:
+      kk.func(gg, st)
+    case T.LUni{}:
+      kk.func(gg, st)
+    case T.LFold{}:
+      kk.func(gg, st)
+    case T.LMq{}:
+      kk.func(gg, st)
+    case T.LMqEnd{}:
+      kk.func(gg, st)
+    case T.LTrim{}:
+      kk.func(gg, st)
+    case T.LTrim2{}:
+      kk.func(gg, st)
+    case T.LBare{}:
+      kk.func(gg, st)
+    case T.LDate{}:
+      kk.func(gg, st)
+    case T.LCom{}:
+      match st:
+        case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+          +lead}:
+          kk.fcom(gg, T.read.fin.end(back), T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold,
+            uni, left, arrtab, lead}, eg, e1 => kk.nv(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind,
+              stack, hold, uni, left, arrtab, lead}, T.LCom{}, el, kk.fendv(back, e1)))
+    case T.LHead{}:
+      kk.func(gg, st)
+    case T.LHeadGap{}:
+      kk.func(gg, st)
+    case T.LHeadDot{}:
+      kk.func(gg, st)
+    case T.LHeadQ{}:
+      kk.func(gg, st)
+    case T.LHeadE{}:
+      kk.func(gg, st)
+    case T.LHeadU{}:
+      kk.func(gg, st)
+    case T.LHeadR{}:
+      kk.func(gg, st)
+    case T.LArr{}:
+      kk.func(gg, st)
+    case T.LArrC{}:
+      kk.func(gg, st)
+    case T.LInl{}:
+      kk.func(gg, st)
+    case T.LInlK{}:
+      kk.func(gg, st)
+    case T.LInlC{}:
+      kk.func(gg, st)
+    case T.LSink{}:
+      kk.fdocst(gg, st, eg, kk.nv(st, T.LSink{}, el, {==}))
+# the document once the last token has been closed
+def kk.fin2(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> kk.pd(gg, T.read.fin2(st)):
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.fdone(gg, lex, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+        lead}, eg, {==})
+
+# a bare token, an empty string or a closed multiline string still open at
+# the end is closed
+def kk.flex(
+  +gg: K3G,
+  lex: T.Lex,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.read.fin.lex(lex, st)) == True{} : Bool}:
+  match lex:
+    case T.LTop{}:
+      eg
+    case T.LLine{}:
+      eg
+    case T.LKey{}:
+      eg
+    case T.LKeyDot{}:
+      eg
+    case T.LAfter{}:
+      eg
+    case T.LKeyQ{}:
+      eg
+    case T.LKeyE{}:
+      eg
+    case T.LKeyU{}:
+      eg
+    case T.LVal{}:
+      eg
+    case T.LQ{}:
+      eg
+    case T.LQ2{}:
+      kg.take(gg, st, T.VStr{""}, eg)
+    case T.LStr{}:
+      eg
+    case T.LEsc{}:
+      eg
+    case T.LUni{}:
+      eg
+    case T.LFold{}:
+      eg
+    case T.LMq{}:
+      eg
+    case T.LMqEnd{}:
+      kg.strfin(gg, st, eg)
+    case T.LTrim{}:
+      eg
+    case T.LTrim2{}:
+      eg
+    case T.LBare{}:
+      kg.bfin(gg, st, ' ', False{}, eg)
+    case T.LDate{}:
+      kg.bfin(gg, st, ' ', False{}, eg)
+    case T.LCom{}:
+      eg
+    case T.LHead{}:
+      eg
+    case T.LHeadGap{}:
+      eg
+    case T.LHeadDot{}:
+      eg
+    case T.LHeadQ{}:
+      eg
+    case T.LHeadE{}:
+      eg
+    case T.LHeadU{}:
+      eg
+    case T.LHeadR{}:
+      eg
+    case T.LArr{}:
+      eg
+    case T.LArrC{}:
+      eg
+    case T.LInl{}:
+      eg
+    case T.LInlK{}:
+      eg
+    case T.LInlC{}:
+      eg
+    case T.LSink{}:
+      eg
+# and read off the state
+def kk.fclose(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> {kk.K(gg, T.read.fin.close(st)) == True{} : Bool}:
+  match st:
+    case T.St{+bad, +rows, +heads, +here, +parts, +buf, +lex, +back, +qkind, +stack, +hold, +uni, +left, +arrtab,
+      +lead}:
+      kk.flex(gg, lex, T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab,
+        lead}, eg)
+
+# LEMMA: a state that keeps KEY-3's invariant at the end of the text gives
+# a document that holds the key, or has an error
+def kk.fin(
+  +gg: K3G,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> kk.pd(gg, T.read.fin(st)):
+  kk.fin2(gg, T.read.fin.close(st), kk.fclose(gg, st, eg))
+
+# KEY-3 as an instance of the scan induction: the invariant kk.K with the
+# key as the context, no span check, any character and any text; each
+# obligation is one of the lemmas above.
+
+# LEMMA: from a state that keeps KEY-3's invariant, reading any text gives
+# a document that holds the key, or has an error
+def kk.read(
+  +gg: K3G,
+  +text: String,
+  +st: T.St,
+  +eg: {kk.K(gg, st) == True{} : Bool}
+) -> kk.pd(gg, T.doc.read(text, T.MScan{st})):
+  sip.read(~K3G, ~(g => st0 => kk.K(g, st0)), ~(_g => _c => _n => _t => True{}), ~(_c => True{}), ~(_t => True{}),
+    ~(g => dd => kk.pd(g, dd)), ~(g => st0 => e0 => cc => _e => kk.step(g, st0, cc, e0)), ~(g => st0 => e0 =>
+      kk.once2(g, st0, e0)),
+        ~(_g => _a => _b => _c => _d => _e => _f => _h => _i => _j => _k => _l => _m => _n => _c0 =>
+        e0 => _e1 => e0), ~(g => st0 => why => ew => e0 => kg.err(g, st0, why, ew, e0)), ~(_g => _a => _b => _c => _d =>
+          _e => _f => _h => _i => _j => _k => _l => e0 => e0), ~(_g => _h => _t => _e => _x => {==}), ~(_g => _c => _n
+            => _h => _t => _e => _x => _y => {==}),
+              ~(g => a => b => c => d => e => f => h => i => j => k => cut => nn =>
+              _t => e0 => _e => kg.take(g, T.St{a, b, c, d, e, [], T.LStr{}, T.LStr{}, f, h, T.HNone{}, i, j, k,
+                False{}}, T.VSpan{cut, nn}, e0)), ~(_g => _a => _b => _c => _d => _e => _f => _h => _i => _j => _k =>
+                  _cut => _n => _t => e0 => _e => e0), ~(g => st0 => e0 => kk.fin(g, st0, e0)), ~(g => a => b => c =>
+                    d => e => f => h => i => j => k => _e => kk.func(g, T.St{a, b, c, d, e, [], T.LStr{}, T.LStr{}, f,
+                      h, T.HNone{}, i, j, k, False{}})), ~(_h => _t => _e => {==}), ~(_h => _t => _e => {==}), gg, text,
+    T.MScan{st}, eg, {==})
+
+# KEY-3: the keys and headers read with every spelling, as above (k3.keys,
+# k3.hkeys), for what a document says of a key rather than for one document:
+# the same steps, each rewriting the text read into the rest.
+
+# a document said of from a contradiction
+def kk.pdx(+gg: K3G, +dd: T.Doc, +ee: {False{} == True{} : Bool}) -> kk.pd(gg, dd):
+  _e => Eq.bit.absurd(&2, {Laws.k3.has(T.root(dd), kk.tp(gg), kk.key(gg)) == True{} : Bool}, ee)
+
+# and from the other one
+def kk.pdx2(+gg: K3G, +dd: T.Doc, +ee: {True{} == False{} : Bool}) -> kk.pd(gg, dd):
+  _e => Eq.bit.absurd2(&2, {Laws.k3.has(T.root(dd), kk.tp(gg), kk.key(gg)) == True{} : Bool}, ee)
+
+# the rest of the text read from the segment with buf in its buffer, whatever
+# back, uni and left are
+def k3p.Then(
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +gk: K3G
+) -> Type:
+  @b2: T.Lex -> @u2: U32 -> @l2: U32 ->
+    kk.pd(gk, T.doc.read(rest, T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, b2, u2, l2, buf)}))
+# a two-character escape pushes the character it stands for and leaves back
+# at the segment's state
+def k3p.esc(
+  mm: Laws.KMark,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +gk: K3G,
+  ih: k3p.Then(hd, rw, hs, he, ps, sk, ab, Laws.k3.mark.dec(mm) <> buf, rest, gk)
+) -> kk.pd(gk, T.doc.read(SCon{'\\', SCon{Laws.k3.mark.char(mm), rest}}, T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk,
+  un,
+  lf, buf)})):
+  match mm hd:
+    case Laws.KmQuote{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmQuote{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+    case Laws.KmBack{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmBack{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+    case Laws.KmB{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmB{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+    case Laws.KmF{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmF{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+    case Laws.KmN{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmN{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+    case Laws.KmR{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmR{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+    case Laws.KmT{} False{}:
+      ih(T.LKeyQ{}, un, lf)
+    case Laws.KmT{} True{}:
+      ih(T.LHeadQ{}, un, lf)
+# a raw tab is pushed as itself
+def k3p.tab(
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +gk: K3G,
+  ih: k3p.Then(hd, rw, hs, he, ps, sk, ab, Chr{9} <> buf, rest, gk)
+) -> kk.pd(gk, T.doc.read(SCon{Chr{9}, rest}, T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)})):
+  match hd:
+    case False{}:
+      ih(bk, un, lf)
+    case True{}:
+      ih(bk, un, lf)
+# a character written as itself that is no quote, no backslash and no
+# control is pushed, and back, uni and left stay
+def k3p.plain(
+  +uu: U32,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +gk: K3G,
+  +e34: {U32.is_eq(uu, 34) == False{} : Bool},
+  +e92: {U32.is_eq(uu, 92) == False{} : Bool},
+  +ec: {Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)) == False{} : Bool},
+  ih: k3p.Then(hd, rw, hs, he, ps, sk, ab, Chr{uu} <> buf, rest, gk)
+) -> kk.pd(gk, T.doc.read(SCon{Chr{uu}, rest}, T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)})):
+  +e10 = {ctl.off(uu, 10, ec, {==}) : {U32.is_eq(uu, 10) == False{} : Bool}}
+  +e13 = {ctl.off(uu, 13, ec, {==}) : {U32.is_eq(uu, 13) == False{} : Bool}}
+  fast = {Equal.sym(T.St, T.read.fast(k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}),
+    k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf),
+    Equal.trans(T.St, T.read.fast(k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}),
+    T.read.once2(T.lex.kq.go(U32.is_eq(uu, 34), U32.is_eq(uu, 92), True{}, Bool.or(U32.is_eq(uu, 10),
+    U32.is_eq(uu, 13)), k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}, qs.close(hd), qs.lex(hd))),
+    k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, Chr{uu} <> buf),
+    k3.fast(uu, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf),
+    k3.go(U32.is_eq(uu, 34), U32.is_eq(uu, 92), Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), uu, hd, rw, hs, he,
+      ps, sk, ab, bk, un, lf, buf, e34, e92, or.ff(U32.is_eq(uu, 10), U32.is_eq(uu, 13), e10, e13), ec)))
+    : k3.Fast(uu, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)}
+  %k3.scq(U32.is_eq(uu, 34), U32.is_eq(uu, 39), U32.is_eq(uu, 13), uu, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf,
+    e34, e13, fast) : kk.pd(gk, T.doc.read(rest, _))
+  ih(bk, un, lf)
+# `\u` and four digits push the character they name, and leave back at the
+# segment's state and uni and left at 0
+def k3p.u4(
+  +dd: Laws.KHex,
+  +cc: Laws.KHex,
+  +bb: Laws.KHex,
+  +aa: Laws.KHex,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +gk: K3G,
+  eo: {Laws.k3.scalar(Laws.k3.hex4(dd, cc, bb, aa)) == True{} : Bool},
+  ih: k3p.Then(hd, rw, hs, he, ps, sk, ab, Chr{Laws.k3.hex4(dd, cc, bb, aa)} <> buf, rest, gk)
+) -> kk.pd(gk, T.doc.read(Laws.k3.pc.text(Laws.KpU4{dd, cc, bb, aa}, rest), T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab,
+  bk, un,
+  lf, buf)})):
+  %k3.hx.open(False{}, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, Laws.k3.hex4.text(dd, cc, bb, aa, rest))
+    : kk.pd(gk, _)
+  %k3.hx.rmid(dd, hd, rw, hs, he, ps, sk, ab, qs.lex(hd), 0, 4, buf, SCon{Laws.k3.hex.char(cc),
+    SCon{Laws.k3.hex.char(bb), SCon{Laws.k3.hex.char(aa), rest}}}, {==}) : kk.pd(gk, _)
+  %k3.hx.rmid(cc, hd, rw, hs, he, ps, sk, ab, qs.lex(hd), Laws.k3.hex.acc(0, dd), 3, buf,
+    SCon{Laws.k3.hex.char(bb), SCon{Laws.k3.hex.char(aa), rest}}, {==}) : kk.pd(gk, _)
+  %k3.hx.rmid(bb, hd, rw, hs, he, ps, sk, ab, qs.lex(hd), Laws.k3.hex.acc(Laws.k3.hex.acc(0, dd), cc), 2, buf,
+    SCon{Laws.k3.hex.char(aa), rest}, {==}) : kk.pd(gk, _)
+  %k3.hx.rlast(aa, hd, rw, hs, he, ps, sk, ab, qs.lex(hd), Laws.k3.hex.acc(Laws.k3.hex.acc(Laws.k3.hex.acc(0, dd),
+    cc), bb), 1, buf, rest, {==}, eo) : kk.pd(gk, _)
+  ih(qs.lex(hd), 0, 0)
+# `\U` and eight digits push the character they name, and leave back at the
+# segment's state and uni and left at 0
+def k3p.u8(
+  +hh: Laws.KHex,
+  +gg: Laws.KHex,
+  +ff: Laws.KHex,
+  +ee: Laws.KHex,
+  +dd: Laws.KHex,
+  +cc: Laws.KHex,
+  +bb: Laws.KHex,
+  +aa: Laws.KHex,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +gk: K3G,
+  eo: {Laws.k3.scalar(Laws.k3.hex8(hh, gg, ff, ee, dd, cc, bb, aa)) == True{} : Bool},
+  ih: k3p.Then(hd, rw, hs, he, ps, sk, ab, Chr{Laws.k3.hex8(hh, gg, ff, ee, dd, cc, bb, aa)} <> buf, rest, gk)
+) -> kk.pd(gk, T.doc.read(Laws.k3.pc.text(Laws.KpU8{hh, gg, ff, ee, dd, cc, bb, aa}, rest), T.MScan{k3.q(hd, rw, hs,
+  he, ps,
+  sk, ab, bk, un, lf, buf)})):
+  +t4 = Laws.k3.hex4.text(dd, cc, bb, aa, rest)
+  +a1 = Laws.k3.hex.acc(0, hh)
+  +a2 = Laws.k3.hex.acc(a1, gg)
+  +a3 = Laws.k3.hex.acc(a2, ff)
+  +a4 = Laws.k3.hex.acc(a3, ee)
+  +a5 = Laws.k3.hex.acc(a4, dd)
+  +a6 = Laws.k3.hex.acc(a5, cc)
+  +a7 = Laws.k3.hex.acc(a6, bb)
+  +sl = qs.lex(hd)
+  %k3.hx.open(True{}, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, Laws.k3.hex4.text(hh, gg, ff, ee, t4))
+    : kk.pd(gk, _)
+  %k3.hx.rmid(hh, hd, rw, hs, he, ps, sk, ab, sl, 0, 8, buf, SCon{Laws.k3.hex.char(gg), SCon{Laws.k3.hex.char(ff),
+    SCon{Laws.k3.hex.char(ee), t4}}}, {==}) : kk.pd(gk, _)
+  %k3.hx.rmid(gg, hd, rw, hs, he, ps, sk, ab, sl, a1, 7, buf, SCon{Laws.k3.hex.char(ff), SCon{Laws.k3.hex.char(ee),
+    t4}}, {==}) : kk.pd(gk, _)
+  %k3.hx.rmid(ff, hd, rw, hs, he, ps, sk, ab, sl, a2, 6, buf, SCon{Laws.k3.hex.char(ee), t4}, {==})
+    : kk.pd(gk, _)
+  %k3.hx.rmid(ee, hd, rw, hs, he, ps, sk, ab, sl, a3, 5, buf, t4, {==}) : kk.pd(gk, _)
+  %k3.hx.rmid(dd, hd, rw, hs, he, ps, sk, ab, sl, a4, 4, buf, SCon{Laws.k3.hex.char(cc),
+    SCon{Laws.k3.hex.char(bb), SCon{Laws.k3.hex.char(aa), rest}}}, {==}) : kk.pd(gk, _)
+  %k3.hx.rmid(cc, hd, rw, hs, he, ps, sk, ab, sl, a5, 3, buf, SCon{Laws.k3.hex.char(bb), SCon{Laws.k3.hex.char(aa),
+    rest}}, {==}) : kk.pd(gk, _)
+  %k3.hx.rmid(bb, hd, rw, hs, he, ps, sk, ab, sl, a6, 2, buf, SCon{Laws.k3.hex.char(aa), rest}, {==})
+    : kk.pd(gk, _)
+  %k3.hx.rlast(aa, hd, rw, hs, he, ps, sk, ab, sl, a7, 1, buf, rest, {==}, eo) : kk.pd(gk, _)
+  ih(sl, 0, 0)
+# a character written as itself read from the segment, then the rest
+def k3p.PcG(
+  +cc: Char,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +gk: K3G
+) -> Type:
+  k3p.Then(hd, rw, hs, he, ps, sk, ab, cc <> buf, rest, gk) ->
+    kk.pd(gk, T.doc.read(SCon{cc, rest}, T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)}))
+# a character written as itself: a tab, or one that is no quote, no
+# backslash and no control
+def k3p.chr(
+  t9: Bool,
+  +uu: U32,
+  +e9: {U32.is_eq(uu, 9) == t9 : Bool},
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +gk: K3G,
+  +eb: {Laws.k3.bchar(Chr{uu}) == True{} : Bool}
+) -> k3p.PcG(Chr{uu}, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, gk):
+  match t9:
+    case True{}:
+      %Equal.sym(Char, Chr{uu}, Chr{9}, Eq.u32_eq(uu, 9, e9)) : k3p.PcG(_, hd, rw, hs, he, ps, sk, ab, bk, un, lf,
+        buf, rest, gk)
+      ih => k3p.tab(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, gk, ih)
+    case False{}:
+      +tq = U32.is_eq(uu, 34)
+      +tb = U32.is_eq(uu, 92)
+      +tc = Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127))
+      +tt = U32.is_eq(uu, 9)
+      ih => k3p.plain(uu, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, gk, k3.bc.q(tq, tb, tc, tt, eb),
+        k3.bc.b(tq, tb, tc, tt, eb), k3.bc.c(tq, tb, tc, tt, e9, eb), ih)
+# one piece a basic string may hold pushes the character it stands for
+def k3p.pc(
+  pp: Laws.KPiece,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +gk: K3G,
+  eo: {Laws.k3.pc.ok(pp) == True{} : Bool},
+  ih: k3p.Then(hd, rw, hs, he, ps, sk, ab, Laws.k3.pc.char(pp) <> buf, rest, gk)
+) -> kk.pd(gk, T.doc.read(Laws.k3.pc.text(pp, rest), T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)})):
+  match pp:
+    case Laws.KpChar{cc}:
+      match cc:
+        case Chr{+uu}:
+          k3p.chr(U32.is_eq(uu, 9), uu, {==}, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, gk, eo)(ih)
+    case Laws.KpEsc{mm}:
+      k3p.esc(mm, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, gk, ih)
+    case Laws.KpU4{+dd, +cc, +bb, +aa}:
+      k3p.u4(dd, cc, bb, aa, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, gk, eo, ih)
+    case Laws.KpU8{+hh, +gg, +ff, +ee, +dd, +cc, +bb, +aa}:
+      k3p.u8(hh, gg, ff, ee, dd, cc, bb, aa, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, rest, gk, eo, ih)
+# every piece of a list a basic string may hold, in order: the rest is read
+# with their characters pushed, from wherever the last piece left back, uni
+# and left
+def k3p.pcs(
+  pl: List<&2, Laws.KPiece>,
+  +hd: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +bk: T.Lex,
+  +un: U32,
+  +lf: U32,
+  +buf: List<&2, Char>,
+  +rest: String,
+  +gk: K3G,
+  +eo: {Laws.k3.pcs.ok(pl) == True{} : Bool},
+  ih: k3p.Then(hd, rw, hs, he, ps, sk, ab, rev.onto(Laws.k3.pcs.name(pl), buf), rest, gk)
+) -> kk.pd(gk, T.doc.read(Laws.k3.pcs.text(pl, rest), T.MScan{k3.q(hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)})):
+  match pl:
+    case []:
+      ih(bk, un, lf)
+    case +pp <> +pr:
+      k3p.pc(pp, hd, rw, hs, he, ps, sk, ab, bk, un, lf, buf, Laws.k3.pcs.text(pr, rest), gk,
+        Eq.and.left(Laws.k3.pc.ok(pp), Laws.k3.pcs.ok(pr), eo),
+        +b2 => +u2 => +l2 => k3p.pcs(pr, hd, rw, hs, he, ps, sk, ab, b2, u2, l2, Laws.k3.pc.char(pp) <> buf, rest,
+          gk, Eq.and.right(Laws.k3.pc.ok(pp), Laws.k3.pcs.ok(pr), eo), ih))
+# the rest of the text read after a segment and what ends it, from every
+# back, qkind, uni and left
+def k3p.KT(
+  +cl: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +sk: List<&2, T.Ctx>,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G
+) -> Type:
+  @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
+    kk.pd(gk, T.doc.read(rest, T.MScan{k3.w(rw, hs, he, ps, [], k3.aft(cl), b2, q2, sk, u2, l2, ab)}))
+# a segment's name pushed onto parts, then blank space and a dot or `=`: the
+# rest is read from there
+def k3p.fin(
+  +nm: String,
+  +bf: List<&2, Char>,
+  en: {nm == T.buf.str(bf) : String},
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G,
+  ih: k3p.KT(cl, rw, hs, he, nm <> ps, sk, ab, rest, gk)
+) -> kk.pd(gk, T.doc.read(String.append(Laws.gap(gs), SCon{k3.dl(cl), rest}), T.MScan{k3.w(rw, hs, he,
+  T.buf.str(bf) <> ps,
+  [], T.LAfter{}, bk, qk, sk, un, lf, ab)})):
+  %k3.agap(gs, SCon{k3.dl(cl), rest}, rw, hs, he, T.buf.str(bf) <> ps, bk, qk, sk, un, lf, ab) : kk.pd(gk, _)
+  %k3.adl(cl, rw, hs, he, T.buf.str(bf) <> ps, bk, qk, sk, un, lf, ab, rest) : kk.pd(gk, _)
+  %en : kk.pd(gk, T.doc.read(rest, T.MScan{k3.w(rw, hs, he, _ <> ps, [], k3.aft(cl), bk, qk, sk, un, lf, ab)}))
+  ih(bk, qk, un, lf)
+# a bare segment, its blank space and a dot or `=`: the rest is read with the
+# segment pushed, and back, qkind, uni and left as they were
+def k3p.bseg(
+  +xx: U32,
+  +tt: String,
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +dt: Bool,
+  +at: Laws.KPos,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G,
+  +ee: {T.bare.all.step(T.bare.at(Chr{xx}), _u => T.bare.all(String.to_list(tt))) == True{} : Bool},
+  ih: k3p.KT(cl, rw, hs, he, SCon{Chr{xx}, tt} <> k3.ps0(dt, ps), sk, ab, rest, gk)
+) -> kk.pd(gk, T.doc.read(String.append(SCon{Chr{xx}, tt}, String.append(Laws.gap(gs), SCon{k3.dl(cl), rest})),
+  T.MScan{k3.w(rw, hs, he, k3.ps0(dt, ps), [], k3.lex0(dt, at), bk, qk, sk, un, lf, ab)})):
+  %k3.b1(dt, at, rw, hs, he, ps, bk, qk, sk, un, lf, ab, xx, ball.head(T.bare.at(Chr{xx}), String.to_list(tt), ee))
+    : kk.pd(gk, T.doc.read(String.append(tt, String.append(Laws.gap(gs), SCon{k3.dl(cl), rest})), _))
+  %k3.bbody(tt, String.append(Laws.gap(gs), SCon{k3.dl(cl), rest}), rw, hs, he, k3.ps0(dt, ps), [Chr{xx}], bk, qk, sk,
+    un, lf, ab, ball.tail(T.bare.at(Chr{xx}),
+    String.to_list(tt), ee)) : kk.pd(gk, _)
+  %k3.bend(gs, cl, rw, hs, he, k3.ps0(dt, ps), rev.onto(tt, [Chr{xx}]), bk, qk, sk, un, lf, ab, rest, rev.full(tt,
+    Chr{xx},
+    [])) : kk.pd(gk, _)
+  %Equal.sym(String, T.buf.str(rev.onto(tt, [Chr{xx}])), SCon{Chr{xx}, tt}, wh.bname(xx, tt)) : kk.pd(gk,
+    T.doc.read(rest,
+    T.MScan{k3.w(rw, hs, he, _ <> k3.ps0(dt, ps), [], k3.aft(cl), bk, qk, sk, un, lf, ab)}))
+  ih(bk, qk, un, lf)
+# a basic segment of pieces, its blank space and a dot or `=`: the rest is
+# read with the segment pushed under the characters the pieces stand for,
+# from wherever the last piece left back, uni and left
+def k3p.qseg(
+  +pl: List<&2, Laws.KPiece>,
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +dt: Bool,
+  +at: Laws.KPos,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G,
+  eo: {Laws.k3.pcs.ok(pl) == True{} : Bool},
+  ih: k3p.KT(cl, rw, hs, he, Laws.k3.pcs.name(pl) <> k3.ps0(dt, ps), sk, ab, rest, gk)
+) -> kk.pd(gk, T.doc.read(SCon{'"', Laws.k3.pcs.text(pl, SCon{'"', String.append(Laws.gap(gs), SCon{k3.dl(cl),
+  rest})})},
+  T.MScan{k3.w(rw, hs, he, k3.ps0(dt, ps), [], k3.lex0(dt, at), bk, qk, sk, un, lf, ab)})):
+  %k3.qopen(dt, at, rw, hs, he, ps, bk, qk, sk, un, lf, ab) : kk.pd(gk, T.doc.read(Laws.k3.pcs.text(pl, SCon{'"',
+    String.append(Laws.gap(gs), SCon{k3.dl(cl), rest})}),
+    _))
+  k3p.pcs(pl, False{}, rw, hs, he, k3.ps0(dt, ps), sk, ab, bk, un, lf, [], SCon{'"', String.append(Laws.gap(gs),
+    SCon{k3.dl(cl), rest})}, gk, eo, +b2 => +u2 => +l2 =>
+    k3p.fin(Laws.k3.pcs.name(pl), rev.onto(Laws.k3.pcs.name(pl), []), k3.nm(Laws.k3.pcs.name(pl)), gs, cl, rw, hs, he,
+      k3.ps0(dt, ps), b2, T.QBasic{}, sk, u2, l2, ab, rest, gk, ih))
+# a literal segment, its blank space and a dot or `=`: the rest is read with
+# the segment pushed under its characters, and back, uni and left as they
+# were
+def k3p.lseg(
+  +name: String,
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +dt: Bool,
+  +at: Laws.KPos,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G,
+  el: {Laws.lit.text(name) == True{} : Bool},
+  ih: k3p.KT(cl, rw, hs, he, name <> k3.ps0(dt, ps), sk, ab, rest, gk)
+) -> kk.pd(gk, T.doc.read(SCon{'\'', String.append(name, SCon{'\'', String.append(Laws.gap(gs), SCon{k3.dl(cl),
+  rest})})},
+  T.MScan{k3.w(rw, hs, he, k3.ps0(dt, ps), [], k3.lex0(dt, at), bk, qk, sk, un, lf, ab)})):
+  %k3.lopen(dt, at, rw, hs, he, ps, bk, qk, sk, un, lf, ab) : kk.pd(gk, T.doc.read(String.append(name, SCon{'\'',
+    String.append(Laws.gap(gs), SCon{k3.dl(cl), rest})}), _))
+  %Equal.sym(T.Doc, T.doc.read(String.append(name, SCon{'\'', String.append(Laws.gap(gs), SCon{k3.dl(cl), rest})}),
+    T.MScan{k3.l(False{}, rw, hs, he, k3.ps0(dt, ps), sk, ab, bk, un, lf, [])}), T.doc.read(SCon{'\'',
+      String.append(Laws.gap(gs), SCon{k3.dl(cl), rest})}, T.MScan{k3.l(False{}, rw, hs, he, k3.ps0(dt, ps), sk, ab,
+        bk, un, lf, rev.onto(name, []))}), k3.l.body(name, SCon{'\'', String.append(Laws.gap(gs), SCon{k3.dl(cl),
+          rest})}, False{}, rw, hs, he, k3.ps0(dt, ps), sk, ab, bk, un, lf, [], el)) : kk.pd(gk, _)
+  k3p.fin(name, rev.onto(name, []), k3.nm(name), gs, cl, rw, hs, he, k3.ps0(dt, ps), bk, T.QLit{}, sk, un, lf, ab,
+    rest, gk, ih)
+# a segment spelled any way toml.abnf allows, its blank space and a dot or
+# `=`
+def k3p.seg(
+  sg: Laws.KSeg,
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +dt: Bool,
+  +at: Laws.KPos,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G,
+  eo: {Laws.k3.seg.ok(sg) == True{} : Bool},
+  ih: k3p.KT(cl, rw, hs, he, Laws.k3.seg.name(sg) <> k3.ps0(dt, ps), sk, ab, rest, gk)
+) -> kk.pd(gk, T.doc.read(Laws.k3.seg.text(sg, String.append(Laws.gap(gs), SCon{k3.dl(cl), rest})), T.MScan{k3.w(rw,
+  hs, he,
+  k3.ps0(dt, ps), [], k3.lex0(dt, at), bk, qk, sk, un, lf, ab)})):
+  match sg:
+    case Laws.KsBare{name}:
+      match name:
+        case SNil{}:
+          kk.pdx(gk, T.doc.read(String.append(SNil{}, String.append(Laws.gap(gs), SCon{k3.dl(cl), rest})),
+            T.MScan{k3.w(rw, hs, he, k3.ps0(dt, ps), [], k3.lex0(dt, at), bk, qk, sk, un, lf, ab)}), eo)
+        case SCon{hh, +tt}:
+          match hh:
+            case Chr{+xx}:
+              k3p.bseg(xx, tt, gs, cl, dt, at, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, gk, eo, ih)
+    case Laws.KsBasic{+pl}:
+      k3p.qseg(pl, gs, cl, dt, at, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, gk, eo, ih)
+    case Laws.KsLit{+name}:
+      k3p.lseg(name, gs, cl, dt, at, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, gk, eo, ih)
+# a dotted key's segments, then blank space and `=`: the rest is read with
+# every segment pushed onto parts, newest first
+def k3p.keys(
+  ds: List<&2, Laws.KDot>,
+  +last: Laws.KSeg,
+  +g: List<&2, Bool>,
+  +dt: Bool,
+  +at: Laws.KPos,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G,
+  +eo: {Laws.k3.dk.ok(ds, last) == True{} : Bool},
+  ih: k3p.KT(True{}, rw, hs, he, k3.acc(ds, last, dt, ps), sk, ab, rest, gk)
+) -> kk.pd(gk, T.doc.read(Laws.k3.dk.text(ds, last, String.append(Laws.gap(g), SCon{'=', rest})), T.MScan{k3.w(rw, hs,
+  he,
+  k3.ps0(dt, ps), [], k3.lex0(dt, at), bk, qk, sk, un, lf, ab)})):
+  match ds:
+    case []:
+      k3p.seg(last, g, True{}, dt, at, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, gk, eo, ih)
+    case Laws.KDot{+sg, g1, +g2} <> +dr:
+      k3p.seg(sg, g1, False{}, dt, at, rw, hs, he, ps, bk, qk, sk, un, lf, ab, String.append(Laws.gap(g2),
+        Laws.k3.dk.text(dr, last, String.append(Laws.gap(g), SCon{'=', rest}))), gk, Eq.and.left(Laws.k3.seg.ok(sg),
+        Laws.k3.dk.ok(dr, last), eo), +b2 => +q2 => +u2 => +l2 =>
+        %k3.dgap(g2, Laws.k3.dk.text(dr, last, String.append(Laws.gap(g), SCon{'=', rest})), rw, hs, he,
+          Laws.k3.seg.name(sg) <> k3.ps0(dt, ps), b2, q2, sk, u2, l2, ab) : kk.pd(gk, _)
+        k3p.keys(dr, last, g, True{}, at, rw, hs, he, Laws.k3.seg.name(sg) <> k3.ps0(dt, ps), b2, q2, sk, u2, l2, ab,
+          rest, gk,
+          Eq.and.right(Laws.k3.seg.ok(sg), Laws.k3.dk.ok(dr, last), eo), ih))
+# the rest of the text after a header segment, read from every back, qkind,
+# uni and left
+def k3p.HT(
+  +cl: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G
+) -> Type:
+  @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
+    kk.pd(gk, T.doc.read(rest, T.MScan{k3.haft(cl, rw, hs, he, ps, b2, q2, u2, l2, ab)}))
+# a header segment's name pushed onto parts, then blank space and a dot or
+# the bracket: the rest is read from there
+def k3p.hfin(
+  +nm: String,
+  +bf: List<&2, Char>,
+  en: {nm == T.buf.str(bf) : String},
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G,
+  ih: k3p.HT(cl, rw, hs, he, nm <> ps, ab, rest, gk)
+) -> kk.pd(gk, T.doc.read(String.append(Laws.gap(gs), SCon{k3.hdl(cl), rest}), T.MScan{k3.w(rw, hs, he,
+  T.buf.str(bf) <> ps,
+  [], T.LHeadGap{}, bk, qk, [], un, lf, ab)})):
+  %k3.hgap(gs, SCon{k3.hdl(cl), rest}, rw, hs, he, T.buf.str(bf) <> ps, bk, qk, un, lf, ab) : kk.pd(gk, _)
+  %k3.hgdl(cl, rw, hs, he, T.buf.str(bf) <> ps, bk, qk, un, lf, ab, rest) : kk.pd(gk, _)
+  %en : kk.pd(gk, T.doc.read(rest, T.MScan{k3.haft(cl, rw, hs, he, _ <> ps, bk, qk, un, lf, ab)}))
+  ih(bk, qk, un, lf)
+# a bare header segment, its blank space and a dot or the bracket
+def k3p.hbseg(
+  +xx: U32,
+  +tt: String,
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +dt: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G,
+  +ee: {T.bare.all.step(T.bare.at(Chr{xx}), _u => T.bare.all(String.to_list(tt))) == True{} : Bool},
+  ih: k3p.HT(cl, rw, hs, he, SCon{Chr{xx}, tt} <> k3.ps0(dt, ps), ab, rest, gk)
+) -> kk.pd(gk, T.doc.read(String.append(SCon{Chr{xx}, tt}, String.append(Laws.gap(gs), SCon{k3.hdl(cl), rest})),
+  T.MScan{k3.w(rw, hs, he, k3.ps0(dt, ps), [], k3.hlex0(dt), bk, qk, [], un, lf, ab)})):
+  %k3.hb1(dt, rw, hs, he, ps, bk, qk, un, lf, ab, xx, ball.head(T.bare.at(Chr{xx}), String.to_list(tt), ee))
+    : kk.pd(gk, T.doc.read(String.append(tt, String.append(Laws.gap(gs), SCon{k3.hdl(cl), rest})), _))
+  %k3.hbbody(tt, String.append(Laws.gap(gs), SCon{k3.hdl(cl), rest}), rw, hs, he, k3.ps0(dt, ps), Chr{xx}, [], bk, qk,
+    un, lf, ab, ball.tail(T.bare.at(Chr{xx}),
+    String.to_list(tt), ee)) : kk.pd(gk, _)
+  %k3.hbend(gs, cl, rw, hs, he, k3.ps0(dt, ps), rev.onto(tt, [Chr{xx}]), bk, qk, un, lf, ab, rest, rev.full(tt,
+    Chr{xx}, []))
+    : kk.pd(gk, _)
+  %Equal.sym(String, T.buf.str(rev.onto(tt, [Chr{xx}])), SCon{Chr{xx}, tt}, wh.bname(xx, tt)) : kk.pd(gk,
+    T.doc.read(rest,
+    T.MScan{k3.haft(cl, rw, hs, he, _ <> k3.ps0(dt, ps), bk, qk, un, lf, ab)}))
+  ih(bk, qk, un, lf)
+# a basic header segment of pieces, its blank space and a dot or the
+# bracket
+def k3p.hqseg(
+  +pl: List<&2, Laws.KPiece>,
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +dt: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G,
+  eo: {Laws.k3.pcs.ok(pl) == True{} : Bool},
+  ih: k3p.HT(cl, rw, hs, he, Laws.k3.pcs.name(pl) <> k3.ps0(dt, ps), ab, rest, gk)
+) -> kk.pd(gk, T.doc.read(SCon{'"', Laws.k3.pcs.text(pl, SCon{'"', String.append(Laws.gap(gs), SCon{k3.hdl(cl),
+  rest})})},
+  T.MScan{k3.w(rw, hs, he, k3.ps0(dt, ps), [], k3.hlex0(dt), bk, qk, [], un, lf, ab)})):
+  %k3.hqopen(dt, rw, hs, he, ps, bk, qk, un, lf, ab) : kk.pd(gk, T.doc.read(Laws.k3.pcs.text(pl, SCon{'"',
+    String.append(Laws.gap(gs), SCon{k3.hdl(cl), rest})}), _))
+  k3p.pcs(pl, True{}, rw, hs, he, k3.ps0(dt, ps), [], ab, bk, un, lf, [], SCon{'"', String.append(Laws.gap(gs),
+    SCon{k3.hdl(cl), rest})}, gk, eo, +b2 => +u2 => +l2 =>
+    k3p.hfin(Laws.k3.pcs.name(pl), rev.onto(Laws.k3.pcs.name(pl), []), k3.nm(Laws.k3.pcs.name(pl)), gs, cl, rw, hs,
+      he, k3.ps0(dt, ps), b2, T.QBasic{}, u2, l2, ab, rest, gk, ih))
+# a literal header segment, its blank space and a dot or the bracket
+def k3p.hlseg(
+  +name: String,
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +dt: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G,
+  el: {Laws.lit.text(name) == True{} : Bool},
+  ih: k3p.HT(cl, rw, hs, he, name <> k3.ps0(dt, ps), ab, rest, gk)
+) -> kk.pd(gk, T.doc.read(SCon{'\'', String.append(name, SCon{'\'', String.append(Laws.gap(gs), SCon{k3.hdl(cl),
+  rest})})},
+  T.MScan{k3.w(rw, hs, he, k3.ps0(dt, ps), [], k3.hlex0(dt), bk, qk, [], un, lf, ab)})):
+  %k3.hlopen(dt, rw, hs, he, ps, bk, qk, un, lf, ab) : kk.pd(gk, T.doc.read(String.append(name, SCon{'\'',
+    String.append(Laws.gap(gs), SCon{k3.hdl(cl), rest})}), _))
+  %Equal.sym(T.Doc, T.doc.read(String.append(name, SCon{'\'', String.append(Laws.gap(gs), SCon{k3.hdl(cl), rest})}),
+    T.MScan{k3.l(True{}, rw, hs, he, k3.ps0(dt, ps), [], ab, bk, un, lf, [])}), T.doc.read(SCon{'\'',
+      String.append(Laws.gap(gs), SCon{k3.hdl(cl), rest})}, T.MScan{k3.l(True{}, rw, hs, he, k3.ps0(dt, ps), [], ab,
+        bk, un, lf, rev.onto(name, []))}), k3.l.body(name, SCon{'\'', String.append(Laws.gap(gs), SCon{k3.hdl(cl),
+          rest})}, True{}, rw, hs, he, k3.ps0(dt, ps), [], ab, bk, un, lf, [], el)) : kk.pd(gk, _)
+  k3p.hfin(name, rev.onto(name, []), k3.nm(name), gs, cl, rw, hs, he, k3.ps0(dt, ps), bk, T.QLit{}, un, lf, ab, rest,
+    gk, ih)
+# a header segment spelled any way toml.abnf allows, its blank space and a
+# dot or the bracket
+def k3p.hseg(
+  sg: Laws.KSeg,
+  +gs: List<&2, Bool>,
+  +cl: Bool,
+  +dt: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G,
+  eo: {Laws.k3.seg.ok(sg) == True{} : Bool},
+  ih: k3p.HT(cl, rw, hs, he, Laws.k3.seg.name(sg) <> k3.ps0(dt, ps), ab, rest, gk)
+) -> kk.pd(gk, T.doc.read(Laws.k3.seg.text(sg, String.append(Laws.gap(gs), SCon{k3.hdl(cl), rest})), T.MScan{k3.w(rw,
+  hs, he,
+  k3.ps0(dt, ps), [], k3.hlex0(dt), bk, qk, [], un, lf, ab)})):
+  match sg:
+    case Laws.KsBare{name}:
+      match name:
+        case SNil{}:
+          kk.pdx(gk, T.doc.read(String.append(SNil{}, String.append(Laws.gap(gs), SCon{k3.hdl(cl), rest})),
+            T.MScan{k3.w(rw, hs, he, k3.ps0(dt, ps), [], k3.hlex0(dt), bk, qk, [], un, lf, ab)}), eo)
+        case SCon{hh, +tt}:
+          match hh:
+            case Chr{+xx}:
+              k3p.hbseg(xx, tt, gs, cl, dt, rw, hs, he, ps, bk, qk, un, lf, ab, rest, gk, eo, ih)
+    case Laws.KsBasic{+pl}:
+      k3p.hqseg(pl, gs, cl, dt, rw, hs, he, ps, bk, qk, un, lf, ab, rest, gk, eo, ih)
+    case Laws.KsLit{+name}:
+      k3p.hlseg(name, gs, cl, dt, rw, hs, he, ps, bk, qk, un, lf, ab, rest, gk, eo, ih)
+# a header's segments, then blank space and the bracket: the rest is read
+# with every segment pushed onto parts, newest first
+def k3p.hkeys(
+  ds: List<&2, Laws.KDot>,
+  +last: Laws.KSeg,
+  +g9: List<&2, Bool>,
+  +dt: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +rest: String,
+  +gk: K3G,
+  +eo: {Laws.k3.dk.ok(ds, last) == True{} : Bool},
+  ih: k3p.HT(True{}, rw, hs, he, k3.acc(ds, last, dt, ps), ab, rest, gk)
+) -> kk.pd(gk, T.doc.read(Laws.k3.dk.text(ds, last, String.append(Laws.gap(g9), SCon{']', rest})), T.MScan{k3.w(rw,
+  hs, he,
+  k3.ps0(dt, ps), [], k3.hlex0(dt), bk, qk, [], un, lf, ab)})):
+  match ds:
+    case []:
+      k3p.hseg(last, g9, True{}, dt, rw, hs, he, ps, bk, qk, un, lf, ab, rest, gk, eo, ih)
+    case Laws.KDot{+sg, g1, +g2} <> +dr:
+      k3p.hseg(sg, g1, False{}, dt, rw, hs, he, ps, bk, qk, un, lf, ab, String.append(Laws.gap(g2),
+        Laws.k3.dk.text(dr, last, String.append(Laws.gap(g9), SCon{']', rest}))), gk, Eq.and.left(Laws.k3.seg.ok(sg),
+        Laws.k3.dk.ok(dr, last), eo), +b2 => +q2 => +u2 => +l2 =>
+        %k3.hdgap(g2, Laws.k3.dk.text(dr, last, String.append(Laws.gap(g9), SCon{']', rest})), rw, hs, he,
+          Laws.k3.seg.name(sg) <> k3.ps0(dt, ps), b2, q2, u2, l2, ab) : kk.pd(gk, _)
+        k3p.hkeys(dr, last, g9, True{}, rw, hs, he, Laws.k3.seg.name(sg) <> k3.ps0(dt, ps), b2, q2, u2, l2, ab, rest,
+          gk,
+          Eq.and.right(Laws.k3.seg.ok(sg), Laws.k3.dk.ok(dr, last), eo), ih))
+
+# a path equals itself, read by leq
+def kk.leq.self(aa: List<&2, String>) -> {kk.leq(aa, aa) == True{} : Bool}:
+  match aa:
+    case []:
+      {==}
+    case +xx <> +xs:
+      gd.tt(T.str.eq(xx, xx), kk.leq(xs, xs), str.eq.self(xx), kk.leq.self(xs))
+
+# a key whose parts are its name, then its other parts, is pending in the
+# table they name, with no array open around it
+def kk.pendv(
+  stack: List<&2, T.Ctx>,
+  +here: List<&2, String>,
+  +kk: String,
+  +ps: List<&2, String>,
+  +es: {Laws.k3.noarr1(stack) == True{} : Bool}
+) -> {kk.pend(K3G{Laws.k3.pl(stack, here, ps, []), kk}, stack, here, kk <> ps) == True{} : Bool}:
+  match stack:
+    case []:
+      gd.tt(T.str.eq(kk, kk), kk.leq(Laws.k3.pl([], here, ps, []), Laws.k3.pl([], here, ps, [])), str.eq.self(kk),
+        kk.leq.self(Laws.k3.pl([], here, ps, [])))
+    case T.CArr{_i, _p, _h} <> _t:
+      es
+    case T.CInl{+rr, +sp, +sh} <> +rest:
+      gd.tt(T.str.eq(kk, kk), kk.leq(Laws.k3.pl(T.CInl{rr, sp, sh} <> rest, here, ps, []), Laws.k3.pl(T.CInl{rr, sp,
+        sh} <> rest, here, ps, [])), str.eq.self(kk), kk.leq.self(Laws.k3.pl(T.CInl{rr, sp, sh} <> rest, here, ps, [])))
+
+def Laws.key_found_after_equals(rows, heads, here, k, ps, stack, arrtab, back, qkind, uni, left, rest, es, eo):
+  kk.read(K3G{Laws.k3.pl(stack, here, ps, []), k}, rest, Laws.k3.val(rows, heads, here, k <> ps, stack, arrtab, back,
+    qkind, uni, left), bo.or.tl(kk.pend(K3G{Laws.k3.pl(stack, here, ps, []), k}, stack, here, k <> ps),
+      Bool.or(kk.PF(K3G{Laws.k3.pl(stack, here, ps, []), k}, stack), kk.L(K3G{Laws.k3.pl(stack, here, ps, []), k},
+        stack, rows)), kk.pendv(stack, here, k, ps, es)))(eo)
+
+# a reversal of a path with a last name puts the name first
+def kk.rvsnoc(
+  xs: List<&2, String>,
+  +nn: String,
+  +acc: List<&2, String>
+) -> {List.reverse.go(&2, String, List.append(&2, String, xs, [nn]), acc) == nn <> List.reverse.go(&2, String, xs,
+  acc) : List<&2, String>}:
+  match xs:
+    case []:
+      {==}
+    case +xx <> xr:
+      kk.rvsnoc(xr, nn, xx <> acc)
+
+# a dotted key's names are the names but the last, then the last
+def kk.dksplit(
+  ds: List<&2, Laws.KDot>,
+  +last: Laws.KSeg
+) -> {Laws.k3.dk.names(ds, last) == List.append(&2, String, Laws.k3.dk.init(ds), [Laws.k3.seg.name(last)])
+  : List<&2, String>}:
+  match ds:
+    case []:
+      {==}
+    case Laws.KDot{+sg, _g1, _g2} <> rest:
+      Equal.cong(List<&2, String>, List<&2, String>, zs => Laws.k3.seg.name(sg) <> zs, Laws.k3.dk.names(rest, last),
+        List.append(&2, String, Laws.k3.dk.init(rest), [Laws.k3.seg.name(last)]), kk.dksplit(rest, last))
+
+# a key's segments pushed onto parts are its last name, then the others
+# reversed
+def kk.accn(
+  +ds: List<&2, Laws.KDot>,
+  +last: Laws.KSeg
+) -> {k3.acc(ds, last, False{}, []) == Laws.k3.seg.name(last) <> List.reverse(&2, String, Laws.k3.dk.init(ds))
+  : List<&2, String>}:
+  Equal.trans(List<&2, String>, List.reverse.go(&2, String, Laws.k3.dk.names(ds, last), []), List.reverse.go(&2,
+    String, List.append(&2, String, Laws.k3.dk.init(ds), [Laws.k3.seg.name(last)]), []), Laws.k3.seg.name(last) <>
+      List.reverse(&2, String, Laws.k3.dk.init(ds)), Equal.cong(List<&2, String>, List<&2, String>, zs =>
+        List.reverse.go(&2, String, zs, []), Laws.k3.dk.names(ds, last), List.append(&2, String, Laws.k3.dk.init(ds),
+          [Laws.k3.seg.name(last)]), kk.dksplit(ds, last)), kk.rvsnoc(Laws.k3.dk.init(ds), Laws.k3.seg.name(last), []))
+
+# a key read from where a key may start is pending in its table
+def kk.pendk(
+  +ds: List<&2, Laws.KDot>,
+  +last: Laws.KSeg,
+  +stack: List<&2, T.Ctx>,
+  +here: List<&2, String>,
+  +es: {Laws.k3.noarr1(stack) == True{} : Bool}
+) -> {kk.pend(K3G{Laws.k3.key.table(stack, here, ds), Laws.k3.seg.name(last)}, stack, here, k3.acc(ds, last, False{},
+  [])) == True{} : Bool}:
+  %Equal.sym(List<&2, String>, k3.acc(ds, last, False{}, []), Laws.k3.seg.name(last) <> List.reverse(&2, String,
+    Laws.k3.dk.init(ds)), kk.accn(ds, last)) : {kk.pend(K3G{Laws.k3.key.table(stack, here, ds),
+      Laws.k3.seg.name(last)}, stack, here, _) == True{} : Bool}
+  kk.pendv(stack, here, Laws.k3.seg.name(last), List.reverse(&2, String, Laws.k3.dk.init(ds)), es)
+
+# a key's text read from where a key may start, for what the document says
+def k3p.keyread(
+  +at: Laws.KPos,
+  +g0: List<&2, Bool>,
+  +ds: List<&2, Laws.KDot>,
+  +last: Laws.KSeg,
+  +ok: {Laws.k3.dk.ok(ds, last) == True{} : Bool},
+  +g: List<&2, Bool>,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>,
+  +here: List<&2, String>,
+  +stack: List<&2, T.Ctx>,
+  +arrtab: Bool,
+  +back: T.Lex,
+  +qkind: T.QKind,
+  +uni: U32,
+  +left: U32,
+  +rest: String,
+  +gk: K3G,
+  ih: k3p.KT(True{}, rows, heads, here, k3.acc(ds, last, False{}, []), stack, arrtab, rest, gk)
+) -> kk.pd(gk, Laws.k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab, back, qkind, uni, left, rest)):
+  %k3.g0(g0, at, rows, heads, here, stack, arrtab, back, qkind, uni, left, Laws.k3.dk.text(ds, last,
+    String.append(Laws.gap(g), SCon{'=', rest}))) : kk.pd(gk, _)
+  k3p.keys(ds, last, g, False{}, at, rows, heads, here, [], back, qkind, stack, uni, left, arrtab, rest, gk, ok, ih)
+
+def Laws.key_found_anywhere(
+  at,
+  g0,
+  ds,
+  last,
+  ok,
+  g,
+  rows,
+  heads,
+  here,
+  stack,
+  arrtab,
+  back,
+  qkind,
+  uni,
+  left,
+  rest,
+  es,
+  eo
+):
+  k3p.keyread(at, g0, ds, last, ok, g, rows, heads, here, stack, arrtab, back, qkind, uni, left, rest,
+    K3G{Laws.k3.key.table(stack, here, ds), Laws.k3.seg.name(last)}, +b2 => +q2 => +u2 => +l2 =>
+      kk.read(K3G{Laws.k3.key.table(stack, here, ds), Laws.k3.seg.name(last)}, rest, k3.w(rows, heads, here,
+        k3.acc(ds, last, False{}, []), [], T.LVal{}, b2, q2, stack, u2, l2, arrtab), bo.or.tl(kk.pend(K3G{
+          Laws.k3.key.table(stack, here, ds), Laws.k3.seg.name(last)}, stack, here, k3.acc(ds, last, False{}, [])),
+          Bool.or(kk.PF(K3G{Laws.k3.key.table(stack, here, ds), Laws.k3.seg.name(last)}, stack), kk.L(K3G{
+            Laws.k3.key.table(stack, here, ds), Laws.k3.seg.name(last)}, stack, rows)), kk.pendk(ds, last, stack,
+              here, es))))(eo)
+
+# the rest of the text read after a header, from every back, qkind, uni and
+# left, whatever its walk returned
+def k3p.HRaw(
+  +_arr: Bool,
+  +_path: List<&2, String>,
+  +_rw: List<&2, T.Val>,
+  +_hs: List<&2, String>,
+  +_rest: String,
+  +_gk: K3G
+) -> Type:
+  @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 -> kk.pd(_gk, T.doc.read(_rest,
+    T.MScan{T.read.once2(T.head.apply(T.tree.walk(_path, T.Tw{_rw, Laws.header_job(_arr), [], "", "", _hs, False{}}, 0),
+      _path, b2, q2, u2, l2, False{}))}))
+
+# the bracket runs the header's walk along the segments read, whatever it
+# returns
+def k3p.hend0(
+  +ab: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +parts: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +path: List<&2, String>,
+  +rest: String,
+  ne: {List.is_empty(&2, String, parts) == False{} : Bool},
+  er: {List.reverse(&2, String, parts) == path : List<&2, String>}
+) -> {T.doc.read(rest, T.MScan{T.read.once2(T.head.apply(T.tree.walk(path, T.Tw{rw, Laws.header_job(ab), [], "", "",
+  hs, False{}}, 0), path, bk, qk, un, lf, False{}))}) == T.doc.read(k3.htail(ab, rest),
+  T.MScan{k3.haft(True{}, rw, hs, he, parts, bk, qk, un, lf, ab)}) : T.Doc}:
+  match ab:
+    case False{}:
+      %Equal.sym(Bool, List.is_empty(&2, String, parts), False{}, ne) : {T.doc.read(rest,
+        T.MScan{T.read.once2(T.head.apply(T.tree.walk(path, T.Tw{rw, T.JDef{}, [], "", "", hs, False{}}, 0), path, bk,
+          qk, un, lf, False{}))}) == T.doc.read(rest,
+          T.MScan{T.read.once2(T.head.go(_,
+        k3.w(rw, hs, he, parts, [], T.LHeadGap{}, bk, qk, [], un, lf, False{}), List.reverse(&2, String,
+          parts)))}) : T.Doc}
+      %Equal.sym(List<&2, String>, List.reverse(&2, String, parts), path, er) : {T.doc.read(rest,
+        T.MScan{T.read.once2(T.head.apply(T.tree.walk(path, T.Tw{rw, T.JDef{}, [], "", "", hs, False{}}, 0), path, bk,
+          qk, un, lf, False{}))}) == T.doc.read(rest,
+        T.MScan{T.read.once2(T.head.apply(T.tree.walk(_, T.Tw{rw, T.JDef{}, [], "", "", hs, False{}}, 0), _, bk, qk,
+        un, lf, False{}))}) : T.Doc}
+      {==}
+    case True{}:
+      %Equal.sym(Bool, List.is_empty(&2, String, parts), False{}, ne) : {T.doc.read(rest,
+        T.MScan{T.read.once2(T.head.apply(T.tree.walk(path, T.Tw{rw, T.JAot{}, [], "", "", hs, False{}}, 0), path, bk,
+          qk, un, lf, False{}))}) == T.doc.read(rest,
+          T.MScan{T.read.once2(T.head.go(_,
+        k3.w(rw, hs, he, parts, [], T.LHeadR{}, bk, qk, [], un, lf, True{}), List.reverse(&2, String,
+          parts)))}) : T.Doc}
+      %Equal.sym(List<&2, String>, List.reverse(&2, String, parts), path, er) : {T.doc.read(rest,
+        T.MScan{T.read.once2(T.head.apply(T.tree.walk(path, T.Tw{rw, T.JAot{}, [], "", "", hs, False{}}, 0), path, bk,
+          qk, un, lf, False{}))}) == T.doc.read(rest,
+        T.MScan{T.read.once2(T.head.apply(T.tree.walk(_, T.Tw{rw, T.JAot{}, [], "", "", hs, False{}}, 0), _, bk, qk,
+        un, lf, False{}))}) : T.Doc}
+      {==}
+
+# a whole header, from the start of a line in any table
+def k3p.hcore(
+  +arr: Bool,
+  +g0: List<&2, Bool>,
+  +ds: List<&2, Laws.KDot>,
+  +last: Laws.KSeg,
+  +g9: List<&2, Bool>,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +a0: Bool,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +rest: String,
+  +gk: K3G,
+  +eo: {Laws.k3.dk.ok(ds, last) == True{} : Bool},
+  ih: k3p.HRaw(arr, Laws.k3.dk.names(ds, last), rw, hs, rest, gk)
+) -> kk.pd(gk, T.doc.read(Laws.k3.hd.text(arr, g0, ds, last, g9, rest), T.MScan{Laws.k3.at(Laws.AtLine{}, rw, hs, he,
+  [], a0,
+  bk, qk, un, lf)})):
+  match arr:
+    case False{}:
+      %k3.hlead(g0, Laws.k3.dk.text(ds, last, String.append(Laws.gap(g9), SCon{']', rest})), rw, hs, he, bk, qk, un, lf,
+        False{}) : kk.pd(gk, _)
+      k3p.hkeys(ds, last, g9, k3.nz(g0), rw, hs, he, [], bk, qk, un, lf, False{}, rest, gk, eo, +b2 => +q2 => +u2 =>
+        +l2 =>
+        %k3p.hend0(False{}, rw, hs, he, k3.acc(ds, last, k3.nz(g0), []), b2, q2, u2, l2, Laws.k3.dk.names(ds, last),
+          rest, k3.ne(ds, last, k3.ps0(k3.nz(g0), [])), k3.path(k3.nz(g0), ds, last))
+          : kk.pd(gk, _)
+        ih(b2, q2, u2, l2))
+    case True{}:
+      %k3.hlead(g0, Laws.k3.dk.text(ds, last, String.append(Laws.gap(g9), SCon{']', SCon{']', rest}})), rw, hs, he,
+        bk, qk, un, lf, True{}) : kk.pd(gk, _)
+      k3p.hkeys(ds, last, g9, k3.nz(g0), rw, hs, he, [], bk, qk, un, lf, True{}, SCon{']', rest}, gk, eo,
+        +b2 => +q2 => +u2 => +l2 =>
+        %k3p.hend0(True{}, rw, hs, he, k3.acc(ds, last, k3.nz(g0), []), b2, q2, u2, l2, Laws.k3.dk.names(ds, last),
+          rest, k3.ne(ds, last, k3.ps0(k3.nz(g0), [])), k3.path(k3.nz(g0), ds, last))
+          : kk.pd(gk, _)
+        ih(b2, q2, u2, l2))
+
+# a header's walk holds the table it names, or fails
+def kk.hwalk(
+  +arr: Bool,
+  +ds: List<&2, Laws.KDot>,
+  +last: Laws.KSeg,
+  +rows: List<&2, T.Val>,
+  +heads: List<&2, String>
+) -> {kk.KE(K3G{Laws.k3.dk.init(ds), Laws.k3.seg.name(last)}, T.tree.walk(Laws.k3.dk.names(ds, last), T.Tw{rows,
+  Laws.header_job(arr), [], "", "", heads, False{}}, 0)) == True{} : Bool}:
+  kk.KE.mk(K3G{Laws.k3.dk.init(ds), Laws.k3.seg.name(last)}, T.tree.walk(Laws.k3.dk.names(ds, last), T.Tw{rows,
+    Laws.header_job(arr), [], "", "", heads, False{}}, 0), eb => kk.has2(kw.evs(T.tree.walk(Laws.k3.dk.names(ds,
+      last), T.Tw{rows, Laws.header_job(arr), [], "", "", heads, False{}}, 0)), Laws.k3.dk.init(ds),
+    Laws.k3.seg.name(last), kc.initn(Laws.k3.dk.names(ds, last)), kc.lastn(Laws.k3.dk.names(ds, last)),
+    Equal.sym(List<&2, String>, kc.initn(Laws.k3.dk.names(ds, last)), Laws.k3.dk.init(ds), Equal.trans(List<&2,
+      String>, kc.initn(Laws.k3.dk.names(ds, last)), kc.initn(List.append(&2, String, Laws.k3.dk.init(ds),
+        [Laws.k3.seg.name(last)])), Laws.k3.dk.init(ds), Equal.cong(List<&2, String>, List<&2, String>, zs =>
+          kc.initn(zs), Laws.k3.dk.names(ds, last), List.append(&2, String, Laws.k3.dk.init(ds),
+            [Laws.k3.seg.name(last)]), kk.dksplit(ds, last)), kk.initn(Laws.k3.dk.init(ds), Laws.k3.seg.name(last)))),
+    Equal.sym(String, kc.lastn(Laws.k3.dk.names(ds, last)), Laws.k3.seg.name(last), Equal.trans(String,
+      kc.lastn(Laws.k3.dk.names(ds, last)), kc.lastn(List.append(&2, String, Laws.k3.dk.init(ds),
+        [Laws.k3.seg.name(last)])), Laws.k3.seg.name(last), Equal.cong(List<&2, String>, String, zs => kc.lastn(zs),
+          Laws.k3.dk.names(ds, last), List.append(&2, String, Laws.k3.dk.init(ds), [Laws.k3.seg.name(last)]),
+            kk.dksplit(ds, last)), kk.lastn(Laws.k3.dk.init(ds), Laws.k3.seg.name(last)))),
+    kc.wtab(Laws.k3.dk.names(ds, last), T.Tw{rows, Laws.header_job(arr), [], "", "", heads, False{}}, 0, [],
+      kk.ci0(rows, Laws.header_job(arr), "", "", heads, False{}, {==}), eb)))
+
+def Laws.header_found_anywhere(arr, g0, ds, last, ok, g9, rows, heads, here, arrtab, back, qkind, uni, left, rest, eo):
+  k3p.hcore(arr, g0, ds, last, g9, rows, heads, here, arrtab, back, qkind, uni, left, rest, K3G{Laws.k3.dk.init(ds),
+    Laws.k3.seg.name(last)}, ok, +b2 => +q2 => +u2 => +l2 => kk.read(K3G{Laws.k3.dk.init(ds), Laws.k3.seg.name(last)},
+      rest, T.read.once2(T.head.apply(T.tree.walk(Laws.k3.dk.names(ds, last), T.Tw{rows, Laws.header_job(arr), [], "",
+        "", heads, False{}}, 0), Laws.k3.dk.names(ds, last), b2, q2, u2, l2, False{})),
+      kk.once2(K3G{Laws.k3.dk.init(ds), Laws.k3.seg.name(last)}, T.head.apply(T.tree.walk(Laws.k3.dk.names(ds, last),
+        T.Tw{rows, Laws.header_job(arr), [], "", "", heads, False{}}, 0), Laws.k3.dk.names(ds, last), b2, q2,
+        u2, l2, False{}), kk.happly(K3G{Laws.k3.dk.init(ds), Laws.k3.seg.name(last)}, T.tree.walk(Laws.k3.dk.names(ds,
+          last), T.Tw{rows, Laws.header_job(arr), [], "", "", heads, False{}}, 0), Laws.k3.dk.names(ds,
+          last), b2, q2, u2, l2, False{}, kk.hwalk(arr, ds, last, rows, heads)))))(eo)
+
+# a hit that leads on through tables is a table or an inline table
+def kk.tabh.is(
+  pp: List<&2, String>,
+  +hh: T.Hit,
+  +ee: {Laws.k3.tabh(pp, hh) == True{} : Bool}
+) -> {Laws.k3.istab(hh) == True{} : Bool}:
+  match pp:
+    case []:
+      ee
+    case +nn <> rest:
+      gd.l(Laws.k3.istab(hh), Laws.k3.tabh(rest, T.get(T.at.rows_of(hh), nn)), ee)
+
+# the first pair of a name, when every pair of it holds a path and it is a
+# table or an inline table, holds the path in its rows
+def kk.hpmk(
+  hh: T.Hit,
+  +rows: List<&2, T.Val>,
+  +nn: String,
+  +pp: List<&2, String>,
+  +kk: String,
+  +eq: {T.rows.find(rows, nn) == hh : T.Hit},
+  +ea: {kh.A(rows, nn, pp, kk) == True{} : Bool},
+  +et: {Laws.k3.tabh(pp, hh) == True{} : Bool}
+) -> {Laws.k3.has(T.at.rows_of(hh), pp, kk) == True{} : Bool}:
+  match hh:
+    case T.Found{T.VHead{+q, +r}}:
+      kh.first(rows, nn, T.VHead{q, r}, pp, kk, eq, ea)
+    case T.Found{T.VInl{+r}}:
+      kh.first(rows, nn, T.VInl{r}, pp, kk, eq, ea)
+    case T.Miss{}:
+      Eq.bit.absurd(&2, {Laws.k3.has(T.at.rows_of(T.Miss{}), pp, kk) == True{} : Bool}, kk.tabh.is(pp, T.Miss{}, et))
+    case T.Found{T.VStr{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(T.at.rows_of(T.Found{T.VStr{_a}}), pp, kk) == True{} : Bool}, kk.tabh.is(pp,
+        T.Found{T.VStr{_a}}, et))
+    case T.Found{T.VSpan{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(T.at.rows_of(T.Found{T.VSpan{_a, _b}}), pp, kk) == True{} : Bool}, kk.tabh.is(pp,
+        T.Found{T.VSpan{_a, _b}}, et))
+    case T.Found{T.VInt{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(T.at.rows_of(T.Found{T.VInt{_a, _b}}), pp, kk) == True{} : Bool}, kk.tabh.is(pp,
+        T.Found{T.VInt{_a, _b}}, et))
+    case T.Found{T.VFlo{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(T.at.rows_of(T.Found{T.VFlo{_a, _b}}), pp, kk) == True{} : Bool}, kk.tabh.is(pp,
+        T.Found{T.VFlo{_a, _b}}, et))
+    case T.Found{T.VBool{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(T.at.rows_of(T.Found{T.VBool{_a}}), pp, kk) == True{} : Bool}, kk.tabh.is(pp,
+        T.Found{T.VBool{_a}}, et))
+    case T.Found{T.VWhen{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(T.at.rows_of(T.Found{T.VWhen{_a}}), pp, kk) == True{} : Bool}, kk.tabh.is(pp,
+        T.Found{T.VWhen{_a}}, et))
+    case T.Found{T.VArr{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(T.at.rows_of(T.Found{T.VArr{_a}}), pp, kk) == True{} : Bool}, kk.tabh.is(pp,
+        T.Found{T.VArr{_a}}, et))
+    case T.Found{T.VAot{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(T.at.rows_of(T.Found{T.VAot{_a, _b}}), pp, kk) == True{} : Bool}, kk.tabh.is(pp,
+        T.Found{T.VAot{_a, _b}}, et))
+    case T.Found{T.VAots{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(T.at.rows_of(T.Found{T.VAots{_a, _b}}), pp, kk) == True{} : Bool}, kk.tabh.is(pp,
+        T.Found{T.VAots{_a, _b}}, et))
+    case T.Found{T.VPair{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(T.at.rows_of(T.Found{T.VPair{_a, _b}}), pp, kk) == True{} : Bool}, kk.tabh.is(pp,
+        T.Found{T.VPair{_a, _b}}, et))
+# at follows a path through tables from a hit whose rows hold it, to the key
+def kk.ats(
+  path: List<&2, String>,
+  +hh: T.Hit,
+  +kk: String,
+  +eh: {Laws.k3.has(T.at.rows_of(hh), path, kk) == True{} : Bool},
+  +et: {Laws.k3.tabh(path, hh) == True{} : Bool}
+) -> {Laws.k3.found(T.at.step(List.append(&2, String, path, [kk]), hh)) == True{} : Bool}:
+  match path:
+    case []:
+      eh
+    case +mm <> +pp:
+      kk.ats(pp, T.get(T.at.rows_of(hh), mm), kk, kk.hpmk(T.get(T.at.rows_of(hh), mm), T.at.rows_of(hh), mm, pp, kk,
+        {==}, gd.r(kh.F(T.at.rows_of(hh), mm), kh.A(T.at.rows_of(hh), mm, pp, kk), eh), gd.r(Laws.k3.istab(hh),
+          Laws.k3.tabh(pp, T.get(T.at.rows_of(hh), mm)), et)), gd.r(Laws.k3.istab(hh), Laws.k3.tabh(pp,
+            T.get(T.at.rows_of(hh), mm)), et))
+
+# LEMMA: rows that hold a key in a table reached through tables only: at
+# finds the key by the table's path and its name
+def kk.atroot(
+  +rows: List<&2, T.Val>,
+  path: List<&2, String>,
+  +kk: String,
+  +eh: {Laws.k3.has(rows, path, kk) == True{} : Bool},
+  +et: {Laws.k3.tabs(rows, path) == True{} : Bool}
+) -> {Laws.k3.found(T.at(rows, List.append(&2, String, path, [kk]))) == True{} : Bool}:
+  match path:
+    case []:
+      eh
+    case +nn <> +pp:
+      kk.ats(pp, T.get(rows, nn), kk, kk.hpmk(T.get(rows, nn), rows, nn, pp, kk, {==}, gd.r(kh.F(rows, nn), kh.A(rows,
+        nn, pp, kk), eh), et), et)
+
+def Laws.key_found_by_at(
+  at,
+  g0,
+  ds,
+  last,
+  ok,
+  g,
+  rows,
+  heads,
+  here,
+  stack,
+  arrtab,
+  back,
+  qkind,
+  uni,
+  left,
+  rest,
+  es,
+  eo,
+  et
+):
+  kk.atroot(T.root(Laws.k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab, back, qkind, uni, left,
+    rest)), Laws.k3.key.table(stack, here, ds), Laws.k3.seg.name(last), Laws.key_found_anywhere(at, g0, ds, last, ok,
+      g, rows, heads, here,
+    stack, arrtab, back, qkind, uni, left, rest, es, eo), et)
+
+def Laws.header_found_by_at(
+  arr,
+  g0,
+  ds,
+  last,
+  ok,
+  g9,
+  rows,
+  heads,
+  here,
+  arrtab,
+  back,
+  qkind,
+  uni,
+  left,
+  rest,
+  eo,
+  et
+):
+  kk.atroot(T.root(Laws.k3.hd.doc(arr, g0, ds, last, g9, rows, heads, here, arrtab, back, qkind, uni, left, rest)),
+    Laws.k3.dk.init(ds), Laws.k3.seg.name(last), Laws.header_found_anywhere(arr, g0, ds, last, ok,
+    g9, rows, heads, here, arrtab, back, qkind, uni, left, rest, eo), et)
+
+def Laws.key_found_in_document(
+  pre,
+  at,
+  g0,
+  ds,
+  last,
+  ok,
+  g,
+  rows,
+  heads,
+  here,
+  stack,
+  arrtab,
+  back,
+  qkind,
+  uni,
+  left,
+  rest,
+  es,
+  ep,
+  eo
+):
+  %Equal.sym(T.Doc, T.parse(String.append(pre, String.append(Laws.gap(g0), Laws.k3.dk.text(ds, last,
+    String.append(Laws.gap(g), SCon{'=', rest}))))), Laws.k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack,
+      arrtab, back, qkind, uni, left, rest), ep) : {Laws.k3.has(T.root(_), Laws.k3.key.table(stack, here, ds),
+        Laws.k3.seg.name(last)) == True{} : Bool}
+  Laws.key_found_anywhere(at, g0, ds, last, ok, g, rows, heads, here, stack, arrtab, back, qkind, uni, left, rest, es,
+    Equal.trans(Bool, String.is_empty(T.bad(Laws.k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab,
+      back, qkind, uni, left, rest))), String.is_empty(T.bad(T.parse(String.append(pre, String.append(Laws.gap(g0),
+        Laws.k3.dk.text(ds, last, String.append(Laws.gap(g), SCon{'=', rest}))))))), True{}, Equal.cong(T.Doc, Bool,
+      dd => String.is_empty(T.bad(dd)), Laws.k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab, back,
+        qkind, uni, left, rest), T.parse(String.append(pre, String.append(Laws.gap(g0), Laws.k3.dk.text(ds, last,
+          String.append(Laws.gap(g), SCon{'=', rest}))))), Equal.sym(T.Doc, T.parse(String.append(pre,
+            String.append(Laws.gap(g0), Laws.k3.dk.text(ds, last, String.append(Laws.gap(g), SCon{'=', rest}))))),
+              Laws.k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab, back, qkind, uni, left, rest),
+                ep)), eo))
