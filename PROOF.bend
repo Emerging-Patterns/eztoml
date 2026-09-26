@@ -62664,7 +62664,8 @@ def Laws.key_found_in_document(
               Laws.k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab, back, qkind, uni, left, rest),
                 ep)), eo))
 
-# GRAMMAR SPIKE: dec_int_word. The transcribed rule is taken apart by the
+# GRAMMAR SPIKE: the lemmas of dec_int_word (retired by REVIEW-G10 once
+# TOML-NUM-1 was proved). The transcribed rule is taken apart by the
 # characters it tests, and each part is read by the numeral lemmas of WP-N
 # (nw.lead, nw.sign, nw.step, dgo, int.fin): an underscore between digits
 # leaves the numeral as it was, so the scan reads the digits with the
@@ -63373,7 +63374,7 @@ def gs.pos(
     case +hh <> +tl:
       gs.pos.go(hh, tl, hu, rr)
 
-# what dec_int_word claims of a word
+# what the retired dec_int_word claimed of a word
 def gs.Goal(cs: List<&2, Char>) -> Type:
   {T.word.val(cs) == T.GotVal{T.VInt{Laws.abnf.dec_sign(cs), Laws.abnf.dec_digits(cs)}} : T.Got}
 
@@ -63448,13 +63449,6 @@ def gs.top(
             gs.top.hu(hh, tt, em, ep), h), Equal.trans(Bool, T.i64.fits(T.Plus{}, Laws.abnf.no_us(hh <> tt)),
             T.i64.fits(Laws.abnf.dec_sign(hh <> tt), Laws.abnf.dec_digits(hh <> tt)), True{},
             gs.top.r(hh, tt, em, ep), rr))
-
-def Laws.dec_int_word(cs, h, r):
-  match cs:
-    case []:
-      Eq.bit.absurd(&1, gs.Goal([]), h)
-    case +hh <> +tt:
-      gs.top(hh, tt, Laws.abnf.minus(hh), {==}, Laws.abnf.plus(hh), {==}, h, r)
 
 # GRAMMAR: the basic facts of the transcription (WP-G). The text lemmas say
 # that each def of g.text writes its part before the tail it is given, so a
@@ -88235,3 +88229,4165 @@ def n1.int.law(
 def Laws.integer_word_exact(cs, v):
   n1.int.law(Laws.abnf.hex_int(cs), Laws.abnf.oct_int(cs), Laws.abnf.bin_int(cs), Laws.abnf.dec_int(cs), Unit{}, cs, v,
     {==}, {==}, {==}, {==})
+
+# WP-V: bare values stated over parse. From every value state, the scan
+# pushes a bare word's characters (wd.first, wd.step), a space after a date
+# through LDate with the digit after it (vl.sp, vl.dig), and at the text
+# that ends the word classifies it and places the value (vl.fin), or fails.
+# The value's state is named once (vl.vt) and each ending is one step of it.
+
+# what holds of a character holds of one equal to it
+def vl.chs(-P: Char -> Type, aa: Char, bb: Char, ee: {aa == bb : Char}, kk: P(bb)) -> P(aa):
+  %Equal.sym(Char, aa, bb, ee) : P(_)
+  kk
+
+# the text's buffer is the proofs' rev.onto
+def vl.rev(ss: String, acc: List<&2, Char>) -> {Laws.bw.rev(ss, acc) == rev.onto(ss, acc) : List<&2, Char>}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{hh, tt}:
+      vl.rev(tt, hh <> acc)
+
+# the scanner with a bare value placed, as a bare word leaves it
+def vl.vt(+fx: Laws.Vf, +vv: T.Val) -> T.St:
+  T.val.take(Laws.vst(fx, [], T.LBare{}), vv)
+
+# a space after a date is kept: the scan waits in LDate
+def vl.sp(
+  +fx: Laws.Vf,
+  +buf: List<&2, Char>,
+  hd: {T.date.shaped(buf) == True{} : Bool}
+) -> {T.doc.scan(Laws.vst(fx, buf, T.LBare{}), ' ') == T.MScan{Laws.vst(fx, buf, T.LDate{})} : T.Mode}:
+  match fx:
+    case Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}:
+      Equal.cong(Bool, T.Mode, bb => T.MScan{T.read.once2(T.lex.bare.date.go(bb, T.St{bad, rows, heads, here, parts,
+        buf, T.LBare{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, ' '))}, T.date.shaped(buf), True{},
+        hd)
+
+# a digit after the space joins the word with the space before it
+def vl.dig.f(
+  +fx: Laws.Vf,
+  +buf: List<&2, Char>,
+  +cc: Char,
+  hd: {Char.is_digit(cc) == True{} : Bool}
+) -> {T.MScan{T.read.fast(Laws.vst(fx, buf, T.LDate{}), cc)} == T.MScan{Laws.vst(fx, cc <> (' ' <> buf), T.LBare{})}
+  : T.Mode}:
+  match fx:
+    case Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}:
+      Equal.cong(Bool, T.Mode, bb => T.MScan{T.read.once2(T.lex.date.go(bb, T.St{bad, rows, heads, here, parts, buf,
+        T.LDate{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc))}, Char.is_digit(cc), True{}, hd)
+
+# and so in the scan mode, a digit being no quote and no carriage return
+def vl.dig(
+  +fx: Laws.Vf,
+  +buf: List<&2, Char>,
+  +xx: U32,
+  +hd: {Char.is_digit(Chr{xx}) == True{} : Bool}
+) -> {T.doc.scan(Laws.vst(fx, buf, T.LDate{}), Chr{xx}) == T.MScan{Laws.vst(fx, Chr{xx} <> (' ' <> buf), T.LBare{})}
+  : T.Mode}:
+  Equal.trans(T.Mode, T.doc.scan(Laws.vst(fx, buf, T.LDate{}), Chr{xx}),
+    T.MScan{T.read.fast(Laws.vst(fx, buf, T.LDate{}), Chr{xx})},
+    T.MScan{Laws.vst(fx, Chr{xx} <> (' ' <> buf), T.LBare{})},
+    scan.other(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), U32.is_eq(xx, 13), Laws.vst(fx, buf, T.LDate{}),
+      Chr{xx}, {==}, {==}, {==}, ch => Char.is_digit(ch), hd, {==}, {==}, {==}),
+    vl.dig.f(fx, buf, Chr{xx}, hd))
+
+# a digit is a character a bare value keeps
+def vl.dch(cc: Char, hd: {Char.is_digit(cc) == True{} : Bool}) -> {Laws.word.char(cc) == True{} : Bool}:
+  dg.elim(ch => {Laws.word.char(ch) == True{} : Bool}, cc, hd, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+    {==})
+
+# a date's space then a digit leave the scan where a space pushed as a
+# character would, then the digit
+def vl.spd(
+  +fx: Laws.Vf,
+  +buf: List<&2, Char>,
+  +xx: U32,
+  +rr: String,
+  hs: {T.date.shaped(buf) == True{} : Bool},
+  +hd: {Char.is_digit(Chr{xx}) == True{} : Bool}
+) -> {T.doc.read(SCon{' ', SCon{Chr{xx}, rr}}, T.MScan{Laws.vst(fx, buf, T.LBare{})})
+  == T.doc.read(SCon{Chr{xx}, rr}, T.MScan{Laws.vst(fx, ' ' <> buf, T.LBare{})}) : T.Doc}:
+  Equal.trans(T.Doc, T.doc.read(SCon{Chr{xx}, rr}, T.doc.scan(Laws.vst(fx, buf, T.LBare{}), ' ')),
+    T.doc.read(rr, T.MScan{Laws.vst(fx, Chr{xx} <> (' ' <> buf), T.LBare{})}),
+    T.doc.read(SCon{Chr{xx}, rr}, T.MScan{Laws.vst(fx, ' ' <> buf, T.LBare{})}),
+    Equal.trans(T.Doc, T.doc.read(SCon{Chr{xx}, rr}, T.doc.scan(Laws.vst(fx, buf, T.LBare{}), ' ')),
+      T.doc.read(rr, T.doc.scan(Laws.vst(fx, buf, T.LDate{}), Chr{xx})),
+      T.doc.read(rr, T.MScan{Laws.vst(fx, Chr{xx} <> (' ' <> buf), T.LBare{})}),
+      Equal.cong(T.Mode, T.Doc, md => T.doc.read(SCon{Chr{xx}, rr}, md), T.doc.scan(Laws.vst(fx, buf, T.LBare{}), ' '),
+        T.MScan{Laws.vst(fx, buf, T.LDate{})}, vl.sp(fx, buf, hs)),
+      Equal.cong(T.Mode, T.Doc, md => T.doc.read(rr, md), T.doc.scan(Laws.vst(fx, buf, T.LDate{}), Chr{xx}),
+        T.MScan{Laws.vst(fx, Chr{xx} <> (' ' <> buf), T.LBare{})}, vl.dig(fx, buf, xx, hd))),
+    Equal.sym(T.Doc, T.doc.read(rr, T.doc.scan(Laws.vst(fx, ' ' <> buf, T.LBare{}), Chr{xx})),
+      T.doc.read(rr, T.MScan{Laws.vst(fx, Chr{xx} <> (' ' <> buf), T.LBare{})}),
+      Equal.cong(T.Mode, T.Doc, md => T.doc.read(rr, md), T.doc.scan(Laws.vst(fx, ' ' <> buf, T.LBare{}), Chr{xx}),
+        T.MScan{Laws.vst(fx, Chr{xx} <> (' ' <> buf), T.LBare{})},
+        wd.step(fx, ' ' <> buf, xx, vl.dch(Chr{xx}, hd)))))
+
+# the claim of one step of the word: the character cc and the rest tt read
+# from the buffer as the rest's characters pushed after cc's
+def vl.Run(+fx: Laws.Vf, +buf: List<&2, Char>, +cc: Char, +tt: String, +rr: String) -> Type:
+  {T.doc.read(SCon{cc, String.append(tt, rr)}, T.MScan{Laws.vst(fx, buf, T.LBare{})})
+    == T.doc.read(rr, T.MScan{Laws.vst(fx, rev.onto(tt, cc <> buf), T.LBare{})}) : T.Doc}
+
+# the rest read from the buffer with cc pushed, as the step's claim needs it
+def vl.Ih(+fx: Laws.Vf, +buf: List<&2, Char>, +cc: Char, +tt: String, +rr: String) -> Type:
+  {T.doc.read(String.append(tt, rr), T.MScan{Laws.vst(fx, cc <> buf, T.LBare{})})
+    == T.doc.read(rr, T.MScan{Laws.vst(fx, rev.onto(tt, cc <> buf), T.LBare{})}) : T.Doc}
+
+# a space the word keeps: a digit follows, and the space step is a push
+def vl.run.sp(
+  +fx: Laws.Vf,
+  +buf: List<&2, Char>,
+  tt: String,
+  +rr: String,
+  hs: {T.date.shaped(buf) == True{} : Bool},
+  hd: {Laws.bw.digit1(tt) == True{} : Bool},
+  ih: vl.Ih(fx, buf, ' ', tt, rr)
+) -> vl.Run(fx, buf, ' ', tt, rr):
+  match tt:
+    case SNil{}:
+      Eq.bit.absurd(&1, vl.Run(fx, buf, ' ', SNil{}, rr), hd)
+    case SCon{dd, +t2}:
+      match dd:
+        case Chr{+yy}:
+          Equal.trans(T.Doc, T.doc.read(SCon{' ', SCon{Chr{yy}, String.append(t2, rr)}}, T.MScan{Laws.vst(fx, buf,
+            T.LBare{})}), T.doc.read(SCon{Chr{yy}, String.append(t2, rr)}, T.MScan{Laws.vst(fx, ' ' <> buf,
+            T.LBare{})}), T.doc.read(rr, T.MScan{Laws.vst(fx, rev.onto(SCon{Chr{yy}, t2}, ' ' <> buf), T.LBare{})}),
+            vl.spd(fx, buf, yy, String.append(t2, rr), hs, hd), ih)
+
+# one character of the word: pushed when a bare value keeps it, and a
+# datetime's space otherwise
+def vl.run.at(
+  wc: Bool,
+  +xx: U32,
+  +tt: String,
+  +rr: String,
+  +fx: Laws.Vf,
+  +buf: List<&2, Char>,
+  ewc: {Laws.word.char(Chr{xx}) == wc : Bool},
+  +ho: {Bool.or(wc, Laws.bw.dsp(Chr{xx}, buf, tt)) == True{} : Bool},
+  ih: vl.Ih(fx, buf, Chr{xx}, tt, rr)
+) -> vl.Run(fx, buf, Chr{xx}, tt, rr):
+  match wc:
+    case True{}:
+      Equal.trans(T.Doc, T.doc.read(String.append(tt, rr), T.doc.scan(Laws.vst(fx, buf, T.LBare{}), Chr{xx})),
+        T.doc.read(String.append(tt, rr), T.MScan{Laws.vst(fx, Chr{xx} <> buf, T.LBare{})}),
+        T.doc.read(rr, T.MScan{Laws.vst(fx, rev.onto(tt, Chr{xx} <> buf), T.LBare{})}),
+        Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, rr), md),
+          T.doc.scan(Laws.vst(fx, buf, T.LBare{}), Chr{xx}), T.MScan{Laws.vst(fx, Chr{xx} <> buf, T.LBare{})},
+          wd.step(fx, buf, xx, ewc)), ih)
+    case False{}:
+      +eq = {Eq.char_eq_true(Chr{xx}, ' ', Eq.and.left(Char.is_eq(Chr{xx}, ' '), Bool.and(T.date.shaped(buf),
+        Laws.bw.digit1(tt)), ho)) : {Chr{xx} == ' ' : Char}}
+      +h2 = {Eq.and.right(Char.is_eq(Chr{xx}, ' '), Bool.and(T.date.shaped(buf), Laws.bw.digit1(tt)), ho)
+        : {Bool.and(T.date.shaped(buf), Laws.bw.digit1(tt)) == True{} : Bool}}
+      vl.chs(ch => vl.Run(fx, buf, ch, tt, rr), Chr{xx}, ' ', eq,
+        vl.run.sp(fx, buf, tt, rr, Eq.and.left(T.date.shaped(buf), Laws.bw.digit1(tt), h2),
+          Eq.and.right(T.date.shaped(buf), Laws.bw.digit1(tt), h2),
+          vl.chs(ch => vl.Ih(fx, buf, ch, tt, rr), ' ', Chr{xx}, Equal.sym(Char, Chr{xx}, ' ', eq), ih)))
+
+# the characters the word keeps after its first are pushed one by one,
+# whatever follows
+def vl.run(
+  ss: String,
+  +rr: String,
+  +fx: Laws.Vf,
+  +buf: List<&2, Char>,
+  +ee: {Laws.bw.more(ss, buf) == True{} : Bool}
+) -> {T.doc.read(String.append(ss, rr), T.MScan{Laws.vst(fx, buf, T.LBare{})}) == T.doc.read(rr, T.MScan{Laws.vst(fx,
+  rev.onto(ss, buf), T.LBare{})}) : T.Doc}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          +hm = {Eq.and.right(Bool.or(Laws.word.char(Chr{xx}), Laws.bw.dsp(Chr{xx}, buf, tt)),
+            Laws.bw.more(tt, Chr{xx} <> buf), ee) : {Laws.bw.more(tt, Chr{xx} <> buf) == True{} : Bool}}
+          vl.run.at(Laws.word.char(Chr{xx}), xx, tt, rr, fx, buf, {==},
+            Eq.and.left(Bool.or(Laws.word.char(Chr{xx}), Laws.bw.dsp(Chr{xx}, buf, tt)),
+              Laws.bw.more(tt, Chr{xx} <> buf), ee), vl.run(tt, rr, fx, Chr{xx} <> buf, hm))
+
+# The state with a bare value placed is one of three shapes, by where the
+# value went: after a root pair's value (LLine), an array's item (LArrC) or an
+# inline table's value (LInlC), with nothing held and nothing buffered.
+
+# a claim of every state of one shape
+def vl.Sh(-P: T.St -> Type, +lx: T.Lex) -> Type:
+  @bd: String -> @rw: List<&2, T.Val> -> @hs: List<&2, String> -> @he: List<&2, String> -> @ps: List<&2, String> ->
+    @bk: T.Lex -> @qk: T.QKind -> @sk: List<&2, T.Ctx> -> @un: U32 -> @lf: U32 -> @ab: Bool ->
+    P(T.St{bd, rw, hs, he, ps, [], lx, bk, qk, sk, T.HNone{}, un, lf, ab, False{}})
+
+# a root pair's value
+def vl.vt.root(
+  -P: T.St -> Type,
+  end: T.End,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  pl: vl.Sh(P, T.LLine{})
+) -> P(T.take.root(end, he, bk, qk, un, lf, ab, False{})):
+  match end:
+    case T.End{+vs, +bad, +heads}:
+      pl(bad, vs, heads, he, [], bk, qk, [], un, lf, ab)
+
+# an inline table's value
+def vl.vt.inl(
+  -P: T.St -> Type,
+  end: T.End,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +rest: List<&2, T.Ctx>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  pi: vl.Sh(P, T.LInlC{})
+) -> P(T.take.inl(end, rw, hs, he, ps, rest, bk, qk, un, lf, ab, False{})):
+  match end:
+    case T.End{+inl, +bad, _heads}:
+      pi(bad, rw, hs, he, [], bk, qk, T.CInl{inl, ps, he} <> rest, un, lf, ab)
+
+# a claim of each shape is a claim of the state with a bare value placed
+def vl.vt.elim(
+  -P: T.St -> Type,
+  +fx: Laws.Vf,
+  +vv: T.Val,
+  pl: vl.Sh(P, T.LLine{}),
+  pa: vl.Sh(P, T.LArrC{}),
+  pi: vl.Sh(P, T.LInlC{})
+) -> P(vl.vt(fx, vv)):
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, stack, +uni, +left, +arrtab}:
+      match stack:
+        case []:
+          vl.vt.root(P, T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+            T.path.len(here, 0)), here, back, qkind, uni, left, arrtab, pl)
+        case T.CArr{items, +saved, +at} <> +rest:
+          pa(bad, rows, heads, at, saved, back, qkind, T.CArr{vv <> items, saved, at} <> rest, uni, left, arrtab)
+        case T.CInl{inl, +saved, +at} <> +rest:
+          vl.vt.inl(P, T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{vv}, [], bad, "", [], True{}}, 0),
+            rows, heads, at, saved, rest, back, qkind, uni, left, arrtab, pi)
+
+# the end of the text after a placed value finishes the document from it
+def vl.close(
+  +fx: Laws.Vf,
+  +vv: T.Val
+) -> {T.read.fin(T.read.once2(vl.vt(fx, vv))) == T.read.fin2(vl.vt(fx, vv)) : T.Doc}:
+  vl.vt.elim(st => {T.read.fin(T.read.once2(st)) == T.read.fin2(st) : T.Doc}, fx, vv,
+    _bd => _rw => _hs => _he => _ps => _bk => _qk => _sk => _un => _lf => _ab => {==},
+    _bd => _rw => _hs => _he => _ps => _bk => _qk => _sk => _un => _lf => _ab => {==},
+    _bd => _rw => _hs => _he => _ps => _bk => _qk => _sk => _un => _lf => _ab => {==})
+
+# nothing is held after a placed value
+def vl.o2(+fx: Laws.Vf, +vv: T.Val) -> {T.read.once2(vl.vt(fx, vv)) == vl.vt(fx, vv) : T.St}:
+  vl.vt.elim(st => {T.read.once2(st) == st : T.St}, fx, vv,
+    _bd => _rw => _hs => _he => _ps => _bk => _qk => _sk => _un => _lf => _ab => {==},
+    _bd => _rw => _hs => _he => _ps => _bk => _qk => _sk => _un => _lf => _ab => {==},
+    _bd => _rw => _hs => _he => _ps => _bk => _qk => _sk => _un => _lf => _ab => {==})
+
+# a space or a tab in a state that skips it leaves the state as it is
+def vl.ws(
+  sp: Bool,
+  nl: Bool,
+  keep: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +buf: List<&2, Char>,
+  +lx: T.Lex,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +cc: Char,
+  es: {sp == True{} : Bool}
+) -> {T.read.fast.ws(sp, nl, keep, bd, rw, hs, he, ps, buf, lx, bk, qk, sk, un, lf, ab, cc) == fs.st(bd, rw, hs, he, ps,
+  buf, lx, bk, qk, sk, un, lf, ab) : T.St}:
+  match sp:
+    case True{}:
+      {==}
+    case False{}:
+      Eq.bit.absurd(&2, {T.read.fast.ws(False{}, nl, keep, bd, rw, hs, he, ps, buf, lx, bk, qk, sk, un, lf, ab, cc)
+        == fs.st(bd, rw, hs, he, ps, buf, lx, bk, qk, sk, un, lf, ab) : T.St}, es)
+
+# a space or a tab after a placed value is skipped
+def vl.self(
+  +fx: Laws.Vf,
+  +vv: T.Val,
+  +cc: Char,
+  +es: {T.ch.sp(cc) == True{} : Bool}
+) -> {T.read.fast(vl.vt(fx, vv), cc) == vl.vt(fx, vv) : T.St}:
+  vl.vt.elim(st => {T.read.fast(st, cc) == st : T.St}, fx, vv,
+    bd => rw => hs => he => ps => bk => qk => sk => un => lf => ab => vl.ws(T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw,
+      hs, he, ps, [], T.LLine{}, bk, qk, sk, un, lf, ab, cc, es),
+    bd => rw => hs => he => ps => bk => qk => sk => un => lf => ab => vl.ws(T.ch.sp(cc), T.ch.nl(cc), True{}, bd, rw,
+      hs, he, ps, [], T.LArrC{}, bk, qk, sk, un, lf, ab, cc, es),
+    bd => rw => hs => he => ps => bk => qk => sk => un => lf => ab => vl.ws(T.ch.sp(cc), T.ch.nl(cc), False{}, bd, rw,
+      hs, he, ps, [], T.LInlC{}, bk, qk, sk, un, lf, ab, cc, es))
+
+# a space or a tab that ended a word is read as the fast step reads it after
+# the value
+def vl.eh.sp(
+  +fx: Laws.Vf,
+  +vv: T.Val,
+  +cc: Char,
+  +es: {T.ch.sp(cc) == True{} : Bool}
+) -> {T.read.once2(vl.vt(fx, vv)) == T.read.fast(vl.vt(fx, vv), cc) : T.St}:
+  Equal.trans(T.St, T.read.once2(vl.vt(fx, vv)), vl.vt(fx, vv), T.read.fast(vl.vt(fx, vv), cc), vl.o2(fx, vv),
+    Equal.sym(T.St, T.read.fast(vl.vt(fx, vv), cc), vl.vt(fx, vv), vl.self(fx, vv, cc, es)))
+
+# a carriage return after a root value is consumed with it, as the fast step
+# would
+def vl.cr.root(
+  end: T.End,
+  +he: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> {T.read.once2(T.bare.line.go(T.take.root(end, he, bk, qk, un, lf, ab, False{})))
+  == T.read.fast(T.take.root(end, he, bk, qk, un, lf, ab, False{}), Chr{13}) : T.St}:
+  match end:
+    case T.End{_vs, _bad, _heads}:
+      {==}
+
+# a carriage return after a bare value, wherever the value went
+def vl.eh.cr(+fx: Laws.Vf, +vv: T.Val) -> cw.Eh(fx, vv, Chr{13}, Laws.vf.inl(fx)):
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, stack, +uni, +left, +arrtab}:
+      match stack:
+        case []:
+          vl.cr.root(T.tree.walk(T.path.cat(here, parts), T.Tw{rows, T.JPut{vv}, [], bad, "", heads, False{}},
+            T.path.len(here, 0)), here, back, qkind, uni, left, arrtab)
+        case T.CArr{_items, _saved, _at} <> _rest:
+          {==}
+        case T.CInl{+inl, +saved, +at} <> +rest:
+          fs.held(T.CInl{inl, saved, at} <> rest, vv, Chr{13}, bad, rows, heads, here, parts, back, qkind, uni, left,
+            arrtab)
+
+# the character cc, which ends a bare word, finishes the word: word.val
+# classifies the buffer and hold says whether cc is read again
+def vl.Rf(+fx: Laws.Vf, +bb: List<&2, Char>, +cc: Char, +hold: Bool) -> Type:
+  {T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc) == T.read.once2(T.bare.got(T.word.val(List.reverse(&2, Char, bb)),
+    Laws.vst(fx, [], T.LBare{}), cc, hold)) : T.St}
+
+# a tab
+def vl.rf.tab(+fx: Laws.Vf, +bb: List<&2, Char>) -> vl.Rf(fx, bb, Chr{9}, False{}):
+  match fx:
+    case Laws.Vf{_bad, _rows, _heads, _here, _parts, _back, _qkind, _stack, _uni, _left, _arrtab}:
+      {==}
+
+# a line feed
+def vl.rf.lf(+fx: Laws.Vf, +bb: List<&2, Char>) -> vl.Rf(fx, bb, '\n', Laws.vf.inl(fx)):
+  match fx:
+    case Laws.Vf{_bad, _rows, _heads, _here, _parts, _back, _qkind, _stack, _uni, _left, _arrtab}:
+      {==}
+
+# a carriage return
+def vl.rf.cr(+fx: Laws.Vf, +bb: List<&2, Char>) -> vl.Rf(fx, bb, Chr{13}, Laws.vf.inl(fx)):
+  match fx:
+    case Laws.Vf{_bad, _rows, _heads, _here, _parts, _back, _qkind, _stack, _uni, _left, _arrtab}:
+      {==}
+
+# #, held
+def vl.rf.hash(+fx: Laws.Vf, +bb: List<&2, Char>) -> vl.Rf(fx, bb, '#', True{}):
+  match fx:
+    case Laws.Vf{_bad, _rows, _heads, _here, _parts, _back, _qkind, _stack, _uni, _left, _arrtab}:
+      {==}
+
+# a comma, held
+def vl.rf.comma(+fx: Laws.Vf, +bb: List<&2, Char>) -> vl.Rf(fx, bb, ',', True{}):
+  match fx:
+    case Laws.Vf{_bad, _rows, _heads, _here, _parts, _back, _qkind, _stack, _uni, _left, _arrtab}:
+      {==}
+
+# a bracket, held
+def vl.rf.rb(+fx: Laws.Vf, +bb: List<&2, Char>) -> vl.Rf(fx, bb, ']', True{}):
+  match fx:
+    case Laws.Vf{_bad, _rows, _heads, _here, _parts, _back, _qkind, _stack, _uni, _left, _arrtab}:
+      {==}
+
+# a brace, held
+def vl.rf.rc(+fx: Laws.Vf, +bb: List<&2, Char>) -> vl.Rf(fx, bb, '}', True{}):
+  match fx:
+    case Laws.Vf{_bad, _rows, _heads, _here, _parts, _back, _qkind, _stack, _uni, _left, _arrtab}:
+      {==}
+
+# a space the word does not keep: the buffer is no date
+def vl.rf.sp(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  hs: {T.date.shaped(bb) == False{} : Bool}
+) -> vl.Rf(fx, bb, ' ', False{}):
+  match fx:
+    case Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}:
+      Equal.cong(Bool, T.St, xx => T.read.once2(T.lex.bare.date.go(xx, T.St{bad, rows, heads, here, parts, bb,
+        T.LBare{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, ' ')), T.date.shaped(bb), False{}, hs)
+
+# a character that ends a word, then the step after the value: the step from
+# the buffer is the step from the state with the value placed
+def vl.acc(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +vv: T.Val,
+  +cc: Char,
+  +hold: Bool,
+  hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotVal{vv} : T.Got},
+  rf: vl.Rf(fx, bb, cc, hold),
+  eh: cw.Eh(fx, vv, cc, hold)
+) -> {T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc) == T.read.fast(vl.vt(fx, vv), cc) : T.St}:
+  Equal.trans(T.St, T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc), T.read.once2(T.bare.got(T.word.val(List.reverse(&2,
+    Char, bb)), Laws.vst(fx, [], T.LBare{}), cc, hold)), T.read.fast(vl.vt(fx, vv), cc), rf,
+    Equal.trans(T.St, T.read.once2(T.bare.got(T.word.val(List.reverse(&2, Char, bb)), Laws.vst(fx, [], T.LBare{}), cc,
+      hold)), T.read.once2(T.bare.got(T.GotVal{vv}, Laws.vst(fx, [], T.LBare{}), cc, hold)),
+      T.read.fast(vl.vt(fx, vv), cc),
+      Equal.cong(T.Got, T.St, gg => T.read.once2(T.bare.got(gg, Laws.vst(fx, [], T.LBare{}), cc, hold)),
+        T.word.val(List.reverse(&2, Char, bb)), T.GotVal{vv}, hv), eh))
+
+# what the rest gives from the buffer, it gives from the placed value
+def vl.Fin(+fx: Laws.Vf, +bb: List<&2, Char>, +vv: T.Val, rest: String) -> Type:
+  {T.doc.read(rest, T.MScan{Laws.vst(fx, bb, T.LBare{})}) == T.doc.read(rest, T.MScan{vl.vt(fx, vv)}) : T.Doc}
+
+# the step on a character the scan mode reads in scan mode
+def vl.stp(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +vv: T.Val,
+  +cc: Char,
+  +tt: String,
+  ee: {T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc) == T.read.fast(vl.vt(fx, vv), cc) : T.St}
+) -> {T.doc.read(tt, T.MScan{T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc)}) == T.doc.read(tt,
+  T.MScan{T.read.fast(vl.vt(fx, vv), cc)}) : T.Doc}:
+  Equal.cong(T.St, T.Doc, st => T.doc.read(tt, T.MScan{st}), T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc),
+    T.read.fast(vl.vt(fx, vv), cc), ee)
+
+# and after a carriage return
+def vl.stp.cr(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +vv: T.Val,
+  +tt: String,
+  ee: {T.read.fast(Laws.vst(fx, bb, T.LBare{}), Chr{13}) == T.read.fast(vl.vt(fx, vv), Chr{13}) : T.St}
+) -> vl.Fin(fx, bb, vv, SCon{Chr{13}, tt}):
+  Equal.cong(T.St, T.Doc, st => T.doc.read(tt, T.MCr{st}), T.read.fast(Laws.vst(fx, bb, T.LBare{}), Chr{13}),
+    T.read.fast(vl.vt(fx, vv), Chr{13}), ee)
+
+# the end of the text ends the word
+def vl.nil.b(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +vv: T.Val,
+  hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotVal{vv} : T.Got}
+) -> vl.Fin(fx, bb, vv, SNil{}):
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, +stack, +uni, +left, +arrtab}:
+      Equal.trans(T.Doc, T.read.fin2(T.bare.got(T.word.val(List.reverse(&2, Char, bb)), T.St{bad, rows, heads, here,
+        parts, [], T.LBare{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, ' ', False{})),
+        T.read.fin2(vl.vt(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}, vv)),
+        T.read.fin(T.read.once2(vl.vt(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab},
+          vv))),
+        Equal.cong(T.Got, T.Doc, gg => T.read.fin2(T.bare.got(gg, T.St{bad, rows, heads, here, parts, [], T.LBare{},
+          back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, ' ', False{})),
+          T.word.val(List.reverse(&2, Char, bb)), T.GotVal{vv}, hv),
+        Equal.sym(T.Doc, T.read.fin(T.read.once2(vl.vt(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni,
+          left, arrtab}, vv))), T.read.fin2(vl.vt(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left,
+          arrtab}, vv)), vl.close(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}, vv)))
+
+# and so it does after a date's space
+def vl.nil.d(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +vv: T.Val,
+  hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotVal{vv} : T.Got}
+) -> {T.doc.read(SNil{}, T.MScan{Laws.vst(fx, bb, T.LDate{})}) == T.doc.read(SNil{}, T.MScan{vl.vt(fx, vv)}) : T.Doc}:
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, +stack, +uni, +left, +arrtab}:
+      Equal.trans(T.Doc, T.read.fin2(T.bare.got(T.word.val(List.reverse(&2, Char, bb)), T.St{bad, rows, heads, here,
+        parts, [], T.LDate{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, ' ', False{})),
+        T.read.fin2(vl.vt(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}, vv)),
+        T.read.fin(T.read.once2(vl.vt(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab},
+          vv))),
+        Equal.cong(T.Got, T.Doc, gg => T.read.fin2(T.bare.got(gg, T.St{bad, rows, heads, here, parts, [], T.LDate{},
+          back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, ' ', False{})),
+          T.word.val(List.reverse(&2, Char, bb)), T.GotVal{vv}, hv),
+        Equal.sym(T.Doc, T.read.fin(T.read.once2(vl.vt(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni,
+          left, arrtab}, vv))), T.read.fin2(vl.vt(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left,
+          arrtab}, vv)), vl.close(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}, vv)))
+
+# After a date's space, a character that is no digit ends the word: it is
+# held and read again from the placed value, in whatever mode it opens.
+
+# the step on a character, from two states the fast step takes to the same
+# state, gives the same mode
+def vl.q(
+  dq: Bool,
+  sq: Bool,
+  cr: Bool,
+  aa: T.St,
+  bb: T.St,
+  +cc: Char,
+  ee: {T.read.fast(aa, cc) == T.read.fast(bb, cc) : T.St}
+) -> {T.doc.scan.q(dq, sq, cr, aa, cc) == T.doc.scan.q(dq, sq, cr, bb, cc) : T.Mode}:
+  match dq:
+    case True{}:
+      Equal.cong(T.St, T.Mode, st => T.doc.wrap(st), T.read.fast(aa, cc), T.read.fast(bb, cc), ee)
+    case False{}:
+      match sq:
+        case True{}:
+          Equal.cong(T.St, T.Mode, st => T.doc.wrap(st), T.read.fast(aa, cc), T.read.fast(bb, cc), ee)
+        case False{}:
+          match cr:
+            case True{}:
+              Equal.cong(T.St, T.Mode, st => T.MCr{st}, T.read.fast(aa, cc), T.read.fast(bb, cc), ee)
+            case False{}:
+              Equal.cong(T.St, T.Mode, st => T.MScan{st}, T.read.fast(aa, cc), T.read.fast(bb, cc), ee)
+
+# a character after a date's space that is no digit: the word is classified
+# and the character read again from the placed value
+def vl.dacc(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +vv: T.Val,
+  +cc: Char,
+  hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotVal{vv} : T.Got},
+  hd: {Char.is_digit(cc) == False{} : Bool}
+) -> {T.read.fast(Laws.vst(fx, bb, T.LDate{}), cc) == T.read.fast(vl.vt(fx, vv), cc) : T.St}:
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, +stack, +uni, +left, +arrtab}:
+      Equal.trans(T.St, T.read.once2(T.lex.date.go(Char.is_digit(cc), T.St{bad, rows, heads, here, parts, bb,
+        T.LDate{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc)),
+        T.read.once2(T.bare.got(T.word.val(List.reverse(&2, Char, bb)), T.St{bad, rows, heads, here, parts, [],
+          T.LDate{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc, True{})),
+        T.read.fast(vl.vt(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}, vv), cc),
+        Equal.cong(Bool, T.St, xx => T.read.once2(T.lex.date.go(xx, T.St{bad, rows, heads, here, parts, bb, T.LDate{},
+          back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc)), Char.is_digit(cc), False{}, hd),
+        Equal.trans(T.St, T.read.once2(T.bare.got(T.word.val(List.reverse(&2, Char, bb)), T.St{bad, rows, heads, here,
+          parts, [], T.LDate{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc, True{})),
+          T.read.once2(T.bare.got(T.GotVal{vv}, T.St{bad, rows, heads, here, parts, [], T.LDate{}, back, qkind, stack,
+            T.HNone{}, uni, left, arrtab, False{}}, cc, True{})),
+          T.read.fast(vl.vt(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}, vv), cc),
+          Equal.cong(T.Got, T.St, gg => T.read.once2(T.bare.got(gg, T.St{bad, rows, heads, here, parts, [], T.LDate{},
+            back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc, True{})),
+            T.word.val(List.reverse(&2, Char, bb)), T.GotVal{vv}, hv),
+          fs.held(stack, vv, cc, bad, rows, heads, here, parts, back, qkind, uni, left, arrtab)))
+
+# the rest after a date's space that starts with no digit reads as from the
+# placed value
+def vl.date.rest(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +vv: T.Val,
+  tt: String,
+  +hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotVal{vv} : T.Got},
+  hd: {Laws.bw.digit1(tt) == False{} : Bool}
+) -> {T.doc.read(tt, T.MScan{Laws.vst(fx, bb, T.LDate{})}) == T.doc.read(tt, T.MScan{vl.vt(fx, vv)}) : T.Doc}:
+  match tt:
+    case SNil{}:
+      vl.nil.d(fx, bb, vv, hv)
+    case SCon{+c2, +t2}:
+      Equal.cong(T.Mode, T.Doc, md => T.doc.read(t2, md), T.doc.scan(Laws.vst(fx, bb, T.LDate{}), c2),
+        T.doc.scan(vl.vt(fx, vv), c2),
+        vl.q(Char.is_eq(c2, '"'), Char.is_eq(c2, '\''), U32.is_eq(Char.to_u32(c2), 13), Laws.vst(fx, bb, T.LDate{}),
+          vl.vt(fx, vv), c2, vl.dacc(fx, bb, vv, c2, hv, hd)))
+
+# a space after a date with no digit after it ends the word, and is skipped
+# after the value as a space is
+def vl.fin.date(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +vv: T.Val,
+  +tt: String,
+  hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotVal{vv} : T.Got},
+  hs: {T.date.shaped(bb) == True{} : Bool},
+  hd: {Laws.bw.digit1(tt) == False{} : Bool}
+) -> vl.Fin(fx, bb, vv, SCon{' ', tt}):
+  Equal.trans(T.Doc, T.doc.read(tt, T.doc.scan(Laws.vst(fx, bb, T.LBare{}), ' ')),
+    T.doc.read(tt, T.MScan{Laws.vst(fx, bb, T.LDate{})}), T.doc.read(tt, T.MScan{T.read.fast(vl.vt(fx, vv), ' ')}),
+    Equal.cong(T.Mode, T.Doc, md => T.doc.read(tt, md), T.doc.scan(Laws.vst(fx, bb, T.LBare{}), ' '),
+      T.MScan{Laws.vst(fx, bb, T.LDate{})}, vl.sp(fx, bb, hs)),
+    Equal.trans(T.Doc, T.doc.read(tt, T.MScan{Laws.vst(fx, bb, T.LDate{})}), T.doc.read(tt, T.MScan{vl.vt(fx, vv)}),
+      T.doc.read(tt, T.MScan{T.read.fast(vl.vt(fx, vv), ' ')}), vl.date.rest(fx, bb, vv, tt, hv, hd),
+      Equal.sym(T.Doc, T.doc.read(tt, T.MScan{T.read.fast(vl.vt(fx, vv), ' ')}), T.doc.read(tt, T.MScan{vl.vt(fx,
+        vv)}), Equal.cong(T.St, T.Doc, st => T.doc.read(tt, T.MScan{st}), T.read.fast(vl.vt(fx, vv), ' '),
+        vl.vt(fx, vv), vl.self(fx, vv, ' ', {==})))))
+
+# an and whose left half holds, negated: its right half is false
+def vl.nd(
+  aa: Bool,
+  bb: Bool,
+  ea: {aa == True{} : Bool},
+  hn: {Bool.not(Bool.and(aa, bb)) == True{} : Bool}
+) -> {bb == False{} : Bool}:
+  match aa:
+    case True{}:
+      Eq.not.true(bb, hn)
+    case False{}:
+      Eq.bit.absurd(&2, {bb == False{} : Bool}, ea)
+
+# a space that ends the word: after a date the space is the date's, and
+# otherwise it ends the word at once
+def vl.fin.sp(
+  ds: Bool,
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +vv: T.Val,
+  +tt: String,
+  +hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotVal{vv} : T.Got},
+  +es: {T.date.shaped(bb) == ds : Bool},
+  hn: {Bool.not(Bool.and(T.date.shaped(bb), Laws.bw.digit1(tt))) == True{} : Bool}
+) -> vl.Fin(fx, bb, vv, SCon{' ', tt}):
+  match ds:
+    case True{}:
+      vl.fin.date(fx, bb, vv, tt, hv, es, vl.nd(T.date.shaped(bb), Laws.bw.digit1(tt), es, hn))
+    case False{}:
+      vl.stp(fx, bb, vv, ' ', tt, vl.acc(fx, bb, vv, ' ', False{}, hv, vl.rf.sp(fx, bb, es), vl.eh.sp(fx, vv, ' ',
+        {==})))
+
+# a claim of each of the eight characters that end a bare value is a claim
+# of every one: a space, a tab, a line feed, a carriage return, #, a comma, ]
+# and }
+def vl.delim.go(
+  -P: Char -> Type,
+  +xx: U32,
+  b1: Bool,
+  b2: Bool,
+  b3: Bool,
+  b4: Bool,
+  b5: Bool,
+  b6: Bool,
+  b7: Bool,
+  b8: Bool,
+  e1: {U32.is_eq(xx, 32) == b1 : Bool},
+  e2: {U32.is_eq(xx, 9) == b2 : Bool},
+  e3: {U32.is_eq(xx, 10) == b3 : Bool},
+  e4: {U32.is_eq(xx, 13) == b4 : Bool},
+  e5: {U32.is_eq(xx, 35) == b5 : Bool},
+  e6: {U32.is_eq(xx, 44) == b6 : Bool},
+  e7: {U32.is_eq(xx, 93) == b7 : Bool},
+  e8: {U32.is_eq(xx, 125) == b8 : Bool},
+  hd: {Bool.or(Bool.or(b1, b2), Bool.or(Bool.or(b3, b4), Bool.or(b5, Bool.or(b6, Bool.or(b7, b8))))) == True{} : Bool},
+  p1: P(' '),
+  p2: P(Chr{9}),
+  p3: P('\n'),
+  p4: P(Chr{13}),
+  p5: P('#'),
+  p6: P(','),
+  p7: P(']'),
+  p8: P('}')
+) -> P(Chr{xx}):
+  match b1:
+    case True{}:
+      vl.chs(P, Chr{xx}, ' ', Eq.u32_eq(xx, 32, e1), p1)
+    case False{}:
+      match b2:
+        case True{}:
+          vl.chs(P, Chr{xx}, Chr{9}, Eq.u32_eq(xx, 9, e2), p2)
+        case False{}:
+          match b3:
+            case True{}:
+              vl.chs(P, Chr{xx}, '\n', Eq.u32_eq(xx, 10, e3), p3)
+            case False{}:
+              match b4:
+                case True{}:
+                  vl.chs(P, Chr{xx}, Chr{13}, Eq.u32_eq(xx, 13, e4), p4)
+                case False{}:
+                  match b5:
+                    case True{}:
+                      vl.chs(P, Chr{xx}, '#', Eq.u32_eq(xx, 35, e5), p5)
+                    case False{}:
+                      match b6:
+                        case True{}:
+                          vl.chs(P, Chr{xx}, ',', Eq.u32_eq(xx, 44, e6), p6)
+                        case False{}:
+                          match b7:
+                            case True{}:
+                              vl.chs(P, Chr{xx}, ']', Eq.u32_eq(xx, 93, e7), p7)
+                            case False{}:
+                              match b8:
+                                case True{}:
+                                  vl.chs(P, Chr{xx}, '}', Eq.u32_eq(xx, 125, e8), p8)
+                                case False{}:
+                                  Eq.bit.absurd(&1, P(Chr{xx}), hd)
+
+# the same, from the scanner's test
+def vl.delim(
+  -P: Char -> Type,
+  +xx: U32,
+  hd: {T.ch.delim(Chr{xx}) == True{} : Bool},
+  p1: P(' '),
+  p2: P(Chr{9}),
+  p3: P('\n'),
+  p4: P(Chr{13}),
+  p5: P('#'),
+  p6: P(','),
+  p7: P(']'),
+  p8: P('}')
+) -> P(Chr{xx}):
+  vl.delim.go(P, xx, U32.is_eq(xx, 32), U32.is_eq(xx, 9), U32.is_eq(xx, 10), U32.is_eq(xx, 13), U32.is_eq(xx, 35),
+    U32.is_eq(xx, 44), U32.is_eq(xx, 93), U32.is_eq(xx, 125), {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, hd,
+    p1, p2, p3, p4, p5, p6, p7, p8)
+
+# the claim for a word's buffer and one ending character, given that it is no
+# date's space
+def vl.Fp(+fx: Laws.Vf, +bb: List<&2, Char>, +vv: T.Val, +tt: String, +cc: Char) -> Type:
+  {Bool.not(Laws.bw.dsp(cc, bb, tt)) == True{} : Bool} -> vl.Fin(fx, bb, vv, SCon{cc, tt})
+
+# a text that ends the word reads as from the placed value
+def vl.fin(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +vv: T.Val,
+  rest: String,
+  +hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotVal{vv} : T.Got},
+  +ee: {Laws.bw.end(bb, rest) == True{} : Bool}
+) -> vl.Fin(fx, bb, vv, rest):
+  match rest:
+    case SNil{}:
+      vl.nil.b(fx, bb, vv, hv)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          vl.delim(ch => vl.Fp(fx, bb, vv, tt, ch), xx, Eq.and.left(T.ch.delim(Chr{xx}),
+            Bool.not(Laws.bw.dsp(Chr{xx}, bb, tt)), ee),
+            hn => vl.fin.sp(T.date.shaped(bb), fx, bb, vv, tt, hv, {==}, hn),
+            _hn => vl.stp(fx, bb, vv, Chr{9}, tt, vl.acc(fx, bb, vv, Chr{9}, False{}, hv, vl.rf.tab(fx, bb),
+              vl.eh.sp(fx, vv, Chr{9}, {==}))),
+            _hn => vl.stp(fx, bb, vv, '\n', tt, vl.acc(fx, bb, vv, '\n', Laws.vf.inl(fx), hv, vl.rf.lf(fx, bb),
+              cw.nl(fx, vv))),
+            _hn => vl.stp.cr(fx, bb, vv, tt, vl.acc(fx, bb, vv, Chr{13}, Laws.vf.inl(fx), hv, vl.rf.cr(fx, bb),
+              vl.eh.cr(fx, vv))),
+            _hn => vl.stp(fx, bb, vv, '#', tt, vl.acc(fx, bb, vv, '#', True{}, hv, vl.rf.hash(fx, bb),
+              cw.held(fx, vv, '#'))),
+            _hn => vl.stp(fx, bb, vv, ',', tt, vl.acc(fx, bb, vv, ',', True{}, hv, vl.rf.comma(fx, bb),
+              cw.held(fx, vv, ','))),
+            _hn => vl.stp(fx, bb, vv, ']', tt, vl.acc(fx, bb, vv, ']', True{}, hv, vl.rf.rb(fx, bb),
+              cw.held(fx, vv, ']'))),
+            _hn => vl.stp(fx, bb, vv, '}', tt, vl.acc(fx, bb, vv, '}', True{}, hv, vl.rf.rc(fx, bb),
+              cw.held(fx, vv, '}'))))(Eq.and.right(T.ch.delim(Chr{xx}), Bool.not(Laws.bw.dsp(Chr{xx}, bb, tt)), ee))
+
+# a bare word read from a value state, then a text that ends it: the rest is
+# read from the state with the value placed
+def vl.lift(
+  ww: String,
+  +hw: {Laws.bw.word(ww) == True{} : Bool},
+  +vv: T.Val,
+  +hv: {T.word.val(String.to_list(ww)) == T.GotVal{vv} : T.Got},
+  +fx: Laws.Vf,
+  +rest: String,
+  ee: {Laws.bw.end(Laws.bw.rev(ww, []), rest) == True{} : Bool}
+) -> {T.doc.read(String.append(ww, rest), T.MScan{Laws.vst(fx, [], T.LVal{})}) == T.doc.read(rest,
+  T.MScan{vl.vt(fx, vv)}) : T.Doc}:
+  match ww:
+    case SNil{}:
+      Eq.bit.absurd(&2, {T.doc.read(String.append(SNil{}, rest), T.MScan{Laws.vst(fx, [], T.LVal{})})
+        == T.doc.read(rest, T.MScan{vl.vt(fx, vv)}) : T.Doc}, hw)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          +bb = {rev.onto(tt, [Chr{xx}]) : List<&2, Char>}
+          +ho = {Equal.trans(T.Got, T.word.val(List.reverse(&2, Char, bb)), T.word.val(String.to_list(SCon{Chr{xx},
+            tt})), T.GotVal{vv}, Equal.cong(List<&2, Char>, T.Got, cs => T.word.val(cs), List.reverse(&2, Char, bb),
+            String.to_list(SCon{Chr{xx}, tt}), wd.order(Chr{xx}, tt)), hv)
+            : {T.word.val(List.reverse(&2, Char, bb)) == T.GotVal{vv} : T.Got}}
+          +he = {Equal.trans(Bool, Laws.bw.end(bb, rest), Laws.bw.end(Laws.bw.rev(tt, [Chr{xx}]), rest), True{},
+            Equal.cong(List<&2, Char>, Bool, ys => Laws.bw.end(ys, rest), bb, Laws.bw.rev(tt, [Chr{xx}]),
+            Equal.sym(List<&2, Char>, Laws.bw.rev(tt, [Chr{xx}]), bb, vl.rev(tt, [Chr{xx}]))), ee)
+            : {Laws.bw.end(bb, rest) == True{} : Bool}}
+          Equal.trans(T.Doc,
+            T.doc.read(String.append(tt, rest), T.doc.scan(Laws.vst(fx, [], T.LVal{}), Chr{xx})),
+            T.doc.read(String.append(tt, rest), T.MScan{Laws.vst(fx, [Chr{xx}], T.LBare{})}),
+            T.doc.read(rest, T.MScan{vl.vt(fx, vv)}),
+            Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, rest), md),
+              T.doc.scan(Laws.vst(fx, [], T.LVal{}), Chr{xx}), T.MScan{Laws.vst(fx, [Chr{xx}], T.LBare{})},
+              wd.first(fx, xx, Eq.and.left(Laws.word.first(Chr{xx}), Laws.bw.more(tt, [Chr{xx}]), hw))),
+            Equal.trans(T.Doc,
+              T.doc.read(String.append(tt, rest), T.MScan{Laws.vst(fx, [Chr{xx}], T.LBare{})}),
+              T.doc.read(rest, T.MScan{Laws.vst(fx, bb, T.LBare{})}),
+              T.doc.read(rest, T.MScan{vl.vt(fx, vv)}),
+              vl.run(tt, rest, fx, [Chr{xx}], Eq.and.right(Laws.word.first(Chr{xx}), Laws.bw.more(tt, [Chr{xx}]), hw)),
+              vl.fin(fx, bb, vv, rest, ho, he)))
+
+def Laws.bare_word_reads_on(w, hw, v, hv, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, ee):
+  vl.lift(w, hw, v, hv, Laws.Vf{"", rw, hs, he, ps, bk, qk, sk, un, lf, ab}, rest, ee)
+
+# A word word.val refuses: the step that ends it fails the scanner (st.err),
+# and a failed scanner keeps its error to the end of the text (fail_stays),
+# in the scan mode or after a carriage return.
+
+# the document read from a mode has an error
+def vl.Bad(+tt: String, md: T.Mode) -> Type:
+  {String.is_empty(T.bad(T.doc.read(tt, md))) == False{} : Bool}
+
+# and so does one read from a mode equal to it
+def vl.btr(
+  +tt: String,
+  m1: T.Mode,
+  m2: T.Mode,
+  ee: {m1 == m2 : T.Mode},
+  hh: vl.Bad(tt, m2)
+) -> vl.Bad(tt, m1):
+  Equal.trans(Bool, String.is_empty(T.bad(T.doc.read(tt, m1))), String.is_empty(T.bad(T.doc.read(tt, m2))), False{},
+    Equal.cong(T.Mode, Bool, md => String.is_empty(T.bad(T.doc.read(tt, md))), m1, m2, ee), hh)
+
+# the first error is kept, and a reason that is not empty leaves one
+def vl.ef.go(
+  em: Bool,
+  +bad: String,
+  +why: String,
+  ee: {String.is_empty(bad) == em : Bool},
+  hw: {String.is_empty(why) == False{} : Bool}
+) -> {String.is_empty(T.err.first.go(em, bad, why)) == False{} : Bool}:
+  match em:
+    case True{}:
+      hw
+    case False{}:
+      ee
+
+# whatever error there was
+def vl.ef(
+  +bad: String,
+  +why: String,
+  hw: {String.is_empty(why) == False{} : Bool}
+) -> {String.is_empty(T.err.first(bad, why)) == False{} : Bool}:
+  vl.ef.go(String.is_empty(bad), bad, why, {==}, hw)
+
+# a failed scanner leaves an error, whatever follows
+def vl.sink(
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +hb: {String.is_empty(bd) == False{} : Bool},
+  +tt: String
+) -> vl.Bad(tt, T.MScan{T.St{bd, rw, hs, he, ps, [], T.LSink{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}}):
+  Equal.trans(Bool, String.is_empty(T.bad(T.doc.read(tt, T.MScan{T.St{bd, rw, hs, he, ps, [], T.LSink{}, bk, qk, sk,
+    T.HNone{}, un, lf, ab, False{}}}))), String.is_empty(bd), False{},
+    Equal.cong(String, Bool, ss => String.is_empty(ss), T.bad(T.doc.read(tt, T.MScan{T.St{bd, rw, hs, he, ps, [],
+      T.LSink{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}}})), bd,
+      Laws.fail_stays(bd, rw, hs, he, ps, [], bk, qk, sk, un, lf, ab, False{}, hb, tt)), hb)
+
+# the scanner once a word is refused for the reason why
+def vl.err(+fx: Laws.Vf, why: String) -> T.St:
+  T.read.once2(T.st.err(Laws.vst(fx, [], T.LBare{}), why))
+
+# it leaves an error in the scan mode
+def vl.bs(
+  +fx: Laws.Vf,
+  +why: String,
+  hw: {String.is_empty(why) == False{} : Bool},
+  +tt: String
+) -> vl.Bad(tt, T.MScan{vl.err(fx, why)}):
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, +stack, +uni, +left, +arrtab}:
+      vl.sink(T.err.first(bad, why), rows, heads, here, parts, back, qkind, stack, uni, left, arrtab, vl.ef(bad, why,
+        hw), tt)
+
+# a character after a carriage return, from a failed scanner
+def vl.bcr.at(
+  lf: Bool,
+  +bd: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf2: U32,
+  +ab: Bool,
+  +hb: {String.is_empty(bd) == False{} : Bool},
+  +cc: Char,
+  +tt: String
+) -> vl.Bad(tt, T.doc.cr(lf, T.St{bd, rw, hs, he, ps, [], T.LSink{}, bk, qk, sk, T.HNone{}, un, lf2, ab, False{}}, cc)):
+  match lf:
+    case True{}:
+      vl.sink(bd, rw, hs, he, ps, bk, qk, sk, un, lf2, ab, hb, tt)
+    case False{}:
+      vl.sink(T.err.first(bd, "carriage return without line feed"), rw, hs, he, ps, bk, qk, sk, un, lf2, ab,
+        vl.ef(bd, "carriage return without line feed", {==}), tt)
+
+# it leaves an error after a carriage return too
+def vl.bcr(
+  +fx: Laws.Vf,
+  +why: String,
+  hw: {String.is_empty(why) == False{} : Bool},
+  tt: String
+) -> vl.Bad(tt, T.MCr{vl.err(fx, why)}):
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, +stack, +uni, +left, +arrtab}:
+      match tt:
+        case SNil{}:
+          vl.sink(T.err.first(T.err.first(bad, why), "carriage return without line feed"), rows, heads, here, parts,
+            back, qkind, stack, uni, left, arrtab, vl.ef(T.err.first(bad, why), "carriage return without line feed",
+            {==}), SNil{})
+        case SCon{+hh, +t2}:
+          vl.bcr.at(Char.is_eq(hh, '\n'), T.err.first(bad, why), rows, heads, here, parts, back, qkind, stack, uni,
+            left, arrtab, vl.ef(bad, why, hw), hh, t2)
+
+# and in a mode a quote may open
+def vl.bwrap(
+  +fx: Laws.Vf,
+  +why: String,
+  hw: {String.is_empty(why) == False{} : Bool},
+  +tt: String
+) -> vl.Bad(tt, T.doc.wrap(vl.err(fx, why))):
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, +stack, +uni, +left, +arrtab}:
+      vl.sink(T.err.first(bad, why), rows, heads, here, parts, back, qkind, stack, uni, left, arrtab, vl.ef(bad, why,
+        hw), tt)
+
+# the step on any character, from a state the fast step fails, leaves an
+# error in whatever mode it opens
+def vl.bq(
+  dq: Bool,
+  sq: Bool,
+  cr: Bool,
+  st: T.St,
+  +cc: Char,
+  +fx: Laws.Vf,
+  +why: String,
+  +hw: {String.is_empty(why) == False{} : Bool},
+  +tt: String,
+  +ee: {T.read.fast(st, cc) == vl.err(fx, why) : T.St}
+) -> vl.Bad(tt, T.doc.scan.q(dq, sq, cr, st, cc)):
+  match dq:
+    case True{}:
+      vl.btr(tt, T.doc.wrap(T.read.fast(st, cc)), T.doc.wrap(vl.err(fx, why)), Equal.cong(T.St, T.Mode,
+        ss => T.doc.wrap(ss), T.read.fast(st, cc), vl.err(fx, why), ee), vl.bwrap(fx, why, hw, tt))
+    case False{}:
+      match sq:
+        case True{}:
+          vl.btr(tt, T.doc.wrap(T.read.fast(st, cc)), T.doc.wrap(vl.err(fx, why)), Equal.cong(T.St, T.Mode,
+            ss => T.doc.wrap(ss), T.read.fast(st, cc), vl.err(fx, why), ee), vl.bwrap(fx, why, hw, tt))
+        case False{}:
+          match cr:
+            case True{}:
+              vl.btr(tt, T.MCr{T.read.fast(st, cc)}, T.MCr{vl.err(fx, why)}, Equal.cong(T.St, T.Mode,
+                ss => T.MCr{ss}, T.read.fast(st, cc), vl.err(fx, why), ee), vl.bcr(fx, why, hw, tt))
+            case False{}:
+              vl.btr(tt, T.MScan{T.read.fast(st, cc)}, T.MScan{vl.err(fx, why)}, Equal.cong(T.St, T.Mode,
+                ss => T.MScan{ss}, T.read.fast(st, cc), vl.err(fx, why), ee), vl.bs(fx, why, hw, tt))
+
+# a character that ends a refused word fails the step
+def vl.bacc(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +why: String,
+  +cc: Char,
+  +hold: Bool,
+  hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotBad{why} : T.Got},
+  rf: vl.Rf(fx, bb, cc, hold)
+) -> {T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc) == vl.err(fx, why) : T.St}:
+  Equal.trans(T.St, T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc), T.read.once2(T.bare.got(T.word.val(List.reverse(&2,
+    Char, bb)), Laws.vst(fx, [], T.LBare{}), cc, hold)), vl.err(fx, why), rf,
+    Equal.cong(T.Got, T.St, gg => T.read.once2(T.bare.got(gg, Laws.vst(fx, [], T.LBare{}), cc, hold)),
+      T.word.val(List.reverse(&2, Char, bb)), T.GotBad{why}, hv))
+
+# a character after a date's space that is no digit fails the step
+def vl.bdacc(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +why: String,
+  +cc: Char,
+  hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotBad{why} : T.Got},
+  hd: {Char.is_digit(cc) == False{} : Bool}
+) -> {T.read.fast(Laws.vst(fx, bb, T.LDate{}), cc) == vl.err(fx, why) : T.St}:
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, +stack, +uni, +left, +arrtab}:
+      Equal.trans(T.St, T.read.once2(T.lex.date.go(Char.is_digit(cc), T.St{bad, rows, heads, here, parts, bb,
+        T.LDate{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc)),
+        T.read.once2(T.bare.got(T.word.val(List.reverse(&2, Char, bb)), T.St{bad, rows, heads, here, parts, [],
+          T.LDate{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc, True{})),
+        vl.err(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}, why),
+        Equal.cong(Bool, T.St, xx => T.read.once2(T.lex.date.go(xx, T.St{bad, rows, heads, here, parts, bb, T.LDate{},
+          back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc)), Char.is_digit(cc), False{}, hd),
+        Equal.cong(T.Got, T.St, gg => T.read.once2(T.bare.got(gg, T.St{bad, rows, heads, here, parts, [], T.LDate{},
+          back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc, True{})),
+          T.word.val(List.reverse(&2, Char, bb)), T.GotBad{why}, hv))
+
+# the document from a refused word's buffer has an error
+def vl.Bf(+fx: Laws.Vf, +bb: List<&2, Char>, rest: String) -> Type:
+  vl.Bad(rest, T.MScan{Laws.vst(fx, bb, T.LBare{})})
+
+# the end of the text after a refused word
+def vl.bnil.b(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +why: String,
+  hw: {String.is_empty(why) == False{} : Bool},
+  hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotBad{why} : T.Got}
+) -> vl.Bad(SNil{}, T.MScan{Laws.vst(fx, bb, T.LBare{})}):
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, +stack, +uni, +left, +arrtab}:
+      Equal.trans(Bool, String.is_empty(T.bad(T.read.fin2(T.bare.got(T.word.val(List.reverse(&2, Char, bb)),
+        T.St{bad, rows, heads, here, parts, [], T.LBare{}, back, qkind, stack, T.HNone{}, uni, left, arrtab,
+        False{}}, ' ', False{})))), String.is_empty(T.bad(T.read.fin2(T.bare.got(T.GotBad{why}, T.St{bad, rows,
+        heads, here, parts, [], T.LBare{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, ' ',
+        False{})))), False{},
+        Equal.cong(T.Got, Bool, gg => String.is_empty(T.bad(T.read.fin2(T.bare.got(gg, T.St{bad, rows, heads, here,
+          parts, [], T.LBare{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, ' ', False{})))),
+          T.word.val(List.reverse(&2, Char, bb)), T.GotBad{why}, hv),
+        vl.bs(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}, why, hw, SNil{}))
+
+# the end of the text after a refused word's date space
+def vl.bnil.d(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +why: String,
+  hw: {String.is_empty(why) == False{} : Bool},
+  hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotBad{why} : T.Got}
+) -> vl.Bad(SNil{}, T.MScan{Laws.vst(fx, bb, T.LDate{})}):
+  match fx:
+    case Laws.Vf{+bad, +rows, +heads, +here, +parts, +back, +qkind, +stack, +uni, +left, +arrtab}:
+      Equal.trans(Bool, String.is_empty(T.bad(T.read.fin2(T.bare.got(T.word.val(List.reverse(&2, Char, bb)),
+        T.St{bad, rows, heads, here, parts, [], T.LDate{}, back, qkind, stack, T.HNone{}, uni, left, arrtab,
+        False{}}, ' ', False{})))), String.is_empty(T.bad(T.read.fin2(T.bare.got(T.GotBad{why}, T.St{bad, rows,
+        heads, here, parts, [], T.LDate{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, ' ',
+        False{})))), False{},
+        Equal.cong(T.Got, Bool, gg => String.is_empty(T.bad(T.read.fin2(T.bare.got(gg, T.St{bad, rows, heads, here,
+          parts, [], T.LDate{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, ' ', False{})))),
+          T.word.val(List.reverse(&2, Char, bb)), T.GotBad{why}, hv),
+        vl.bs(Laws.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}, why, hw, SNil{}))
+
+# the rest after a refused word's date space has an error
+def vl.bdate.rest(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +why: String,
+  tt: String,
+  +hw: {String.is_empty(why) == False{} : Bool},
+  +hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotBad{why} : T.Got},
+  hd: {Laws.bw.digit1(tt) == False{} : Bool}
+) -> vl.Bad(tt, T.MScan{Laws.vst(fx, bb, T.LDate{})}):
+  match tt:
+    case SNil{}:
+      vl.bnil.d(fx, bb, why, hw, hv)
+    case SCon{+c2, +t2}:
+      vl.bq(Char.is_eq(c2, '"'), Char.is_eq(c2, '\''), U32.is_eq(Char.to_u32(c2), 13), Laws.vst(fx, bb, T.LDate{}), c2,
+        fx, why, hw, t2, vl.bdacc(fx, bb, why, c2, hv, hd))
+
+# a space after a refused word: the date's, or one that ends it at once
+def vl.bfin.sp(
+  ds: Bool,
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +why: String,
+  +tt: String,
+  +hw: {String.is_empty(why) == False{} : Bool},
+  +hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotBad{why} : T.Got},
+  +es: {T.date.shaped(bb) == ds : Bool},
+  hn: {Bool.not(Bool.and(T.date.shaped(bb), Laws.bw.digit1(tt))) == True{} : Bool}
+) -> vl.Bf(fx, bb, SCon{' ', tt}):
+  match ds:
+    case True{}:
+      vl.btr(tt, T.doc.scan(Laws.vst(fx, bb, T.LBare{}), ' '), T.MScan{Laws.vst(fx, bb, T.LDate{})}, vl.sp(fx, bb, es),
+        vl.bdate.rest(fx, bb, why, tt, hw, hv, vl.nd(T.date.shaped(bb), Laws.bw.digit1(tt), es, hn)))
+    case False{}:
+      vl.btr(tt, T.MScan{T.read.fast(Laws.vst(fx, bb, T.LBare{}), ' ')}, T.MScan{vl.err(fx, why)},
+        Equal.cong(T.St, T.Mode, ss => T.MScan{ss}, T.read.fast(Laws.vst(fx, bb, T.LBare{}), ' '), vl.err(fx, why),
+        vl.bacc(fx, bb, why, ' ', False{}, hv, vl.rf.sp(fx, bb, es))), vl.bs(fx, why, hw, tt))
+
+# a character other than a space that ends a refused word
+def vl.bstp(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +why: String,
+  +cc: Char,
+  +tt: String,
+  hw: {String.is_empty(why) == False{} : Bool},
+  ee: {T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc) == vl.err(fx, why) : T.St}
+) -> vl.Bad(tt, T.MScan{T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc)}):
+  vl.btr(tt, T.MScan{T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc)}, T.MScan{vl.err(fx, why)}, Equal.cong(T.St, T.Mode,
+    ss => T.MScan{ss}, T.read.fast(Laws.vst(fx, bb, T.LBare{}), cc), vl.err(fx, why), ee), vl.bs(fx, why, hw, tt))
+
+# the claim for a refused word's buffer and one ending character
+def vl.Bp(+fx: Laws.Vf, +bb: List<&2, Char>, +tt: String, +cc: Char) -> Type:
+  {Bool.not(Laws.bw.dsp(cc, bb, tt)) == True{} : Bool} -> vl.Bf(fx, bb, SCon{cc, tt})
+
+# a text that ends a refused word leaves an error
+def vl.bfin(
+  +fx: Laws.Vf,
+  +bb: List<&2, Char>,
+  +why: String,
+  rest: String,
+  +hw: {String.is_empty(why) == False{} : Bool},
+  +hv: {T.word.val(List.reverse(&2, Char, bb)) == T.GotBad{why} : T.Got},
+  +ee: {Laws.bw.end(bb, rest) == True{} : Bool}
+) -> vl.Bf(fx, bb, rest):
+  match rest:
+    case SNil{}:
+      vl.bnil.b(fx, bb, why, hw, hv)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          vl.delim(ch => vl.Bp(fx, bb, tt, ch), xx, Eq.and.left(T.ch.delim(Chr{xx}),
+            Bool.not(Laws.bw.dsp(Chr{xx}, bb, tt)), ee),
+            hn => vl.bfin.sp(T.date.shaped(bb), fx, bb, why, tt, hw, hv, {==}, hn),
+            _hn => vl.bstp(fx, bb, why, Chr{9}, tt, hw, vl.bacc(fx, bb, why, Chr{9}, False{}, hv, vl.rf.tab(fx, bb))),
+            _hn => vl.bstp(fx, bb, why, '\n', tt, hw, vl.bacc(fx, bb, why, '\n', Laws.vf.inl(fx), hv, vl.rf.lf(fx,
+              bb))),
+            _hn => vl.btr(tt, T.MCr{T.read.fast(Laws.vst(fx, bb, T.LBare{}), Chr{13})}, T.MCr{vl.err(fx, why)},
+              Equal.cong(T.St, T.Mode, ss => T.MCr{ss}, T.read.fast(Laws.vst(fx, bb, T.LBare{}), Chr{13}),
+              vl.err(fx, why), vl.bacc(fx, bb, why, Chr{13}, Laws.vf.inl(fx), hv, vl.rf.cr(fx, bb))),
+              vl.bcr(fx, why, hw, tt)),
+            _hn => vl.bstp(fx, bb, why, '#', tt, hw, vl.bacc(fx, bb, why, '#', True{}, hv, vl.rf.hash(fx, bb))),
+            _hn => vl.bstp(fx, bb, why, ',', tt, hw, vl.bacc(fx, bb, why, ',', True{}, hv, vl.rf.comma(fx, bb))),
+            _hn => vl.bstp(fx, bb, why, ']', tt, hw, vl.bacc(fx, bb, why, ']', True{}, hv, vl.rf.rb(fx, bb))),
+            _hn => vl.bstp(fx, bb, why, '}', tt, hw, vl.bacc(fx, bb, why, '}', True{}, hv, vl.rf.rc(fx, bb))))(
+              Eq.and.right(T.ch.delim(Chr{xx}), Bool.not(Laws.bw.dsp(Chr{xx}, bb, tt)), ee))
+
+# a refused word's reason is not empty
+def vl.why(
+  +cs: List<&2, Char>,
+  +why: String,
+  hv: {T.word.val(cs) == T.GotBad{why} : T.Got}
+) -> {String.is_empty(why) == False{} : Bool}:
+  Eq.not.true(String.is_empty(why), Equal.trans(Bool, Laws.k3.why(T.GotBad{why}), Laws.k3.why(T.word.val(cs)), True{},
+    Equal.cong(T.Got, Bool, gg => Laws.k3.why(gg), T.GotBad{why}, T.word.val(cs), Equal.sym(T.Got, T.word.val(cs),
+    T.GotBad{why}, hv)), Laws.bare_word_refusal_says_why(cs)))
+
+# a bare word word.val refuses, read from a value state, then a text that
+# ends it: the document has an error
+def vl.blift(
+  ww: String,
+  +hw: {Laws.bw.word(ww) == True{} : Bool},
+  +why: String,
+  +hv: {T.word.val(String.to_list(ww)) == T.GotBad{why} : T.Got},
+  +fx: Laws.Vf,
+  +rest: String,
+  ee: {Laws.bw.end(Laws.bw.rev(ww, []), rest) == True{} : Bool}
+) -> vl.Bad(String.append(ww, rest), T.MScan{Laws.vst(fx, [], T.LVal{})}):
+  match ww:
+    case SNil{}:
+      Eq.bit.absurd(&1, vl.Bad(String.append(SNil{}, rest), T.MScan{Laws.vst(fx, [], T.LVal{})}), hw)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          +bb = {rev.onto(tt, [Chr{xx}]) : List<&2, Char>}
+          +ho = {Equal.trans(T.Got, T.word.val(List.reverse(&2, Char, bb)), T.word.val(String.to_list(SCon{Chr{xx},
+            tt})), T.GotBad{why}, Equal.cong(List<&2, Char>, T.Got, cs => T.word.val(cs), List.reverse(&2, Char, bb),
+            String.to_list(SCon{Chr{xx}, tt}), wd.order(Chr{xx}, tt)), hv)
+            : {T.word.val(List.reverse(&2, Char, bb)) == T.GotBad{why} : T.Got}}
+          +he = {Equal.trans(Bool, Laws.bw.end(bb, rest), Laws.bw.end(Laws.bw.rev(tt, [Chr{xx}]), rest), True{},
+            Equal.cong(List<&2, Char>, Bool, ys => Laws.bw.end(ys, rest), bb, Laws.bw.rev(tt, [Chr{xx}]),
+            Equal.sym(List<&2, Char>, Laws.bw.rev(tt, [Chr{xx}]), bb, vl.rev(tt, [Chr{xx}]))), ee)
+            : {Laws.bw.end(bb, rest) == True{} : Bool}}
+          vl.btr(String.append(tt, rest), T.doc.scan(Laws.vst(fx, [], T.LVal{}), Chr{xx}), T.MScan{Laws.vst(fx,
+            [Chr{xx}], T.LBare{})}, wd.first(fx, xx, Eq.and.left(Laws.word.first(Chr{xx}), Laws.bw.more(tt, [Chr{xx}]),
+            hw)),
+            Equal.trans(Bool, String.is_empty(T.bad(T.doc.read(String.append(tt, rest), T.MScan{Laws.vst(fx, [Chr{xx}],
+              T.LBare{})}))), String.is_empty(T.bad(T.doc.read(rest, T.MScan{Laws.vst(fx, bb, T.LBare{})}))), False{},
+              Equal.cong(T.Doc, Bool, dd => String.is_empty(T.bad(dd)), T.doc.read(String.append(tt, rest),
+                T.MScan{Laws.vst(fx, [Chr{xx}], T.LBare{})}), T.doc.read(rest, T.MScan{Laws.vst(fx, bb, T.LBare{})}),
+                vl.run(tt, rest, fx, [Chr{xx}], Eq.and.right(Laws.word.first(Chr{xx}), Laws.bw.more(tt, [Chr{xx}]),
+                hw))),
+              vl.bfin(fx, bb, why, rest, vl.why(String.to_list(SCon{Chr{xx}, tt}), why, hv), ho, he)))
+
+def Laws.bare_word_refused(w, hw, why, hv, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, ee):
+  vl.blift(w, hw, why, hv, Laws.Vf{"", rw, hs, he, ps, bk, qk, sk, un, lf, ab}, rest, ee)
+
+# A bare word reads as a scalar or as nothing: word.val gives an integer, a
+# float, a boolean or a datetime, or refuses. Each route is a case split on
+# its result (as gd_word's gd.w.* are), with no scan invariant.
+
+# whether a bare word's outcome is a scalar or a refusal
+def vl.sc(gg: T.Got) -> Bool:
+  match gg:
+    case T.GotVal{T.VInt{_s, _d}}:
+      True{}
+    case T.GotVal{T.VFlo{_s, _t}}:
+      True{}
+    case T.GotVal{T.VBool{_b}}:
+      True{}
+    case T.GotVal{T.VWhen{_w}}:
+      True{}
+    case T.GotVal{_v}:
+      False{}
+    case T.GotBad{_why}:
+      True{}
+
+# nan, signed or not
+def vl.sc.nan(aa: Bool, bb: Bool, cc: Bool) -> {vl.sc(T.word.spec.nan(aa, bb, cc)) == True{} : Bool}:
+  match aa bb cc:
+    case True{} _b _c:
+      {==}
+    case False{} True{} _c:
+      {==}
+    case False{} False{} True{}:
+      {==}
+    case False{} False{} False{}:
+      {==}
+
+# inf, or nan
+def vl.sc.inf(aa: Bool, bb: Bool, cc: Bool, +ss: String) -> {vl.sc(T.word.spec.inf(aa, bb, cc, ss)) == True{} : Bool}:
+  match aa bb cc:
+    case True{} _b _c:
+      {==}
+    case False{} True{} _c:
+      {==}
+    case False{} False{} True{}:
+      {==}
+    case False{} False{} False{}:
+      vl.sc.nan(T.str.eq(ss, "nan"), T.str.eq(ss, "+nan"), T.str.eq(ss, "-nan"))
+
+# true, false, or the rest
+def vl.sc.st(hit: Bool, other: Bool, +ss: String) -> {vl.sc(T.word.spec.t(hit, other, ss)) == True{} : Bool}:
+  match hit other:
+    case True{} _o:
+      {==}
+    case False{} True{}:
+      {==}
+    case False{} False{}:
+      vl.sc.inf(T.str.eq(ss, "inf"), T.str.eq(ss, "+inf"), T.str.eq(ss, "-inf"), ss)
+
+# a datetime's outcome
+def vl.sc.when(ww: T.WhenOut) -> {vl.sc(T.word.from.when(ww)) == True{} : Bool}:
+  match ww:
+    case T.WSome{_w}:
+      {==}
+    case T.WFail{_why}:
+      {==}
+    case T.WSkip{}:
+      {==}
+
+# an integer's range test
+def vl.sc.rng(ok: Bool, sg: T.Sign, ds: String) -> {vl.sc(T.num.fin.range(ok, sg, ds)) == True{} : Bool}:
+  match ok:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# an integer's digits
+def vl.sc.int(saw: Bool, +sg: T.Sign, +ds: String) -> {vl.sc(T.num.fin.int(saw, sg, ds)) == True{} : Bool}:
+  match saw:
+    case True{}:
+      vl.sc.rng(T.i64.fits(sg, ds), sg, ds)
+    case False{}:
+      {==}
+
+# a prefixed integer
+def vl.sc.base(
+  signed: Bool,
+  saw: Bool,
+  +sg: T.Sign,
+  +ds: List<&2, U32>
+) -> {vl.sc(T.num.fin.base(signed, saw, sg, ds)) == True{} : Bool}:
+  match signed:
+    case True{}:
+      {==}
+    case False{}:
+      vl.sc.int(saw, sg, T.dec.text(ds))
+
+# a float's last run
+def vl.sc.saw(saw: Bool, sg: T.Sign, tx: String) -> {vl.sc(T.num.fin.saw(saw, T.VFlo{sg, tx})) == True{} : Bool}:
+  match saw:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# the kind the numeral scan finished in
+def vl.sc.nk(
+  nk: T.NK,
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  +saw: Bool,
+  why: String,
+  +cs: List<&2, Char>
+) -> {vl.sc(T.num.fin.nk(nk, sg, ds, saw, why, cs)) == True{} : Bool}:
+  match nk:
+    case T.NBad{}:
+      {==}
+    case T.NLead{}:
+      {==}
+    case T.NSign{}:
+      {==}
+    case T.NZero{}:
+      {==}
+    case T.NDig{}:
+      vl.sc.int(saw, sg, T.dec.text(ds))
+    case T.NBase{}:
+      vl.sc.base(T.num.signed(cs), saw, sg, ds)
+    case T.NFrac{}:
+      vl.sc.saw(saw, sg, T.word.body(cs))
+    case T.NExp{}:
+      {==}
+    case T.NEDig{}:
+      vl.sc.saw(saw, sg, T.word.body(cs))
+
+# a finished numeral
+def vl.sc.fin(st: T.Num, +cs: List<&2, Char>) -> {vl.sc(T.num.fin(st, cs)) == True{} : Bool}:
+  match st:
+    case T.Num{nk, +sign, _base, +ds, us, +saw, why}:
+      match us:
+        case True{}:
+          {==}
+        case False{}:
+          vl.sc.nk(nk, sign, ds, saw, why, cs)
+
+# a datetime or a numeral
+def vl.sc.rdate(dt: Bool, +cs: List<&2, Char>) -> {vl.sc(T.word.route.date(dt, cs)) == True{} : Bool}:
+  match dt:
+    case True{}:
+      vl.sc.when(T.when.read(cs))
+    case False{}:
+      vl.sc.fin(T.num.go(cs, T.num.start()), cs)
+
+# a special's value, or a datetime or a numeral
+def vl.sc.route(
+  gg: T.Got,
+  +dt: Bool,
+  +cs: List<&2, Char>,
+  eg: {vl.sc(gg) == True{} : Bool}
+) -> {vl.sc(T.word.route(gg, dt, cs)) == True{} : Bool}:
+  match gg:
+    case T.GotVal{_v}:
+      eg
+    case T.GotBad{_why}:
+      vl.sc.rdate(T.word.as_date(dt, T.word.ee(cs)), cs)
+
+# a word that may be special, or not
+def vl.sc.pick(special: Bool, +cs: List<&2, Char>) -> {vl.sc(T.word.val.pick(special, cs)) == True{} : Bool}:
+  match special:
+    case True{}:
+      vl.sc.route(T.word.spec(String.from_list(cs)), T.word.or(T.word.colon(cs), T.word.dash(cs, True{})), cs,
+        vl.sc.st(T.str.eq(String.from_list(cs), "true"), T.str.eq(String.from_list(cs), "false"),
+        String.from_list(cs)))
+    case False{}:
+      vl.sc.route(T.GotBad{""}, T.word.or(T.word.colon(cs), T.word.dash(cs, True{})), cs, {==})
+
+# every bare word reads as a scalar or as nothing
+def vl.sc.word(+cs: List<&2, Char>) -> {vl.sc(T.word.val(cs)) == True{} : Bool}:
+  vl.sc.pick(T.word.lead(cs), cs)
+
+# The document of one pair, k = w and a newline: a bare key brings the
+# scanner to the value state (kv.key2), the lift reads the word, and the
+# newline ends the document of the pair, or the document has an error.
+
+# a bare word's outcome with the reason of a refusal dropped, as bw.got reads
+# a document with an error
+def vl.norm(gg: T.Got) -> T.Got:
+  match gg:
+    case T.GotVal{vv}:
+      T.GotVal{vv}
+    case T.GotBad{_why}:
+      T.GotBad{""}
+
+# the value state after a bare key and " = ", as vl.lift takes it
+def vl.kf(+kk: String) -> Laws.Vf:
+  Laws.Vf{"", [], [], [], [kk], T.LTop{}, T.QBasic{}, [], 0, 0, False{}}
+
+# a scalar placed at the root, then a newline, is the document of the pair
+def vl.pv.v(
+  vv: T.Val,
+  +kk: String,
+  sc: {vl.sc(T.GotVal{vv}) == True{} : Bool}
+) -> {Laws.bw.got(T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), vv)}), kk) == T.GotVal{vv} : T.Got}:
+  match vv:
+    case T.VInt{+sg, +ds}:
+      Equal.cong(Bool, T.Got, bb => Laws.bw.got.one(True{}, bb, T.VInt{sg, ds}), String.eq(kk, kk), True{},
+        Eq.string_eq_self(kk))
+    case T.VFlo{+sg, +tx}:
+      Equal.cong(Bool, T.Got, bb => Laws.bw.got.one(True{}, bb, T.VFlo{sg, tx}), String.eq(kk, kk), True{},
+        Eq.string_eq_self(kk))
+    case T.VBool{+bt}:
+      Equal.cong(Bool, T.Got, bb => Laws.bw.got.one(True{}, bb, T.VBool{bt}), String.eq(kk, kk), True{},
+        Eq.string_eq_self(kk))
+    case T.VWhen{+ww}:
+      Equal.cong(Bool, T.Got, bb => Laws.bw.got.one(True{}, bb, T.VWhen{ww}), String.eq(kk, kk), True{},
+        Eq.string_eq_self(kk))
+    case T.VStr{tx}:
+      Eq.bit.absurd(&2, {Laws.bw.got(T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VStr{tx})}), kk)
+        == T.GotVal{T.VStr{tx}} : T.Got}, sc)
+    case T.VSpan{src, nn}:
+      Eq.bit.absurd(&2, {Laws.bw.got(T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VSpan{src, nn})}), kk)
+        == T.GotVal{T.VSpan{src, nn}} : T.Got}, sc)
+    case T.VArr{it}:
+      Eq.bit.absurd(&2, {Laws.bw.got(T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VArr{it})}), kk)
+        == T.GotVal{T.VArr{it}} : T.Got}, sc)
+    case T.VInl{rs}:
+      Eq.bit.absurd(&2, {Laws.bw.got(T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VInl{rs})}), kk)
+        == T.GotVal{T.VInl{rs}} : T.Got}, sc)
+    case T.VHead{pp, rs}:
+      Eq.bit.absurd(&2, {Laws.bw.got(T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VHead{pp, rs})}), kk)
+        == T.GotVal{T.VHead{pp, rs}} : T.Got}, sc)
+    case T.VAot{pp, rs}:
+      Eq.bit.absurd(&2, {Laws.bw.got(T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VAot{pp, rs})}), kk)
+        == T.GotVal{T.VAot{pp, rs}} : T.Got}, sc)
+    case T.VAots{pp, es}:
+      Eq.bit.absurd(&2, {Laws.bw.got(T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VAots{pp, es})}), kk)
+        == T.GotVal{T.VAots{pp, es}} : T.Got}, sc)
+    case T.VPair{nm, pv}:
+      Eq.bit.absurd(&2, {Laws.bw.got(T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VPair{nm, pv})}), kk)
+        == T.GotVal{T.VPair{nm, pv}} : T.Got}, sc)
+
+# a document with an error is read as no value
+def vl.got.bad(
+  dd: T.Doc,
+  +kk: String,
+  hb: {String.is_empty(T.bad(dd)) == False{} : Bool}
+) -> {Laws.bw.got(dd, kk) == T.GotBad{""} : T.Got}:
+  match dd:
+    case T.Doc{+bad, rows}:
+      Equal.cong(Bool, T.Got, bb => Laws.bw.got.go(bb, rows, kk), String.is_empty(bad), False{}, hb)
+
+# the pair's document, from the value state, by the word's outcome
+def vl.pv.at(
+  gg: T.Got,
+  +ww: String,
+  +kk: String,
+  +hw: {Laws.bw.word(ww) == True{} : Bool},
+  eg: {T.word.val(String.to_list(ww)) == gg : T.Got},
+  sc: {vl.sc(gg) == True{} : Bool}
+) -> {Laws.bw.got(T.doc.read(String.append(ww, "\n"), T.MScan{Laws.vst(vl.kf(kk), [], T.LVal{})}), kk) == vl.norm(gg)
+  : T.Got}:
+  match gg:
+    case T.GotVal{+vv}:
+      Equal.trans(T.Got, Laws.bw.got(T.doc.read(String.append(ww, "\n"), T.MScan{Laws.vst(vl.kf(kk), [], T.LVal{})}),
+        kk), Laws.bw.got(T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), vv)}), kk), T.GotVal{vv},
+        Equal.cong(T.Doc, T.Got, dd => Laws.bw.got(dd, kk), T.doc.read(String.append(ww, "\n"),
+          T.MScan{Laws.vst(vl.kf(kk), [], T.LVal{})}), T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), vv)}),
+          vl.lift(ww, hw, vv, eg, vl.kf(kk), "\n", {==})),
+        vl.pv.v(vv, kk, sc))
+    case T.GotBad{+why}:
+      vl.got.bad(T.doc.read(String.append(ww, "\n"), T.MScan{Laws.vst(vl.kf(kk), [], T.LVal{})}), kk,
+        vl.blift(ww, hw, why, eg, vl.kf(kk), "\n", {==}))
+
+# a key, " = ", a bare word and a newline: the document reads as word.val
+# reads the word, with a refusal's reason dropped
+def vl.pv(
+  kk: String,
+  ek: {T.bare(kk) == True{} : Bool},
+  +ww: String,
+  +hw: {Laws.bw.word(ww) == True{} : Bool}
+) -> {Laws.bw.got(T.parse(Laws.bw.kv(kk, ww)), kk) == vl.norm(T.word.val(String.to_list(ww))) : T.Got}:
+  match kk:
+    case SNil{}:
+      Eq.bit.absurd(&2, {Laws.bw.got(T.parse(Laws.bw.kv(SNil{}, ww)), SNil{}) == vl.norm(T.word.val(String.to_list(ww)))
+        : T.Got}, ek)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          Equal.trans(T.Got, Laws.bw.got(T.parse(Laws.bw.kv(SCon{Chr{xx}, tt}, ww)), SCon{Chr{xx}, tt}),
+            Laws.bw.got(T.doc.read(String.append(ww, "\n"), T.MScan{Laws.vst(vl.kf(SCon{Chr{xx}, tt}), [],
+              T.LVal{})}), SCon{Chr{xx}, tt}), vl.norm(T.word.val(String.to_list(ww))),
+            Equal.cong(T.Doc, T.Got, dd => Laws.bw.got(dd, SCon{Chr{xx}, tt}), T.parse(Laws.bw.kv(SCon{Chr{xx}, tt},
+              ww)), T.doc.read(String.append(ww, "\n"), T.MScan{Laws.vst(vl.kf(SCon{Chr{xx}, tt}), [], T.LVal{})}),
+              kv.key2(xx, tt, String.append(ww, "\n"), ek)),
+            vl.pv.at(T.word.val(String.to_list(ww)), ww, SCon{Chr{xx}, tt}, hw, {==},
+              vl.sc.word(String.to_list(ww))))
+
+# a refusal's reason is no value of any kind
+def vl.norm.int(gg: T.Got, +vv: T.Val) -> {Laws.n1.got.int(vl.norm(gg), vv) == Laws.n1.got.int(gg, vv) : Bool}:
+  match gg:
+    case T.GotVal{_v}:
+      {==}
+    case T.GotBad{_why}:
+      {==}
+
+# nor a float
+def vl.norm.flo(gg: T.Got, +vv: T.Val) -> {Laws.n1.got.flo(vl.norm(gg), vv) == Laws.n1.got.flo(gg, vv) : Bool}:
+  match gg:
+    case T.GotVal{_v}:
+      {==}
+    case T.GotBad{_why}:
+      {==}
+
+# nor a boolean
+def vl.norm.bool(gg: T.Got, +vv: T.Val) -> {Laws.n1.got.bool(vl.norm(gg), vv) == Laws.n1.got.bool(gg, vv) : Bool}:
+  match gg:
+    case T.GotVal{_v}:
+      {==}
+    case T.GotBad{_why}:
+      {==}
+
+# nor a datetime
+def vl.norm.when(gg: T.Got, +ww: T.When) -> {Laws.t1.got_when(vl.norm(gg), ww) == Laws.t1.got_when(gg, ww) : Bool}:
+  match gg:
+    case T.GotVal{_v}:
+      {==}
+    case T.GotBad{_why}:
+      {==}
+
+def Laws.integer_parses_exactly(k, ek, w, hw, v):
+  Equal.trans(Bool, Laws.n1.got.int(Laws.bw.got(T.parse(Laws.bw.kv(k, w)), k), v),
+    Laws.n1.got.int(vl.norm(T.word.val(String.to_list(w))), v),
+    Bool.and(Bool.and(Laws.abnf.integer(String.to_list(w)), Laws.prose.int_in_range(String.to_list(w))),
+      Laws.g.val(Laws.GvInteger{String.to_list(w)}, v)),
+    Equal.cong(T.Got, Bool, gg => Laws.n1.got.int(gg, v), Laws.bw.got(T.parse(Laws.bw.kv(k, w)), k),
+      vl.norm(T.word.val(String.to_list(w))), vl.pv(k, ek, w, hw)),
+    Equal.trans(Bool, Laws.n1.got.int(vl.norm(T.word.val(String.to_list(w))), v),
+      Laws.n1.got.int(T.word.val(String.to_list(w)), v),
+      Bool.and(Bool.and(Laws.abnf.integer(String.to_list(w)), Laws.prose.int_in_range(String.to_list(w))),
+        Laws.g.val(Laws.GvInteger{String.to_list(w)}, v)),
+      vl.norm.int(T.word.val(String.to_list(w)), v), Laws.integer_word_exact(String.to_list(w), v)))
+
+def Laws.float_parses_exactly(k, ek, w, hw, v):
+  Equal.trans(Bool, Laws.n1.got.flo(Laws.bw.got(T.parse(Laws.bw.kv(k, w)), k), v),
+    Laws.n1.got.flo(vl.norm(T.word.val(String.to_list(w))), v),
+    Bool.and(Laws.abnf.float(String.to_list(w)), Laws.g.val(Laws.GvFloat{String.to_list(w)}, v)),
+    Equal.cong(T.Got, Bool, gg => Laws.n1.got.flo(gg, v), Laws.bw.got(T.parse(Laws.bw.kv(k, w)), k),
+      vl.norm(T.word.val(String.to_list(w))), vl.pv(k, ek, w, hw)),
+    Equal.trans(Bool, Laws.n1.got.flo(vl.norm(T.word.val(String.to_list(w))), v),
+      Laws.n1.got.flo(T.word.val(String.to_list(w)), v),
+      Bool.and(Laws.abnf.float(String.to_list(w)), Laws.g.val(Laws.GvFloat{String.to_list(w)}, v)),
+      vl.norm.flo(T.word.val(String.to_list(w)), v), Laws.float_word_exact(String.to_list(w), v)))
+
+def Laws.date_time_parses_exactly(k, ek, w, hw, d):
+  Equal.trans(Bool, Laws.t1.got_when(Laws.bw.got(T.parse(Laws.bw.kv(k, w)), k), d),
+    Laws.t1.got_when(vl.norm(T.word.val(String.to_list(w))), d),
+    Bool.and(Laws.g.ok.val(Laws.GvDateTime{String.to_list(w)}, Laws.RVal{}), Laws.g.val(Laws.GvDateTime{
+      String.to_list(w)}, T.VWhen{d})),
+    Equal.cong(T.Got, Bool, gg => Laws.t1.got_when(gg, d), Laws.bw.got(T.parse(Laws.bw.kv(k, w)), k),
+      vl.norm(T.word.val(String.to_list(w))), vl.pv(k, ek, w, hw)),
+    Equal.trans(Bool, Laws.t1.got_when(vl.norm(T.word.val(String.to_list(w))), d),
+      Laws.t1.got_when(T.word.val(String.to_list(w)), d),
+      Bool.and(Laws.g.ok.val(Laws.GvDateTime{String.to_list(w)}, Laws.RVal{}), Laws.g.val(Laws.GvDateTime{
+        String.to_list(w)}, T.VWhen{d})),
+      vl.norm.when(T.word.val(String.to_list(w)), d), Laws.date_time_word(String.to_list(w), d)))
+
+def Laws.boolean_parses_exactly(k, ek, w, hw, v):
+  Equal.trans(Bool, Laws.n1.got.bool(Laws.bw.got(T.parse(Laws.bw.kv(k, w)), k), v),
+    Laws.n1.got.bool(vl.norm(T.word.val(String.to_list(w))), v),
+    Bool.and(Laws.abnf.boolean(String.to_list(w)), Laws.g.val(Laws.GvBoolean{String.to_list(w)}, v)),
+    Equal.cong(T.Got, Bool, gg => Laws.n1.got.bool(gg, v), Laws.bw.got(T.parse(Laws.bw.kv(k, w)), k),
+      vl.norm(T.word.val(String.to_list(w))), vl.pv(k, ek, w, hw)),
+    Equal.trans(Bool, Laws.n1.got.bool(vl.norm(T.word.val(String.to_list(w))), v),
+      Laws.n1.got.bool(T.word.val(String.to_list(w)), v),
+      Bool.and(Laws.abnf.boolean(String.to_list(w)), Laws.g.val(Laws.GvBoolean{String.to_list(w)}, v)),
+      vl.norm.bool(T.word.val(String.to_list(w)), v), Laws.boolean_word_exact(String.to_list(w), v)))
+
+# the four rules a bare value may match, each as g.ok.val reads it
+def vl.rules(+cs: List<&2, Char>) -> Bool:
+  Bool.or(Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}),
+    Bool.or(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}))))
+
+# a word that matches none of them matches each of them not
+def vl.rules.no(+cs: List<&2, Char>, hn: {Laws.bw.none(cs) == True{} : Bool}) -> {vl.rules(cs) == False{} : Bool}:
+  Eq.not.true(vl.rules(cs), hn)
+
+# the integer rule
+def vl.no.int(
+  +cs: List<&2, Char>,
+  +hn: {Laws.bw.none(cs) == True{} : Bool}
+) -> {Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}) == False{} : Bool}:
+  Eq.or.left_false(Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvFloat{cs},
+    Laws.RVal{}), Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{})), Eq.or.right_false(Laws.g.ok.val(
+    Laws.GvBoolean{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}),
+    Bool.or(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}))),
+    vl.rules.no(cs, hn)))
+
+# the float rule
+def vl.no.flo(
+  +cs: List<&2, Char>,
+  +hn: {Laws.bw.none(cs) == True{} : Bool}
+) -> {Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}) == False{} : Bool}:
+  Eq.or.left_false(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}),
+    Eq.or.right_false(Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvFloat{cs},
+    Laws.RVal{}), Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{})), Eq.or.right_false(Laws.g.ok.val(
+    Laws.GvBoolean{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}),
+    Bool.or(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}))),
+    vl.rules.no(cs, hn))))
+
+# the date-time rule
+def vl.no.dt(
+  +cs: List<&2, Char>,
+  +hn: {Laws.bw.none(cs) == True{} : Bool}
+) -> {Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}) == False{} : Bool}:
+  Eq.or.right_false(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}),
+    Eq.or.right_false(Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvFloat{cs},
+    Laws.RVal{}), Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{})), Eq.or.right_false(Laws.g.ok.val(
+    Laws.GvBoolean{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}),
+    Bool.or(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}))),
+    vl.rules.no(cs, hn))))
+
+# the boolean rule
+def vl.no.bool(
+  +cs: List<&2, Char>,
+  +hn: {Laws.bw.none(cs) == True{} : Bool}
+) -> {Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}) == False{} : Bool}:
+  Eq.or.left_false(Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvInteger{cs},
+    Laws.RVal{}), Bool.or(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.ok.val(Laws.GvDateTime{cs},
+    Laws.RVal{}))), vl.rules.no(cs, hn))
+
+# a rule that is false and true is no rule
+def vl.clash(aa: Bool, e1: {aa == False{} : Bool}, e2: {aa == True{} : Bool}) -> {False{} == True{} : Bool}:
+  Equal.trans(Bool, False{}, aa, True{}, Equal.sym(Bool, aa, False{}, e1), e2)
+
+# a word that matches none of the rules is read as no value: by the
+# classifiers, the value word.val gives would match its kind's rule
+def vl.rn.val(
+  vv: T.Val,
+  +cs: List<&2, Char>,
+  +eg: {T.word.val(cs) == T.GotVal{vv} : T.Got},
+  sc: {vl.sc(T.GotVal{vv}) == True{} : Bool},
+  +hn: {Laws.bw.none(cs) == True{} : Bool}
+) -> {False{} == True{} : Bool}:
+  match vv:
+    case T.VInt{+sg, +ds}:
+      vl.clash(Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}), vl.no.int(cs, hn), Eq.and.left(Laws.g.ok.val(
+        Laws.GvInteger{cs}, Laws.RVal{}), Laws.g.val(Laws.GvInteger{cs}, T.VInt{sg, ds}), Equal.trans(Bool,
+        Bool.and(Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}), Laws.g.val(Laws.GvInteger{cs}, T.VInt{sg, ds})),
+        Laws.n1.got.int(T.word.val(cs), T.VInt{sg, ds}), True{}, Equal.sym(Bool, Laws.n1.got.int(T.word.val(cs),
+        T.VInt{sg, ds}), Bool.and(Laws.g.ok.val(Laws.GvInteger{cs}, Laws.RVal{}), Laws.g.val(Laws.GvInteger{cs},
+        T.VInt{sg, ds})), Laws.integer_word_exact(cs, T.VInt{sg, ds})), Equal.trans(Bool,
+        Laws.n1.got.int(T.word.val(cs), T.VInt{sg, ds}), Laws.n1.got.int(T.GotVal{T.VInt{sg, ds}}, T.VInt{sg, ds}),
+        True{}, Equal.cong(T.Got, Bool, gg => Laws.n1.got.int(gg, T.VInt{sg, ds}), T.word.val(cs),
+        T.GotVal{T.VInt{sg, ds}}, eg), and.tt(Laws.sign.eq(sg, sg), String.eq(ds, ds), sign.self(sg),
+        Eq.string_eq_self(ds))))))
+    case T.VFlo{+sg, +tx}:
+      vl.clash(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), vl.no.flo(cs, hn), Eq.and.left(Laws.g.ok.val(
+        Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.val(Laws.GvFloat{cs}, T.VFlo{sg, tx}), Equal.trans(Bool,
+        Bool.and(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.val(Laws.GvFloat{cs}, T.VFlo{sg, tx})),
+        Laws.n1.got.flo(T.word.val(cs), T.VFlo{sg, tx}), True{}, Equal.sym(Bool, Laws.n1.got.flo(T.word.val(cs),
+        T.VFlo{sg, tx}), Bool.and(Laws.g.ok.val(Laws.GvFloat{cs}, Laws.RVal{}), Laws.g.val(Laws.GvFloat{cs},
+        T.VFlo{sg, tx})), Laws.float_word_exact(cs, T.VFlo{sg, tx})), Equal.trans(Bool,
+        Laws.n1.got.flo(T.word.val(cs), T.VFlo{sg, tx}), Laws.n1.got.flo(T.GotVal{T.VFlo{sg, tx}}, T.VFlo{sg, tx}),
+        True{}, Equal.cong(T.Got, Bool, gg => Laws.n1.got.flo(gg, T.VFlo{sg, tx}), T.word.val(cs),
+        T.GotVal{T.VFlo{sg, tx}}, eg), and.tt(Laws.sign.eq(sg, sg), String.eq(tx, tx), sign.self(sg),
+        Eq.string_eq_self(tx))))))
+    case T.VBool{+bt}:
+      vl.clash(Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}), vl.no.bool(cs, hn), Eq.and.left(Laws.g.ok.val(
+        Laws.GvBoolean{cs}, Laws.RVal{}), Laws.g.val(Laws.GvBoolean{cs}, T.VBool{bt}), Equal.trans(Bool,
+        Bool.and(Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}), Laws.g.val(Laws.GvBoolean{cs}, T.VBool{bt})),
+        Laws.n1.got.bool(T.word.val(cs), T.VBool{bt}), True{}, Equal.sym(Bool, Laws.n1.got.bool(T.word.val(cs),
+        T.VBool{bt}), Bool.and(Laws.g.ok.val(Laws.GvBoolean{cs}, Laws.RVal{}), Laws.g.val(Laws.GvBoolean{cs},
+        T.VBool{bt})), Laws.boolean_word_exact(cs, T.VBool{bt})), Equal.trans(Bool,
+        Laws.n1.got.bool(T.word.val(cs), T.VBool{bt}), Laws.n1.got.bool(T.GotVal{T.VBool{bt}}, T.VBool{bt}),
+        True{}, Equal.cong(T.Got, Bool, gg => Laws.n1.got.bool(gg, T.VBool{bt}), T.word.val(cs),
+        T.GotVal{T.VBool{bt}}, eg), bit.self(bt)))))
+    case T.VWhen{+ww}:
+      vl.clash(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}), vl.no.dt(cs, hn), Eq.and.left(Laws.g.ok.val(
+        Laws.GvDateTime{cs}, Laws.RVal{}), Laws.g.val(Laws.GvDateTime{cs}, T.VWhen{ww}), Equal.trans(Bool,
+        Bool.and(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}), Laws.g.val(Laws.GvDateTime{cs}, T.VWhen{ww})),
+        Laws.t1.got_when(T.word.val(cs), ww), True{}, Equal.sym(Bool, Laws.t1.got_when(T.word.val(cs), ww),
+        Bool.and(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}), Laws.g.val(Laws.GvDateTime{cs}, T.VWhen{ww})),
+        Laws.date_time_word(cs, ww)), Equal.trans(Bool, Laws.t1.got_when(T.word.val(cs), ww),
+        Laws.t1.got_when(T.GotVal{T.VWhen{ww}}, ww), True{}, Equal.cong(T.Got, Bool, gg => Laws.t1.got_when(gg, ww),
+        T.word.val(cs), T.GotVal{T.VWhen{ww}}, eg), when.self(ww)))))
+    case T.VStr{_tx}:
+      sc
+    case T.VSpan{_src, _nn}:
+      sc
+    case T.VArr{_it}:
+      sc
+    case T.VInl{_rs}:
+      sc
+    case T.VHead{_pp, _rs}:
+      sc
+    case T.VAot{_pp, _rs}:
+      sc
+    case T.VAots{_pp, _es}:
+      sc
+    case T.VPair{_nm, _pv}:
+      sc
+
+# the document from the value state has an error, by the word's outcome
+def vl.rn.at(
+  gg: T.Got,
+  +ww: String,
+  +kk: String,
+  +hw: {Laws.bw.word(ww) == True{} : Bool},
+  +eg: {T.word.val(String.to_list(ww)) == gg : T.Got},
+  sc: {vl.sc(gg) == True{} : Bool},
+  +hn: {Laws.bw.none(String.to_list(ww)) == True{} : Bool}
+) -> vl.Bad(String.append(ww, "\n"), T.MScan{Laws.vst(vl.kf(kk), [], T.LVal{})}):
+  match gg:
+    case T.GotVal{vv}:
+      Eq.bit.absurd(&1, vl.Bad(String.append(ww, "\n"), T.MScan{Laws.vst(vl.kf(kk), [], T.LVal{})}),
+        vl.rn.val(vv, String.to_list(ww), eg, sc, hn))
+    case T.GotBad{+why}:
+      vl.blift(ww, hw, why, eg, vl.kf(kk), "\n", {==})
+
+def Laws.word_refused_in_document(k, ek, w, hw, hn):
+  match k:
+    case SNil{}:
+      Eq.bit.absurd(&2, {String.is_empty(T.bad(T.parse(Laws.bw.kv(SNil{}, w)))) == False{} : Bool}, ek)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          Equal.trans(Bool, String.is_empty(T.bad(T.parse(Laws.bw.kv(SCon{Chr{xx}, tt}, w)))),
+            String.is_empty(T.bad(T.doc.read(String.append(w, "\n"), T.MScan{Laws.vst(vl.kf(SCon{Chr{xx}, tt}), [],
+            T.LVal{})}))), False{},
+            Equal.cong(T.Doc, Bool, dd => String.is_empty(T.bad(dd)), T.parse(Laws.bw.kv(SCon{Chr{xx}, tt}, w)),
+              T.doc.read(String.append(w, "\n"), T.MScan{Laws.vst(vl.kf(SCon{Chr{xx}, tt}), [], T.LVal{})}),
+              kv.key2(xx, tt, String.append(w, "\n"), ek)),
+            vl.rn.at(T.word.val(String.to_list(w)), w, SCon{Chr{xx}, tt}, hw, {==}, vl.sc.word(String.to_list(w)),
+              hn))
+
+# An array's item. In LArr the word's first character is held and read again
+# in LVal, with back at LVal: the word is read from that value position.
+
+# a character that is no space and no newline takes the array state's full
+# step
+def vl.arr.ws(
+  sp: Bool,
+  nl: Bool,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +cc: Char,
+  hsp: {sp == False{} : Bool},
+  hnl: {nl == False{} : Bool}
+) -> {T.read.fast.ws(sp, nl, True{}, "", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un, lf, ab, cc)
+  == T.read.fast.old("", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un, lf, ab, cc) : T.St}:
+  match sp:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.read.fast.ws(True{}, nl, True{}, "", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un, lf, ab,
+        cc) == T.read.fast.old("", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un, lf, ab, cc) : T.St}, hsp)
+    case False{}:
+      match nl:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.read.fast.ws(False{}, True{}, True{}, "", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un,
+            lf, ab, cc) == T.read.fast.old("", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un, lf, ab, cc) : T.St}, hnl)
+        case False{}:
+          {==}
+
+# no space, newline, # or ]: the array state holds the character for the
+# value state
+def vl.arr.go(
+  sp: Bool,
+  nl: Bool,
+  hash: Bool,
+  end: Bool,
+  +st: T.St,
+  +cc: Char,
+  hsp: {sp == False{} : Bool},
+  hnl: {nl == False{} : Bool},
+  hhs: {hash == False{} : Bool},
+  hen: {end == False{} : Bool}
+) -> {T.lex.arr.go(sp, nl, hash, end, st, cc) == T.lex.arr.end(False{}, st, cc) : T.St}:
+  match sp:
+    case True{}:
+      Eq.bit.absurd2(&2, {T.lex.arr.go(True{}, nl, hash, end, st, cc) == T.lex.arr.end(False{}, st, cc) : T.St}, hsp)
+    case False{}:
+      match nl:
+        case True{}:
+          Eq.bit.absurd2(&2, {T.lex.arr.go(False{}, True{}, hash, end, st, cc) == T.lex.arr.end(False{}, st, cc)
+            : T.St}, hnl)
+        case False{}:
+          match hash:
+            case True{}:
+              Eq.bit.absurd2(&2, {T.lex.arr.go(False{}, False{}, True{}, end, st, cc) == T.lex.arr.end(False{}, st,
+                cc) : T.St}, hhs)
+            case False{}:
+              match end:
+                case True{}:
+                  Eq.bit.absurd2(&2, {T.lex.arr.go(False{}, False{}, False{}, True{}, st, cc) == T.lex.arr.end(False{},
+                    st, cc) : T.St}, hen)
+                case False{}:
+                  {==}
+
+# the first character of a bare word, read in an array, is pushed as in the
+# value state with back at LVal
+def vl.arr.first(
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool,
+  +xx: U32,
+  +h1: {Laws.word.first(Chr{xx}) == True{} : Bool}
+) -> {T.doc.scan(Laws.s1.apos(rw, hs, he, ps, bk, qk, sk, un, lf, ab), Chr{xx})
+  == T.doc.scan(Laws.vpos(rw, hs, he, ps, T.LVal{}, qk, sk, un, lf, ab), Chr{xx}) : T.Mode}:
+  +hw = {Eq.and.left(Laws.word.char(Chr{xx}), Bool.not(Bool.or(Char.is_eq(Chr{xx}, '['),
+    Char.is_eq(Chr{xx}, '{'))), h1) : {Laws.word.char(Chr{xx}) == True{} : Bool}}
+  +hd = {wd.delim(Chr{xx}, hw) : {T.ch.delim(Chr{xx}) == False{} : Bool}}
+  +hq = {Eq.not.true(Bool.or(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\'')),
+    Eq.and.right(Bool.not(T.ch.delim(Chr{xx})), Bool.not(Bool.or(Char.is_eq(Chr{xx}, '"'),
+    Char.is_eq(Chr{xx}, '\''))), hw))
+    : {Bool.or(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\'')) == False{} : Bool}}
+  +hb = {Eq.not.true(Bool.or(Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '{')),
+    Eq.and.right(Laws.word.char(Chr{xx}), Bool.not(Bool.or(Char.is_eq(Chr{xx}, '['),
+    Char.is_eq(Chr{xx}, '{'))), h1)) : {Bool.or(Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '{')) == False{} : Bool}}
+  +d1 = {Eq.or.right_false(T.ch.sp(Chr{xx}), Bool.or(T.ch.nl(Chr{xx}), Bool.or(Char.is_eq(Chr{xx}, '#'),
+    Bool.or(Char.is_eq(Chr{xx}, ','), Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}'))))), hd)
+    : {Bool.or(T.ch.nl(Chr{xx}), Bool.or(Char.is_eq(Chr{xx}, '#'), Bool.or(Char.is_eq(Chr{xx}, ','),
+    Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}'))))) == False{} : Bool}}
+  +d2 = {Eq.or.right_false(T.ch.nl(Chr{xx}), Bool.or(Char.is_eq(Chr{xx}, '#'), Bool.or(Char.is_eq(Chr{xx}, ','),
+    Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}')))), d1)
+    : {Bool.or(Char.is_eq(Chr{xx}, '#'), Bool.or(Char.is_eq(Chr{xx}, ','), Bool.or(Char.is_eq(Chr{xx}, ']'),
+    Char.is_eq(Chr{xx}, '}')))) == False{} : Bool}}
+  +d3 = {Eq.or.right_false(Char.is_eq(Chr{xx}, '#'), Bool.or(Char.is_eq(Chr{xx}, ','), Bool.or(Char.is_eq(Chr{xx},
+    ']'), Char.is_eq(Chr{xx}, '}'))), d2) : {Bool.or(Char.is_eq(Chr{xx}, ','), Bool.or(Char.is_eq(Chr{xx}, ']'),
+    Char.is_eq(Chr{xx}, '}'))) == False{} : Bool}}
+  +d4 = {Eq.or.right_false(Char.is_eq(Chr{xx}, ','), Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}')), d3)
+    : {Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}')) == False{} : Bool}}
+  +fsp = {Eq.or.left_false(T.ch.sp(Chr{xx}), Bool.or(T.ch.nl(Chr{xx}), Bool.or(Char.is_eq(Chr{xx}, '#'),
+    Bool.or(Char.is_eq(Chr{xx}, ','), Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}'))))), hd)
+    : {T.ch.sp(Chr{xx}) == False{} : Bool}}
+  +fnl = {Eq.or.left_false(T.ch.nl(Chr{xx}), Bool.or(Char.is_eq(Chr{xx}, '#'), Bool.or(Char.is_eq(Chr{xx}, ','),
+    Bool.or(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}')))), d1) : {T.ch.nl(Chr{xx}) == False{} : Bool}}
+  +fhs = {Eq.or.left_false(Char.is_eq(Chr{xx}, '#'), Bool.or(Char.is_eq(Chr{xx}, ','), Bool.or(Char.is_eq(Chr{xx},
+    ']'), Char.is_eq(Chr{xx}, '}'))), d2) : {Char.is_eq(Chr{xx}, '#') == False{} : Bool}}
+  +frb = {Eq.or.left_false(Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '}'), d4)
+    : {Char.is_eq(Chr{xx}, ']') == False{} : Bool}}
+  +st = {T.St{"", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, T.HNone{}, un, lf, ab, False{}} : T.St}
+  +sv = {T.St{"", rw, hs, he, ps, [], T.LVal{}, T.LVal{}, qk, sk, T.HNone{}, un, lf, ab, False{}} : T.St}
+  Equal.trans(T.Mode, T.doc.scan(Laws.s1.apos(rw, hs, he, ps, bk, qk, sk, un, lf, ab), Chr{xx}),
+    T.MScan{T.read.fast(st, Chr{xx})},
+    T.doc.scan(Laws.vpos(rw, hs, he, ps, T.LVal{}, qk, sk, un, lf, ab), Chr{xx}),
+    scan.other(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), U32.is_eq(xx, 13), st, Chr{xx}, {==}, {==}, {==},
+      ch => Laws.word.first(ch), h1, {==}, {==}, {==}),
+    Equal.trans(T.Mode, T.MScan{T.read.fast(st, Chr{xx})}, T.MScan{T.st.push(sv, Chr{xx}, T.LBare{})},
+      T.doc.scan(Laws.vpos(rw, hs, he, ps, T.LVal{}, qk, sk, un, lf, ab), Chr{xx}),
+      Equal.cong(T.St, T.Mode, ss => T.MScan{ss}, T.read.fast(st, Chr{xx}), T.st.push(sv, Chr{xx}, T.LBare{}),
+        Equal.trans(T.St, T.read.fast.ws(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), True{}, "", rw, hs, he, ps, [], T.LArr{},
+          bk, qk, sk, un, lf, ab, Chr{xx}), T.read.fast.old("", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un, lf, ab,
+          Chr{xx}), T.st.push(sv, Chr{xx}, T.LBare{}),
+          vl.arr.ws(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), rw, hs, he, ps, bk, qk, sk, un, lf, ab, Chr{xx}, fsp, fnl),
+          Equal.trans(T.St, T.read.once2(T.lex.arr.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'),
+            Char.is_eq(Chr{xx}, ']'), st, Chr{xx})), T.read.once2(T.lex.arr.end(False{}, st, Chr{xx})),
+            T.st.push(sv, Chr{xx}, T.LBare{}),
+            Equal.cong(T.St, T.St, ss => T.read.once2(ss), T.lex.arr.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}),
+              Char.is_eq(Chr{xx}, '#'), Char.is_eq(Chr{xx}, ']'), st, Chr{xx}), T.lex.arr.end(False{}, st, Chr{xx}),
+              vl.arr.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'), Char.is_eq(Chr{xx}, ']'), st,
+              Chr{xx}, fsp, fnl, fhs, frb)),
+            wd.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'), Char.is_eq(Chr{xx}, '"'),
+              Char.is_eq(Chr{xx}, '\''), Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '{'), sv, Chr{xx}, fsp, fnl,
+              fhs, Eq.or.left_false(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), hq),
+              Eq.or.right_false(Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), hq),
+              Eq.or.left_false(Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '{'), hb),
+              Eq.or.right_false(Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '{'), hb))))),
+      Equal.sym(T.Mode, T.doc.scan(Laws.vpos(rw, hs, he, ps, T.LVal{}, qk, sk, un, lf, ab), Chr{xx}),
+        T.MScan{T.st.push(sv, Chr{xx}, T.LBare{})},
+        wd.first(Laws.Vf{"", rw, hs, he, ps, T.LVal{}, qk, sk, un, lf, ab}, xx, h1))))
+
+# a bare word from an array's item reads as from the value position the
+# held character opens
+def vl.arr.eq(
+  ww: String,
+  +hw: {Laws.bw.word(ww) == True{} : Bool},
+  +rest: String,
+  +rw: List<&2, T.Val>,
+  +hs: List<&2, String>,
+  +he: List<&2, String>,
+  +ps: List<&2, String>,
+  +bk: T.Lex,
+  +qk: T.QKind,
+  +sk: List<&2, T.Ctx>,
+  +un: U32,
+  +lf: U32,
+  +ab: Bool
+) -> {T.doc.read(String.append(ww, rest), T.MScan{Laws.s1.apos(rw, hs, he, ps, bk, qk, sk, un, lf, ab)})
+  == T.doc.read(String.append(ww, rest), T.MScan{Laws.vpos(rw, hs, he, ps, T.LVal{}, qk, sk, un, lf, ab)}) : T.Doc}:
+  match ww:
+    case SNil{}:
+      Eq.bit.absurd(&2, {T.doc.read(String.append(SNil{}, rest), T.MScan{Laws.s1.apos(rw, hs, he, ps, bk, qk, sk, un,
+        lf, ab)}) == T.doc.read(String.append(SNil{}, rest), T.MScan{Laws.vpos(rw, hs, he, ps, T.LVal{}, qk, sk, un, lf,
+        ab)}) : T.Doc}, hw)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          Equal.cong(T.Mode, T.Doc, md => T.doc.read(String.append(tt, rest), md),
+            T.doc.scan(Laws.s1.apos(rw, hs, he, ps, bk, qk, sk, un, lf, ab), Chr{xx}),
+            T.doc.scan(Laws.vpos(rw, hs, he, ps, T.LVal{}, qk, sk, un, lf, ab), Chr{xx}),
+            vl.arr.first(rw, hs, he, ps, bk, qk, sk, un, lf, ab, xx, Eq.and.left(Laws.word.first(Chr{xx}),
+              Laws.bw.more(tt, [Chr{xx}]), hw)))
+
+def Laws.bare_word_reads_on_in_array(w, hw, v, hv, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, ee):
+  Equal.trans(T.Doc, T.doc.read(String.append(w, rest), T.MScan{Laws.s1.apos(rw, hs, he, ps, bk, qk, sk, un, lf,
+    ab)}), T.doc.read(String.append(w, rest), T.MScan{Laws.vpos(rw, hs, he, ps, T.LVal{}, qk, sk, un, lf, ab)}),
+    T.doc.read(rest, T.MScan{Laws.bw.put(sk, v, rw, hs, he, ps, T.LVal{}, qk, un, lf, ab)}),
+    vl.arr.eq(w, hw, rest, rw, hs, he, ps, bk, qk, sk, un, lf, ab),
+    Laws.bare_word_reads_on(w, hw, v, hv, rw, hs, he, ps, T.LVal{}, qk, sk, un, lf, ab, rest, ee))
+
+def Laws.bare_word_refused_in_array(w, hw, why, hv, rw, hs, he, ps, bk, qk, sk, un, lf, ab, rest, ee):
+  Equal.trans(Bool, String.is_empty(T.bad(T.doc.read(String.append(w, rest), T.MScan{Laws.s1.apos(rw, hs, he, ps, bk,
+    qk, sk, un, lf, ab)}))), String.is_empty(T.bad(T.doc.read(String.append(w, rest), T.MScan{Laws.vpos(rw, hs, he, ps,
+    T.LVal{}, qk, sk, un, lf, ab)}))), False{},
+    Equal.cong(T.Doc, Bool, dd => String.is_empty(T.bad(dd)), T.doc.read(String.append(w, rest),
+      T.MScan{Laws.s1.apos(rw, hs, he, ps, bk, qk, sk, un, lf, ab)}), T.doc.read(String.append(w, rest),
+      T.MScan{Laws.vpos(rw, hs, he, ps, T.LVal{}, qk, sk, un, lf, ab)}),
+      vl.arr.eq(w, hw, rest, rw, hs, he, ps, bk, qk, sk, un, lf, ab)),
+    Laws.bare_word_refused(w, hw, why, hv, rw, hs, he, ps, T.LVal{}, qk, sk, un, lf, ab, rest, ee))
+
+# render's halves. A float's sign is sign.text; a datetime's text is its
+# tokens (when.eq), none of which is a t, a z or a space.
+
+def Laws.float_render(sg, _t):
+  match sg:
+    case T.Plus{}:
+      {==}
+    case T.Minus{}:
+      {==}
+
+# a character written as itself that is none of them, for every one written
+# as itself; a digit is none
+def vl.utok(ts: List<&2, Tk>) -> Bool:
+  match ts:
+    case []:
+      True{}
+    case TD{_x} <> tt:
+      vl.utok(tt)
+    case TC{+cc} <> tt:
+      Bool.and(Bool.not(Laws.bw.lower(cc)), vl.utok(tt))
+
+# the digit of a remainder by ten is none of them
+def vl.up.d(+xx: U32) -> {Laws.bw.lower(dch(U32.mod(xx, 10))) == False{} : Bool}:
+  sm.elim(rr => {Laws.bw.lower(dch(rr)) == False{} : Bool}, U32.mod(xx, 10), md(xx), {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==}, {==}, {==})
+
+# a text of tokens with none of them holds none of them
+def vl.up.tks(ts: List<&2, Tk>, +hh: {vl.utok(ts) == True{} : Bool}) -> {Laws.bw.upper(tl(ts)) == True{} : Bool}:
+  match ts:
+    case []:
+      {==}
+    case TD{+xx} <> +tt:
+      and.tt(Bool.not(Laws.bw.lower(dch(U32.mod(xx, 10)))), Laws.bw.upper(tl(tt)),
+        Equal.cong(Bool, Bool, bb => Bool.not(bb), Laws.bw.lower(dch(U32.mod(xx, 10))), False{}, vl.up.d(xx)),
+        vl.up.tks(tt, hh))
+    case TC{+cc} <> +tt:
+      and.tt(Bool.not(Laws.bw.lower(cc)), Laws.bw.upper(tl(tt)), Eq.and.left(Bool.not(Laws.bw.lower(cc)), vl.utok(tt),
+        hh), vl.up.tks(tt, Eq.and.right(Bool.not(Laws.bw.lower(cc)), vl.utok(tt), hh)))
+
+# a digit is none of them
+def vl.up.dg(cc: Char, hc: {Char.is_digit(cc) == True{} : Bool}) -> {Bool.not(Laws.bw.lower(cc)) == True{} : Bool}:
+  dg.elim(zz => {Bool.not(Laws.bw.lower(zz)) == True{} : Bool}, cc, hc, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+    {==}, {==})
+
+# a fraction's digits are none of them
+def vl.up.tcs(
+  fr: String,
+  +zs: List<&2, Tk>,
+  +hd: {T.wf.digits(fr) == True{} : Bool},
+  +hz: {vl.utok(zs) == True{} : Bool}
+) -> {vl.utok(tcs(fr, zs)) == True{} : Bool}:
+  match fr:
+    case SNil{}:
+      hz
+    case SCon{+cc, +tt}:
+      and.tt(Bool.not(Laws.bw.lower(cc)), vl.utok(tcs(tt, zs)), vl.up.dg(cc, then.l(Char.is_digit(cc), tt, hd)),
+        vl.up.tcs(tt, zs, then.r(Char.is_digit(cc), tt, hd), hz))
+
+# and so is its dot
+def vl.up.fr(
+  fr: String,
+  +zs: List<&2, Tk>,
+  +hd: {T.wf.digits(fr) == True{} : Bool},
+  +hz: {vl.utok(zs) == True{} : Bool}
+) -> {vl.utok(tfr(fr, zs)) == True{} : Bool}:
+  match fr:
+    case SNil{}:
+      hz
+    case SCon{+cc, +tt}:
+      vl.up.tcs(SCon{cc, tt}, zs, hd, hz)
+
+# a zone: Z, or a sign and digits
+def vl.up.z(zz: T.Zone) -> {vl.utok(tzone(zz)) == True{} : Bool}:
+  match zz:
+    case T.Zulu{}:
+      {==}
+    case T.Shift{sg, _h, _m}:
+      match sg:
+        case T.Plus{}:
+          {==}
+        case T.Minus{}:
+          {==}
+
+# a well-formed datetime's tokens are none of them
+def vl.up.all(ww: T.When, +hw: {T.wf.when(ww) == True{} : Bool}) -> {vl.utok(tks(ww)) == True{} : Bool}:
+  match ww:
+    case T.WOff{T.Date{yy, mo, dd}, T.Clock{+hh, +mi, +ss, +fr}, +zz}:
+      vl.up.fr(fr, tzone(zz), wc.fr(hh, mi, ss, fr, Eq.and.left(T.wf.clock(T.Clock{hh, mi, ss, fr}), T.wf.zone(zz),
+        Eq.and.right(T.wf.date(T.Date{yy, mo, dd}), Bool.and(T.wf.clock(T.Clock{hh, mi, ss, fr}), T.wf.zone(zz)), hw))),
+        vl.up.z(zz))
+    case T.WLocal{T.Date{yy, mo, dd}, T.Clock{+hh, +mi, +ss, +fr}}:
+      vl.up.fr(fr, [], wc.fr(hh, mi, ss, fr, Eq.and.right(T.wf.date(T.Date{yy, mo, dd}),
+        T.wf.clock(T.Clock{hh, mi, ss, fr}), hw)), {==})
+    case T.WDate{T.Date{_y, _m, _d}}:
+      {==}
+    case T.WTime{T.Clock{+hh, +mi, +ss, +fr}}:
+      vl.up.fr(fr, [], wc.fr(hh, mi, ss, fr, hw), {==})
+
+def Laws.date_time_render_upper(w, h):
+  Equal.trans(Bool, Laws.bw.upper(String.to_list(T.when.text(w))), Laws.bw.upper(tl(tks(w))), True{},
+    Equal.cong(String, Bool, ss => Laws.bw.upper(String.to_list(ss)), T.when.text(w), tstr(tks(w)),
+      when.eq(Unit{}, w, h)), vl.up.tks(tks(w), vl.up.all(w, h)))
+
+# A word a bare value rule matches is a bare word. Every character the
+# integer, float and boolean rules take starts a bare value, and so does
+# every one the date-time rules take but the space of time-delim, which comes
+# right after a full-date (DDDD-DD-DD) and before a partial-time's first
+# DIGIT, where the scan keeps it.
+
+# every character of a list starts a bare value
+def vl.qs(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      True{}
+    case +hh <> tt:
+      Bool.and(Laws.word.first(hh), vl.qs(tt))
+
+# whether a list starts with a digit
+def vl.d1(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      False{}
+    case +hh <> _tt:
+      Char.is_digit(hh)
+
+# bw.more, over a list
+def vl.morel(cs: List<&2, Char>, +buf: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      True{}
+    case +hh <> +tt:
+      Bool.and(Bool.or(Laws.word.char(hh), Bool.and(Char.is_eq(hh, ' '), Bool.and(T.date.shaped(buf), vl.d1(tt)))),
+        vl.morel(tt, hh <> buf))
+
+# bw.word, over a list
+def vl.wordl(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      False{}
+    case +hh <> tt:
+      Bool.and(Laws.word.first(hh), vl.morel(tt, [hh]))
+
+# a text starts with a digit as its characters do
+def vl.d1.eq(ss: String) -> {Laws.bw.digit1(ss) == vl.d1(String.to_list(ss)) : Bool}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{_hh, _tt}:
+      {==}
+
+# bw.more is vl.morel of the text's characters
+def vl.more.eq(ss: String, +buf: List<&2, Char>) -> {Laws.bw.more(ss, buf) == vl.morel(String.to_list(ss), buf) : Bool}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{+hh, +tt}:
+      Equal.trans(Bool, Laws.bw.more(SCon{hh, tt}, buf), Bool.and(Bool.or(Laws.word.char(hh), Bool.and(Char.is_eq(hh,
+        ' '), Bool.and(T.date.shaped(buf), vl.d1(String.to_list(tt))))), Laws.bw.more(tt, hh <> buf)),
+        vl.morel(String.to_list(SCon{hh, tt}), buf),
+        Equal.cong(Bool, Bool, bb => Bool.and(Bool.or(Laws.word.char(hh), Bool.and(Char.is_eq(hh, ' '),
+          Bool.and(T.date.shaped(buf), bb))), Laws.bw.more(tt, hh <> buf)), Laws.bw.digit1(tt),
+          vl.d1(String.to_list(tt)), vl.d1.eq(tt)),
+        Equal.cong(Bool, Bool, bb => Bool.and(Bool.or(Laws.word.char(hh), Bool.and(Char.is_eq(hh, ' '),
+          Bool.and(T.date.shaped(buf), vl.d1(String.to_list(tt))))), bb), Laws.bw.more(tt, hh <> buf),
+          vl.morel(String.to_list(tt), hh <> buf), vl.more.eq(tt, hh <> buf)))
+
+# bw.word is vl.wordl of the text's characters
+def vl.word.eq(ss: String) -> {Laws.bw.word(ss) == vl.wordl(String.to_list(ss)) : Bool}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{+hh, +tt}:
+      Equal.cong(Bool, Bool, bb => Bool.and(Laws.word.first(hh), bb), Laws.bw.more(tt, [hh]),
+        vl.morel(String.to_list(tt), [hh]), vl.more.eq(tt, [hh]))
+
+# characters that start a bare value are kept whatever the buffer
+def vl.qs.more(
+  cs: List<&2, Char>,
+  +buf: List<&2, Char>,
+  +hq: {vl.qs(cs) == True{} : Bool}
+) -> {vl.morel(cs, buf) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +hh <> +tt:
+      +hw = {Eq.and.left(Laws.word.first(hh), vl.qs(tt), hq) : {Laws.word.first(hh) == True{} : Bool}}
+      and.tt(Bool.or(Laws.word.char(hh), Bool.and(Char.is_eq(hh, ' '), Bool.and(T.date.shaped(buf), vl.d1(tt)))),
+        vl.morel(tt, hh <> buf),
+        Equal.cong(Bool, Bool, bb => Bool.or(bb, Bool.and(Char.is_eq(hh, ' '), Bool.and(T.date.shaped(buf),
+          vl.d1(tt)))), Laws.word.char(hh), True{}, Eq.and.left(Laws.word.char(hh), Bool.not(Bool.or(Char.is_eq(hh,
+          '['), Char.is_eq(hh, '{'))), hw)),
+        vl.qs.more(tt, hh <> buf, Eq.and.right(Laws.word.first(hh), vl.qs(tt), hq)))
+
+# and such a word, not empty, is a bare word
+def vl.qs.word(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  +hq: {vl.qs(hh <> tt) == True{} : Bool}
+) -> {vl.wordl(hh <> tt) == True{} : Bool}:
+  and.tt(Laws.word.first(hh), vl.morel(tt, [hh]), Eq.and.left(Laws.word.first(hh), vl.qs(tt), hq),
+    vl.qs.more(tt, [hh], Eq.and.right(Laws.word.first(hh), vl.qs(tt), hq)))
+
+# the character tests of a bare value, given false for each of the twelve
+# characters that do not start one: the eight that end one, both quotes, [
+# and {
+def vl.fq.fin(
+  b1: Bool,
+  b2: Bool,
+  b3: Bool,
+  b4: Bool,
+  b5: Bool,
+  b6: Bool,
+  b7: Bool,
+  b8: Bool,
+  b9: Bool,
+  b10: Bool,
+  b11: Bool,
+  b12: Bool,
+  e1: {b1 == False{} : Bool},
+  e2: {b2 == False{} : Bool},
+  e3: {b3 == False{} : Bool},
+  e4: {b4 == False{} : Bool},
+  e5: {b5 == False{} : Bool},
+  e6: {b6 == False{} : Bool},
+  e7: {b7 == False{} : Bool},
+  e8: {b8 == False{} : Bool},
+  e9: {b9 == False{} : Bool},
+  e10: {b10 == False{} : Bool},
+  e11: {b11 == False{} : Bool},
+  e12: {b12 == False{} : Bool}
+) -> {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(b1, b2), Bool.or(Bool.or(b3, b4), Bool.or(b5, Bool.or(b6,
+  Bool.or(b7, b8)))))), Bool.not(Bool.or(b9, b10))), Bool.not(Bool.or(b11, b12))) == True{} : Bool}:
+  match b1:
+    case True{}:
+      Eq.bit.absurd2(&2, {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(True{}, b2), Bool.or(Bool.or(b3, b4), Bool.or(b5,
+        Bool.or(b6, Bool.or(b7, b8)))))), Bool.not(Bool.or(b9, b10))), Bool.not(Bool.or(b11, b12))) == True{} : Bool},
+        e1)
+    case False{}:
+      match b2:
+        case True{}:
+          Eq.bit.absurd2(&2, {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(False{}, True{}), Bool.or(Bool.or(b3, b4),
+            Bool.or(b5, Bool.or(b6, Bool.or(b7, b8)))))), Bool.not(Bool.or(b9, b10))), Bool.not(Bool.or(b11, b12))) ==
+            True{} : Bool}, e2)
+        case False{}:
+          match b3:
+            case True{}:
+              Eq.bit.absurd2(&2, {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(False{}, False{}), Bool.or(Bool.or(True{},
+                b4), Bool.or(b5, Bool.or(b6, Bool.or(b7, b8)))))), Bool.not(Bool.or(b9, b10))), Bool.not(Bool.or(b11,
+                b12))) == True{} : Bool}, e3)
+            case False{}:
+              match b4:
+                case True{}:
+                  Eq.bit.absurd2(&2, {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(False{}, False{}),
+                    Bool.or(Bool.or(False{}, True{}), Bool.or(b5, Bool.or(b6, Bool.or(b7, b8)))))),
+                    Bool.not(Bool.or(b9, b10))), Bool.not(Bool.or(b11, b12))) == True{} : Bool}, e4)
+                case False{}:
+                  match b5:
+                    case True{}:
+                      Eq.bit.absurd2(&2, {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(False{}, False{}),
+                        Bool.or(Bool.or(False{}, False{}), Bool.or(True{}, Bool.or(b6, Bool.or(b7, b8)))))),
+                        Bool.not(Bool.or(b9, b10))), Bool.not(Bool.or(b11, b12))) == True{} : Bool}, e5)
+                    case False{}:
+                      match b6:
+                        case True{}:
+                          Eq.bit.absurd2(&2, {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(False{}, False{}),
+                            Bool.or(Bool.or(False{}, False{}), Bool.or(False{}, Bool.or(True{}, Bool.or(b7, b8)))))),
+                            Bool.not(Bool.or(b9, b10))), Bool.not(Bool.or(b11, b12))) == True{} : Bool}, e6)
+                        case False{}:
+                          match b7:
+                            case True{}:
+                              Eq.bit.absurd2(&2, {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(False{}, False{}),
+                                Bool.or(Bool.or(False{}, False{}), Bool.or(False{}, Bool.or(False{}, Bool.or(True{},
+                                b8)))))), Bool.not(Bool.or(b9, b10))), Bool.not(Bool.or(b11, b12))) == True{} : Bool},
+                                e7)
+                            case False{}:
+                              match b8:
+                                case True{}:
+                                  Eq.bit.absurd2(&2, {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(False{}, False{}),
+                                    Bool.or(Bool.or(False{}, False{}), Bool.or(False{}, Bool.or(False{},
+                                    Bool.or(False{}, True{})))))), Bool.not(Bool.or(b9, b10))), Bool.not(Bool.or(b11,
+                                    b12))) == True{} : Bool}, e8)
+                                case False{}:
+                                  match b9:
+                                    case True{}:
+                                      Eq.bit.absurd2(&2, {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(False{}, False{}),
+                                        Bool.or(Bool.or(False{}, False{}), Bool.or(False{}, Bool.or(False{},
+                                        Bool.or(False{}, False{})))))), Bool.not(Bool.or(True{}, b10))),
+                                        Bool.not(Bool.or(b11, b12))) == True{} : Bool}, e9)
+                                    case False{}:
+                                      match b10:
+                                        case True{}:
+                                          Eq.bit.absurd2(&2, {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(False{},
+                                            False{}), Bool.or(Bool.or(False{}, False{}), Bool.or(False{},
+                                            Bool.or(False{}, Bool.or(False{}, False{})))))), Bool.not(Bool.or(False{},
+                                            True{}))), Bool.not(Bool.or(b11, b12))) == True{} : Bool}, e10)
+                                        case False{}:
+                                          match b11:
+                                            case True{}:
+                                              Eq.bit.absurd2(&2, {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(False{},
+                                                False{}), Bool.or(Bool.or(False{}, False{}), Bool.or(False{},
+                                                Bool.or(False{}, Bool.or(False{}, False{})))))),
+                                                Bool.not(Bool.or(False{}, False{}))), Bool.not(Bool.or(True{}, b12)))
+                                                == True{} : Bool}, e11)
+                                            case False{}:
+                                              match b12:
+                                                case True{}:
+                                                  Eq.bit.absurd2(&2,
+                                                    {Bool.and(Bool.and(Bool.not(Bool.or(Bool.or(False{}, False{}),
+                                                    Bool.or(Bool.or(False{}, False{}), Bool.or(False{},
+                                                    Bool.or(False{}, Bool.or(False{}, False{})))))),
+                                                    Bool.not(Bool.or(False{}, False{}))), Bool.not(Bool.or(False{},
+                                                    True{}))) == True{} : Bool}, e12)
+                                                case False{}:
+                                                  {==}
+
+# a character a predicate passes is not one it fails
+def vl.ne.go(
+  ~_pp: Char -> Bool,
+  bb: Bool,
+  +xx: U32,
+  +kk: U32,
+  ee: {U32.is_eq(xx, kk) == bb : Bool},
+  yes: {_pp(Chr{xx}) == True{} : Bool},
+  no: {_pp(Chr{kk}) == False{} : Bool}
+) -> {bb == False{} : Bool}:
+  match bb:
+    case True{}:
+      Eq.bit.gone(&2, {True{} == False{} : Bool}, Eq.refute_char(Chr{xx}, Chr{kk}, _pp, ee, yes, no))
+    case False{}:
+      {==}
+
+# the code point of a character a predicate passes is none it fails
+def vl.ne(
+  ~_pp: Char -> Bool,
+  +xx: U32,
+  +kk: U32,
+  yes: {_pp(Chr{xx}) == True{} : Bool},
+  no: {_pp(Chr{kk}) == False{} : Bool}
+) -> {U32.is_eq(xx, kk) == False{} : Bool}:
+  Equal.trans(Bool, U32.is_eq(xx, kk), U32.is_eq(xx, kk), False{}, {==}, vl.ne.go(~_pp, U32.is_eq(xx, kk), xx, kk,
+    {==}, yes, no))
+
+# a character a predicate passes starts a bare value, when the predicate
+# fails the twelve that do not
+def vl.fq(
+  ~_pp: Char -> Bool,
+  +xx: U32,
+  +yes: {_pp(Chr{xx}) == True{} : Bool},
+  n1: {_pp(Chr{32}) == False{} : Bool},
+  n2: {_pp(Chr{9}) == False{} : Bool},
+  n3: {_pp(Chr{10}) == False{} : Bool},
+  n4: {_pp(Chr{13}) == False{} : Bool},
+  n5: {_pp(Chr{35}) == False{} : Bool},
+  n6: {_pp(Chr{44}) == False{} : Bool},
+  n7: {_pp(Chr{93}) == False{} : Bool},
+  n8: {_pp(Chr{125}) == False{} : Bool},
+  n9: {_pp(Chr{34}) == False{} : Bool},
+  n10: {_pp(Chr{39}) == False{} : Bool},
+  n11: {_pp(Chr{91}) == False{} : Bool},
+  n12: {_pp(Chr{123}) == False{} : Bool}
+) -> {Laws.word.first(Chr{xx}) == True{} : Bool}:
+  vl.fq.fin(U32.is_eq(xx, 32), U32.is_eq(xx, 9), U32.is_eq(xx, 10), U32.is_eq(xx, 13), U32.is_eq(xx, 35),
+    U32.is_eq(xx, 44), U32.is_eq(xx, 93), U32.is_eq(xx, 125), U32.is_eq(xx, 34), U32.is_eq(xx, 39), U32.is_eq(xx, 91),
+    U32.is_eq(xx, 123), vl.ne(~_pp, xx, 32, yes, n1), vl.ne(~_pp, xx, 9, yes, n2), vl.ne(~_pp, xx, 10, yes, n3),
+    vl.ne(~_pp, xx, 13, yes, n4), vl.ne(~_pp, xx, 35, yes, n5), vl.ne(~_pp, xx, 44, yes, n6), vl.ne(~_pp, xx, 93, yes,
+      n7),
+    vl.ne(~_pp, xx, 125, yes, n8), vl.ne(~_pp, xx, 34, yes, n9), vl.ne(~_pp, xx, 39, yes, n10), vl.ne(~_pp, xx, 91,
+      yes, n11),
+    vl.ne(~_pp, xx, 123, yes, n12))
+
+# a DIGIT starts a bare value
+def vl.q.dig(cc: Char, hh: {Laws.abnf.DIGIT(cc) == True{} : Bool}) -> {Laws.word.first(cc) == True{} : Bool}:
+  match cc:
+    case Chr{+xx}:
+      vl.fq(~(ch => Laws.abnf.DIGIT(ch)), xx, hh, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+        {==})
+
+# so does a DIGIT or an underscore
+def vl.q.dc(cc: Char, hh: {gp.dc(cc) == True{} : Bool}) -> {Laws.word.first(cc) == True{} : Bool}:
+  match cc:
+    case Chr{+xx}:
+      vl.fq(~(ch => gp.dc(ch)), xx, hh, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# and a sign
+def vl.q.sign(
+  cc: Char,
+  hh: {Bool.or(Laws.abnf.minus(cc), Laws.abnf.plus(cc)) == True{} : Bool}
+) -> {Laws.word.first(cc) == True{} : Bool}:
+  match cc:
+    case Chr{+xx}:
+      vl.fq(~(+ch => Bool.or(Laws.abnf.minus(ch), Laws.abnf.plus(ch))), xx, hh, {==}, {==}, {==}, {==}, {==}, {==},
+        {==},
+        {==}, {==}, {==}, {==}, {==})
+
+# and an underscore
+def vl.q.us(cc: Char, hh: {Laws.abnf.underscore(cc) == True{} : Bool}) -> {Laws.word.first(cc) == True{} : Bool}:
+  match cc:
+    case Chr{+xx}:
+      vl.fq(~(ch => Laws.abnf.underscore(ch)), xx, hh, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+        {==})
+
+# a digit of radix bin
+def vl.q.bin(
+  cc: Char,
+  hh: {Laws.abnf.radix_digit(Laws.ABin{}, cc) == True{} : Bool}
+) -> {Laws.word.first(cc) == True{} : Bool}:
+  match cc:
+    case Chr{+xx}:
+      vl.fq(~(ch => Laws.abnf.radix_digit(Laws.ABin{}, ch)), xx, hh, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+        {==}, {==},
+        {==}, {==})
+
+# a digit of radix oct
+def vl.q.oct(
+  cc: Char,
+  hh: {Laws.abnf.radix_digit(Laws.AOct{}, cc) == True{} : Bool}
+) -> {Laws.word.first(cc) == True{} : Bool}:
+  match cc:
+    case Chr{+xx}:
+      vl.fq(~(ch => Laws.abnf.radix_digit(Laws.AOct{}, ch)), xx, hh, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+        {==}, {==},
+        {==}, {==})
+
+# a digit of radix hex
+def vl.q.hex(
+  cc: Char,
+  hh: {Laws.abnf.radix_digit(Laws.AHex{}, cc) == True{} : Bool}
+) -> {Laws.word.first(cc) == True{} : Bool}:
+  match cc:
+    case Chr{+xx}:
+      vl.fq(~(ch => Laws.abnf.radix_digit(Laws.AHex{}, ch)), xx, hh, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==},
+        {==}, {==},
+        {==}, {==})
+
+# and a digit of every radix
+def vl.q.rd(
+  rx: Laws.ARadix,
+  cc: Char,
+  hh: {Laws.abnf.radix_digit(rx, cc) == True{} : Bool}
+) -> {Laws.word.first(cc) == True{} : Bool}:
+  match rx:
+    case Laws.AHex{}:
+      vl.q.hex(cc, hh)
+    case Laws.AOct{}:
+      vl.q.oct(cc, hh)
+    case Laws.ABin{}:
+      vl.q.bin(cc, hh)
+
+# and an exponent mark
+def vl.q.e(cc: Char, hh: {Laws.abnf.e(cc) == True{} : Bool}) -> {Laws.word.first(cc) == True{} : Bool}:
+  match cc:
+    case Chr{+xx}:
+      vl.fq(~(ch => Laws.abnf.e(ch)), xx, hh, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# a character a code point test passed starts a bare value when that code
+# point's character does
+def vl.q.cp(
+  +cc: Char,
+  +nn: U32,
+  +hh: {Laws.abnf.cp(cc, nn) == True{} : Bool},
+  hn: {Laws.word.first(Chr{nn}) == True{} : Bool}
+) -> {Laws.word.first(cc) == True{} : Bool}:
+  vl.chs(ch => {Laws.word.first(ch) == True{} : Bool}, cc, Chr{nn}, gp.cp(cc, nn, hh), hn)
+
+# the characters of a list of DIGITs and underscores start bare values
+def vl.qs.decs(cs: List<&2, Char>, +hh: {gp.decs(cs) == True{} : Bool}) -> {vl.qs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +xx <> +tt:
+      and.tt(Laws.word.first(xx), vl.qs(tt), vl.q.dc(xx, Eq.and.left(gp.dc(xx), gp.decs(tt), hh)),
+        vl.qs.decs(tt, Eq.and.right(gp.dc(xx), gp.decs(tt), hh)))
+
+# so do a dec-int's
+def vl.qs.dec(cs: List<&2, Char>, +hh: {Laws.abnf.dec_int(cs) == True{} : Bool}) -> {vl.qs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {vl.qs([]) == True{} : Bool}, hh)
+    case +xx <> +tt:
+      gp.or({vl.qs(xx <> tt) == True{} : Bool}, Bool.and(Bool.or(Laws.abnf.minus(xx), Laws.abnf.plus(xx)),
+        Laws.abnf.unsigned_dec_int(tt)), Laws.abnf.unsigned_dec_int(xx <> tt), hh,
+        +ha => and.tt(Laws.word.first(xx), vl.qs(tt), vl.q.sign(xx, Eq.and.left(Bool.or(Laws.abnf.minus(xx),
+          Laws.abnf.plus(xx)), Laws.abnf.unsigned_dec_int(tt), ha)), vl.qs.decs(tt, gp.udi.decs(tt,
+          Eq.and.right(Bool.or(Laws.abnf.minus(xx), Laws.abnf.plus(xx)), Laws.abnf.unsigned_dec_int(tt), ha)))),
+        hb => vl.qs.decs(xx <> tt, gp.udi.decs(xx <> tt, hb)))
+
+# so do a prefixed integer's digits and underscores
+def vl.qs.rrep(
+  cs: List<&2, Char>,
+  +rx: Laws.ARadix,
+  +hh: {Laws.abnf.radix_rep(cs, rx) == True{} : Bool}
+) -> {vl.qs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +xx <> tt:
+      match tt:
+        case []:
+          and.tt(Laws.word.first(xx), True{}, vl.q.rd(rx, xx, hh), {==})
+        case +x2 <> +t2:
+          gp.or({vl.qs(xx <> x2 <> t2) == True{} : Bool}, Bool.and(Laws.abnf.radix_digit(rx, xx),
+            Laws.abnf.radix_rep(x2 <> t2, rx)), Bool.and(Laws.abnf.underscore(xx), Bool.and(Laws.abnf.radix_digit(rx,
+            x2), Laws.abnf.radix_rep(t2, rx))), hh,
+            +ha => and.tt(Laws.word.first(xx), vl.qs(x2 <> t2), vl.q.rd(rx, xx, Eq.and.left(Laws.abnf.radix_digit(rx,
+              xx), Laws.abnf.radix_rep(x2 <> t2, rx), ha)), vl.qs.rrep(x2 <> t2, rx,
+              Eq.and.right(Laws.abnf.radix_digit(rx, xx), Laws.abnf.radix_rep(x2 <> t2, rx), ha))),
+            +hb => and.tt(Laws.word.first(xx), vl.qs(x2 <> t2), vl.q.us(xx, Eq.and.left(Laws.abnf.underscore(xx),
+              Bool.and(Laws.abnf.radix_digit(rx, x2), Laws.abnf.radix_rep(t2, rx)), hb)), and.tt(Laws.word.first(x2),
+              vl.qs(t2), vl.q.rd(rx, x2, Eq.and.left(Laws.abnf.radix_digit(rx, x2), Laws.abnf.radix_rep(t2, rx),
+              Eq.and.right(Laws.abnf.underscore(xx), Bool.and(Laws.abnf.radix_digit(rx, x2), Laws.abnf.radix_rep(t2,
+              rx)), hb))), vl.qs.rrep(t2, rx, Eq.and.right(Laws.abnf.radix_digit(rx, x2), Laws.abnf.radix_rep(t2, rx),
+              Eq.and.right(Laws.abnf.underscore(xx), Bool.and(Laws.abnf.radix_digit(rx, x2), Laws.abnf.radix_rep(t2,
+              rx)), hb))))))
+
+# and a prefixed integer's prefix, whose letter starts a bare value
+def vl.qs.pre(
+  cs: List<&2, Char>,
+  +ll: U32,
+  +rx: Laws.ARadix,
+  hl: {Laws.word.first(Chr{ll}) == True{} : Bool},
+  +hh: {Laws.abnf.prefixed(cs, ll, rx) == True{} : Bool}
+) -> {vl.qs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {vl.qs([]) == True{} : Bool}, hh)
+    case +c0 <> t0:
+      match t0:
+        case []:
+          Eq.bit.absurd(&2, {vl.qs([c0]) == True{} : Bool}, hh)
+        case +c1 <> t1:
+          match t1:
+            case []:
+              Eq.bit.absurd(&2, {vl.qs([c0, c1]) == True{} : Bool}, hh)
+            case +c2 <> +rest:
+              +h1 = {Eq.and.right(Laws.abnf.cp(c0, 48), Bool.and(Laws.abnf.cp(c1, ll), Bool.and(
+                Laws.abnf.radix_digit(rx, c2), Laws.abnf.radix_rep(rest, rx))), hh) : {Bool.and(Laws.abnf.cp(c1, ll),
+                Bool.and(Laws.abnf.radix_digit(rx, c2), Laws.abnf.radix_rep(rest, rx))) == True{} : Bool}}
+              +h2 = {Eq.and.right(Laws.abnf.cp(c1, ll), Bool.and(Laws.abnf.radix_digit(rx, c2),
+                Laws.abnf.radix_rep(rest, rx)), h1) : {Bool.and(Laws.abnf.radix_digit(rx, c2), Laws.abnf.radix_rep(rest,
+                rx)) == True{} : Bool}}
+              and.tt(Laws.word.first(c0), vl.qs(c1 <> c2 <> rest), vl.q.cp(c0, 48, Eq.and.left(Laws.abnf.cp(c0, 48),
+                Bool.and(Laws.abnf.cp(c1, ll), Bool.and(Laws.abnf.radix_digit(rx, c2), Laws.abnf.radix_rep(rest, rx))),
+                hh), {==}), and.tt(Laws.word.first(c1), vl.qs(c2 <> rest), vl.q.cp(c1, ll, Eq.and.left(
+                Laws.abnf.cp(c1, ll), Bool.and(Laws.abnf.radix_digit(rx, c2), Laws.abnf.radix_rep(rest, rx)), h1), hl),
+                and.tt(Laws.word.first(c2), vl.qs(rest), vl.q.rd(rx, c2, Eq.and.left(Laws.abnf.radix_digit(rx, c2),
+                Laws.abnf.radix_rep(rest, rx), h2)), vl.qs.rrep(rest, rx, Eq.and.right(Laws.abnf.radix_digit(rx, c2),
+                Laws.abnf.radix_rep(rest, rx), h2)))))
+
+# every character of an integer starts a bare value
+def vl.qs.int(+cs: List<&2, Char>, +hh: {Laws.abnf.integer(cs) == True{} : Bool}) -> {vl.qs(cs) == True{} : Bool}:
+  gp.or({vl.qs(cs) == True{} : Bool}, Laws.abnf.dec_int(cs), Bool.or(Laws.abnf.hex_int(cs),
+    Bool.or(Laws.abnf.oct_int(cs), Laws.abnf.bin_int(cs))), hh,
+    hd => vl.qs.dec(cs, hd),
+    hr => gp.or({vl.qs(cs) == True{} : Bool}, Laws.abnf.hex_int(cs), Bool.or(Laws.abnf.oct_int(cs),
+      Laws.abnf.bin_int(cs)), hr,
+      hx => vl.qs.pre(cs, 120, Laws.AHex{}, {==}, hx),
+      hq => gp.or({vl.qs(cs) == True{} : Bool}, Laws.abnf.oct_int(cs), Laws.abnf.bin_int(cs), hq,
+        ho => vl.qs.pre(cs, 111, Laws.AOct{}, {==}, ho),
+        hb => vl.qs.pre(cs, 98, Laws.ABin{}, {==}, hb))))
+
+# every character of a boolean does
+def vl.qs.bool(+cs: List<&2, Char>, +hh: {Laws.abnf.boolean(cs) == True{} : Bool}) -> {vl.qs(cs) == True{} : Bool}:
+  gp.bool(zs => {vl.qs(zs) == True{} : Bool}, cs, hh, {==}, {==})
+
+# every character of a zero-prefixable-int starts a bare value
+def vl.qs.zpi(
+  cs: List<&2, Char>,
+  +hh: {Laws.abnf.zero_prefixable_int(cs) == True{} : Bool}
+) -> {vl.qs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {vl.qs([]) == True{} : Bool}, hh)
+    case +xx <> +tt:
+      and.tt(Laws.word.first(xx), vl.qs(tt), vl.q.dig(xx, Eq.and.left(Laws.abnf.DIGIT(xx), Laws.abnf.dec_rep(tt), hh)),
+        vl.qs.decs(tt, gp.rep.decs(tt, Eq.and.right(Laws.abnf.DIGIT(xx), Laws.abnf.dec_rep(tt), hh))))
+
+# and of a float-exp-part
+def vl.qs.fep(
+  cs: List<&2, Char>,
+  hh: {Laws.abnf.float_exp_part(cs) == True{} : Bool}
+) -> {vl.qs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {vl.qs([]) == True{} : Bool}, hh)
+    case +xx <> +tt:
+      gp.or({vl.qs(xx <> tt) == True{} : Bool}, Bool.and(Bool.or(Laws.abnf.minus(xx), Laws.abnf.plus(xx)),
+        Laws.abnf.zero_prefixable_int(tt)), Laws.abnf.zero_prefixable_int(xx <> tt), hh,
+        +ha => and.tt(Laws.word.first(xx), vl.qs(tt), vl.q.sign(xx, Eq.and.left(Bool.or(Laws.abnf.minus(xx),
+          Laws.abnf.plus(xx)), Laws.abnf.zero_prefixable_int(tt), ha)), vl.qs.zpi(tt, Eq.and.right(Bool.or(
+          Laws.abnf.minus(xx), Laws.abnf.plus(xx)), Laws.abnf.zero_prefixable_int(tt), ha))),
+        hb => vl.qs.zpi(xx <> tt, hb))
+
+# and of an exp
+def vl.qs.exp(cs: List<&2, Char>, +hh: {Laws.abnf.exp(cs) == True{} : Bool}) -> {vl.qs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {vl.qs([]) == True{} : Bool}, hh)
+    case +xx <> +tt:
+      and.tt(Laws.word.first(xx), vl.qs(tt), vl.q.e(xx, Eq.and.left(Laws.abnf.e(xx), Laws.abnf.float_exp_part(tt), hh)),
+        vl.qs.fep(tt, Eq.and.right(Laws.abnf.e(xx), Laws.abnf.float_exp_part(tt), hh)))
+
+# and of a frac
+def vl.qs.frac(cs: List<&2, Char>, +hh: {Laws.abnf.frac(cs) == True{} : Bool}) -> {vl.qs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {vl.qs([]) == True{} : Bool}, hh)
+    case +xx <> +tt:
+      and.tt(Laws.word.first(xx), vl.qs(tt), vl.q.cp(xx, 46, Eq.and.left(Laws.abnf.cp(xx, 46),
+        Laws.abnf.zero_prefixable_int(tt), hh), {==}), vl.qs.zpi(tt, Eq.and.right(Laws.abnf.cp(xx, 46),
+        Laws.abnf.zero_prefixable_int(tt), hh)))
+
+# and of an optional exp
+def vl.qs.oexp(cs: List<&2, Char>, hh: {Laws.abnf.opt_exp(cs) == True{} : Bool}) -> {vl.qs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +xx <> +tt:
+      vl.qs.exp(xx <> tt, hh)
+
+# the claim for the rest of a cut word: both parts of such characters make
+# it of such characters
+def vl.CutIh(+tt: List<&2, Char>, +ct: Laws.ACut) -> Type:
+  {vl.qs(Laws.abnf.cut.pre(tt, ct)) == True{} : Bool} -> {vl.qs(Laws.abnf.cut.post(tt, ct)) == True{} : Bool} ->
+    {vl.qs(tt) == True{} : Bool}
+
+# a word cut in two, both parts of such characters, is of such characters
+def vl.qs.cut.go(
+  cc: Bool,
+  +xx: Char,
+  +tt: List<&2, Char>,
+  +ct: Laws.ACut,
+  +ec: {Laws.abnf.cut.at(ct, xx) == cc : Bool},
+  hp: {vl.qs(Laws.abnf.cut.pre(xx <> tt, ct)) == True{} : Bool},
+  hq: {vl.qs(Laws.abnf.cut.post(xx <> tt, ct)) == True{} : Bool},
+  ih: vl.CutIh(tt, ct)
+) -> {vl.qs(xx <> tt) == True{} : Bool}:
+  match cc:
+    case True{}:
+      Equal.trans(Bool, vl.qs(xx <> tt), vl.qs(Laws.abnf.cut.post.pick(True{}, xx, tt, Laws.abnf.cut.post(tt, ct))),
+        True{}, {==}, Equal.trans(Bool, vl.qs(Laws.abnf.cut.post.pick(True{}, xx, tt, Laws.abnf.cut.post(tt, ct))),
+        vl.qs(Laws.abnf.cut.post(xx <> tt, ct)), True{}, Equal.cong(Bool, Bool, bb => vl.qs(Laws.abnf.cut.post.pick(bb,
+        xx, tt, Laws.abnf.cut.post(tt, ct))), True{}, Laws.abnf.cut.at(ct, xx), Equal.sym(Bool, Laws.abnf.cut.at(ct,
+        xx), True{}, ec)), hq))
+    case False{}:
+      +hp2 = {Equal.trans(Bool, vl.qs(xx <> Laws.abnf.cut.pre(tt, ct)), vl.qs(Laws.abnf.cut.pre(xx <> tt, ct)), True{},
+        Equal.cong(Bool, Bool, bb => vl.qs(Laws.abnf.cut.pre.pick(bb, xx, Laws.abnf.cut.pre(tt, ct))), False{},
+        Laws.abnf.cut.at(ct, xx), Equal.sym(Bool, Laws.abnf.cut.at(ct, xx), False{}, ec)), hp)
+        : {vl.qs(xx <> Laws.abnf.cut.pre(tt, ct)) == True{} : Bool}}
+      +hq2 = {Equal.trans(Bool, vl.qs(Laws.abnf.cut.post(tt, ct)), vl.qs(Laws.abnf.cut.post(xx <> tt, ct)), True{},
+        Equal.cong(Bool, Bool, bb => vl.qs(Laws.abnf.cut.post.pick(bb, xx, tt, Laws.abnf.cut.post(tt, ct))), False{},
+        Laws.abnf.cut.at(ct, xx), Equal.sym(Bool, Laws.abnf.cut.at(ct, xx), False{}, ec)), hq)
+        : {vl.qs(Laws.abnf.cut.post(tt, ct)) == True{} : Bool}}
+      and.tt(Laws.word.first(xx), vl.qs(tt), Eq.and.left(Laws.word.first(xx), vl.qs(Laws.abnf.cut.pre(tt, ct)), hp2),
+        ih(Eq.and.right(Laws.word.first(xx), vl.qs(Laws.abnf.cut.pre(tt, ct)), hp2), hq2))
+
+# the same, by induction over the word
+def vl.qs.cut(
+  cs: List<&2, Char>,
+  +ct: Laws.ACut,
+  hp: {vl.qs(Laws.abnf.cut.pre(cs, ct)) == True{} : Bool},
+  hq: {vl.qs(Laws.abnf.cut.post(cs, ct)) == True{} : Bool}
+) -> {vl.qs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +xx <> +tt:
+      vl.qs.cut.go(Laws.abnf.cut.at(ct, xx), xx, tt, ct, {==}, hp, hq, h1 => h2 => vl.qs.cut(tt, ct, h1, h2))
+
+# every character of frac [ exp ] starts a bare value
+def vl.qs.fe(+cs: List<&2, Char>, +hh: {Laws.abnf.frac_exp(cs) == True{} : Bool}) -> {vl.qs(cs) == True{} : Bool}:
+  vl.qs.cut(cs, Laws.ACutExp{}, vl.qs.frac(Laws.abnf.cut.pre(cs, Laws.ACutExp{}), Eq.and.left(Laws.abnf.frac(
+    Laws.abnf.cut.pre(cs, Laws.ACutExp{})), Laws.abnf.opt_exp(Laws.abnf.cut.post(cs, Laws.ACutExp{})), hh)),
+    vl.qs.oexp(Laws.abnf.cut.post(cs, Laws.ACutExp{}), Eq.and.right(Laws.abnf.frac(Laws.abnf.cut.pre(cs,
+    Laws.ACutExp{})), Laws.abnf.opt_exp(Laws.abnf.cut.post(cs, Laws.ACutExp{})), hh)))
+
+# and of a float that is no special-float
+def vl.qs.fstd(+cs: List<&2, Char>, +hh: {Laws.abnf.float_std(cs) == True{} : Bool}) -> {vl.qs(cs) == True{} : Bool}:
+  vl.qs.cut(cs, Laws.ACutDot{}, vl.qs.dec(Laws.abnf.cut.pre(cs, Laws.ACutDot{}), Eq.and.left(Laws.abnf.dec_int(
+    Laws.abnf.cut.pre(cs, Laws.ACutDot{})), Bool.or(Laws.abnf.exp(Laws.abnf.cut.post(cs, Laws.ACutDot{})),
+    Laws.abnf.frac_exp(Laws.abnf.cut.post(cs, Laws.ACutDot{}))), hh)),
+    gp.or({vl.qs(Laws.abnf.cut.post(cs, Laws.ACutDot{})) == True{} : Bool}, Laws.abnf.exp(Laws.abnf.cut.post(cs,
+      Laws.ACutDot{})), Laws.abnf.frac_exp(Laws.abnf.cut.post(cs, Laws.ACutDot{})), Eq.and.right(Laws.abnf.dec_int(
+      Laws.abnf.cut.pre(cs, Laws.ACutDot{})), Bool.or(Laws.abnf.exp(Laws.abnf.cut.post(cs, Laws.ACutDot{})),
+      Laws.abnf.frac_exp(Laws.abnf.cut.post(cs, Laws.ACutDot{}))), hh),
+      he => vl.qs.exp(Laws.abnf.cut.post(cs, Laws.ACutDot{}), he),
+      hf => vl.qs.fe(Laws.abnf.cut.post(cs, Laws.ACutDot{}), hf)))
+
+# inf or nan
+def vl.qs.in(
+  +cs: List<&2, Char>,
+  +hh: {Bool.or(Laws.abnf.inf(cs), Laws.abnf.nan(cs)) == True{} : Bool}
+) -> {vl.qs(cs) == True{} : Bool}:
+  gp.or({vl.qs(cs) == True{} : Bool}, Laws.abnf.inf(cs), Laws.abnf.nan(cs), hh,
+    hi => gp.subst(zs => {vl.qs(zs) == True{} : Bool}, cs, String.to_list("inf"), gp.chars(cs, "inf", hi), {==}),
+    hn => gp.subst(zs => {vl.qs(zs) == True{} : Bool}, cs, String.to_list("nan"), gp.chars(cs, "nan", hn), {==}))
+
+# and of a special-float
+def vl.qs.sf(cs: List<&2, Char>, hh: {Laws.abnf.special_float(cs) == True{} : Bool}) -> {vl.qs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {vl.qs([]) == True{} : Bool}, hh)
+    case +xx <> +tt:
+      gp.or({vl.qs(xx <> tt) == True{} : Bool}, Bool.and(Bool.or(Laws.abnf.minus(xx), Laws.abnf.plus(xx)),
+        Bool.or(Laws.abnf.inf(tt), Laws.abnf.nan(tt))), Bool.or(Laws.abnf.inf(xx <> tt), Laws.abnf.nan(xx <> tt)), hh,
+        +ha => and.tt(Laws.word.first(xx), vl.qs(tt), vl.q.sign(xx, Eq.and.left(Bool.or(Laws.abnf.minus(xx),
+          Laws.abnf.plus(xx)), Bool.or(Laws.abnf.inf(tt), Laws.abnf.nan(tt)), ha)), vl.qs.in(tt, Eq.and.right(Bool.or(
+          Laws.abnf.minus(xx), Laws.abnf.plus(xx)), Bool.or(Laws.abnf.inf(tt), Laws.abnf.nan(tt)), ha))),
+        hb => vl.qs.in(xx <> tt, hb))
+
+# every character of a float starts a bare value
+def vl.qs.flo(+cs: List<&2, Char>, +hh: {Laws.abnf.float(cs) == True{} : Bool}) -> {vl.qs(cs) == True{} : Bool}:
+  gp.or({vl.qs(cs) == True{} : Bool}, Laws.abnf.float_std(cs), Laws.abnf.special_float(cs), hh,
+    hs => vl.qs.fstd(cs, hs), hp => vl.qs.sf(cs, hp))
+
+# The date-time rules. Every character they take starts a bare value but the
+# space of time-delim, so a word with a character that does not keeps one
+# after every rule but that space (as t1.e does for an exponent mark), and
+# no such rule matches it whole.
+
+# what a rule left of a word still holds a character that starts no bare
+# value, or it matched nothing
+def vl.zb(rr: Laws.ARest) -> Bool:
+  match rr:
+    case Laws.ALeft{cs}:
+      Bool.not(vl.qs(cs))
+    case Laws.ANone{}:
+      True{}
+
+# a character that starts a bare value, taken, leaves the others
+def vl.z.tail(
+  +xx: Char,
+  +tt: List<&2, Char>,
+  hw: {Laws.word.first(xx) == True{} : Bool},
+  hz: {Bool.not(vl.qs(xx <> tt)) == True{} : Bool}
+) -> {Bool.not(vl.qs(tt)) == True{} : Bool}:
+  Equal.trans(Bool, Bool.not(vl.qs(tt)), Bool.not(Bool.and(Laws.word.first(xx), vl.qs(tt))), True{},
+    Equal.cong(Bool, Bool, bb => Bool.not(Bool.and(bb, vl.qs(tt))), True{}, Laws.word.first(xx), Equal.sym(Bool,
+    Laws.word.first(xx), True{}, hw)), hz)
+
+# a character a test took starts a bare value, so what is left keeps one
+def vl.z.keep(
+  bb: Bool,
+  +xx: Char,
+  +tt: List<&2, Char>,
+  hb: {bb == True{} : Bool} -> {Laws.word.first(xx) == True{} : Bool},
+  hz: {Bool.not(vl.qs(xx <> tt)) == True{} : Bool}
+) -> {vl.zb(Laws.abnf.keep(bb, tt)) == True{} : Bool}:
+  match bb:
+    case True{}:
+      vl.z.tail(xx, tt, hb({==}), hz)
+    case False{}:
+      {==}
+
+# DIGIT from the front
+def vl.z.dr(rr: Laws.ARest, hz: {vl.zb(rr) == True{} : Bool}) -> {vl.zb(Laws.abnf.digit_r(rr)) == True{} : Bool}:
+  match rr:
+    case Laws.ALeft{cs}:
+      match cs:
+        case []:
+          {==}
+        case +xx <> +tt:
+          vl.z.keep(Laws.abnf.DIGIT(xx), xx, tt, hd => vl.q.dig(xx, hd), hz)
+    case Laws.ANone{}:
+      {==}
+
+# a character by its code point, one that starts a bare value
+def vl.z.cr(
+  rr: Laws.ARest,
+  +nn: U32,
+  +hn: {Laws.word.first(Chr{nn}) == True{} : Bool},
+  hz: {vl.zb(rr) == True{} : Bool}
+) -> {vl.zb(Laws.abnf.char_r(rr, nn)) == True{} : Bool}:
+  match rr:
+    case Laws.ALeft{cs}:
+      match cs:
+        case []:
+          {==}
+        case +xx <> +tt:
+          vl.z.keep(Laws.abnf.cp(xx, nn), xx, tt, hc => vl.q.cp(xx, nn, hc, hn), hz)
+    case Laws.ANone{}:
+      {==}
+
+# a quoted letter, both of whose cases start a bare value
+def vl.z.lr(
+  rr: Laws.ARest,
+  +up: U32,
+  +low: U32,
+  +hu: {Laws.word.first(Chr{up}) == True{} : Bool},
+  +hl: {Laws.word.first(Chr{low}) == True{} : Bool},
+  hz: {vl.zb(rr) == True{} : Bool}
+) -> {vl.zb(Laws.abnf.letter_r(rr, up, low)) == True{} : Bool}:
+  match rr:
+    case Laws.ALeft{cs}:
+      match cs:
+        case []:
+          {==}
+        case +xx <> +tt:
+          vl.z.keep(Bool.or(Laws.abnf.cp(xx, up), Laws.abnf.cp(xx, low)), xx, tt, hc => gp.or({Laws.word.first(xx)
+            == True{} : Bool}, Laws.abnf.cp(xx, up), Laws.abnf.cp(xx, low), hc, h1 => vl.q.cp(xx, up, h1, hu),
+            h2 => vl.q.cp(xx, low, h2, hl)), hz)
+    case Laws.ANone{}:
+      {==}
+
+# the first of two alternatives
+def vl.z.or(
+  aa: Laws.ARest,
+  bb: Laws.ARest,
+  ha: {vl.zb(aa) == True{} : Bool},
+  hb: {vl.zb(bb) == True{} : Bool}
+) -> {vl.zb(Laws.abnf.or_r(aa, bb)) == True{} : Bool}:
+  match aa:
+    case Laws.ALeft{_cs}:
+      ha
+    case Laws.ANone{}:
+      hb
+
+# the step of vl.z.dd: a DIGIT dropped, or the word kept
+def vl.z.dd.go(
+  dg: Bool,
+  +xx: Char,
+  +tt: List<&2, Char>,
+  ed: {Laws.abnf.DIGIT(xx) == dg : Bool},
+  hz: {Bool.not(vl.qs(xx <> tt)) == True{} : Bool},
+  ih: {Bool.not(vl.qs(tt)) == True{} : Bool} -> {Bool.not(vl.qs(Laws.abnf.drop_digits(tt))) == True{} : Bool}
+) -> {Bool.not(vl.qs(Laws.abnf.drop_digits.pick(dg, xx, tt, Laws.abnf.drop_digits(tt)))) == True{} : Bool}:
+  match dg:
+    case True{}:
+      ih(vl.z.tail(xx, tt, vl.q.dig(xx, ed), hz))
+    case False{}:
+      hz
+
+# leading DIGITs dropped leave such a character
+def vl.z.dd(
+  cs: List<&2, Char>,
+  hz: {Bool.not(vl.qs(cs)) == True{} : Bool}
+) -> {Bool.not(vl.qs(Laws.abnf.drop_digits(cs))) == True{} : Bool}:
+  match cs:
+    case []:
+      hz
+    case +xx <> +tt:
+      vl.z.dd.go(Laws.abnf.DIGIT(xx), xx, tt, {==}, hz, h1 => vl.z.dd(tt, h1))
+
+# the first DIGIT of 1*DIGIT, then the rest dropped
+def vl.z.d1.go(
+  dg: Bool,
+  +xx: Char,
+  +tt: List<&2, Char>,
+  ed: {Laws.abnf.DIGIT(xx) == dg : Bool},
+  hz: {Bool.not(vl.qs(xx <> tt)) == True{} : Bool}
+) -> {vl.zb(Laws.abnf.keep(dg, Laws.abnf.drop_digits(tt))) == True{} : Bool}:
+  match dg:
+    case True{}:
+      vl.z.dd(tt, vl.z.tail(xx, tt, vl.q.dig(xx, ed), hz))
+    case False{}:
+      {==}
+
+# 1*DIGIT
+def vl.z.d1(rr: Laws.ARest, hz: {vl.zb(rr) == True{} : Bool}) -> {vl.zb(Laws.abnf.digits1_r(rr)) == True{} : Bool}:
+  match rr:
+    case Laws.ALeft{cs}:
+      match cs:
+        case []:
+          {==}
+        case +xx <> +tt:
+          vl.z.d1.go(Laws.abnf.DIGIT(xx), xx, tt, {==}, hz)
+    case Laws.ANone{}:
+      {==}
+
+# a time-secfrac, or none
+def vl.z.os.go(
+  dt: Bool,
+  +xx: Char,
+  +tt: List<&2, Char>,
+  hz: {Bool.not(vl.qs(xx <> tt)) == True{} : Bool}
+) -> {vl.zb(Laws.abnf.opt_secfrac.pick(dt, xx <> tt)) == True{} : Bool}:
+  match dt:
+    case True{}:
+      vl.z.d1(Laws.abnf.char_r(Laws.ALeft{xx <> tt}, 46), vl.z.cr(Laws.ALeft{xx <> tt}, 46, {==}, hz))
+    case False{}:
+      hz
+
+# [ time-secfrac ]
+def vl.z.os(rr: Laws.ARest, hz: {vl.zb(rr) == True{} : Bool}) -> {vl.zb(Laws.abnf.opt_secfrac(rr)) == True{} : Bool}:
+  match rr:
+    case Laws.ALeft{cs}:
+      match cs:
+        case []:
+          hz
+        case +xx <> +tt:
+          vl.z.os.go(Laws.abnf.cp(xx, 46), xx, tt, hz)
+    case Laws.ANone{}:
+      {==}
+
+# two DIGITs
+def vl.z.d2(
+  +rr: Laws.ARest,
+  +hz: {vl.zb(rr) == True{} : Bool}
+) -> {vl.zb(Laws.abnf.digit_r(Laws.abnf.digit_r(rr))) == True{} : Bool}:
+  vl.z.dr(Laws.abnf.digit_r(rr), vl.z.dr(rr, hz))
+
+# full-date
+def vl.z.fd(+rr: Laws.ARest, +hz: {vl.zb(rr) == True{} : Bool}) -> {vl.zb(Laws.abnf.full_date(rr)) == True{} : Bool}:
+  vl.z.d2(Laws.abnf.char_r(Laws.abnf.date_month(Laws.abnf.char_r(Laws.abnf.date_fullyear(rr), 45)), 45),
+    vl.z.cr(Laws.abnf.date_month(Laws.abnf.char_r(Laws.abnf.date_fullyear(rr), 45)), 45, {==},
+    vl.z.d2(Laws.abnf.char_r(Laws.abnf.date_fullyear(rr), 45), vl.z.cr(Laws.abnf.date_fullyear(rr), 45, {==},
+    vl.z.d2(Laws.abnf.digit_r(Laws.abnf.digit_r(rr)), vl.z.d2(rr, hz))))))
+
+# partial-time
+def vl.z.pt(+rr: Laws.ARest, +hz: {vl.zb(rr) == True{} : Bool}) -> {vl.zb(Laws.abnf.partial_time(rr)) == True{} : Bool}:
+  vl.z.os(Laws.abnf.time_second(Laws.abnf.char_r(Laws.abnf.time_minute(Laws.abnf.char_r(Laws.abnf.time_hour(rr), 58)),
+    58)), vl.z.d2(Laws.abnf.char_r(Laws.abnf.time_minute(Laws.abnf.char_r(Laws.abnf.time_hour(rr), 58)), 58),
+    vl.z.cr(Laws.abnf.time_minute(Laws.abnf.char_r(Laws.abnf.time_hour(rr), 58)), 58, {==},
+    vl.z.d2(Laws.abnf.char_r(Laws.abnf.time_hour(rr), 58), vl.z.cr(Laws.abnf.time_hour(rr), 58, {==},
+    vl.z.d2(rr, hz))))))
+
+# time-offset
+def vl.z.to(+rr: Laws.ARest, +hz: {vl.zb(rr) == True{} : Bool}) -> {vl.zb(Laws.abnf.time_offset(rr)) == True{} : Bool}:
+  vl.z.or(Laws.abnf.letter_r(rr, 90, 122), Laws.abnf.time_numoffset(rr), vl.z.lr(rr, 90, 122, {==}, {==}, hz),
+    vl.z.d2(Laws.abnf.char_r(Laws.abnf.time_hour(Laws.abnf.or_r(Laws.abnf.char_r(rr, 43), Laws.abnf.char_r(rr, 45))),
+    58), vl.z.cr(Laws.abnf.time_hour(Laws.abnf.or_r(Laws.abnf.char_r(rr, 43), Laws.abnf.char_r(rr, 45))), 58, {==},
+    vl.z.d2(Laws.abnf.or_r(Laws.abnf.char_r(rr, 43), Laws.abnf.char_r(rr, 45)), vl.z.or(Laws.abnf.char_r(rr, 43),
+    Laws.abnf.char_r(rr, 45), vl.z.cr(rr, 43, {==}, hz), vl.z.cr(rr, 45, {==}, hz))))))
+
+# a rule that leaves such a character matched no whole word
+def vl.z.all(rr: Laws.ARest, hz: {vl.zb(rr) == True{} : Bool}) -> {Laws.abnf.all_r(rr) == False{} : Bool}:
+  match rr:
+    case Laws.ALeft{cs}:
+      match cs:
+        case []:
+          Eq.bit.absurd(&2, {Laws.abnf.all_r(Laws.ALeft{[]}) == False{} : Bool}, hz)
+        case _xx <> _tt:
+          {==}
+    case Laws.ANone{}:
+      {==}
+
+# a word a rule matched whole, where a character that starts no bare value
+# stays, is of characters that start one
+def vl.qs.of.go(
+  qq: Bool,
+  +cs: List<&2, Char>,
+  rr: Laws.ARest,
+  eq: {vl.qs(cs) == qq : Bool},
+  hh: {Laws.abnf.all_r(rr) == True{} : Bool},
+  hz: {Bool.not(vl.qs(cs)) == True{} : Bool} -> {vl.zb(rr) == True{} : Bool}
+) -> {qq == True{} : Bool}:
+  match qq:
+    case True{}:
+      {==}
+    case False{}:
+      Eq.bit.absurd(&2, {False{} == True{} : Bool}, Equal.trans(Bool, False{}, Laws.abnf.all_r(rr), True{},
+        Equal.sym(Bool, Laws.abnf.all_r(rr), False{}, vl.z.all(rr, hz(Equal.cong(Bool, Bool, bb => Bool.not(bb),
+        vl.qs(cs), False{}, eq)))), hh))
+
+# the same, for the word's own test
+def vl.qs.of(
+  +cs: List<&2, Char>,
+  rr: Laws.ARest,
+  hh: {Laws.abnf.all_r(rr) == True{} : Bool},
+  hz: {Bool.not(vl.qs(cs)) == True{} : Bool} -> {vl.zb(rr) == True{} : Bool}
+) -> {vl.qs(cs) == True{} : Bool}:
+  vl.qs.of.go(vl.qs(cs), cs, rr, {==}, hh, hz)
+
+# A full-date read from the front is ten steps, a DIGIT or the dash each. A
+# word full-date leaves some rest of is ten characters the steps take, then
+# that rest (vl.walk); the ten are the date the scan's buffer is shaped as
+# (vl.deq, date.shaped).
+
+# one step of a full-date
+type VStep is Data:
+  VD{}
+  VDash{}
+
+# a step from the front
+def vl.stp1(st: VStep, rr: Laws.ARest) -> Laws.ARest:
+  match st:
+    case VD{}:
+      Laws.abnf.digit_r(rr)
+    case VDash{}:
+      Laws.abnf.char_r(rr, 45)
+
+# steps from the front, first to last
+def vl.runr(ss: List<&2, VStep>, rr: Laws.ARest) -> Laws.ARest:
+  match ss:
+    case []:
+      rr
+    case +st <> tt:
+      vl.runr(tt, vl.stp1(st, rr))
+
+# full-date's steps: date-fullyear "-" date-month "-" date-mday
+def vl.dsteps() -> List<&2, VStep>:
+  [VD{}, VD{}, VD{}, VD{}, VDash{}, VD{}, VD{}, VDash{}, VD{}, VD{}]
+
+# whether the characters are the ones the steps take, one each
+def vl.match(ss: List<&2, VStep>, pre: List<&2, Char>) -> Bool:
+  match ss pre:
+    case Nil{} Nil{}:
+      True{}
+    case VD{} <> st +cc <> pt:
+      Bool.and(Laws.abnf.DIGIT(cc), vl.match(st, pt))
+    case VDash{} <> st +cc <> pt:
+      Bool.and(Laws.abnf.cp(cc, 45), vl.match(st, pt))
+    case _s _p:
+      False{}
+
+# the steps as date.shaped's pattern: D for a DIGIT
+def vl.pat(ss: List<&2, VStep>) -> List<&2, Char>:
+  match ss:
+    case []:
+      []
+    case VD{} <> tt:
+      'D' <> vl.pat(tt)
+    case VDash{} <> tt:
+      '-' <> vl.pat(tt)
+
+# no match stays no match
+def vl.runr.none(ss: List<&2, VStep>) -> {vl.runr(ss, Laws.ANone{}) == Laws.ANone{} : Laws.ARest}:
+  match ss:
+    case []:
+      {==}
+    case st <> tt:
+      match st:
+        case VD{}:
+          vl.runr.none(tt)
+        case VDash{}:
+          vl.runr.none(tt)
+
+# whether a rule matched
+def vl.isl(rr: Laws.ARest) -> Bool:
+  match rr:
+    case Laws.ALeft{_cs}:
+      True{}
+    case Laws.ANone{}:
+      False{}
+
+# what a rule left, or dd
+def vl.lft(rr: Laws.ARest, dd: List<&2, Char>) -> List<&2, Char>:
+  match rr:
+    case Laws.ALeft{cs}:
+      cs
+    case Laws.ANone{}:
+      dd
+
+# a step's test failed: the steps after it match nothing
+def vl.kp(
+  bb: Bool,
+  +rr: List<&2, Char>,
+  +tt: List<&2, VStep>,
+  +ss: List<&2, Char>,
+  hh: {vl.runr(tt, Laws.abnf.keep(bb, rr)) == Laws.ALeft{ss} : Laws.ARest}
+) -> {bb == True{} : Bool}:
+  match bb:
+    case True{}:
+      {==}
+    case False{}:
+      Eq.bit.absurd(&2, {False{} == True{} : Bool}, Equal.cong(Laws.ARest, Bool, xx => vl.isl(xx), Laws.ANone{},
+        Laws.ALeft{ss}, Equal.trans(Laws.ARest, Laws.ANone{}, vl.runr(tt, Laws.ANone{}), Laws.ALeft{ss},
+        Equal.sym(Laws.ARest, vl.runr(tt, Laws.ANone{}), Laws.ANone{}, vl.runr.none(tt)), hh)))
+
+# the steps from nothing match nothing
+def vl.kp0(
+  +tt: List<&2, VStep>,
+  +ss: List<&2, Char>,
+  hh: {vl.runr(tt, Laws.ANone{}) == Laws.ALeft{ss} : Laws.ARest}
+) -> {False{} == True{} : Bool}:
+  Equal.cong(Laws.ARest, Bool, xx => vl.isl(xx), Laws.ANone{}, Laws.ALeft{ss}, Equal.trans(Laws.ARest, Laws.ANone{},
+    vl.runr(tt, Laws.ANone{}), Laws.ALeft{ss}, Equal.sym(Laws.ARest, vl.runr(tt, Laws.ANone{}), Laws.ANone{},
+    vl.runr.none(tt)), hh))
+
+# a word the steps leave ss of is the characters they take, then ss: a
+# claim of every such word is a claim of it
+def vl.walk(
+  ss: List<&2, VStep>,
+  -P: List<&2, Char> -> Type,
+  +cs: List<&2, Char>,
+  +rest: List<&2, Char>,
+  +hh: {vl.runr(ss, Laws.ALeft{cs}) == Laws.ALeft{rest} : Laws.ARest},
+  kk: @pre: List<&2, Char> -> {vl.match(ss, pre) == True{} : Bool} -> P(List.append(&2, Char, pre, rest))
+) -> P(cs):
+  match ss:
+    case []:
+      gp.subst(P, cs, rest, Equal.cong(Laws.ARest, List<&2, Char>, xx => vl.lft(xx, cs), Laws.ALeft{cs},
+        Laws.ALeft{rest}, hh), kk([], {==}))
+    case VD{} <> +tt:
+      match cs:
+        case []:
+          Eq.bit.absurd(&1, P([]), vl.kp0(tt, rest, hh))
+        case +cc <> +rr:
+          +ed = {vl.kp(Laws.abnf.DIGIT(cc), rr, tt, rest, hh) : {Laws.abnf.DIGIT(cc) == True{} : Bool}}
+          vl.walk(tt, zs => P(cc <> zs), rr, rest, Equal.trans(Laws.ARest, vl.runr(tt, Laws.abnf.keep(True{}, rr)),
+            vl.runr(tt, Laws.abnf.keep(Laws.abnf.DIGIT(cc), rr)), Laws.ALeft{rest}, Equal.cong(Bool, Laws.ARest,
+            bb => vl.runr(tt, Laws.abnf.keep(bb, rr)), True{}, Laws.abnf.DIGIT(cc), Equal.sym(Bool,
+            Laws.abnf.DIGIT(cc), True{}, ed)), hh),
+            +pre => hm => kk(cc <> pre, and.tt(Laws.abnf.DIGIT(cc), vl.match(tt, pre), ed, hm)))
+    case VDash{} <> +tt:
+      match cs:
+        case []:
+          Eq.bit.absurd(&1, P([]), vl.kp0(tt, rest, hh))
+        case +cc <> +rr:
+          +ed = {vl.kp(Laws.abnf.cp(cc, 45), rr, tt, rest, hh) : {Laws.abnf.cp(cc, 45) == True{} : Bool}}
+          vl.walk(tt, zs => P(cc <> zs), rr, rest, Equal.trans(Laws.ARest, vl.runr(tt, Laws.abnf.keep(True{}, rr)),
+            vl.runr(tt, Laws.abnf.keep(Laws.abnf.cp(cc, 45), rr)), Laws.ALeft{rest}, Equal.cong(Bool, Laws.ARest,
+            bb => vl.runr(tt, Laws.abnf.keep(bb, rr)), True{}, Laws.abnf.cp(cc, 45), Equal.sym(Bool,
+            Laws.abnf.cp(cc, 45), True{}, ed)), hh),
+            +pre => hm => kk(cc <> pre, and.tt(Laws.abnf.cp(cc, 45), vl.match(tt, pre), ed, hm)))
+
+# a digit test, then the rest, as date.eq.go and as an and
+def vl.deq.go(
+  bb: Bool,
+  xx: Bool,
+  yy: Bool,
+  ee: {xx == yy : Bool}
+) -> {T.date.eq.go(bb, _u => xx) == Bool.and(bb, yy) : Bool}:
+  match bb:
+    case True{}:
+      ee
+    case False{}:
+      {==}
+
+# a word is shaped as the steps' pattern exactly when the steps take it
+def vl.deq(ss: List<&2, VStep>, pre: List<&2, Char>) -> {T.date.eq(pre, vl.pat(ss)) == vl.match(ss, pre) : Bool}:
+  match ss:
+    case []:
+      match pre:
+        case []:
+          {==}
+        case _cc <> _pt:
+          {==}
+    case VD{} <> +tt:
+      match pre:
+        case []:
+          {==}
+        case cc <> +pt:
+          match cc:
+            case Chr{+xx}:
+              vl.deq.go(Char.is_digit(Chr{xx}), T.date.eq(pt, vl.pat(tt)), vl.match(tt, pt), vl.deq(tt, pt))
+    case VDash{} <> +tt:
+      match pre:
+        case []:
+          {==}
+        case cc <> +pt:
+          match cc:
+            case Chr{+xx}:
+              vl.deq.go(Char.is_eq(Chr{xx}, '-'), T.date.eq(pt, vl.pat(tt)), vl.match(tt, pt), vl.deq(tt, pt))
+
+# every character of a list is one a bare value keeps
+def vl.wcs(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      True{}
+    case +hh <> tt:
+      Bool.and(Laws.word.char(hh), vl.wcs(tt))
+
+# a DIGIT is kept
+def vl.wc.dig(+cc: Char, +hh: {Laws.abnf.DIGIT(cc) == True{} : Bool}) -> {Laws.word.char(cc) == True{} : Bool}:
+  Eq.and.left(Laws.word.char(cc), Bool.not(Bool.or(Char.is_eq(cc, '['), Char.is_eq(cc, '{'))), vl.q.dig(cc, hh))
+
+# the characters the steps take are kept
+def vl.match.wc(
+  ss: List<&2, VStep>,
+  pre: List<&2, Char>,
+  +hh: {vl.match(ss, pre) == True{} : Bool}
+) -> {vl.wcs(pre) == True{} : Bool}:
+  match ss:
+    case []:
+      match pre:
+        case []:
+          {==}
+        case _cc <> _pt:
+          Eq.bit.absurd(&2, {vl.wcs(_cc <> _pt) == True{} : Bool}, hh)
+    case VD{} <> +tt:
+      match pre:
+        case []:
+          {==}
+        case +cc <> +pt:
+          and.tt(Laws.word.char(cc), vl.wcs(pt), vl.wc.dig(cc, Eq.and.left(Laws.abnf.DIGIT(cc), vl.match(tt, pt), hh)),
+            vl.match.wc(tt, pt, Eq.and.right(Laws.abnf.DIGIT(cc), vl.match(tt, pt), hh)))
+    case VDash{} <> +tt:
+      match pre:
+        case []:
+          {==}
+        case +cc <> +pt:
+          and.tt(Laws.word.char(cc), vl.wcs(pt), vl.chs(ch => {Laws.word.char(ch) == True{} : Bool}, cc, '-',
+            gp.cp(cc, 45, Eq.and.left(Laws.abnf.cp(cc, 45), vl.match(tt, pt), hh)), {==}),
+            vl.match.wc(tt, pt, Eq.and.right(Laws.abnf.cp(cc, 45), vl.match(tt, pt), hh)))
+
+# kept characters, then more: the more read on from the buffer they leave
+def vl.more.app(
+  pp: List<&2, Char>,
+  +ss: List<&2, Char>,
+  +buf: List<&2, Char>,
+  +hw: {vl.wcs(pp) == True{} : Bool}
+) -> {vl.morel(List.append(&2, Char, pp, ss), buf) == vl.morel(ss, List.reverse.go(&2, Char, pp, buf)) : Bool}:
+  match pp:
+    case []:
+      {==}
+    case +hh <> +pt:
+      Equal.trans(Bool, vl.morel(List.append(&2, Char, hh <> pt, ss), buf), vl.morel(List.append(&2, Char, pt, ss),
+        hh <> buf), vl.morel(ss, List.reverse.go(&2, Char, pt, hh <> buf)),
+        Equal.cong(Bool, Bool, bb => Bool.and(Bool.or(bb, Bool.and(Char.is_eq(hh, ' '), Bool.and(T.date.shaped(buf),
+          vl.d1(List.append(&2, Char, pt, ss))))), vl.morel(List.append(&2, Char, pt, ss), hh <> buf)),
+          Laws.word.char(hh), True{}, Eq.and.left(Laws.word.char(hh), vl.wcs(pt), hw)),
+        vl.more.app(pt, ss, hh <> buf, Eq.and.right(Laws.word.char(hh), vl.wcs(pt), hw)))
+
+# a full-date, a space, then a partial-time's characters: a bare word
+def vl.dt.pre(
+  pre: List<&2, Char>,
+  +tt: List<&2, Char>,
+  +hm: {vl.match(vl.dsteps(), pre) == True{} : Bool},
+  +hq: {vl.qs(tt) == True{} : Bool},
+  +hd: {vl.d1(tt) == True{} : Bool}
+) -> {vl.wordl(List.append(&2, Char, pre, ' ' <> tt)) == True{} : Bool}:
+  match pre:
+    case []:
+      Eq.bit.absurd(&2, {vl.wordl(List.append(&2, Char, [], ' ' <> tt)) == True{} : Bool}, hm)
+    case +c1 <> +pp:
+      +bb = {List.reverse.go(&2, Char, pp, [c1]) : List<&2, Char>}
+      +hs = {Equal.trans(Bool, T.date.shaped(bb), T.date.eq(c1 <> pp, vl.pat(vl.dsteps())), True{},
+        Equal.cong(List<&2, Char>, Bool, xs => T.date.eq(xs, vl.pat(vl.dsteps())), List.reverse(&2, Char, bb), c1 <> pp,
+        t1.revrev(pp, [c1])), Equal.trans(Bool, T.date.eq(c1 <> pp, vl.pat(vl.dsteps())), vl.match(vl.dsteps(),
+        c1 <> pp), True{}, vl.deq(vl.dsteps(), c1 <> pp), hm)) : {T.date.shaped(bb) == True{} : Bool}}
+      and.tt(Laws.word.first(c1), vl.morel(List.append(&2, Char, pp, ' ' <> tt), [c1]), vl.q.dig(c1,
+        Eq.and.left(Laws.abnf.DIGIT(c1), vl.match([VD{}, VD{}, VD{}, VDash{}, VD{}, VD{}, VDash{}, VD{}, VD{}], pp),
+        hm)),
+        Equal.trans(Bool, vl.morel(List.append(&2, Char, pp, ' ' <> tt), [c1]), vl.morel(' ' <> tt, bb), True{},
+          vl.more.app(pp, ' ' <> tt, [c1], vl.match.wc([VD{}, VD{}, VD{}, VDash{}, VD{}, VD{}, VDash{}, VD{}, VD{}], pp,
+          Eq.and.right(Laws.abnf.DIGIT(c1), vl.match([VD{}, VD{}, VD{}, VDash{}, VD{}, VD{}, VDash{}, VD{}, VD{}], pp),
+          hm))),
+          and.tt(Bool.and(T.date.shaped(bb), vl.d1(tt)), vl.morel(tt, ' ' <> bb), and.tt(T.date.shaped(bb), vl.d1(tt),
+            hs, hd), vl.qs.more(tt, ' ' <> bb, hq))))
+
+# a word whose full-date leaves a space then tt, a partial-time's
+# characters, is a bare word
+def vl.dt.core(
+  +cs: List<&2, Char>,
+  +tt: List<&2, Char>,
+  hf: {Laws.abnf.full_date(Laws.ALeft{cs}) == Laws.ALeft{' ' <> tt} : Laws.ARest},
+  +hq: {vl.qs(tt) == True{} : Bool},
+  +hd: {vl.d1(tt) == True{} : Bool}
+) -> {vl.wordl(cs) == True{} : Bool}:
+  vl.walk(vl.dsteps(), zs => {vl.wordl(zs) == True{} : Bool}, cs, ' ' <> tt, hf, pre => hm => vl.dt.pre(pre, tt, hm,
+    hq, hd))
+
+# The four date-time rules. local-date and local-time take no space, and
+# neither do the other two when time-delim is T or t; when it is the space,
+# full-date left it and a partial-time after it (vl.dt.core).
+
+# partial-time after its first DIGIT
+def vl.pt1(xx: Laws.ARest) -> Laws.ARest:
+  Laws.abnf.opt_secfrac(Laws.abnf.time_second(Laws.abnf.char_r(Laws.abnf.time_minute(Laws.abnf.char_r(
+    Laws.abnf.digit_r(xx), 58)), 58)))
+
+# a partial-time's first character is a digit
+def vl.pt.d1.c(
+  bb: Bool,
+  +dd: Char,
+  +rr: List<&2, Char>,
+  eb: {Laws.abnf.DIGIT(dd) == bb : Bool},
+  hh: {Laws.abnf.all_r(vl.pt1(Laws.abnf.keep(bb, rr))) == True{} : Bool}
+) -> {vl.d1(dd <> rr) == True{} : Bool}:
+  match bb:
+    case True{}:
+      gs.dig(dd, eb)
+    case False{}:
+      Eq.bit.absurd(&2, {vl.d1(dd <> rr) == True{} : Bool}, hh)
+
+# so a word a partial-time matches starts with a digit
+def vl.pt.d1(
+  tt: List<&2, Char>,
+  hh: {Laws.abnf.all_r(Laws.abnf.partial_time(Laws.ALeft{tt})) == True{} : Bool}
+) -> {vl.d1(tt) == True{} : Bool}:
+  match tt:
+    case []:
+      Eq.bit.absurd(&2, {vl.d1([]) == True{} : Bool}, hh)
+    case +dd <> +rr:
+      vl.pt.d1.c(Laws.abnf.DIGIT(dd), dd, rr, {==}, hh)
+
+# and a full-time's first character
+def vl.pt.d1o.c(
+  bb: Bool,
+  +dd: Char,
+  +rr: List<&2, Char>,
+  eb: {Laws.abnf.DIGIT(dd) == bb : Bool},
+  hh: {Laws.abnf.all_r(Laws.abnf.time_offset(vl.pt1(Laws.abnf.keep(bb, rr)))) == True{} : Bool}
+) -> {vl.d1(dd <> rr) == True{} : Bool}:
+  match bb:
+    case True{}:
+      gs.dig(dd, eb)
+    case False{}:
+      Eq.bit.absurd(&2, {vl.d1(dd <> rr) == True{} : Bool}, hh)
+
+# so a word a full-time matches starts with a digit
+def vl.pt.d1o(
+  tt: List<&2, Char>,
+  hh: {Laws.abnf.all_r(Laws.abnf.time_offset(Laws.abnf.partial_time(Laws.ALeft{tt}))) == True{} : Bool}
+) -> {vl.d1(tt) == True{} : Bool}:
+  match tt:
+    case []:
+      Eq.bit.absurd(&2, {vl.d1([]) == True{} : Bool}, hh)
+    case +dd <> +rr:
+      vl.pt.d1o.c(Laws.abnf.DIGIT(dd), dd, rr, {==}, hh)
+
+# local-date-time with a space: the space is time-delim's
+def vl.dt.sp2.c(
+  bb: Bool,
+  +h1: Char,
+  +tt: List<&2, Char>,
+  +cs: List<&2, Char>,
+  eb: {Laws.abnf.cp(h1, 32) == bb : Bool},
+  ef: {Laws.abnf.full_date(Laws.ALeft{cs}) == Laws.ALeft{h1 <> tt} : Laws.ARest},
+  +hh: {Laws.abnf.all_r(Laws.abnf.partial_time(Laws.abnf.keep(bb, tt))) == True{} : Bool}
+) -> {vl.wordl(cs) == True{} : Bool}:
+  match bb:
+    case True{}:
+      vl.dt.core(cs, tt, Equal.trans(Laws.ARest, Laws.abnf.full_date(Laws.ALeft{cs}), Laws.ALeft{h1 <> tt},
+        Laws.ALeft{' ' <> tt}, ef, Equal.cong(Char, Laws.ARest, ch => Laws.ALeft{ch <> tt}, h1, ' ', gp.cp(h1, 32,
+          eb))),
+        vl.qs.of(tt, Laws.abnf.partial_time(Laws.ALeft{tt}), hh, hn => vl.z.pt(Laws.ALeft{tt}, hn)), vl.pt.d1(tt, hh))
+    case False{}:
+      Eq.bit.absurd(&2, {vl.wordl(cs) == True{} : Bool}, hh)
+
+# what full-date left, then the space
+def vl.dt.sp2.go(
+  fd: Laws.ARest,
+  +cs: List<&2, Char>,
+  ef: {Laws.abnf.full_date(Laws.ALeft{cs}) == fd : Laws.ARest},
+  hh: {Laws.abnf.all_r(Laws.abnf.partial_time(Laws.abnf.char_r(fd, 32))) == True{} : Bool}
+) -> {vl.wordl(cs) == True{} : Bool}:
+  match fd:
+    case Laws.ALeft{ss}:
+      match ss:
+        case []:
+          Eq.bit.absurd(&2, {vl.wordl(cs) == True{} : Bool}, hh)
+        case +h1 <> +tt:
+          vl.dt.sp2.c(Laws.abnf.cp(h1, 32), h1, tt, cs, {==}, ef, hh)
+    case Laws.ANone{}:
+      Eq.bit.absurd(&2, {vl.wordl(cs) == True{} : Bool}, hh)
+
+# offset-date-time with a space
+def vl.dt.sp1.c(
+  bb: Bool,
+  +h1: Char,
+  +tt: List<&2, Char>,
+  +cs: List<&2, Char>,
+  eb: {Laws.abnf.cp(h1, 32) == bb : Bool},
+  ef: {Laws.abnf.full_date(Laws.ALeft{cs}) == Laws.ALeft{h1 <> tt} : Laws.ARest},
+  +hh: {Laws.abnf.all_r(Laws.abnf.time_offset(Laws.abnf.partial_time(Laws.abnf.keep(bb, tt)))) == True{} : Bool}
+) -> {vl.wordl(cs) == True{} : Bool}:
+  match bb:
+    case True{}:
+      vl.dt.core(cs, tt, Equal.trans(Laws.ARest, Laws.abnf.full_date(Laws.ALeft{cs}), Laws.ALeft{h1 <> tt},
+        Laws.ALeft{' ' <> tt}, ef, Equal.cong(Char, Laws.ARest, ch => Laws.ALeft{ch <> tt}, h1, ' ', gp.cp(h1, 32,
+          eb))),
+        vl.qs.of(tt, Laws.abnf.time_offset(Laws.abnf.partial_time(Laws.ALeft{tt})), hh, hn => vl.z.to(
+        Laws.abnf.partial_time(Laws.ALeft{tt}), vl.z.pt(Laws.ALeft{tt}, hn))), vl.pt.d1o(tt, hh))
+    case False{}:
+      Eq.bit.absurd(&2, {vl.wordl(cs) == True{} : Bool}, hh)
+
+# what full-date left, then the space
+def vl.dt.sp1.go(
+  fd: Laws.ARest,
+  +cs: List<&2, Char>,
+  ef: {Laws.abnf.full_date(Laws.ALeft{cs}) == fd : Laws.ARest},
+  hh: {Laws.abnf.all_r(Laws.abnf.time_offset(Laws.abnf.partial_time(Laws.abnf.char_r(fd, 32)))) == True{} : Bool}
+) -> {vl.wordl(cs) == True{} : Bool}:
+  match fd:
+    case Laws.ALeft{ss}:
+      match ss:
+        case []:
+          Eq.bit.absurd(&2, {vl.wordl(cs) == True{} : Bool}, hh)
+        case +h1 <> +tt:
+          vl.dt.sp1.c(Laws.abnf.cp(h1, 32), h1, tt, cs, {==}, ef, hh)
+    case Laws.ANone{}:
+      Eq.bit.absurd(&2, {vl.wordl(cs) == True{} : Bool}, hh)
+
+# local-date-time matched a whole word
+def vl.A2(+xx: Char, +rr: List<&2, Char>) -> Data:
+  {Laws.abnf.all_r(Laws.abnf.partial_time(Laws.abnf.time_delim(Laws.abnf.full_date(Laws.ALeft{xx <> rr})))) == True{}
+    : Bool}
+
+# offset-date-time matched a whole word
+def vl.A1(+xx: Char, +rr: List<&2, Char>) -> Data:
+  {Laws.abnf.all_r(Laws.abnf.time_offset(Laws.abnf.partial_time(Laws.abnf.time_delim(Laws.abnf.full_date(
+    Laws.ALeft{xx <> rr}))))) == True{} : Bool}
+
+# local-date-time: T or t, or a space
+def vl.dt.a2.go(
+  lt: Laws.ARest,
+  +xx: Char,
+  +rr: List<&2, Char>,
+  +el: {Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116) == lt : Laws.ARest},
+  +hh: vl.A2(xx, rr)
+) -> {vl.wordl(xx <> rr) == True{} : Bool}:
+  match lt:
+    case Laws.ALeft{+ys}:
+      vl.qs.word(xx, rr, vl.qs.of(xx <> rr, Laws.abnf.partial_time(Laws.ALeft{ys}), Equal.trans(Bool,
+        Laws.abnf.all_r(Laws.abnf.partial_time(Laws.abnf.or_r(Laws.ALeft{ys}, Laws.abnf.char_r(Laws.abnf.full_date(
+        Laws.ALeft{xx <> rr}), 32)))), Laws.abnf.all_r(Laws.abnf.partial_time(Laws.abnf.time_delim(Laws.abnf.full_date(
+        Laws.ALeft{xx <> rr})))), True{}, Equal.cong(Laws.ARest, Bool, zz => Laws.abnf.all_r(Laws.abnf.partial_time(
+        Laws.abnf.or_r(zz, Laws.abnf.char_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 32)))), Laws.ALeft{ys},
+        Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116), Equal.sym(Laws.ARest,
+        Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116), Laws.ALeft{ys}, el)), hh),
+        hn => vl.z.pt(Laws.ALeft{ys}, Equal.trans(Bool, vl.zb(Laws.ALeft{ys}), vl.zb(Laws.abnf.letter_r(
+        Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116)), True{}, Equal.cong(Laws.ARest, Bool, zz => vl.zb(zz),
+        Laws.ALeft{ys}, Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116), Equal.sym(Laws.ARest,
+        Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116), Laws.ALeft{ys}, el)),
+        vl.z.lr(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116, {==}, {==}, vl.z.fd(Laws.ALeft{xx <> rr},
+        hn))))))
+    case Laws.ANone{}:
+      vl.dt.sp2.go(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), xx <> rr, {==}, Equal.trans(Bool,
+        Laws.abnf.all_r(Laws.abnf.partial_time(Laws.abnf.or_r(Laws.ANone{}, Laws.abnf.char_r(Laws.abnf.full_date(
+        Laws.ALeft{xx <> rr}), 32)))), Laws.abnf.all_r(Laws.abnf.partial_time(Laws.abnf.time_delim(Laws.abnf.full_date(
+        Laws.ALeft{xx <> rr})))), True{}, Equal.cong(Laws.ARest, Bool, zz => Laws.abnf.all_r(Laws.abnf.partial_time(
+        Laws.abnf.or_r(zz, Laws.abnf.char_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 32)))), Laws.ANone{},
+        Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116), Equal.sym(Laws.ARest,
+        Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116), Laws.ANone{}, el)), hh))
+
+# offset-date-time: T or t, or a space
+def vl.dt.a1.go(
+  lt: Laws.ARest,
+  +xx: Char,
+  +rr: List<&2, Char>,
+  +el: {Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116) == lt : Laws.ARest},
+  +hh: vl.A1(xx, rr)
+) -> {vl.wordl(xx <> rr) == True{} : Bool}:
+  match lt:
+    case Laws.ALeft{+ys}:
+      vl.qs.word(xx, rr, vl.qs.of(xx <> rr, Laws.abnf.time_offset(Laws.abnf.partial_time(Laws.ALeft{ys})),
+        Equal.trans(Bool, Laws.abnf.all_r(Laws.abnf.time_offset(Laws.abnf.partial_time(Laws.abnf.or_r(Laws.ALeft{ys},
+        Laws.abnf.char_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 32))))), Laws.abnf.all_r(Laws.abnf.time_offset(
+        Laws.abnf.partial_time(Laws.abnf.time_delim(Laws.abnf.full_date(Laws.ALeft{xx <> rr}))))), True{},
+        Equal.cong(Laws.ARest, Bool, zz => Laws.abnf.all_r(Laws.abnf.time_offset(Laws.abnf.partial_time(
+        Laws.abnf.or_r(zz, Laws.abnf.char_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 32))))), Laws.ALeft{ys},
+        Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116), Equal.sym(Laws.ARest,
+        Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116), Laws.ALeft{ys}, el)), hh),
+        hn => vl.z.to(Laws.abnf.partial_time(Laws.ALeft{ys}), vl.z.pt(Laws.ALeft{ys}, Equal.trans(Bool,
+        vl.zb(Laws.ALeft{ys}), vl.zb(Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116)), True{},
+        Equal.cong(Laws.ARest, Bool, zz => vl.zb(zz), Laws.ALeft{ys}, Laws.abnf.letter_r(Laws.abnf.full_date(
+        Laws.ALeft{xx <> rr}), 84, 116), Equal.sym(Laws.ARest, Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <>
+        rr}), 84, 116), Laws.ALeft{ys}, el)), vl.z.lr(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116, {==}, {==},
+        vl.z.fd(Laws.ALeft{xx <> rr}, hn)))))))
+    case Laws.ANone{}:
+      vl.dt.sp1.go(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), xx <> rr, {==}, Equal.trans(Bool,
+        Laws.abnf.all_r(Laws.abnf.time_offset(Laws.abnf.partial_time(Laws.abnf.or_r(Laws.ANone{}, Laws.abnf.char_r(
+        Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 32))))),
+          Laws.abnf.all_r(Laws.abnf.time_offset(Laws.abnf.partial_time(
+        Laws.abnf.time_delim(Laws.abnf.full_date(Laws.ALeft{xx <> rr}))))), True{}, Equal.cong(Laws.ARest, Bool,
+        zz => Laws.abnf.all_r(Laws.abnf.time_offset(Laws.abnf.partial_time(Laws.abnf.or_r(zz, Laws.abnf.char_r(
+        Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 32))))), Laws.ANone{}, Laws.abnf.letter_r(Laws.abnf.full_date(
+        Laws.ALeft{xx <> rr}), 84, 116), Equal.sym(Laws.ARest, Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <>
+        rr}), 84, 116), Laws.ANone{}, el)), hh))
+
+# every word a date-time rule matches is a bare word
+def vl.dt.shape(cs: List<&2, Char>, hh: {Laws.abnf.date_time(cs) == True{} : Bool}) -> {vl.wordl(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {vl.wordl([]) == True{} : Bool}, hh)
+    case +xx <> +rr:
+      gp.or({vl.wordl(xx <> rr) == True{} : Bool}, Laws.abnf.all_r(Laws.abnf.offset_date_time(Laws.ALeft{xx <> rr})),
+        Bool.or(Laws.abnf.all_r(Laws.abnf.local_date_time(Laws.ALeft{xx <> rr})), Bool.or(Laws.abnf.all_r(
+        Laws.abnf.local_date(Laws.ALeft{xx <> rr})), Laws.abnf.all_r(Laws.abnf.local_time(Laws.ALeft{xx <> rr})))), hh,
+        h1 => vl.dt.a1.go(Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116), xx, rr, {==}, h1),
+        hr => gp.or({vl.wordl(xx <> rr) == True{} : Bool}, Laws.abnf.all_r(Laws.abnf.local_date_time(Laws.ALeft{xx <>
+          rr})), Bool.or(Laws.abnf.all_r(Laws.abnf.local_date(Laws.ALeft{xx <> rr})), Laws.abnf.all_r(
+          Laws.abnf.local_time(Laws.ALeft{xx <> rr}))), hr,
+          h2 => vl.dt.a2.go(Laws.abnf.letter_r(Laws.abnf.full_date(Laws.ALeft{xx <> rr}), 84, 116), xx, rr, {==}, h2),
+          hs => gp.or({vl.wordl(xx <> rr) == True{} : Bool}, Laws.abnf.all_r(Laws.abnf.local_date(Laws.ALeft{xx <>
+            rr})), Laws.abnf.all_r(Laws.abnf.local_time(Laws.ALeft{xx <> rr})), hs,
+            h3 => vl.qs.word(xx, rr, vl.qs.of(xx <> rr, Laws.abnf.full_date(Laws.ALeft{xx <> rr}), h3,
+              hn => vl.z.fd(Laws.ALeft{xx <> rr}, hn))),
+            h4 => vl.qs.word(xx, rr, vl.qs.of(xx <> rr, Laws.abnf.partial_time(Laws.ALeft{xx <> rr}), h4,
+              hn => vl.z.pt(Laws.ALeft{xx <> rr}, hn))))))
+
+# The classifiers say a word denotes the value it reads as, as the value's
+# own equality says it (sign.eq, String.eq, bit.eq, when.eq); each of those
+# is the value's equality.
+
+# two strings String.eq takes for one are one
+def vl.str.eq(+aa: String, +bb: String, hh: {String.eq(aa, bb) == True{} : Bool}) -> {aa == bb : String}:
+  str.eq.true(aa, bb, Equal.trans(Bool, T.str.eq(aa, bb), String.eq(aa, bb), True{}, str.eq.agree(aa, bb), hh))
+
+# a bare word's reading that n1.got.int takes for vv is vv
+def vl.eq.int(gg: T.Got, vv: T.Val, +hh: {Laws.n1.got.int(gg, vv) == True{} : Bool}) -> {gg == T.GotVal{vv} : T.Got}:
+  match gg:
+    case T.GotVal{g1}:
+      match g1:
+        case T.VInt{+s1, +d1}:
+          match vv:
+            case T.VInt{+s2, +d2}:
+              Equal.trans(T.Got, T.GotVal{T.VInt{s1, d1}}, T.GotVal{T.VInt{s2, d1}}, T.GotVal{T.VInt{s2, d2}},
+                Equal.cong(T.Sign, T.Got, xx => T.GotVal{T.VInt{xx, d1}}, s1, s2, Equal.sym(T.Sign, s2, s1,
+                n1.sign.eq(s2, s1, Eq.and.left(Laws.sign.eq(s2, s1), String.eq(d2, d1), hh)))),
+                Equal.cong(String, T.Got, yy => T.GotVal{T.VInt{s2, yy}}, d1, d2, Equal.sym(String, d2, d1,
+                vl.str.eq(d2, d1, Eq.and.right(Laws.sign.eq(s2, s1), String.eq(d2, d1), hh)))))
+            case T.VStr{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VInt{s1, d1}} == T.GotVal{T.VStr{_a}} : T.Got}, hh)
+            case T.VSpan{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VInt{s1, d1}} == T.GotVal{T.VSpan{_a, _b}} : T.Got}, hh)
+            case T.VFlo{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VInt{s1, d1}} == T.GotVal{T.VFlo{_a, _b}} : T.Got}, hh)
+            case T.VBool{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VInt{s1, d1}} == T.GotVal{T.VBool{_a}} : T.Got}, hh)
+            case T.VWhen{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VInt{s1, d1}} == T.GotVal{T.VWhen{_a}} : T.Got}, hh)
+            case T.VArr{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VInt{s1, d1}} == T.GotVal{T.VArr{_a}} : T.Got}, hh)
+            case T.VInl{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VInt{s1, d1}} == T.GotVal{T.VInl{_a}} : T.Got}, hh)
+            case T.VHead{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VInt{s1, d1}} == T.GotVal{T.VHead{_a, _b}} : T.Got}, hh)
+            case T.VAot{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VInt{s1, d1}} == T.GotVal{T.VAot{_a, _b}} : T.Got}, hh)
+            case T.VAots{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VInt{s1, d1}} == T.GotVal{T.VAots{_a, _b}} : T.Got}, hh)
+            case T.VPair{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VInt{s1, d1}} == T.GotVal{T.VPair{_a, _b}} : T.Got}, hh)
+        case T.VStr{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VStr{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VSpan{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VSpan{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VFlo{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VFlo{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VBool{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VBool{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VWhen{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VWhen{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VArr{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VArr{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VInl{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VInl{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VHead{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VHead{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VAot{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VAot{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VAots{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VAots{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VPair{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VPair{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+    case T.GotBad{why}:
+      Eq.bit.absurd(&2, {T.GotBad{why} == T.GotVal{vv} : T.Got}, hh)
+
+# a bare word's reading that n1.got.flo takes for vv is vv
+def vl.eq.flo(gg: T.Got, vv: T.Val, +hh: {Laws.n1.got.flo(gg, vv) == True{} : Bool}) -> {gg == T.GotVal{vv} : T.Got}:
+  match gg:
+    case T.GotVal{g1}:
+      match g1:
+        case T.VFlo{+s1, +d1}:
+          match vv:
+            case T.VFlo{+s2, +d2}:
+              Equal.trans(T.Got, T.GotVal{T.VFlo{s1, d1}}, T.GotVal{T.VFlo{s2, d1}}, T.GotVal{T.VFlo{s2, d2}},
+                Equal.cong(T.Sign, T.Got, xx => T.GotVal{T.VFlo{xx, d1}}, s1, s2, Equal.sym(T.Sign, s2, s1,
+                n1.sign.eq(s2, s1, Eq.and.left(Laws.sign.eq(s2, s1), String.eq(d2, d1), hh)))),
+                Equal.cong(String, T.Got, yy => T.GotVal{T.VFlo{s2, yy}}, d1, d2, Equal.sym(String, d2, d1,
+                vl.str.eq(d2, d1, Eq.and.right(Laws.sign.eq(s2, s1), String.eq(d2, d1), hh)))))
+            case T.VStr{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VFlo{s1, d1}} == T.GotVal{T.VStr{_a}} : T.Got}, hh)
+            case T.VSpan{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VFlo{s1, d1}} == T.GotVal{T.VSpan{_a, _b}} : T.Got}, hh)
+            case T.VInt{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VFlo{s1, d1}} == T.GotVal{T.VInt{_a, _b}} : T.Got}, hh)
+            case T.VBool{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VFlo{s1, d1}} == T.GotVal{T.VBool{_a}} : T.Got}, hh)
+            case T.VWhen{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VFlo{s1, d1}} == T.GotVal{T.VWhen{_a}} : T.Got}, hh)
+            case T.VArr{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VFlo{s1, d1}} == T.GotVal{T.VArr{_a}} : T.Got}, hh)
+            case T.VInl{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VFlo{s1, d1}} == T.GotVal{T.VInl{_a}} : T.Got}, hh)
+            case T.VHead{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VFlo{s1, d1}} == T.GotVal{T.VHead{_a, _b}} : T.Got}, hh)
+            case T.VAot{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VFlo{s1, d1}} == T.GotVal{T.VAot{_a, _b}} : T.Got}, hh)
+            case T.VAots{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VFlo{s1, d1}} == T.GotVal{T.VAots{_a, _b}} : T.Got}, hh)
+            case T.VPair{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VFlo{s1, d1}} == T.GotVal{T.VPair{_a, _b}} : T.Got}, hh)
+        case T.VStr{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VStr{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VSpan{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VSpan{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VInt{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VInt{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VBool{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VBool{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VWhen{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VWhen{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VArr{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VArr{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VInl{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VInl{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VHead{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VHead{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VAot{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VAot{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VAots{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VAots{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VPair{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VPair{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+    case T.GotBad{why}:
+      Eq.bit.absurd(&2, {T.GotBad{why} == T.GotVal{vv} : T.Got}, hh)
+
+# two bits bit.eq takes for one are one
+def vl.eq.bit(
+  b1: Bool,
+  b2: Bool,
+  hh: {Laws.bit.eq(b2, b1) == True{} : Bool}
+) -> {T.GotVal{T.VBool{b1}} == T.GotVal{T.VBool{b2}} : T.Got}:
+  match b1 b2:
+    case True{} True{}:
+      {==}
+    case False{} False{}:
+      {==}
+    case True{} False{}:
+      Eq.bit.absurd(&2, {T.GotVal{T.VBool{True{}}} == T.GotVal{T.VBool{False{}}} : T.Got}, hh)
+    case False{} True{}:
+      Eq.bit.absurd(&2, {T.GotVal{T.VBool{False{}}} == T.GotVal{T.VBool{True{}}} : T.Got}, hh)
+
+# and a boolean's
+def vl.eq.bool(gg: T.Got, vv: T.Val, hh: {Laws.n1.got.bool(gg, vv) == True{} : Bool}) -> {gg == T.GotVal{vv} : T.Got}:
+  match gg:
+    case T.GotVal{g1}:
+      match g1:
+        case T.VBool{+b1}:
+          match vv:
+            case T.VBool{+b2}:
+              vl.eq.bit(b1, b2, hh)
+            case T.VStr{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VBool{b1}} == T.GotVal{T.VStr{_a}} : T.Got}, hh)
+            case T.VSpan{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VBool{b1}} == T.GotVal{T.VSpan{_a, _b}} : T.Got}, hh)
+            case T.VInt{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VBool{b1}} == T.GotVal{T.VInt{_a, _b}} : T.Got}, hh)
+            case T.VFlo{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VBool{b1}} == T.GotVal{T.VFlo{_a, _b}} : T.Got}, hh)
+            case T.VWhen{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VBool{b1}} == T.GotVal{T.VWhen{_a}} : T.Got}, hh)
+            case T.VArr{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VBool{b1}} == T.GotVal{T.VArr{_a}} : T.Got}, hh)
+            case T.VInl{_a}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VBool{b1}} == T.GotVal{T.VInl{_a}} : T.Got}, hh)
+            case T.VHead{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VBool{b1}} == T.GotVal{T.VHead{_a, _b}} : T.Got}, hh)
+            case T.VAot{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VBool{b1}} == T.GotVal{T.VAot{_a, _b}} : T.Got}, hh)
+            case T.VAots{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VBool{b1}} == T.GotVal{T.VAots{_a, _b}} : T.Got}, hh)
+            case T.VPair{_a, _b}:
+              Eq.bit.absurd(&2, {T.GotVal{T.VBool{b1}} == T.GotVal{T.VPair{_a, _b}} : T.Got}, hh)
+        case T.VStr{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VStr{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VSpan{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VSpan{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VInt{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VInt{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VFlo{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VFlo{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VWhen{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VWhen{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VArr{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VArr{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VInl{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VInl{_a}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VHead{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VHead{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VAot{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VAot{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VAots{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VAots{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+        case T.VPair{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VPair{_a, _b}} == T.GotVal{vv} : T.Got}, hh)
+    case T.GotBad{why}:
+      Eq.bit.absurd(&2, {T.GotBad{why} == T.GotVal{vv} : T.Got}, hh)
+
+# two dates date.eq takes for one are one
+def vl.eq.date(aa: T.Date, bb: T.Date, +hh: {Laws.date.eq(aa, bb) == True{} : Bool}) -> {aa == bb : T.Date}:
+  match aa bb:
+    case T.Date{+y1, +m1, +d1} T.Date{+y2, +m2, +d2}:
+      +h2 = {Eq.and.right(U32.is_eq(y1, y2), Bool.and(U32.is_eq(m1, m2), U32.is_eq(d1, d2)), hh)
+        : {Bool.and(U32.is_eq(m1, m2), U32.is_eq(d1, d2)) == True{} : Bool}}
+      Equal.trans(T.Date, T.Date{y1, m1, d1}, T.Date{y2, m1, d1}, T.Date{y2, m2, d2},
+        Equal.cong(U32, T.Date, xx => T.Date{xx, m1, d1}, y1, y2, s1.isk(y1, y2, Eq.and.left(U32.is_eq(y1, y2),
+        Bool.and(U32.is_eq(m1, m2), U32.is_eq(d1, d2)), hh))),
+        Equal.trans(T.Date, T.Date{y2, m1, d1}, T.Date{y2, m2, d1}, T.Date{y2, m2, d2},
+          Equal.cong(U32, T.Date, xx => T.Date{y2, xx, d1}, m1, m2, s1.isk(m1, m2, Eq.and.left(U32.is_eq(m1, m2),
+          U32.is_eq(d1, d2), h2))),
+          Equal.cong(U32, T.Date, xx => T.Date{y2, m2, xx}, d1, d2, s1.isk(d1, d2, Eq.and.right(U32.is_eq(m1, m2),
+          U32.is_eq(d1, d2), h2)))))
+
+# two clocks clock.eq takes for one are one
+def vl.eq.clock(aa: T.Clock, bb: T.Clock, +hh: {Laws.clock.eq(aa, bb) == True{} : Bool}) -> {aa == bb : T.Clock}:
+  match aa bb:
+    case T.Clock{+h1, +m1, +s1, +f1} T.Clock{+h2, +m2, +s2, +f2}:
+      +r1 = {Eq.and.right(U32.is_eq(h1, h2), Bool.and(U32.is_eq(m1, m2), Bool.and(U32.is_eq(s1, s2), String.eq(f1,
+        f2))), hh) : {Bool.and(U32.is_eq(m1, m2), Bool.and(U32.is_eq(s1, s2), String.eq(f1, f2))) == True{} : Bool}}
+      +r2 = {Eq.and.right(U32.is_eq(m1, m2), Bool.and(U32.is_eq(s1, s2), String.eq(f1, f2)), r1)
+        : {Bool.and(U32.is_eq(s1, s2), String.eq(f1, f2)) == True{} : Bool}}
+      Equal.trans(T.Clock, T.Clock{h1, m1, s1, f1}, T.Clock{h2, m1, s1, f1}, T.Clock{h2, m2, s2, f2},
+        Equal.cong(U32, T.Clock, xx => T.Clock{xx, m1, s1, f1}, h1, h2, s1.isk(h1, h2, Eq.and.left(U32.is_eq(h1, h2),
+        Bool.and(U32.is_eq(m1, m2), Bool.and(U32.is_eq(s1, s2), String.eq(f1, f2))), hh))),
+        Equal.trans(T.Clock, T.Clock{h2, m1, s1, f1}, T.Clock{h2, m2, s1, f1}, T.Clock{h2, m2, s2, f2},
+          Equal.cong(U32, T.Clock, xx => T.Clock{h2, xx, s1, f1}, m1, m2, s1.isk(m1, m2, Eq.and.left(U32.is_eq(m1, m2),
+          Bool.and(U32.is_eq(s1, s2), String.eq(f1, f2)), r1))),
+          Equal.trans(T.Clock, T.Clock{h2, m2, s1, f1}, T.Clock{h2, m2, s2, f1}, T.Clock{h2, m2, s2, f2},
+            Equal.cong(U32, T.Clock, xx => T.Clock{h2, m2, xx, f1}, s1, s2, s1.isk(s1, s2, Eq.and.left(U32.is_eq(s1,
+            s2), String.eq(f1, f2), r2))),
+            Equal.cong(String, T.Clock, xx => T.Clock{h2, m2, s2, xx}, f1, f2, vl.str.eq(f1, f2, Eq.and.right(
+            U32.is_eq(s1, s2), String.eq(f1, f2), r2))))))
+
+# two zones zone.eq takes for one are one
+def vl.eq.zone(aa: T.Zone, bb: T.Zone, +hh: {Laws.zone.eq(aa, bb) == True{} : Bool}) -> {aa == bb : T.Zone}:
+  match aa bb:
+    case T.Zulu{} T.Zulu{}:
+      {==}
+    case T.Shift{+g1, +h1, +m1} T.Shift{+g2, +h2, +m2}:
+      +r1 = {Eq.and.right(Laws.sign.eq(g1, g2), Bool.and(U32.is_eq(h1, h2), U32.is_eq(m1, m2)), hh)
+        : {Bool.and(U32.is_eq(h1, h2), U32.is_eq(m1, m2)) == True{} : Bool}}
+      Equal.trans(T.Zone, T.Shift{g1, h1, m1}, T.Shift{g2, h1, m1}, T.Shift{g2, h2, m2},
+        Equal.cong(T.Sign, T.Zone, xx => T.Shift{xx, h1, m1}, g1, g2, n1.sign.eq(g1, g2, Eq.and.left(Laws.sign.eq(g1,
+        g2), Bool.and(U32.is_eq(h1, h2), U32.is_eq(m1, m2)), hh))),
+        Equal.trans(T.Zone, T.Shift{g2, h1, m1}, T.Shift{g2, h2, m1}, T.Shift{g2, h2, m2},
+          Equal.cong(U32, T.Zone, xx => T.Shift{g2, xx, m1}, h1, h2, s1.isk(h1, h2, Eq.and.left(U32.is_eq(h1, h2),
+          U32.is_eq(m1, m2), r1))),
+          Equal.cong(U32, T.Zone, xx => T.Shift{g2, h2, xx}, m1, m2, s1.isk(m1, m2, Eq.and.right(U32.is_eq(h1, h2),
+          U32.is_eq(m1, m2), r1)))))
+    case T.Zulu{} T.Shift{g2, h2, m2}:
+      Eq.bit.absurd(&2, {T.Zulu{} == T.Shift{g2, h2, m2} : T.Zone}, hh)
+    case T.Shift{g1, h1, m1} T.Zulu{}:
+      Eq.bit.absurd(&2, {T.Shift{g1, h1, m1} == T.Zulu{} : T.Zone}, hh)
+
+# two datetimes when.eq takes for one are one
+def vl.eq.w(aa: T.When, bb: T.When, +hh: {Laws.when.eq(aa, bb) == True{} : Bool}) -> {aa == bb : T.When}:
+  match aa bb:
+    case T.WOff{+d1, +c1, +z1} T.WOff{+d2, +c2, +z2}:
+      +r1 = {Eq.and.right(Laws.date.eq(d1, d2), Bool.and(Laws.clock.eq(c1, c2), Laws.zone.eq(z1, z2)), hh)
+        : {Bool.and(Laws.clock.eq(c1, c2), Laws.zone.eq(z1, z2)) == True{} : Bool}}
+      Equal.trans(T.When, T.WOff{d1, c1, z1}, T.WOff{d2, c1, z1}, T.WOff{d2, c2, z2},
+        Equal.cong(T.Date, T.When, xx => T.WOff{xx, c1, z1}, d1, d2, vl.eq.date(d1, d2, Eq.and.left(Laws.date.eq(d1,
+        d2), Bool.and(Laws.clock.eq(c1, c2), Laws.zone.eq(z1, z2)), hh))),
+        Equal.trans(T.When, T.WOff{d2, c1, z1}, T.WOff{d2, c2, z1}, T.WOff{d2, c2, z2},
+          Equal.cong(T.Clock, T.When, xx => T.WOff{d2, xx, z1}, c1, c2, vl.eq.clock(c1, c2, Eq.and.left(
+          Laws.clock.eq(c1, c2), Laws.zone.eq(z1, z2), r1))),
+          Equal.cong(T.Zone, T.When, xx => T.WOff{d2, c2, xx}, z1, z2, vl.eq.zone(z1, z2, Eq.and.right(
+          Laws.clock.eq(c1, c2), Laws.zone.eq(z1, z2), r1)))))
+    case T.WLocal{+d1, +c1} T.WLocal{+d2, +c2}:
+      Equal.trans(T.When, T.WLocal{d1, c1}, T.WLocal{d2, c1}, T.WLocal{d2, c2},
+        Equal.cong(T.Date, T.When, xx => T.WLocal{xx, c1}, d1, d2, vl.eq.date(d1, d2, Eq.and.left(Laws.date.eq(d1, d2),
+        Laws.clock.eq(c1, c2), hh))),
+        Equal.cong(T.Clock, T.When, xx => T.WLocal{d2, xx}, c1, c2, vl.eq.clock(c1, c2, Eq.and.right(Laws.date.eq(d1,
+        d2), Laws.clock.eq(c1, c2), hh))))
+    case T.WDate{+d1} T.WDate{+d2}:
+      Equal.cong(T.Date, T.When, xx => T.WDate{xx}, d1, d2, vl.eq.date(d1, d2, hh))
+    case T.WTime{+c1} T.WTime{+c2}:
+      Equal.cong(T.Clock, T.When, xx => T.WTime{xx}, c1, c2, vl.eq.clock(c1, c2, hh))
+    case T.WOff{_a, _b, _c} T.WLocal{_x, _y}:
+      Eq.bit.absurd(&2, {T.WOff{_a, _b, _c} == T.WLocal{_x, _y} : T.When}, hh)
+    case T.WOff{_a, _b, _c} T.WDate{_x}:
+      Eq.bit.absurd(&2, {T.WOff{_a, _b, _c} == T.WDate{_x} : T.When}, hh)
+    case T.WOff{_a, _b, _c} T.WTime{_x}:
+      Eq.bit.absurd(&2, {T.WOff{_a, _b, _c} == T.WTime{_x} : T.When}, hh)
+    case T.WLocal{_a, _b} T.WOff{_x, _y, _z}:
+      Eq.bit.absurd(&2, {T.WLocal{_a, _b} == T.WOff{_x, _y, _z} : T.When}, hh)
+    case T.WLocal{_a, _b} T.WDate{_x}:
+      Eq.bit.absurd(&2, {T.WLocal{_a, _b} == T.WDate{_x} : T.When}, hh)
+    case T.WLocal{_a, _b} T.WTime{_x}:
+      Eq.bit.absurd(&2, {T.WLocal{_a, _b} == T.WTime{_x} : T.When}, hh)
+    case T.WDate{_a} T.WOff{_x, _y, _z}:
+      Eq.bit.absurd(&2, {T.WDate{_a} == T.WOff{_x, _y, _z} : T.When}, hh)
+    case T.WDate{_a} T.WLocal{_x, _y}:
+      Eq.bit.absurd(&2, {T.WDate{_a} == T.WLocal{_x, _y} : T.When}, hh)
+    case T.WDate{_a} T.WTime{_x}:
+      Eq.bit.absurd(&2, {T.WDate{_a} == T.WTime{_x} : T.When}, hh)
+    case T.WTime{_a} T.WOff{_x, _y, _z}:
+      Eq.bit.absurd(&2, {T.WTime{_a} == T.WOff{_x, _y, _z} : T.When}, hh)
+    case T.WTime{_a} T.WLocal{_x, _y}:
+      Eq.bit.absurd(&2, {T.WTime{_a} == T.WLocal{_x, _y} : T.When}, hh)
+    case T.WTime{_a} T.WDate{_x}:
+      Eq.bit.absurd(&2, {T.WTime{_a} == T.WDate{_x} : T.When}, hh)
+
+# a bare word's reading that t1.got_when takes for ww is ww
+def vl.eq.when(
+  gg: T.Got,
+  ww: T.When,
+  hh: {Laws.t1.got_when(gg, ww) == True{} : Bool}
+) -> {gg == T.GotVal{T.VWhen{ww}} : T.Got}:
+  match gg:
+    case T.GotVal{g1}:
+      match g1:
+        case T.VWhen{+w1}:
+          Equal.cong(T.When, T.Got, xx => T.GotVal{T.VWhen{xx}}, w1, ww, Equal.sym(T.When, ww, w1, vl.eq.w(ww, w1, hh)))
+        case T.VStr{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VStr{_a}} == T.GotVal{T.VWhen{ww}} : T.Got}, hh)
+        case T.VSpan{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VSpan{_a, _b}} == T.GotVal{T.VWhen{ww}} : T.Got}, hh)
+        case T.VInt{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VInt{_a, _b}} == T.GotVal{T.VWhen{ww}} : T.Got}, hh)
+        case T.VFlo{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VFlo{_a, _b}} == T.GotVal{T.VWhen{ww}} : T.Got}, hh)
+        case T.VBool{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VBool{_a}} == T.GotVal{T.VWhen{ww}} : T.Got}, hh)
+        case T.VArr{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VArr{_a}} == T.GotVal{T.VWhen{ww}} : T.Got}, hh)
+        case T.VInl{_a}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VInl{_a}} == T.GotVal{T.VWhen{ww}} : T.Got}, hh)
+        case T.VHead{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VHead{_a, _b}} == T.GotVal{T.VWhen{ww}} : T.Got}, hh)
+        case T.VAot{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VAot{_a, _b}} == T.GotVal{T.VWhen{ww}} : T.Got}, hh)
+        case T.VAots{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VAots{_a, _b}} == T.GotVal{T.VWhen{ww}} : T.Got}, hh)
+        case T.VPair{_a, _b}:
+          Eq.bit.absurd(&2, {T.GotVal{T.VPair{_a, _b}} == T.GotVal{T.VWhen{ww}} : T.Got}, hh)
+    case T.GotBad{why}:
+      Eq.bit.absurd(&2, {T.GotBad{why} == T.GotVal{T.VWhen{ww}} : T.Got}, hh)
+
+# The documents of one pair a word matching a rule parses to: the key brings
+# the scanner to the value state (kv.key2), the lift reads the word, and the
+# rest closes the document.
+
+# the value state inside an inline table after `{v = `
+def vl.kfi(+kk: String) -> Laws.Vf:
+  Laws.Vf{"", [], [], [], ["v"], T.LTop{}, T.QBasic{}, [T.CInl{[], [kk], []}], 0, 0, False{}}
+
+# a scalar placed as a root pair's value, then a newline, is the document of the pair
+def vl.doc.v(
+  vv: T.Val,
+  +kk: String,
+  sc: {vl.sc(T.GotVal{vv}) == True{} : Bool}
+) -> {T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), vv)}) == T.Doc{"", [T.VPair{kk, vv}]} : T.Doc}:
+  match vv:
+    case T.VStr{tx}:
+      Eq.bit.absurd(&2, {T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VStr{tx})}) == T.Doc{"", [T.VPair{kk, T.VStr{tx}}]}
+          : T.Doc}, sc)
+    case T.VSpan{src, nn}:
+      Eq.bit.absurd(&2, {T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VSpan{src, nn})}) == T.Doc{"", [T.VPair{kk,
+          T.VSpan{src, nn}}]} : T.Doc}, sc)
+    case T.VInt{sg, ds}:
+      {==}
+    case T.VFlo{sg, tx}:
+      {==}
+    case T.VBool{bt}:
+      {==}
+    case T.VWhen{ww}:
+      {==}
+    case T.VArr{it}:
+      Eq.bit.absurd(&2, {T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VArr{it})}) == T.Doc{"", [T.VPair{kk, T.VArr{it}}]}
+          : T.Doc}, sc)
+    case T.VInl{rs}:
+      Eq.bit.absurd(&2, {T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VInl{rs})}) == T.Doc{"", [T.VPair{kk, T.VInl{rs}}]}
+          : T.Doc}, sc)
+    case T.VHead{pp, rs}:
+      Eq.bit.absurd(&2, {T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VHead{pp, rs})}) == T.Doc{"", [T.VPair{kk,
+          T.VHead{pp, rs}}]} : T.Doc}, sc)
+    case T.VAot{pp, rs}:
+      Eq.bit.absurd(&2, {T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VAot{pp, rs})}) == T.Doc{"", [T.VPair{kk,
+          T.VAot{pp, rs}}]} : T.Doc}, sc)
+    case T.VAots{pp, es}:
+      Eq.bit.absurd(&2, {T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VAots{pp, es})}) == T.Doc{"", [T.VPair{kk,
+          T.VAots{pp, es}}]} : T.Doc}, sc)
+    case T.VPair{nm, pv}:
+      Eq.bit.absurd(&2, {T.doc.read("\n", T.MScan{vl.vt(vl.kf(kk), T.VPair{nm, pv})}) == T.Doc{"", [T.VPair{kk,
+          T.VPair{nm, pv}}]} : T.Doc}, sc)
+
+# a scalar placed as an array's only item, then `]` and a newline, is the document of the pair
+def vl.doc.a(
+  vv: T.Val,
+  +kk: String,
+  sc: {vl.sc(T.GotVal{vv}) == True{} : Bool}
+) -> {T.doc.read("]\n", T.MScan{Laws.bw.put([T.CArr{[], [kk], []}], vv, [], [], [], [], T.LVal{}, T.QBasic{}, 0, 0,
+    False{})}) == T.Doc{"", [T.VPair{kk, T.VArr{[vv]}}]} : T.Doc}:
+  match vv:
+    case T.VStr{tx}:
+      Eq.bit.absurd(&2, {T.doc.read("]\n", T.MScan{Laws.bw.put([T.CArr{[], [kk], []}], T.VStr{tx}, [], [], [], [],
+          T.LVal{}, T.QBasic{}, 0, 0, False{})}) == T.Doc{"", [T.VPair{kk, T.VArr{[T.VStr{tx}]}}]} : T.Doc}, sc)
+    case T.VSpan{src, nn}:
+      Eq.bit.absurd(&2, {T.doc.read("]\n", T.MScan{Laws.bw.put([T.CArr{[], [kk], []}], T.VSpan{src, nn}, [], [], [], [],
+          T.LVal{}, T.QBasic{}, 0, 0, False{})}) == T.Doc{"", [T.VPair{kk, T.VArr{[T.VSpan{src, nn}]}}]} : T.Doc}, sc)
+    case T.VInt{sg, ds}:
+      {==}
+    case T.VFlo{sg, tx}:
+      {==}
+    case T.VBool{bt}:
+      {==}
+    case T.VWhen{ww}:
+      {==}
+    case T.VArr{it}:
+      Eq.bit.absurd(&2, {T.doc.read("]\n", T.MScan{Laws.bw.put([T.CArr{[], [kk], []}], T.VArr{it}, [], [], [], [],
+          T.LVal{}, T.QBasic{}, 0, 0, False{})}) == T.Doc{"", [T.VPair{kk, T.VArr{[T.VArr{it}]}}]} : T.Doc}, sc)
+    case T.VInl{rs}:
+      Eq.bit.absurd(&2, {T.doc.read("]\n", T.MScan{Laws.bw.put([T.CArr{[], [kk], []}], T.VInl{rs}, [], [], [], [],
+          T.LVal{}, T.QBasic{}, 0, 0, False{})}) == T.Doc{"", [T.VPair{kk, T.VArr{[T.VInl{rs}]}}]} : T.Doc}, sc)
+    case T.VHead{pp, rs}:
+      Eq.bit.absurd(&2, {T.doc.read("]\n", T.MScan{Laws.bw.put([T.CArr{[], [kk], []}], T.VHead{pp, rs}, [], [], [], [],
+          T.LVal{}, T.QBasic{}, 0, 0, False{})}) == T.Doc{"", [T.VPair{kk, T.VArr{[T.VHead{pp, rs}]}}]} : T.Doc}, sc)
+    case T.VAot{pp, rs}:
+      Eq.bit.absurd(&2, {T.doc.read("]\n", T.MScan{Laws.bw.put([T.CArr{[], [kk], []}], T.VAot{pp, rs}, [], [], [], [],
+          T.LVal{}, T.QBasic{}, 0, 0, False{})}) == T.Doc{"", [T.VPair{kk, T.VArr{[T.VAot{pp, rs}]}}]} : T.Doc}, sc)
+    case T.VAots{pp, es}:
+      Eq.bit.absurd(&2, {T.doc.read("]\n", T.MScan{Laws.bw.put([T.CArr{[], [kk], []}], T.VAots{pp, es}, [], [], [], [],
+          T.LVal{}, T.QBasic{}, 0, 0, False{})}) == T.Doc{"", [T.VPair{kk, T.VArr{[T.VAots{pp, es}]}}]} : T.Doc}, sc)
+    case T.VPair{nm, pv}:
+      Eq.bit.absurd(&2, {T.doc.read("]\n", T.MScan{Laws.bw.put([T.CArr{[], [kk], []}], T.VPair{nm, pv}, [], [], [], [],
+          T.LVal{}, T.QBasic{}, 0, 0, False{})}) == T.Doc{"", [T.VPair{kk, T.VArr{[T.VPair{nm, pv}]}}]} : T.Doc}, sc)
+
+# a scalar placed as an inline table's only value, then `}` and a newline, is the document of the pair
+def vl.doc.i(
+  vv: T.Val,
+  +kk: String,
+  sc: {vl.sc(T.GotVal{vv}) == True{} : Bool}
+) -> {T.doc.read("}\n", T.MScan{vl.vt(vl.kfi(kk), vv)}) == T.Doc{"", [T.VPair{kk, T.VInl{[T.VPair{"v", vv}]}}]} :
+    T.Doc}:
+  match vv:
+    case T.VStr{tx}:
+      Eq.bit.absurd(&2, {T.doc.read("}\n", T.MScan{vl.vt(vl.kfi(kk), T.VStr{tx})}) == T.Doc{"", [T.VPair{kk,
+          T.VInl{[T.VPair{"v", T.VStr{tx}}]}}]} : T.Doc}, sc)
+    case T.VSpan{src, nn}:
+      Eq.bit.absurd(&2, {T.doc.read("}\n", T.MScan{vl.vt(vl.kfi(kk), T.VSpan{src, nn})}) == T.Doc{"", [T.VPair{kk,
+          T.VInl{[T.VPair{"v", T.VSpan{src, nn}}]}}]} : T.Doc}, sc)
+    case T.VInt{sg, ds}:
+      {==}
+    case T.VFlo{sg, tx}:
+      {==}
+    case T.VBool{bt}:
+      {==}
+    case T.VWhen{ww}:
+      {==}
+    case T.VArr{it}:
+      Eq.bit.absurd(&2, {T.doc.read("}\n", T.MScan{vl.vt(vl.kfi(kk), T.VArr{it})}) == T.Doc{"", [T.VPair{kk,
+          T.VInl{[T.VPair{"v", T.VArr{it}}]}}]} : T.Doc}, sc)
+    case T.VInl{rs}:
+      Eq.bit.absurd(&2, {T.doc.read("}\n", T.MScan{vl.vt(vl.kfi(kk), T.VInl{rs})}) == T.Doc{"", [T.VPair{kk,
+          T.VInl{[T.VPair{"v", T.VInl{rs}}]}}]} : T.Doc}, sc)
+    case T.VHead{pp, rs}:
+      Eq.bit.absurd(&2, {T.doc.read("}\n", T.MScan{vl.vt(vl.kfi(kk), T.VHead{pp, rs})}) == T.Doc{"", [T.VPair{kk,
+          T.VInl{[T.VPair{"v", T.VHead{pp, rs}}]}}]} : T.Doc}, sc)
+    case T.VAot{pp, rs}:
+      Eq.bit.absurd(&2, {T.doc.read("}\n", T.MScan{vl.vt(vl.kfi(kk), T.VAot{pp, rs})}) == T.Doc{"", [T.VPair{kk,
+          T.VInl{[T.VPair{"v", T.VAot{pp, rs}}]}}]} : T.Doc}, sc)
+    case T.VAots{pp, es}:
+      Eq.bit.absurd(&2, {T.doc.read("}\n", T.MScan{vl.vt(vl.kfi(kk), T.VAots{pp, es})}) == T.Doc{"", [T.VPair{kk,
+          T.VInl{[T.VPair{"v", T.VAots{pp, es}}]}}]} : T.Doc}, sc)
+    case T.VPair{nm, pv}:
+      Eq.bit.absurd(&2, {T.doc.read("}\n", T.MScan{vl.vt(vl.kfi(kk), T.VPair{nm, pv})}) == T.Doc{"", [T.VPair{kk,
+          T.VInl{[T.VPair{"v", T.VPair{nm, pv}}]}}]} : T.Doc}, sc)
+
+# a word word.val reads as a scalar, after a bare key in each of the three
+# positions, parses to the document of the pair
+def vl.acc.v(
+  kk: String,
+  ek: {T.bare(kk) == True{} : Bool},
+  +ww: String,
+  +hw: {Laws.bw.word(ww) == True{} : Bool},
+  +vv: T.Val,
+  +hv: {T.word.val(String.to_list(ww)) == T.GotVal{vv} : T.Got},
+  +sc: {vl.sc(T.GotVal{vv}) == True{} : Bool}
+) -> {T.parse(Laws.bw.kv(kk, ww)) == T.Doc{"", [T.VPair{kk, vv}]} : T.Doc}:
+  match kk:
+    case SNil{}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kv(SNil{}, ww)) == T.Doc{"", [T.VPair{SNil{}, vv}]} : T.Doc}, ek)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          Equal.trans(T.Doc, T.parse(Laws.bw.kv(SCon{Chr{xx}, tt}, ww)), T.doc.read(String.append(ww, "\n"),
+            T.MScan{Laws.vst(vl.kf(SCon{Chr{xx}, tt}), [], T.LVal{})}), T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, vv}]},
+            kv.key2(xx, tt, String.append(ww, "\n"), ek),
+            Equal.trans(T.Doc, T.doc.read(String.append(ww, "\n"), T.MScan{Laws.vst(vl.kf(SCon{Chr{xx}, tt}), [],
+              T.LVal{})}), T.doc.read("\n", T.MScan{vl.vt(vl.kf(SCon{Chr{xx}, tt}), vv)}),
+              T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, vv}]}, vl.lift(ww, hw, vv, hv, vl.kf(SCon{Chr{xx}, tt}), "\n",
+                {==}),
+              vl.doc.v(vv, SCon{Chr{xx}, tt}, sc)))
+
+# and as an array's only item
+def vl.acc.a(
+  kk: String,
+  ek: {T.bare(kk) == True{} : Bool},
+  +ww: String,
+  +hw: {Laws.bw.word(ww) == True{} : Bool},
+  +vv: T.Val,
+  +hv: {T.word.val(String.to_list(ww)) == T.GotVal{vv} : T.Got},
+  +sc: {vl.sc(T.GotVal{vv}) == True{} : Bool}
+) -> {T.parse(Laws.bw.kva(kk, ww)) == T.Doc{"", [T.VPair{kk, T.VArr{[vv]}}]} : T.Doc}:
+  match kk:
+    case SNil{}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kva(SNil{}, ww)) == T.Doc{"", [T.VPair{SNil{}, T.VArr{[vv]}}]} : T.Doc}, ek)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          Equal.trans(T.Doc, T.parse(Laws.bw.kva(SCon{Chr{xx}, tt}, ww)), T.doc.read(String.append(ww, "]\n"),
+            T.MScan{Laws.s1.apos([], [], [], [], T.LTop{}, T.QBasic{}, [T.CArr{[], [SCon{Chr{xx}, tt}], []}], 0, 0,
+            False{})}), T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VArr{[vv]}}]},
+            kv.key2(xx, tt, SCon{'[', String.append(ww, "]\n")}, ek),
+            Equal.trans(T.Doc, T.doc.read(String.append(ww, "]\n"), T.MScan{Laws.s1.apos([], [], [], [], T.LTop{},
+              T.QBasic{}, [T.CArr{[], [SCon{Chr{xx}, tt}], []}], 0, 0, False{})}), T.doc.read("]\n",
+              T.MScan{Laws.bw.put([T.CArr{[], [SCon{Chr{xx}, tt}], []}], vv, [], [], [], [], T.LVal{}, T.QBasic{}, 0, 0,
+              False{})}), T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VArr{[vv]}}]},
+              Laws.bare_word_reads_on_in_array(ww, hw, vv, hv, [], [], [], [], T.LTop{}, T.QBasic{}, [T.CArr{[],
+              [SCon{Chr{xx}, tt}], []}], 0, 0, False{}, "]\n", {==}),
+              vl.doc.a(vv, SCon{Chr{xx}, tt}, sc)))
+
+# and as an inline table's only value
+def vl.acc.i(
+  kk: String,
+  ek: {T.bare(kk) == True{} : Bool},
+  +ww: String,
+  +hw: {Laws.bw.word(ww) == True{} : Bool},
+  +vv: T.Val,
+  +hv: {T.word.val(String.to_list(ww)) == T.GotVal{vv} : T.Got},
+  +sc: {vl.sc(T.GotVal{vv}) == True{} : Bool}
+) -> {T.parse(Laws.bw.kvi(kk, ww)) == T.Doc{"", [T.VPair{kk, T.VInl{[T.VPair{"v", vv}]}}]} : T.Doc}:
+  match kk:
+    case SNil{}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(SNil{}, ww)) == T.Doc{"", [T.VPair{SNil{}, T.VInl{[T.VPair{"v", vv}]}}]}
+        : T.Doc}, ek)
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          Equal.trans(T.Doc, T.parse(Laws.bw.kvi(SCon{Chr{xx}, tt}, ww)), T.doc.read(String.append(ww, "}\n"),
+            T.MScan{Laws.vst(vl.kfi(SCon{Chr{xx}, tt}), [], T.LVal{})}), T.Doc{"", [T.VPair{SCon{Chr{xx}, tt},
+            T.VInl{[T.VPair{"v", vv}]}}]},
+            kv.key2(xx, tt, SCon{'{', SCon{'v', SCon{' ', SCon{'=', SCon{' ', String.append(ww, "}\n")}}}}}, ek),
+            Equal.trans(T.Doc, T.doc.read(String.append(ww, "}\n"), T.MScan{Laws.vst(vl.kfi(SCon{Chr{xx}, tt}), [],
+              T.LVal{})}), T.doc.read("}\n", T.MScan{vl.vt(vl.kfi(SCon{Chr{xx}, tt}), vv)}),
+              T.Doc{"", [T.VPair{SCon{Chr{xx}, tt}, T.VInl{[T.VPair{"v", vv}]}}]},
+              vl.lift(ww, hw, vv, hv, vl.kfi(SCon{Chr{xx}, tt}), "}\n", {==}),
+              vl.doc.i(vv, SCon{Chr{xx}, tt}, sc)))
+
+# the outcome a word reads as is a scalar
+def vl.sc.of(
+  +cs: List<&2, Char>,
+  +vv: T.Val,
+  hv: {T.word.val(cs) == T.GotVal{vv} : T.Got}
+) -> {vl.sc(T.GotVal{vv}) == True{} : Bool}:
+  Equal.trans(Bool, vl.sc(T.GotVal{vv}), vl.sc(T.word.val(cs)), True{}, Equal.cong(T.Got, Bool, gg => vl.sc(gg),
+    T.GotVal{vv}, T.word.val(cs), Equal.sym(T.Got, T.word.val(cs), T.GotVal{vv}, hv)), vl.sc.word(cs))
+
+# a word an integer rule matches within range, denoting v, reads as v
+def vl.hv.int(
+  +cs: List<&2, Char>,
+  +hw: {Bool.and(Laws.abnf.integer(cs), Laws.prose.int_in_range(cs)) == True{} : Bool},
+  +vv: T.Val,
+  +hv: {Laws.g.val(Laws.GvInteger{cs}, vv) == True{} : Bool}
+) -> {T.word.val(cs) == T.GotVal{vv} : T.Got}:
+  vl.eq.int(T.word.val(cs), vv, Equal.trans(Bool, Laws.n1.got.int(T.word.val(cs), vv), Bool.and(Bool.and(
+    Laws.abnf.integer(cs), Laws.prose.int_in_range(cs)), Laws.g.val(Laws.GvInteger{cs}, vv)), True{},
+    Laws.integer_word_exact(cs, vv), and.tt(Bool.and(Laws.abnf.integer(cs), Laws.prose.int_in_range(cs)),
+    Laws.g.val(Laws.GvInteger{cs}, vv), hw, hv)))
+
+# a word the float rule matches, denoting v, reads as v
+def vl.hv.flo(
+  +cs: List<&2, Char>,
+  +hw: {Laws.abnf.float(cs) == True{} : Bool},
+  +vv: T.Val,
+  +hv: {Laws.g.val(Laws.GvFloat{cs}, vv) == True{} : Bool}
+) -> {T.word.val(cs) == T.GotVal{vv} : T.Got}:
+  vl.eq.flo(T.word.val(cs), vv, Equal.trans(Bool, Laws.n1.got.flo(T.word.val(cs), vv), Bool.and(Laws.abnf.float(cs),
+    Laws.g.val(Laws.GvFloat{cs}, vv)), True{}, Laws.float_word_exact(cs, vv), and.tt(Laws.abnf.float(cs),
+    Laws.g.val(Laws.GvFloat{cs}, vv), hw, hv)))
+
+# a word the boolean rule matches, denoting v, reads as v
+def vl.hv.bool(
+  +cs: List<&2, Char>,
+  +hw: {Laws.abnf.boolean(cs) == True{} : Bool},
+  +vv: T.Val,
+  +hv: {Laws.g.val(Laws.GvBoolean{cs}, vv) == True{} : Bool}
+) -> {T.word.val(cs) == T.GotVal{vv} : T.Got}:
+  vl.eq.bool(T.word.val(cs), vv, Equal.trans(Bool, Laws.n1.got.bool(T.word.val(cs), vv), Bool.and(
+    Laws.abnf.boolean(cs), Laws.g.val(Laws.GvBoolean{cs}, vv)), True{}, Laws.boolean_word_exact(cs, vv),
+    and.tt(Laws.abnf.boolean(cs), Laws.g.val(Laws.GvBoolean{cs}, vv), hw, hv)))
+
+# a word a date-time rule matches within the ranges, denoting the datetime
+# ww, reads as ww
+def vl.hv.dt(
+  +cs: List<&2, Char>,
+  +hw: {Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}) == True{} : Bool},
+  +ww: T.When,
+  +hv: {Laws.g.val(Laws.GvDateTime{cs}, T.VWhen{ww}) == True{} : Bool}
+) -> {T.word.val(cs) == T.GotVal{T.VWhen{ww}} : T.Got}:
+  vl.eq.when(T.word.val(cs), ww, Equal.trans(Bool, Laws.t1.got_when(T.word.val(cs), ww), Bool.and(Laws.g.ok.val(
+    Laws.GvDateTime{cs}, Laws.RVal{}), Laws.g.val(Laws.GvDateTime{cs}, T.VWhen{ww})), True{}, Laws.date_time_word(cs,
+    ww), and.tt(Laws.g.ok.val(Laws.GvDateTime{cs}, Laws.RVal{}), Laws.g.val(Laws.GvDateTime{cs}, T.VWhen{ww}), hw,
+    hv)))
+
+# a word every character of which starts a bare value is a bare word
+def vl.bw.qs(
+  ww: String,
+  hq: {vl.qs(String.to_list(ww)) == True{} : Bool},
+  hn: {Bool.not(String.is_empty(ww)) == True{} : Bool}
+) -> {Laws.bw.word(ww) == True{} : Bool}:
+  match ww:
+    case SNil{}:
+      Eq.bit.absurd(&2, {Laws.bw.word(SNil{}) == True{} : Bool}, hn)
+    case SCon{+hh, +tt}:
+      Equal.trans(Bool, Laws.bw.word(SCon{hh, tt}), vl.wordl(hh <> String.to_list(tt)), True{},
+        vl.word.eq(SCon{hh, tt}), vl.qs.word(hh, String.to_list(tt), hq))
+
+def Laws.integer_is_bare_word(w, h):
+  match w:
+    case SNil{}:
+      Eq.bit.absurd(&2, {Laws.bw.word(SNil{}) == True{} : Bool}, h)
+    case SCon{+hh, +tt}:
+      vl.bw.qs(SCon{hh, tt}, vl.qs.int(hh <> String.to_list(tt), h), {==})
+
+def Laws.float_is_bare_word(w, h):
+  match w:
+    case SNil{}:
+      Eq.bit.absurd(&2, {Laws.bw.word(SNil{}) == True{} : Bool}, h)
+    case SCon{+hh, +tt}:
+      vl.bw.qs(SCon{hh, tt}, vl.qs.flo(hh <> String.to_list(tt), h), {==})
+
+def Laws.boolean_is_bare_word(w, h):
+  match w:
+    case SNil{}:
+      Eq.bit.absurd(&2, {Laws.bw.word(SNil{}) == True{} : Bool}, h)
+    case SCon{+hh, +tt}:
+      vl.bw.qs(SCon{hh, tt}, vl.qs.bool(hh <> String.to_list(tt), h), {==})
+
+def Laws.date_time_is_bare_word(w, h):
+  Equal.trans(Bool, Laws.bw.word(w), vl.wordl(String.to_list(w)), True{}, vl.word.eq(w), vl.dt.shape(String.to_list(w),
+    h))
+
+def Laws.integer_parses_as_denoted(k, ek, w, hw, v, hv):
+  vl.acc.v(k, ek, w, Laws.integer_is_bare_word(w, Eq.and.left(Laws.abnf.integer(String.to_list(w)),
+    Laws.prose.int_in_range(String.to_list(w)), hw)), v, vl.hv.int(String.to_list(w), hw, v, hv),
+    vl.sc.of(String.to_list(w), v, vl.hv.int(String.to_list(w), hw, v, hv)))
+
+def Laws.float_parses_as_denoted(k, ek, w, hw, v, hv):
+  vl.acc.v(k, ek, w, Laws.float_is_bare_word(w, hw), v, vl.hv.flo(String.to_list(w), hw, v, hv),
+    vl.sc.of(String.to_list(w), v, vl.hv.flo(String.to_list(w), hw, v, hv)))
+
+def Laws.boolean_parses_as_denoted(k, ek, w, hw, v, hv):
+  vl.acc.v(k, ek, w, Laws.boolean_is_bare_word(w, hw), v, vl.hv.bool(String.to_list(w), hw, v, hv),
+    vl.sc.of(String.to_list(w), v, vl.hv.bool(String.to_list(w), hw, v, hv)))
+
+def Laws.integer_parses_as_denoted_in_array(k, ek, w, hw, v, hv):
+  vl.acc.a(k, ek, w, Laws.integer_is_bare_word(w, Eq.and.left(Laws.abnf.integer(String.to_list(w)),
+    Laws.prose.int_in_range(String.to_list(w)), hw)), v, vl.hv.int(String.to_list(w), hw, v, hv),
+    vl.sc.of(String.to_list(w), v, vl.hv.int(String.to_list(w), hw, v, hv)))
+
+def Laws.float_parses_as_denoted_in_array(k, ek, w, hw, v, hv):
+  vl.acc.a(k, ek, w, Laws.float_is_bare_word(w, hw), v, vl.hv.flo(String.to_list(w), hw, v, hv),
+    vl.sc.of(String.to_list(w), v, vl.hv.flo(String.to_list(w), hw, v, hv)))
+
+def Laws.boolean_parses_as_denoted_in_array(k, ek, w, hw, v, hv):
+  vl.acc.a(k, ek, w, Laws.boolean_is_bare_word(w, hw), v, vl.hv.bool(String.to_list(w), hw, v, hv),
+    vl.sc.of(String.to_list(w), v, vl.hv.bool(String.to_list(w), hw, v, hv)))
+
+def Laws.integer_parses_as_denoted_in_inline_table(k, ek, w, hw, v, hv):
+  vl.acc.i(k, ek, w, Laws.integer_is_bare_word(w, Eq.and.left(Laws.abnf.integer(String.to_list(w)),
+    Laws.prose.int_in_range(String.to_list(w)), hw)), v, vl.hv.int(String.to_list(w), hw, v, hv),
+    vl.sc.of(String.to_list(w), v, vl.hv.int(String.to_list(w), hw, v, hv)))
+
+def Laws.float_parses_as_denoted_in_inline_table(k, ek, w, hw, v, hv):
+  vl.acc.i(k, ek, w, Laws.float_is_bare_word(w, hw), v, vl.hv.flo(String.to_list(w), hw, v, hv),
+    vl.sc.of(String.to_list(w), v, vl.hv.flo(String.to_list(w), hw, v, hv)))
+
+def Laws.boolean_parses_as_denoted_in_inline_table(k, ek, w, hw, v, hv):
+  vl.acc.i(k, ek, w, Laws.boolean_is_bare_word(w, hw), v, vl.hv.bool(String.to_list(w), hw, v, hv),
+    vl.sc.of(String.to_list(w), v, vl.hv.bool(String.to_list(w), hw, v, hv)))
+
+def Laws.date_time_parses_as_denoted(k, ek, w, hw, v, hv):
+  match v:
+    case T.VStr{_a}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kv(k, w)) == T.Doc{"", [T.VPair{k, T.VStr{_a}}]} : T.Doc}, hv)
+    case T.VSpan{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kv(k, w)) == T.Doc{"", [T.VPair{k, T.VSpan{_a, _b}}]} : T.Doc}, hv)
+    case T.VInt{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kv(k, w)) == T.Doc{"", [T.VPair{k, T.VInt{_a, _b}}]} : T.Doc}, hv)
+    case T.VFlo{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kv(k, w)) == T.Doc{"", [T.VPair{k, T.VFlo{_a, _b}}]} : T.Doc}, hv)
+    case T.VBool{_a}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kv(k, w)) == T.Doc{"", [T.VPair{k, T.VBool{_a}}]} : T.Doc}, hv)
+    case T.VWhen{+ww}:
+      vl.acc.v(k, ek, w, Laws.date_time_is_bare_word(w, Eq.and.left(Laws.abnf.date_time(String.to_list(w)),
+          Laws.prose.date_time_in_range(String.to_list(w)), hw)), T.VWhen{ww}, vl.hv.dt(String.to_list(w), hw, ww, hv),
+          vl.sc.of(String.to_list(w), T.VWhen{ww}, vl.hv.dt(String.to_list(w), hw, ww, hv)))
+    case T.VArr{_a}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kv(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{_a}}]} : T.Doc}, hv)
+    case T.VInl{_a}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kv(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{_a}}]} : T.Doc}, hv)
+    case T.VHead{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kv(k, w)) == T.Doc{"", [T.VPair{k, T.VHead{_a, _b}}]} : T.Doc}, hv)
+    case T.VAot{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kv(k, w)) == T.Doc{"", [T.VPair{k, T.VAot{_a, _b}}]} : T.Doc}, hv)
+    case T.VAots{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kv(k, w)) == T.Doc{"", [T.VPair{k, T.VAots{_a, _b}}]} : T.Doc}, hv)
+    case T.VPair{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kv(k, w)) == T.Doc{"", [T.VPair{k, T.VPair{_a, _b}}]} : T.Doc}, hv)
+
+def Laws.date_time_parses_as_denoted_in_array(k, ek, w, hw, v, hv):
+  match v:
+    case T.VStr{_a}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[T.VStr{_a}]}}]} : T.Doc}, hv)
+    case T.VSpan{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[T.VSpan{_a, _b}]}}]} : T.Doc}, hv)
+    case T.VInt{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[T.VInt{_a, _b}]}}]} : T.Doc}, hv)
+    case T.VFlo{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[T.VFlo{_a, _b}]}}]} : T.Doc}, hv)
+    case T.VBool{_a}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[T.VBool{_a}]}}]} : T.Doc}, hv)
+    case T.VWhen{+ww}:
+      vl.acc.a(k, ek, w, Laws.date_time_is_bare_word(w, Eq.and.left(Laws.abnf.date_time(String.to_list(w)),
+          Laws.prose.date_time_in_range(String.to_list(w)), hw)), T.VWhen{ww}, vl.hv.dt(String.to_list(w), hw, ww, hv),
+          vl.sc.of(String.to_list(w), T.VWhen{ww}, vl.hv.dt(String.to_list(w), hw, ww, hv)))
+    case T.VArr{_a}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[T.VArr{_a}]}}]} : T.Doc}, hv)
+    case T.VInl{_a}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[T.VInl{_a}]}}]} : T.Doc}, hv)
+    case T.VHead{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[T.VHead{_a, _b}]}}]} : T.Doc}, hv)
+    case T.VAot{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[T.VAot{_a, _b}]}}]} : T.Doc}, hv)
+    case T.VAots{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[T.VAots{_a, _b}]}}]} : T.Doc}, hv)
+    case T.VPair{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kva(k, w)) == T.Doc{"", [T.VPair{k, T.VArr{[T.VPair{_a, _b}]}}]} : T.Doc}, hv)
+
+def Laws.date_time_parses_as_denoted_in_inline_table(k, ek, w, hw, v, hv):
+  match v:
+    case T.VStr{_a}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VStr{_a}}]}}]} :
+          T.Doc}, hv)
+    case T.VSpan{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VSpan{_a, _b}}]}}]}
+          : T.Doc}, hv)
+    case T.VInt{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VInt{_a, _b}}]}}]} :
+          T.Doc}, hv)
+    case T.VFlo{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VFlo{_a, _b}}]}}]} :
+          T.Doc}, hv)
+    case T.VBool{_a}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VBool{_a}}]}}]} :
+          T.Doc}, hv)
+    case T.VWhen{+ww}:
+      vl.acc.i(k, ek, w, Laws.date_time_is_bare_word(w, Eq.and.left(Laws.abnf.date_time(String.to_list(w)),
+          Laws.prose.date_time_in_range(String.to_list(w)), hw)), T.VWhen{ww}, vl.hv.dt(String.to_list(w), hw, ww, hv),
+          vl.sc.of(String.to_list(w), T.VWhen{ww}, vl.hv.dt(String.to_list(w), hw, ww, hv)))
+    case T.VArr{_a}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VArr{_a}}]}}]} :
+          T.Doc}, hv)
+    case T.VInl{_a}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VInl{_a}}]}}]} :
+          T.Doc}, hv)
+    case T.VHead{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VHead{_a, _b}}]}}]}
+          : T.Doc}, hv)
+    case T.VAot{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VAot{_a, _b}}]}}]} :
+          T.Doc}, hv)
+    case T.VAots{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VAots{_a, _b}}]}}]}
+          : T.Doc}, hv)
+    case T.VPair{_a, _b}:
+      Eq.bit.absurd(&2, {T.parse(Laws.bw.kvi(k, w)) == T.Doc{"", [T.VPair{k, T.VInl{[T.VPair{"v", T.VPair{_a, _b}}]}}]}
+          : T.Doc}, hv)
