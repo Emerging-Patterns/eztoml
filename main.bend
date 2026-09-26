@@ -3113,11 +3113,26 @@ def esc.fold.on(st: St, saw: Bool) -> St:
   St{bad, rows, heads, here, parts, buf, LFold{}, b, qkind, stack, hold, 0,
     esc.fold.bit(saw), arrtab, lead}
 
+# a line-ending backslash is only part of a multiline string
+def esc.fold.kind(multi: Bool, st: St, saw: Bool) -> St:
+  match multi:
+    case True{}:
+      esc.fold.on(st, saw)
+    case False{}:
+      st.err(st, "invalid escape")
+
+# a line-ending backslash is only part of a multiline string
+def esc.fold.str(st: St, saw: Bool) -> St:
+  St{bad, rows, heads, here, parts, buf, lex, b, +qkind, stack, hold, uni, left,
+    arrtab, lead} = st
+  esc.fold.kind(q.multi(qkind), St{bad, rows, heads, here, parts, buf, lex, b, qkind,
+    stack, hold, uni, left, arrtab, lead}, saw)
+
 # a line-ending backslash is only part of a string
 def esc.fold.use(back: Lex, st: St, saw: Bool) -> St:
   match back:
     case LStr{}:
-      esc.fold.on(st, saw)
+      esc.fold.str(st, saw)
     case _:
       st.err(st, "invalid escape")
 
