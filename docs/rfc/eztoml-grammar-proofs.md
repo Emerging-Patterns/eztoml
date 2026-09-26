@@ -6,6 +6,77 @@
 
 The spike transcribed one rule of toml.abnf, `dec-int`, as a Bool recognizer, and proved its accept direction against `word.val` (`dec_int_word`, a partial law of TOML-NUM-1). Probing the real binary found that TOML-TEXT-1 and TOML-TEXT-2 are false as worded, in five places where toml.abnf and the TOML specification's prose disagree (REVIEW-G1, REVIEW-G2). No bug in `main.bend` was found. The code does what the specification's prose says; only the rows' wording has to change.
 
+**Update (WP-G landed).** toml.abnf (TOML v1.0.0, tag 1.0.0) is transcribed in LAWS.bend's `# GRAMMAR` section, one def or constructor per rule with the rule quoted verbatim above it, and the basic facts are proved in PROOF.bend's `# GRAMMAR` section. The derivation is `Gd`. `val`, `array-values`, `inline-table-keyvals` and `keyval` are mutually recursive, so they are the constructors of one type, `GVal`, and `g.ok.val` takes a mode (`GRule`) naming the rule a node spells. The regular rules are Bool recognizers over a leaf's characters. The date-time rules read from the front of a word and give what is left (`ARest`), since every alternative and option there is told apart by its first character. The four prose restrictions are separate defs, named `prose.*` rather than the `abnf.*` names this plan used, so no reader takes them for ABNF: `prose.int_in_range` (TOML-NUM-1), `prose.date_time_in_range` (TOML-TIME-1), `prose.escape_scalar` and `prose.comment_char`. A matching text is `bom.drop(t) == g.text(d)` with `g.ok(d)`. `g.val(d, v)` relates a value derivation to a `T.Val`: a string by its characters, owned or a span; an integer by its sign and canonical decimal digits, whose value as a `Nat` is the numeral's in its radix; a float by its sign and its spelling with the sign and `_` removed; a boolean by its bit; a date-time by `when.eq`; an array item by item; and an inline table by `at` on each keyval's path, with nothing else in its rows. `defs(d)` is TOML-TEXT-2's rules over the expressions in order: a record of what each key path holds (a value, a table a header named, a table a header only passed through, a table dotted keys made, an array of tables), with a new `[[array]]` element dropping every path under it. Ten laws prove the basic facts: `gap_is_ws` (KEY-3's blank space is `ws`); `g_lines_text_append`, `g_val_text_tail` and `g_text_parts` (a derivation's text is its parts' texts in order); and the six pairwise disjointness laws of the word rules, `boolean_not_integer` to `float_not_date_time`. None is tagged, since none proves part of a row. Each fails the gate when its proof is replaced by `{==}`. Size: 2,236 lines of law (the section, the 10 laws included) and 1,068 of proof, inside the 1,500 to 2,000 and 800 to 1,200 planned. The gate is about 20.0 to 20.8 s, against 20.5 s at `21d474c` on the same machine. Lint: 0 errors. `main.bend` is unchanged. A scratch driver (not committed, not evidence) ran about 60 words through the recognizers, and a dozen hand-built derivations through `g.text`, `g.ok`, `g.val` and `defs`. Every verdict agreed with `parse`.
+
+Three findings shaped the transcription, and none changes the code or a row:
+
+- **REVIEW-G2's reading, completed.** After `[a.b.c]`, `[a]` and `b.d = 1`, `parse` refuses a later `[a.b]` ("duplicate table"), and so does `tomllib`, which marks the tables dotted keys enter as defined. So in `defs`, a dotted key that enters a table a header only passed through makes it a table dotted keys define (`defs.enter`). The table stays open to dotted keys and closes to a header naming it. This is how TOML-TEXT-2's "a table that dotted keys defined" is read.
+- **Two ABNF ambiguities in multi-line strings.** In `mlb-escaped-nl`, the whitespace after the backslash's newline can be read as part of it or as body characters. The newline after the opening delimiter can be read as `[ newline ]` or as the body's first newline. The prose settles both ("trimmed along with all whitespace (including newlines) up to the next non-whitespace character"; "a newline immediately following the opening delimiter will be trimmed"), so `g.str.chars` gives the same characters for every derivation of a string (`GTrim`). Every other newline stands for itself as written (REVIEW-G9).
+- **Inline tables are sealed.** `parse` stores the tables that dotted keys make inside an inline table as `VInl`, the same as a nested inline table, so `{b.c = 1}` and `{b = {c = 1}}` read to the same value. `g.val` therefore enters a table in an inline table's rows exactly when a keyval's path lies under it (`g.leaf.paths`).
+
+| ABNF rule | Def or constructor in LAWS.bend |
+| :---- | :---- |
+| `toml` | `Gd` (`GToml`); newline-expression pairs are `GLine` |
+| `expression` (three alternatives) | `GExpr`: `GxBlank`, `GxKeyval`, `GxTable` |
+| `ws` / `wschar` | `abnf.ws` / `abnf.wschar` |
+| `newline` | `abnf.newline`; `[ newline ]` is `abnf.opt_newline` |
+| `comment-start-symbol`, `comment` | `abnf.comment` (the `#` is written by `g.com.text`); `[ comment ]` is `GCom` |
+| `non-ascii` / `non-eol` | `abnf.non_ascii` / `abnf.non_eol` |
+| `keyval` | `GKeyval` (a `GVal` constructor, mode `RKeyval`) |
+| `key`, `dotted-key` | `GKey`: `GSimpleKey`, `GDottedKey`; checked by `g.ok.key` |
+| `simple-key`, `quoted-key` | KEY-3's `KSeg`, checked by `g.ok.seg` |
+| `unquoted-key` | `abnf.unquoted_key` (TOML-KEY-1) |
+| `dot-sep` | `GDotSep` (a dot-sep and the simple-key after it) |
+| `keyval-sep` | the `w1`, `w2` fields of `GKeyval`; `=` written by `g.val.text` |
+| `val` | `GVal`: `GvString`, `GvBoolean`, `GvArrayEmpty`/`GvArray`, `GvInlineTableEmpty`/`GvInlineTable`, `GvDateTime`, `GvFloat`, `GvInteger` (mode `RVal`) |
+| `string` | `GString`: `GsMlBasic`, `GsBasic`, `GsMlLiteral`, `GsLiteral` |
+| `basic-string`, `quotation-mark` | `abnf.basic_string` over KEY-3's `KPiece` |
+| `basic-char`, `escaped`, `escape`, `escape-seq-char` | `abnf.basic_char`; `KpEsc` (`KMark`), `KpU4`, `KpU8` |
+| `basic-unescaped` | `abnf.basic_unescaped` |
+| `ml-basic-string`, `ml-basic-string-delim` | `GsMlBasic{nl, body}` |
+| `ml-basic-body` | `abnf.ml_basic_body` |
+| `mlb-content`, `mlb-quotes` | `GMlb` (`GmChar`, `GmNewline`, `GmEscapedNl`, `GmQuotes`); `abnf.mlb_content` |
+| `mlb-char` / `mlb-unescaped` | `abnf.mlb_char` / `abnf.mlb_unescaped` |
+| `mlb-escaped-nl` | `abnf.mlb_escaped_nl`; its `*( wschar / newline )` is `abnf.ws_newlines` |
+| `literal-string`, `apostrophe` | `abnf.literal_string` |
+| `literal-char` | `abnf.literal_char` |
+| `ml-literal-string`, `ml-literal-string-delim` | `GsMlLiteral{nl, body}` |
+| `ml-literal-body` | `abnf.ml_literal_body` |
+| `mll-content`, `mll-quotes` | `GMll` (`GlChar`, `GlNewline`, `GlQuotes`); `abnf.mll_content` |
+| `mll-char` | `abnf.mll_char` |
+| `integer` | `abnf.integer` |
+| `minus`, `plus`, `underscore`, `digit1-9` | `abnf.minus`, `abnf.plus`, `abnf.underscore`, `abnf.digit1_9` (spike) |
+| `digit0-7`, `digit0-1` | `abnf.digit0_7`, `abnf.digit0_1` |
+| `hex-prefix`, `oct-prefix`, `bin-prefix` | the letter argument of `abnf.prefixed` (120, 111, 98) |
+| `dec-int`, `unsigned-dec-int` | `abnf.dec_int`, `abnf.unsigned_dec_int`, with `abnf.dec_rep`/`abnf.dec_rep1` (spike) |
+| `hex-int`, `oct-int`, `bin-int` | `abnf.hex_int`, `abnf.oct_int`, `abnf.bin_int` via `abnf.prefixed` and `abnf.radix_rep` (`ARadix`) |
+| `float` (both alternatives) | `abnf.float`, `abnf.float_std` (cut at the first `.`/`e`/`E`, `ACut`) |
+| `float-int-part` | `abnf.float_int_part` |
+| `frac`, `decimal-point` | `abnf.frac`, `abnf.decimal_point`; `frac [ exp ]` is `abnf.frac_exp` |
+| `zero-prefixable-int` | `abnf.zero_prefixable_int` |
+| `exp`, `float-exp-part` | `abnf.exp` (with `abnf.e`, e or E), `abnf.float_exp_part`; `[ exp ]` is `abnf.opt_exp` |
+| `special-float`, `inf`, `nan` | `abnf.special_float`, `abnf.inf`, `abnf.nan` |
+| `boolean`, `true`, `false` | `abnf.boolean`, `abnf.true`, `abnf.false` (via `abnf.chars_are`) |
+| `date-time` | `abnf.date_time` |
+| `date-fullyear`, `date-month`, `date-mday` | `abnf.date_fullyear`, `abnf.date_month`, `abnf.date_mday` |
+| `time-delim` | `abnf.time_delim` (T, t or space) |
+| `time-hour`, `time-minute`, `time-second` | `abnf.time_hour`, `abnf.time_minute`, `abnf.time_second` |
+| `time-secfrac` | `abnf.time_secfrac`; `[ time-secfrac ]` is `abnf.opt_secfrac` |
+| `time-numoffset`, `time-offset` | `abnf.time_numoffset`, `abnf.time_offset` (Z or z) |
+| `partial-time`, `full-date`, `full-time` | `abnf.partial_time`, `abnf.full_date`, `abnf.full_time` |
+| `offset-date-time`, `local-date-time`, `local-date`, `local-time` | `abnf.offset_date_time`, `abnf.local_date_time`, `abnf.local_date`, `abnf.local_time` |
+| `array`, `array-open`, `array-close` | `GvArrayEmpty` / `GvArray` |
+| `array-values` (two alternatives) | `GArrayValues`, `GArrayValuesLast` (mode `RArrayValues`) |
+| `array-sep` | the comma in `g.val.text`; `[ array-sep ]` is `GArrayValuesLast`'s `sep` |
+| `ws-comment-newline` | a list of `GWcn` (`GwWschar`, `GwNewline`), checked by `g.ok.wcn` |
+| `table` | `GTable` |
+| `std-table`, `std-table-open`, `std-table-close` | `GStdTable` |
+| `array-table`, `array-table-open`, `array-table-close` | `GArrayTable` |
+| `inline-table`, `inline-table-open`, `inline-table-close` | `GvInlineTableEmpty` / `GvInlineTable` |
+| `inline-table-sep` | the `w1`, `w2` fields of `GInlineTableKeyvals` |
+| `inline-table-keyvals` | `GInlineTableKeyvals`, `GInlineTableKeyvalsLast` (mode `RInlineTableKeyvals`) |
+| `ALPHA`, `DIGIT`, `HEXDIG` | `abnf.alpha` (KEY-1), `abnf.DIGIT` (spike), `abnf.HEXDIG` (a to f too); KEY-3's `KHex` |
+
 **Items for review:**
 
 - [x] <!-- REVIEW-G1 (resolved): TOML-TEXT-1 is false as worded, in five ways. It says `bad(parse(t))` is `""` exactly when `t` matches toml.abnf's `toml` rule and breaks none of TOML-TEXT-2's rules. But toml.abnf is looser than the specification. Its header says "certain invalid documents would need to be rejected as per the semantics described in the supporting text". Checked against the binary at `65756da`, `parse` refuses these texts, all of which match the rule and none of which defines anything twice: (1) `a = 9223372036854775808` ("out of range"; the ABNF has no range, and the prose asks for signed 64 bits); (2) `a = 1979-13-01`, `a = 1979-02-30`, `a = 24:00:00` and `+24:00` offsets (the ABNF gives RFC 3339's ranges only in comments); (3) `a = "\uD800"` and `"\U00110000"` ("invalid escape"; the ABNF allows any 4 or 8 HEXDIG, and the prose says an escape must be a Unicode scalar value); (4) `a = 1 # x<U+007F>y` ("invalid control in comment"; the ABNF's `non-eol` is `%x20-7F`, which includes U+007F, and the prose forbids it). It also accepts one text the rule does not match: (5) `<U+FEFF>a = 1`, a leading byte-order mark (the `lead` flag in `read.step`), which toml.abnf does not allow. Python's `tomllib` refuses the cases of (2) to (5) we tried and reads (1) as a big integer. Options: (a) reword the row. The grammar relation becomes toml.abnf together with the four prose restrictions, each named, with (1) and (2) pointing at TOML-NUM-1 and TOML-TIME-1. One leading U+FEFF is taken off before matching, since it is the encoding's signature rather than text. toml-test treats it that way: `bom-not-at-start` is invalid, and the newer valid cases `utf8-bom-01` and `utf8-bom-02` start with one. The row also gains the `short` bound every row that goes through the scan induction has; (b) as (a), but refuse the byte-order mark in the code, which is a behavior change for files saved by editors that write one; (c) change the code to follow the ABNF where it is looser, accepting (1) to (4), which the specification forbids. Recommend (a). No code changes, and each restriction is one the RFC's other rows already state. It is a rewording of the specification, and so a behavior change of the promise. Decided: (a), as recommended. -->

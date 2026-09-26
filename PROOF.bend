@@ -63455,3 +63455,1072 @@ def Laws.dec_int_word(cs, h, r):
       Eq.bit.absurd(&1, gs.Goal([]), h)
     case +hh <> +tt:
       gs.top(hh, tt, Laws.abnf.minus(hh), {==}, Laws.abnf.plus(hh), {==}, h, r)
+
+# GRAMMAR: the basic facts of the transcription (WP-G). The text lemmas say
+# that each def of g.text writes its part before the tail it is given, so a
+# derivation's text is its parts' texts one after another.
+
+def Laws.gap_is_ws(gs):
+  match gs:
+    case []:
+      {==}
+    case tab <> rest:
+      match tab:
+        case True{}:
+          Laws.gap_is_ws(rest)
+        case False{}:
+          Laws.gap_is_ws(rest)
+
+def Laws.g_lines_text_append(xs, ys, tail):
+  match xs:
+    case []:
+      {==}
+    case Laws.GLine{+nl, +ex} <> rest:
+      Equal.cong(String, String, zz => String.append(nl, Laws.g.expr.text(ex, zz)),
+        Laws.g.lines.text(List.append(&2, Laws.GLine, rest, ys), tail),
+        Laws.g.lines.text(rest, Laws.g.lines.text(ys, tail)), Laws.g_lines_text_append(rest, ys, tail))
+
+# what the text lemmas claim: a part written before the tail is the part
+# written before nothing, then the tail
+def gt.T(fa: String, fb: String, tail: String) -> Type:
+  {fa == String.append(fb, tail) : String}
+
+# f(x, g(y, t)) is f(x, g(y, "")) then t, when f and g each write their text
+# before the tail they are given: pre is f's text alone, and gt and g0 are
+# g's before t and before nothing
+def gt.step(
+  +fa: String,
+  +fb: String,
+  +pre: String,
+  +gt: String,
+  +g0: String,
+  +tail: String,
+  e1: {fa == String.append(pre, gt) : String},
+  e2: {gt == String.append(g0, tail) : String},
+  e3: {fb == String.append(pre, g0) : String}
+) -> gt.T(fa, fb, tail):
+  Equal.trans(String, fa, String.append(pre, gt), String.append(fb, tail), e1,
+    Equal.trans(String, String.append(pre, gt), String.append(pre, String.append(g0, tail)),
+      String.append(fb, tail),
+      Equal.cong(String, String, zz => String.append(pre, zz), gt, String.append(g0, tail), e2),
+      Equal.trans(String, String.append(pre, String.append(g0, tail)), String.append(String.append(pre, g0), tail),
+        String.append(fb, tail),
+        Equal.sym(String, String.append(String.append(pre, g0), tail), String.append(pre, String.append(g0, tail)),
+          Eq.append_assoc(pre, g0, tail)),
+        Equal.cong(String, String, zz => String.append(zz, tail), String.append(pre, g0), fb,
+          Equal.sym(String, fb, String.append(pre, g0), e3)))))
+
+# a text in front of a part
+def gt.app(
+  +ss: String,
+  +xa: String,
+  +xb: String,
+  +tail: String,
+  ee: gt.T(xa, xb, tail)
+) -> gt.T(String.append(ss, xa), String.append(ss, xb), tail):
+  gt.step(String.append(ss, xa), String.append(ss, xb), ss, xa, xb, tail, {==}, ee, {==})
+
+# a character in front of a part
+def gt.cons(
+  +cc: Char,
+  +xa: String,
+  +xb: String,
+  +tail: String,
+  ee: gt.T(xa, xb, tail)
+) -> gt.T(SCon{cc, xa}, SCon{cc, xb}, tail):
+  Equal.cong(String, String, zz => SCon{cc, zz}, xa, String.append(xb, tail), ee)
+
+# a text written with nothing after it
+def gt.nil(+ss: String, +tail: String) -> gt.T(String.append(ss, tail), String.append(ss, ""), tail):
+  Equal.cong(String, String, zz => String.append(zz, tail), ss, String.append(ss, ""),
+    Equal.sym(String, String.append(ss, ""), ss, Eq.append_nil(ss)))
+
+# a basic string's piece
+def gt.pc(pp: Laws.KPiece, +tail: String) -> gt.T(Laws.k3.pc.text(pp, tail), Laws.k3.pc.text(pp, ""), tail):
+  match pp:
+    case Laws.KpChar{_c}:
+      {==}
+    case Laws.KpEsc{_m}:
+      {==}
+    case Laws.KpU4{_d, _c, _b, _a}:
+      {==}
+    case Laws.KpU8{_h, _g, _f, _e, _d, _c, _b, _a}:
+      {==}
+
+# a basic string's pieces
+def gt.pcs(
+  ps: List<&2, Laws.KPiece>,
+  +tail: String
+) -> gt.T(Laws.k3.pcs.text(ps, tail), Laws.k3.pcs.text(ps, ""), tail):
+  match ps:
+    case []:
+      {==}
+    case +pp <> +rest:
+      gt.step(Laws.k3.pc.text(pp, Laws.k3.pcs.text(rest, tail)), Laws.k3.pc.text(pp, Laws.k3.pcs.text(rest, "")),
+        Laws.k3.pc.text(pp, ""), Laws.k3.pcs.text(rest, tail), Laws.k3.pcs.text(rest, ""), tail,
+        gt.pc(pp, Laws.k3.pcs.text(rest, tail)), gt.pcs(rest, tail), gt.pc(pp, Laws.k3.pcs.text(rest, "")))
+
+# pieces before a closing character
+def gt.pcs.close(
+  +ps: List<&2, Laws.KPiece>,
+  +cc: Char,
+  +tail: String
+) -> gt.T(Laws.k3.pcs.text(ps, SCon{cc, tail}), Laws.k3.pcs.text(ps, SCon{cc, ""}), tail):
+  gt.step(Laws.k3.pcs.text(ps, SCon{cc, tail}), Laws.k3.pcs.text(ps, SCon{cc, ""}), Laws.k3.pcs.text(ps, ""),
+    SCon{cc, tail}, SCon{cc, ""}, tail, gt.pcs(ps, SCon{cc, tail}), {==}, gt.pcs(ps, SCon{cc, ""}))
+
+# a simple-key
+def gt.seg(sg: Laws.KSeg, +tail: String) -> gt.T(Laws.k3.seg.text(sg, tail), Laws.k3.seg.text(sg, ""), tail):
+  match sg:
+    case Laws.KsBare{+name}:
+      gt.nil(name, tail)
+    case Laws.KsBasic{+pl}:
+      gt.cons('"', Laws.k3.pcs.text(pl, SCon{'"', tail}), Laws.k3.pcs.text(pl, SCon{'"', ""}), tail,
+        gt.pcs.close(pl, '"', tail))
+    case Laws.KsLit{+name}:
+      gt.cons('\'', String.append(name, SCon{'\'', tail}), String.append(name, SCon{'\'', ""}), tail,
+        gt.app(name, SCon{'\'', tail}, SCon{'\'', ""}, tail, {==}))
+
+# a key's dot-seps and simple-keys after its first
+def gt.dots(
+  ds: List<&2, Laws.GDotSep>,
+  +tail: String
+) -> gt.T(Laws.g.dots.text(ds, tail), Laws.g.dots.text(ds, ""), tail):
+  match ds:
+    case []:
+      {==}
+    case Laws.GDotSep{+w1, +w2, +sk} <> +rest:
+      +xa = Laws.k3.seg.text(sk, Laws.g.dots.text(rest, tail))
+      +xb = Laws.k3.seg.text(sk, Laws.g.dots.text(rest, ""))
+      gt.app(w1, SCon{'.', String.append(w2, xa)}, SCon{'.', String.append(w2, xb)}, tail,
+        gt.cons('.', String.append(w2, xa), String.append(w2, xb), tail,
+          gt.app(w2, xa, xb, tail,
+            gt.step(xa, xb, Laws.k3.seg.text(sk, ""), Laws.g.dots.text(rest, tail), Laws.g.dots.text(rest, ""), tail,
+              gt.seg(sk, Laws.g.dots.text(rest, tail)), gt.dots(rest, tail), gt.seg(sk, Laws.g.dots.text(rest, ""))))))
+
+# a key
+def gt.key(kk: Laws.GKey, +tail: String) -> gt.T(Laws.g.key.text(kk, tail), Laws.g.key.text(kk, ""), tail):
+  match kk:
+    case Laws.GSimpleKey{sk}:
+      gt.seg(sk, tail)
+    case Laws.GDottedKey{+sk, +more}:
+      gt.step(Laws.k3.seg.text(sk, Laws.g.dots.text(more, tail)), Laws.k3.seg.text(sk, Laws.g.dots.text(more, "")),
+        Laws.k3.seg.text(sk, ""), Laws.g.dots.text(more, tail), Laws.g.dots.text(more, ""), tail,
+        gt.seg(sk, Laws.g.dots.text(more, tail)), gt.dots(more, tail), gt.seg(sk, Laws.g.dots.text(more, "")))
+
+# a comment, if there is one
+def gt.com(cm: Laws.GCom, +tail: String) -> gt.T(Laws.g.com.text(cm, tail), Laws.g.com.text(cm, ""), tail):
+  match cm:
+    case Laws.GcNone{}:
+      {==}
+    case Laws.GcSome{+body}:
+      gt.cons('#', String.append(body, tail), String.append(body, ""), tail, gt.nil(body, tail))
+
+# ws-comment-newline
+def gt.wcn(
+  ws: List<&2, Laws.GWcn>,
+  +tail: String
+) -> gt.T(Laws.g.wcn.text(ws, tail), Laws.g.wcn.text(ws, ""), tail):
+  match ws:
+    case []:
+      {==}
+    case Laws.GwWschar{+cc} <> +rest:
+      gt.cons(cc, Laws.g.wcn.text(rest, tail), Laws.g.wcn.text(rest, ""), tail, gt.wcn(rest, tail))
+    case Laws.GwNewline{+com, +nl} <> +rest:
+      +xa = String.append(nl, Laws.g.wcn.text(rest, tail))
+      +xb = String.append(nl, Laws.g.wcn.text(rest, ""))
+      gt.step(Laws.g.com.text(com, xa), Laws.g.com.text(com, xb), Laws.g.com.text(com, ""), xa, xb, tail,
+        gt.com(com, xa), gt.app(nl, Laws.g.wcn.text(rest, tail), Laws.g.wcn.text(rest, ""), tail, gt.wcn(rest, tail)),
+        gt.com(com, xb))
+
+# ws-comment-newline before a text
+def gt.wcn.before(
+  +ws: List<&2, Laws.GWcn>,
+  +xa: String,
+  +xb: String,
+  +tail: String,
+  ee: gt.T(xa, xb, tail)
+) -> gt.T(Laws.g.wcn.text(ws, xa), Laws.g.wcn.text(ws, xb), tail):
+  gt.step(Laws.g.wcn.text(ws, xa), Laws.g.wcn.text(ws, xb), Laws.g.wcn.text(ws, ""), xa, xb, tail,
+    gt.wcn(ws, xa), ee, gt.wcn(ws, xb))
+
+# one or two quotes
+def gt.quotes(
+  two: Bool,
+  +qc: Char,
+  +tail: String
+) -> gt.T(Laws.g.quotes.text(two, qc, tail), Laws.g.quotes.text(two, qc, ""), tail):
+  match two:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a multi-line basic body
+def gt.mlb(
+  ps: List<&2, Laws.GMlb>,
+  +tail: String
+) -> gt.T(Laws.g.mlb.text(ps, tail), Laws.g.mlb.text(ps, ""), tail):
+  match ps:
+    case []:
+      {==}
+    case Laws.GmChar{+kp} <> +rest:
+      gt.step(Laws.k3.pc.text(kp, Laws.g.mlb.text(rest, tail)), Laws.k3.pc.text(kp, Laws.g.mlb.text(rest, "")),
+        Laws.k3.pc.text(kp, ""), Laws.g.mlb.text(rest, tail), Laws.g.mlb.text(rest, ""), tail,
+        gt.pc(kp, Laws.g.mlb.text(rest, tail)), gt.mlb(rest, tail), gt.pc(kp, Laws.g.mlb.text(rest, "")))
+    case Laws.GmNewline{+nl} <> +rest:
+      gt.app(nl, Laws.g.mlb.text(rest, tail), Laws.g.mlb.text(rest, ""), tail, gt.mlb(rest, tail))
+    case Laws.GmEscapedNl{+w1, +nl, +more} <> +rest:
+      +ma = String.append(more, Laws.g.mlb.text(rest, tail))
+      +mb = String.append(more, Laws.g.mlb.text(rest, ""))
+      gt.cons('\\', String.append(w1, String.append(nl, ma)), String.append(w1, String.append(nl, mb)), tail,
+        gt.app(w1, String.append(nl, ma), String.append(nl, mb), tail,
+          gt.app(nl, ma, mb, tail,
+            gt.app(more, Laws.g.mlb.text(rest, tail), Laws.g.mlb.text(rest, ""), tail, gt.mlb(rest, tail)))))
+    case Laws.GmQuotes{+two} <> +rest:
+      gt.step(Laws.g.quotes.text(two, '"', Laws.g.mlb.text(rest, tail)),
+        Laws.g.quotes.text(two, '"', Laws.g.mlb.text(rest, "")), Laws.g.quotes.text(two, '"', ""),
+        Laws.g.mlb.text(rest, tail), Laws.g.mlb.text(rest, ""), tail,
+        gt.quotes(two, '"', Laws.g.mlb.text(rest, tail)), gt.mlb(rest, tail),
+        gt.quotes(two, '"', Laws.g.mlb.text(rest, "")))
+
+# a multi-line literal body
+def gt.mll(
+  ps: List<&2, Laws.GMll>,
+  +tail: String
+) -> gt.T(Laws.g.mll.text(ps, tail), Laws.g.mll.text(ps, ""), tail):
+  match ps:
+    case []:
+      {==}
+    case Laws.GlChar{+cc} <> +rest:
+      gt.cons(cc, Laws.g.mll.text(rest, tail), Laws.g.mll.text(rest, ""), tail, gt.mll(rest, tail))
+    case Laws.GlNewline{+nl} <> +rest:
+      gt.app(nl, Laws.g.mll.text(rest, tail), Laws.g.mll.text(rest, ""), tail, gt.mll(rest, tail))
+    case Laws.GlQuotes{+two} <> +rest:
+      gt.step(Laws.g.quotes.text(two, '\'', Laws.g.mll.text(rest, tail)),
+        Laws.g.quotes.text(two, '\'', Laws.g.mll.text(rest, "")), Laws.g.quotes.text(two, '\'', ""),
+        Laws.g.mll.text(rest, tail), Laws.g.mll.text(rest, ""), tail,
+        gt.quotes(two, '\'', Laws.g.mll.text(rest, tail)), gt.mll(rest, tail),
+        gt.quotes(two, '\'', Laws.g.mll.text(rest, "")))
+
+# three delimiter characters and a tail
+def gt.delim(+qc: Char, +tail: String) -> String:
+  SCon{qc, SCon{qc, SCon{qc, tail}}}
+
+# a string, with its delimiters
+def gt.str(st: Laws.GString, +tail: String) -> gt.T(Laws.g.str.text(st, tail), Laws.g.str.text(st, ""), tail):
+  match st:
+    case Laws.GsMlBasic{+nl, +body}:
+      +ba = Laws.g.mlb.text(body, gt.delim('"', tail))
+      +bb = Laws.g.mlb.text(body, gt.delim('"', ""))
+      gt.cons('"', SCon{'"', SCon{'"', String.append(nl, ba)}}, SCon{'"', SCon{'"', String.append(nl, bb)}}, tail,
+        gt.cons('"', SCon{'"', String.append(nl, ba)}, SCon{'"', String.append(nl, bb)}, tail,
+          gt.cons('"', String.append(nl, ba), String.append(nl, bb), tail,
+            gt.app(nl, ba, bb, tail,
+              gt.step(ba, bb, Laws.g.mlb.text(body, ""), gt.delim('"', tail), gt.delim('"', ""), tail,
+                gt.mlb(body, gt.delim('"', tail)), {==}, gt.mlb(body, gt.delim('"', "")))))))
+    case Laws.GsBasic{+pl}:
+      gt.cons('"', Laws.k3.pcs.text(pl, SCon{'"', tail}), Laws.k3.pcs.text(pl, SCon{'"', ""}), tail,
+        gt.pcs.close(pl, '"', tail))
+    case Laws.GsMlLiteral{+nl, +body}:
+      +ba = Laws.g.mll.text(body, gt.delim('\'', tail))
+      +bb = Laws.g.mll.text(body, gt.delim('\'', ""))
+      gt.cons('\'', SCon{'\'', SCon{'\'', String.append(nl, ba)}}, SCon{'\'', SCon{'\'', String.append(nl, bb)}},
+        tail,
+        gt.cons('\'', SCon{'\'', String.append(nl, ba)}, SCon{'\'', String.append(nl, bb)}, tail,
+          gt.cons('\'', String.append(nl, ba), String.append(nl, bb), tail,
+            gt.app(nl, ba, bb, tail,
+              gt.step(ba, bb, Laws.g.mll.text(body, ""), gt.delim('\'', tail), gt.delim('\'', ""), tail,
+                gt.mll(body, gt.delim('\'', tail)), {==}, gt.mll(body, gt.delim('\'', "")))))))
+    case Laws.GsLiteral{+text}:
+      gt.cons('\'', String.append(text, SCon{'\'', tail}), String.append(text, SCon{'\'', ""}), tail,
+        gt.app(text, SCon{'\'', tail}, SCon{'\'', ""}, tail, {==}))
+
+# [ array-sep ]
+def gt.sep(sep: Bool, +tail: String) -> gt.T(Laws.g.sep.text(sep, tail), Laws.g.sep.text(sep, ""), tail):
+  match sep:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a value before a text
+def gt.val.before(
+  +vv: Laws.GVal,
+  +xa: String,
+  +xb: String,
+  +tail: String,
+  ee: gt.T(xa, xb, tail),
+  ea: gt.T(Laws.g.val.text(vv, xa), Laws.g.val.text(vv, ""), xa),
+  eb: gt.T(Laws.g.val.text(vv, xb), Laws.g.val.text(vv, ""), xb)
+) -> gt.T(Laws.g.val.text(vv, xa), Laws.g.val.text(vv, xb), tail):
+  gt.step(Laws.g.val.text(vv, xa), Laws.g.val.text(vv, xb), Laws.g.val.text(vv, ""), xa, xb, tail, ea, ee, eb)
+
+def Laws.g_val_text_tail(vv, tail):
+  match vv:
+    case Laws.GvString{st}:
+      gt.str(st, tail)
+    case Laws.GvBoolean{+cs}:
+      gt.nil(String.from_list(cs), tail)
+    case Laws.GvArrayEmpty{+wn}:
+      gt.cons('[', Laws.g.wcn.text(wn, SCon{']', tail}), Laws.g.wcn.text(wn, SCon{']', ""}), tail,
+        gt.wcn.before(wn, SCon{']', tail}, SCon{']', ""}, tail, {==}))
+    case Laws.GvArray{+vals, +wn}:
+      +wa = Laws.g.wcn.text(wn, SCon{']', tail})
+      +wb = Laws.g.wcn.text(wn, SCon{']', ""})
+      gt.cons('[', Laws.g.val.text(vals, wa), Laws.g.val.text(vals, wb), tail,
+        gt.val.before(vals, wa, wb, tail, gt.wcn.before(wn, SCon{']', tail}, SCon{']', ""}, tail, {==}),
+          Laws.g_val_text_tail(vals, wa), Laws.g_val_text_tail(vals, wb)))
+    case Laws.GvInlineTableEmpty{+w1, +w2}:
+      gt.cons('{', String.append(w1, String.append(w2, SCon{'}', tail})),
+        String.append(w1, String.append(w2, SCon{'}', ""})), tail,
+        gt.app(w1, String.append(w2, SCon{'}', tail}), String.append(w2, SCon{'}', ""}), tail,
+          gt.app(w2, SCon{'}', tail}, SCon{'}', ""}, tail, {==})))
+    case Laws.GvInlineTable{+w1, +kvs, +w2}:
+      +xa = String.append(w2, SCon{'}', tail})
+      +xb = String.append(w2, SCon{'}', ""})
+      gt.cons('{', String.append(w1, Laws.g.val.text(kvs, xa)), String.append(w1, Laws.g.val.text(kvs, xb)), tail,
+        gt.app(w1, Laws.g.val.text(kvs, xa), Laws.g.val.text(kvs, xb), tail,
+          gt.val.before(kvs, xa, xb, tail, gt.app(w2, SCon{'}', tail}, SCon{'}', ""}, tail, {==}),
+            Laws.g_val_text_tail(kvs, xa), Laws.g_val_text_tail(kvs, xb))))
+    case Laws.GvDateTime{+cs}:
+      gt.nil(String.from_list(cs), tail)
+    case Laws.GvFloat{+cs}:
+      gt.nil(String.from_list(cs), tail)
+    case Laws.GvInteger{+cs}:
+      gt.nil(String.from_list(cs), tail)
+    case Laws.GArrayValues{+wa, +val, +wb, +rest}:
+      +ra = {SCon{',', Laws.g.val.text(rest, tail)} : String}
+      +rb = {SCon{',', Laws.g.val.text(rest, "")} : String}
+      ea = gt.cons(',', Laws.g.val.text(rest, tail), Laws.g.val.text(rest, ""), tail,
+        Laws.g_val_text_tail(rest, tail))
+      +ba = Laws.g.wcn.text(wb, ra)
+      +bb = Laws.g.wcn.text(wb, rb)
+      gt.wcn.before(wa, Laws.g.val.text(val, ba), Laws.g.val.text(val, bb), tail,
+        gt.val.before(val, ba, bb, tail, gt.wcn.before(wb, ra, rb, tail, ea),
+          Laws.g_val_text_tail(val, ba), Laws.g_val_text_tail(val, bb)))
+    case Laws.GArrayValuesLast{+wa, +val, +wb, +sep}:
+      +ba = Laws.g.wcn.text(wb, Laws.g.sep.text(sep, tail))
+      +bb = Laws.g.wcn.text(wb, Laws.g.sep.text(sep, ""))
+      gt.wcn.before(wa, Laws.g.val.text(val, ba), Laws.g.val.text(val, bb), tail,
+        gt.val.before(val, ba, bb, tail,
+          gt.wcn.before(wb, Laws.g.sep.text(sep, tail), Laws.g.sep.text(sep, ""), tail, gt.sep(sep, tail)),
+          Laws.g_val_text_tail(val, ba), Laws.g_val_text_tail(val, bb)))
+    case Laws.GInlineTableKeyvals{+kv, +w1, +w2, +rest}:
+      +ra = String.append(w2, Laws.g.val.text(rest, tail))
+      +rb = String.append(w2, Laws.g.val.text(rest, ""))
+      +xa = String.append(w1, SCon{',', ra})
+      +xb = String.append(w1, SCon{',', rb})
+      gt.val.before(kv, xa, xb, tail,
+        gt.app(w1, SCon{',', ra}, SCon{',', rb}, tail,
+          gt.cons(',', ra, rb, tail,
+            gt.app(w2, Laws.g.val.text(rest, tail), Laws.g.val.text(rest, ""), tail,
+              Laws.g_val_text_tail(rest, tail)))),
+        Laws.g_val_text_tail(kv, xa), Laws.g_val_text_tail(kv, xb))
+    case Laws.GInlineTableKeyvalsLast{kv}:
+      Laws.g_val_text_tail(kv, tail)
+    case Laws.GKeyval{+key, +w1, +w2, +val}:
+      +ra = String.append(w2, Laws.g.val.text(val, tail))
+      +rb = String.append(w2, Laws.g.val.text(val, ""))
+      +xa = String.append(w1, SCon{'=', ra})
+      +xb = String.append(w1, SCon{'=', rb})
+      gt.step(Laws.g.key.text(key, xa), Laws.g.key.text(key, xb), Laws.g.key.text(key, ""), xa, xb, tail,
+        gt.key(key, xa),
+        gt.app(w1, SCon{'=', ra}, SCon{'=', rb}, tail,
+          gt.cons('=', ra, rb, tail,
+            gt.app(w2, Laws.g.val.text(val, tail), Laws.g.val.text(val, ""), tail,
+              Laws.g_val_text_tail(val, tail)))),
+        gt.key(key, xb))
+
+# a table header
+def gt.table(tb: Laws.GTable, +tail: String) -> gt.T(Laws.g.table.text(tb, tail), Laws.g.table.text(tb, ""), tail):
+  match tb:
+    case Laws.GStdTable{+w1, +key, +w2}:
+      +xa = String.append(w2, SCon{']', tail})
+      +xb = String.append(w2, SCon{']', ""})
+      gt.cons('[', String.append(w1, Laws.g.key.text(key, xa)), String.append(w1, Laws.g.key.text(key, xb)), tail,
+        gt.app(w1, Laws.g.key.text(key, xa), Laws.g.key.text(key, xb), tail,
+          gt.step(Laws.g.key.text(key, xa), Laws.g.key.text(key, xb), Laws.g.key.text(key, ""), xa, xb, tail,
+            gt.key(key, xa), gt.app(w2, SCon{']', tail}, SCon{']', ""}, tail, {==}), gt.key(key, xb))))
+    case Laws.GArrayTable{+w1, +key, +w2}:
+      +xa = String.append(w2, SCon{']', SCon{']', tail}})
+      +xb = String.append(w2, SCon{']', SCon{']', ""}})
+      gt.cons('[', SCon{'[', String.append(w1, Laws.g.key.text(key, xa))},
+        SCon{'[', String.append(w1, Laws.g.key.text(key, xb))}, tail,
+        gt.cons('[', String.append(w1, Laws.g.key.text(key, xa)), String.append(w1, Laws.g.key.text(key, xb)), tail,
+          gt.app(w1, Laws.g.key.text(key, xa), Laws.g.key.text(key, xb), tail,
+            gt.step(Laws.g.key.text(key, xa), Laws.g.key.text(key, xb), Laws.g.key.text(key, ""), xa, xb, tail,
+              gt.key(key, xa), gt.app(w2, SCon{']', SCon{']', tail}}, SCon{']', SCon{']', ""}}, tail, {==}),
+              gt.key(key, xb)))))
+
+# an expression
+def gt.expr(ex: Laws.GExpr, +tail: String) -> gt.T(Laws.g.expr.text(ex, tail), Laws.g.expr.text(ex, ""), tail):
+  match ex:
+    case Laws.GxBlank{+w1, +com}:
+      gt.app(w1, Laws.g.com.text(com, tail), Laws.g.com.text(com, ""), tail, gt.com(com, tail))
+    case Laws.GxKeyval{+w1, +kv, +w2, +com}:
+      +xa = String.append(w2, Laws.g.com.text(com, tail))
+      +xb = String.append(w2, Laws.g.com.text(com, ""))
+      gt.app(w1, Laws.g.val.text(kv, xa), Laws.g.val.text(kv, xb), tail,
+        gt.val.before(kv, xa, xb, tail, gt.app(w2, Laws.g.com.text(com, tail), Laws.g.com.text(com, ""), tail,
+          gt.com(com, tail)), Laws.g_val_text_tail(kv, xa), Laws.g_val_text_tail(kv, xb)))
+    case Laws.GxTable{+w1, +tb, +w2, +com}:
+      +xa = String.append(w2, Laws.g.com.text(com, tail))
+      +xb = String.append(w2, Laws.g.com.text(com, ""))
+      gt.app(w1, Laws.g.table.text(tb, xa), Laws.g.table.text(tb, xb), tail,
+        gt.step(Laws.g.table.text(tb, xa), Laws.g.table.text(tb, xb), Laws.g.table.text(tb, ""), xa, xb, tail,
+          gt.table(tb, xa), gt.app(w2, Laws.g.com.text(com, tail), Laws.g.com.text(com, ""), tail, gt.com(com, tail)),
+          gt.table(tb, xb)))
+
+def Laws.g_text_parts(first, rest):
+  gt.expr(first, Laws.g.lines.text(rest, ""))
+
+# The word rules are disjoint. A boolean is one of two fixed words. An
+# integer or a float's integer part holds only DIGITs and underscores after
+# its sign, and a date-time has a - or a : after its first DIGITs, which such
+# a word cannot have; the prefixes 0x, 0o and 0b, a sign, and the letters of
+# inf and nan are each ruled out by the character where they stand.
+
+# an or that holds: a claim from either half that holds is a claim
+def gp.or(
+  -P: Type,
+  aa: Bool,
+  bb: Bool,
+  +h: {Bool.or(aa, bb) == True{} : Bool},
+  ka: {aa == True{} : Bool} -> P,
+  kb: {bb == True{} : Bool} -> P
+) -> P:
+  match aa:
+    case True{}:
+      ka({==})
+    case False{}:
+      kb(h)
+
+# a character a code point test passed is that character
+def gp.cp(cc: Char, +nn: U32, +h: {Laws.abnf.cp(cc, nn) == True{} : Bool}) -> {cc == Chr{nn} : Char}:
+  match cc:
+    case Chr{+cp}:
+      Eq.u32_eq(cp, nn, h)
+
+# a claim of what a word is equal to is a claim of the word
+def gp.subst(
+  -P: List<&2, Char> -> Type,
+  +aa: List<&2, Char>,
+  +bb: List<&2, Char>,
+  ee: {aa == bb : List<&2, Char>},
+  pb: P(bb)
+) -> P(aa):
+  %Equal.sym(List<&2, Char>, aa, bb, ee) : P(_)
+  pb
+
+# a claim of the character a word starts with, when it is known
+def gp.head(
+  -P: List<&2, Char> -> Type,
+  +hh: Char,
+  +kk: Char,
+  +tt: List<&2, Char>,
+  ee: {hh == kk : Char},
+  pk: P(kk <> tt)
+) -> P(hh <> tt):
+  %Equal.sym(Char, hh, kk, ee) : P(_ <> tt)
+  pk
+
+# a word a %x string matched is that string's characters
+def gp.chars(
+  cs: List<&2, Char>,
+  ss: String,
+  +h: {Laws.abnf.chars_are(cs, ss) == True{} : Bool}
+) -> {cs == String.to_list(ss) : List<&2, Char>}:
+  match cs ss:
+    case Nil{} SNil{}:
+      {==}
+    case +hh <> +tt SCon{+h2, +t2}:
+      +e1 = {Eq.char_eq_true(hh, h2, Eq.and.left(Char.is_eq(hh, h2), Laws.abnf.chars_are(tt, t2), h))
+        : {hh == h2 : Char}}
+      Equal.trans(List<&2, Char>, hh <> tt, h2 <> tt, h2 <> String.to_list(t2),
+        Equal.cong(Char, List<&2, Char>, zz => zz <> tt, hh, h2, e1),
+        Equal.cong(List<&2, Char>, List<&2, Char>, zz => h2 <> zz, tt, String.to_list(t2),
+          gp.chars(tt, t2, Eq.and.right(Char.is_eq(hh, h2), Laws.abnf.chars_are(tt, t2), h))))
+    case Nil{} SCon{+xx, +yy}:
+      Eq.bit.absurd(&2, {[] == String.to_list(SCon{xx, yy}) : List<&2, Char>}, h)
+    case +xx <> +yy SNil{}:
+      Eq.bit.absurd(&2, {xx <> yy == String.to_list(SNil{}) : List<&2, Char>}, h)
+
+# a claim of true and of false is a claim of every boolean word
+def gp.bool(
+  -P: List<&2, Char> -> Type,
+  +cs: List<&2, Char>,
+  +h: {Laws.abnf.boolean(cs) == True{} : Bool},
+  pt: P(String.to_list("true")),
+  pf: P(String.to_list("false"))
+) -> P(cs):
+  gp.or(P(cs), Laws.abnf.true(cs), Laws.abnf.false(cs), h,
+    ht => gp.subst(P, cs, String.to_list("true"), gp.chars(cs, "true", ht), pt),
+    hf => gp.subst(P, cs, String.to_list("false"), gp.chars(cs, "false", hf), pf))
+
+def Laws.boolean_not_integer(cs, h):
+  gp.bool(zs => {Laws.abnf.integer(zs) == False{} : Bool}, cs, h, {==}, {==})
+
+def Laws.boolean_not_float(cs, h):
+  gp.bool(zs => {Laws.abnf.float(zs) == False{} : Bool}, cs, h, {==}, {==})
+
+def Laws.boolean_not_date_time(cs, h):
+  gp.bool(zs => {Laws.abnf.date_time(zs) == False{} : Bool}, cs, h, {==}, {==})
+
+# a character of a dec-int's digits: a DIGIT or an underscore
+def gp.dc(+cc: Char) -> Bool:
+  Bool.or(Laws.abnf.DIGIT(cc), Laws.abnf.underscore(cc))
+
+# every character of a word is one
+def gp.decs(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      True{}
+    case hh <> tt:
+      Bool.and(gp.dc(hh), gp.decs(tt))
+
+# a claim of the underscore is a claim of what an underscore test passed
+def gp.us.elim(
+  -P: Char -> Type,
+  +cc: Char,
+  +h: {Laws.abnf.underscore(cc) == True{} : Bool},
+  pu: P('_')
+) -> P(cc):
+  %Equal.sym(Char, cc, '_', gs.us(cc, h)) : P(_)
+  pu
+
+# a claim of each digit and of the underscore is a claim of every such
+# character
+def gp.dc.elim(
+  -P: Char -> Type,
+  +cc: Char,
+  +h: {gp.dc(cc) == True{} : Bool},
+  p0: P('0'),
+  p1: P('1'),
+  p2: P('2'),
+  p3: P('3'),
+  p4: P('4'),
+  p5: P('5'),
+  p6: P('6'),
+  p7: P('7'),
+  p8: P('8'),
+  p9: P('9'),
+  pu: P('_')
+) -> P(cc):
+  gp.or(P(cc), Laws.abnf.DIGIT(cc), Laws.abnf.underscore(cc), h,
+    hd => dg.elim(P, cc, gs.dig(cc, hd), p0, p1, p2, p3, p4, p5, p6, p7, p8, p9),
+    hu => gp.us.elim(P, cc, hu, pu))
+
+# a DIGIT is such a character
+def gp.dc.digit(+cc: Char, +h: {Laws.abnf.DIGIT(cc) == True{} : Bool}) -> {gp.dc(cc) == True{} : Bool}:
+  %Equal.sym(Bool, Laws.abnf.DIGIT(cc), True{}, h) : {Bool.or(_, Laws.abnf.underscore(cc)) == True{} : Bool}
+  {==}
+
+# so is a digit
+def gp.dc.is_digit(+cc: Char, +h: {Char.is_digit(cc) == True{} : Bool}) -> {gp.dc(cc) == True{} : Bool}:
+  dg.elim(zz => {gp.dc(zz) == True{} : Bool}, cc, h, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# the repetition *( DIGIT / underscore DIGIT ) holds only such characters
+def gp.rep.decs(cs: List<&2, Char>, +h: {Laws.abnf.dec_rep(cs) == True{} : Bool}) -> {gp.decs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +hh <> tt:
+      match tt:
+        case []:
+          and.tt(gp.dc(hh), True{}, gp.dc.digit(hh, h), {==})
+        case +h2 <> +t2:
+          gs.rep.two(zs => {gp.decs(zs) == True{} : Bool}, hh, h2, t2, Laws.abnf.DIGIT(hh), {==}, h,
+            hx => hr => and.tt(gp.dc(hh), gp.decs(h2 <> t2), gp.dc.is_digit(hh, hx), gp.rep.decs(h2 <> t2, hr)),
+            hx => hr => and.tt(gp.dc(h2), gp.decs(t2), gp.dc.is_digit(h2, hx), gp.rep.decs(t2, hr)))
+
+# a digit1-9 is a DIGIT
+def gp.d19(+cc: Char, +h: {Laws.abnf.digit1_9(cc) == True{} : Bool}) -> {Laws.abnf.DIGIT(cc) == True{} : Bool}:
+  dg.elim(zz => {Laws.abnf.DIGIT(zz) == True{} : Bool}, cc, gs.d19(cc, h),
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# a DIGIT alone holds only such characters
+def gp.one.decs(
+  +hh: Char,
+  tt: List<&2, Char>,
+  +ha: {Bool.and(Laws.abnf.DIGIT(hh), List.is_empty(&2, Char, tt)) == True{} : Bool}
+) -> {gp.decs(hh <> tt) == True{} : Bool}:
+  match tt:
+    case []:
+      and.tt(gp.dc(hh), True{}, gp.dc.digit(hh, Eq.and.left(Laws.abnf.DIGIT(hh), True{}, ha)), {==})
+    case +xx <> +yy:
+      Eq.bit.absurd(&2, {gp.decs(hh <> xx <> yy) == True{} : Bool},
+        Eq.and.right(Laws.abnf.DIGIT(hh), False{}, ha))
+
+# a digit1-9 then one or more of the repetition
+def gp.many.decs(
+  +hh: Char,
+  tt: List<&2, Char>,
+  +hb: {Bool.and(Laws.abnf.digit1_9(hh), Laws.abnf.dec_rep1(tt)) == True{} : Bool}
+) -> {gp.decs(hh <> tt) == True{} : Bool}:
+  match tt:
+    case []:
+      Eq.bit.absurd(&2, {gp.decs([hh]) == True{} : Bool}, Eq.and.right(Laws.abnf.digit1_9(hh), False{}, hb))
+    case +xx <> +yy:
+      and.tt(gp.dc(hh), gp.decs(xx <> yy),
+        gp.dc.digit(hh, gp.d19(hh, Eq.and.left(Laws.abnf.digit1_9(hh), Laws.abnf.dec_rep(xx <> yy), hb))),
+        gp.rep.decs(xx <> yy, Eq.and.right(Laws.abnf.digit1_9(hh), Laws.abnf.dec_rep(xx <> yy), hb)))
+
+# an unsigned-dec-int holds only such characters
+def gp.udi.decs(
+  cs: List<&2, Char>,
+  +h: {Laws.abnf.unsigned_dec_int(cs) == True{} : Bool}
+) -> {gp.decs(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {gp.decs([]) == True{} : Bool}, h)
+    case +hh <> +tt:
+      gp.or({gp.decs(hh <> tt) == True{} : Bool}, Bool.and(Laws.abnf.DIGIT(hh), List.is_empty(&2, Char, tt)),
+        Bool.and(Laws.abnf.digit1_9(hh), Laws.abnf.dec_rep1(tt)), h,
+        ha => gp.one.decs(hh, tt, ha), hb => gp.many.decs(hh, tt, hb))
+
+# whether the first character that is no DIGIT or underscore, if there is
+# one, is no - and no : (%x2D is 45, %x3A is 58)
+def gp.nd.pick(dc: Bool, +hh: Char, rest: Bool) -> Bool:
+  match dc:
+    case True{}:
+      rest
+    case False{}:
+      Bool.not(Bool.or(Laws.abnf.cp(hh, 45), Laws.abnf.cp(hh, 58)))
+
+# whether a word's first character that is no DIGIT or underscore is no -
+# and no :
+def gp.nd(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      True{}
+    case +hh <> tt:
+      gp.nd.pick(gp.dc(hh), hh, gp.nd(tt))
+
+# what is left after DIGITs of such a word is such a word, or no match
+def gp.ndr(rr: Laws.ARest) -> Bool:
+  match rr:
+    case Laws.ALeft{cs}:
+      gp.nd(cs)
+    case Laws.ANone{}:
+      True{}
+
+# a word of only such characters is one
+def gp.decs.nd(cs: List<&2, Char>, +h: {gp.decs(cs) == True{} : Bool}) -> {gp.nd(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +hh <> +tt:
+      %Equal.sym(Bool, gp.dc(hh), True{}, Eq.and.left(gp.dc(hh), gp.decs(tt), h)) :
+        {gp.nd.pick(_, hh, gp.nd(tt)) == True{} : Bool}
+      gp.decs.nd(tt, Eq.and.right(gp.dc(hh), gp.decs(tt), h))
+
+# its first character is no - and no :
+def gp.nd.head(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  dd: Bool,
+  +ed: {gp.dc(hh) == dd : Bool},
+  +h: {gp.nd(hh <> tt) == True{} : Bool}
+) -> {Bool.or(Laws.abnf.cp(hh, 45), Laws.abnf.cp(hh, 58)) == False{} : Bool}:
+  match dd:
+    case True{}:
+      gp.dc.elim(zz => {Bool.or(Laws.abnf.cp(zz, 45), Laws.abnf.cp(zz, 58)) == False{} : Bool}, hh, ed,
+        {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+    case False{}:
+      Eq.not.true(Bool.or(Laws.abnf.cp(hh, 45), Laws.abnf.cp(hh, 58)),
+        Equal.trans(Bool, gp.nd.pick(False{}, hh, gp.nd(tt)), gp.nd.pick(gp.dc(hh), hh, gp.nd(tt)), True{},
+          Equal.cong(Bool, Bool, xx => gp.nd.pick(xx, hh, gp.nd(tt)), False{}, gp.dc(hh),
+            Equal.sym(Bool, gp.dc(hh), False{}, ed)), h))
+
+# a DIGIT taken keeps the rest such a word
+def gp.ndr.digit.go(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  dd: Bool,
+  +ed: {Laws.abnf.DIGIT(hh) == dd : Bool},
+  +h: {gp.nd(hh <> tt) == True{} : Bool}
+) -> {gp.ndr(Laws.abnf.keep(Laws.abnf.DIGIT(hh), tt)) == True{} : Bool}:
+  match dd:
+    case True{}:
+      %Equal.sym(Bool, Laws.abnf.DIGIT(hh), True{}, ed) : {gp.ndr(Laws.abnf.keep(_, tt)) == True{} : Bool}
+      Equal.trans(Bool, gp.nd(tt), gp.nd.pick(gp.dc(hh), hh, gp.nd(tt)), True{},
+        Equal.cong(Bool, Bool, xx => gp.nd.pick(xx, hh, gp.nd(tt)), True{}, gp.dc(hh),
+          Equal.sym(Bool, gp.dc(hh), True{}, gp.dc.digit(hh, ed))), h)
+    case False{}:
+      %Equal.sym(Bool, Laws.abnf.DIGIT(hh), False{}, ed) : {gp.ndr(Laws.abnf.keep(_, tt)) == True{} : Bool}
+      {==}
+
+# DIGIT from the front keeps such a word such a word
+def gp.ndr.digit(rr: Laws.ARest, +h: {gp.ndr(rr) == True{} : Bool}) -> {gp.ndr(Laws.abnf.digit_r(rr)) == True{} : Bool}:
+  match rr:
+    case Laws.ALeft{cs}:
+      match cs:
+        case []:
+          {==}
+        case +hh <> +tt:
+          gp.ndr.digit.go(hh, tt, Laws.abnf.DIGIT(hh), {==}, h)
+    case Laws.ANone{}:
+      {==}
+
+# no - from the front of such a word
+def gp.ndr.dash(
+  rr: Laws.ARest,
+  +h: {gp.ndr(rr) == True{} : Bool}
+) -> {Laws.abnf.char_r(rr, 45) == Laws.ANone{} : Laws.ARest}:
+  match rr:
+    case Laws.ALeft{cs}:
+      match cs:
+        case []:
+          {==}
+        case +hh <> +tt:
+          %Equal.sym(Bool, Laws.abnf.cp(hh, 45), False{}, Eq.or.false_left(Laws.abnf.cp(hh, 45), Laws.abnf.cp(hh, 58),
+            gp.nd.head(hh, tt, gp.dc(hh), {==}, h))) : {Laws.abnf.keep(_, tt) == Laws.ANone{} : Laws.ARest}
+          {==}
+    case Laws.ANone{}:
+      {==}
+
+# no : from the front of such a word
+def gp.ndr.colon(
+  rr: Laws.ARest,
+  +h: {gp.ndr(rr) == True{} : Bool}
+) -> {Laws.abnf.char_r(rr, 58) == Laws.ANone{} : Laws.ARest}:
+  match rr:
+    case Laws.ALeft{cs}:
+      match cs:
+        case []:
+          {==}
+        case +hh <> +tt:
+          %Equal.sym(Bool, Laws.abnf.cp(hh, 58), False{}, Eq.or.false_right(Laws.abnf.cp(hh, 45), Laws.abnf.cp(hh, 58),
+            gp.nd.head(hh, tt, gp.dc(hh), {==}, h))) : {Laws.abnf.keep(_, tt) == Laws.ANone{} : Laws.ARest}
+          {==}
+    case Laws.ANone{}:
+      {==}
+
+# date-time, from what is left after a full-date's first four DIGITs (d4)
+# and a partial-time's first two (d2) and the character after each
+def gp.dt.g(d4: Laws.ARest, d2: Laws.ARest) -> Bool:
+  +fd = Laws.abnf.date_mday(Laws.abnf.char_r(Laws.abnf.date_month(d4), 45))
+  Bool.or(Laws.abnf.all_r(Laws.abnf.full_time(Laws.abnf.time_delim(fd))),
+    Bool.or(Laws.abnf.all_r(Laws.abnf.partial_time(Laws.abnf.time_delim(fd))), Bool.or(Laws.abnf.all_r(fd),
+      Laws.abnf.all_r(Laws.abnf.opt_secfrac(Laws.abnf.time_second(Laws.abnf.char_r(Laws.abnf.time_minute(d2),
+      58)))))))
+
+# a word whose first character that is no DIGIT or underscore is no - and
+# no : is no date-time: a full-date has a - after four DIGITs, and a
+# partial-time a : after two
+def gp.nd.dt(+cs: List<&2, Char>, +h: {gp.nd(cs) == True{} : Bool}) -> {Laws.abnf.date_time(cs) == False{} : Bool}:
+  +r2 = Laws.abnf.digit_r(Laws.abnf.digit_r(Laws.ALeft{cs}))
+  +n2 = gp.ndr.digit(Laws.abnf.digit_r(Laws.ALeft{cs}), gp.ndr.digit(Laws.ALeft{cs}, h))
+  +r4 = Laws.abnf.digit_r(Laws.abnf.digit_r(r2))
+  Equal.trans(Bool, gp.dt.g(Laws.abnf.char_r(r4, 45), Laws.abnf.char_r(r2, 58)),
+    gp.dt.g(Laws.ANone{}, Laws.abnf.char_r(r2, 58)), False{},
+    Equal.cong(Laws.ARest, Bool, xx => gp.dt.g(xx, Laws.abnf.char_r(r2, 58)), Laws.abnf.char_r(r4, 45), Laws.ANone{},
+      gp.ndr.dash(r4, gp.ndr.digit(Laws.abnf.digit_r(r2), gp.ndr.digit(r2, n2)))),
+    Equal.trans(Bool, gp.dt.g(Laws.ANone{}, Laws.abnf.char_r(r2, 58)), gp.dt.g(Laws.ANone{}, Laws.ANone{}), False{},
+      Equal.cong(Laws.ARest, Bool, xx => gp.dt.g(Laws.ANone{}, xx), Laws.abnf.char_r(r2, 58), Laws.ANone{},
+        gp.ndr.colon(r2, n2)),
+      {==}))
+
+# a word that starts with a sign is no date-time
+def gp.dt.sign(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  +hs: {Bool.or(Laws.abnf.minus(hh), Laws.abnf.plus(hh)) == True{} : Bool}
+) -> {Laws.abnf.date_time(hh <> tt) == False{} : Bool}:
+  gp.or({Laws.abnf.date_time(hh <> tt) == False{} : Bool}, Laws.abnf.minus(hh), Laws.abnf.plus(hh), hs,
+    hm => gp.head(zs => {Laws.abnf.date_time(zs) == False{} : Bool}, hh, '-', tt, gs.minus(hh, hm), {==}),
+    hp => gp.head(zs => {Laws.abnf.date_time(zs) == False{} : Bool}, hh, '+', tt, gs.plus(hh, hp), {==}))
+
+# a dec-int is no date-time
+def gp.decint.dt(
+  cs: List<&2, Char>,
+  +h: {Laws.abnf.dec_int(cs) == True{} : Bool}
+) -> {Laws.abnf.date_time(cs) == False{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {Laws.abnf.date_time([]) == False{} : Bool}, h)
+    case +hh <> +tt:
+      gp.or({Laws.abnf.date_time(hh <> tt) == False{} : Bool},
+        Bool.and(Bool.or(Laws.abnf.minus(hh), Laws.abnf.plus(hh)), Laws.abnf.unsigned_dec_int(tt)),
+        Laws.abnf.unsigned_dec_int(hh <> tt), h,
+        ha => gp.dt.sign(hh, tt, Eq.and.left(Bool.or(Laws.abnf.minus(hh), Laws.abnf.plus(hh)),
+          Laws.abnf.unsigned_dec_int(tt), ha)),
+        hb => gp.nd.dt(hh <> tt, gp.decs.nd(hh <> tt, gp.udi.decs(hh <> tt, hb))))
+
+# a prefixed integer's word, taken apart: a claim of each word that starts
+# with 0 and the prefix letter ll is a claim of it
+def gp.pre.case(
+  -P: List<&2, Char> -> Type,
+  cs: List<&2, Char>,
+  +ll: U32,
+  +rx: Laws.ARadix,
+  +h: {Laws.abnf.prefixed(cs, ll, rx) == True{} : Bool},
+  kk: @c2: Char -> @rest: List<&2, Char> -> P('0' <> Chr{ll} <> c2 <> rest)
+) -> P(cs):
+  match cs:
+    case []:
+      Eq.bit.absurd(&1, P([]), h)
+    case +c0 <> t0:
+      match t0:
+        case []:
+          Eq.bit.absurd(&1, P([c0]), h)
+        case +c1 <> t1:
+          match t1:
+            case []:
+              Eq.bit.absurd(&1, P([c0, c1]), h)
+            case +c2 <> +rest:
+              +hr = {Bool.and(Laws.abnf.cp(c1, ll), Bool.and(Laws.abnf.radix_digit(rx, c2),
+                Laws.abnf.radix_rep(rest, rx))) : Bool}
+              +e0 = {gp.cp(c0, 48, Eq.and.left(Laws.abnf.cp(c0, 48), hr, h)) : {c0 == Chr{48} : Char}}
+              +e1 = {gp.cp(c1, ll, Eq.and.left(Laws.abnf.cp(c1, ll), Bool.and(Laws.abnf.radix_digit(rx, c2),
+                Laws.abnf.radix_rep(rest, rx)), Eq.and.right(Laws.abnf.cp(c0, 48), hr, h))) : {c1 == Chr{ll} : Char}}
+              gp.head(P, c0, Chr{48}, c1 <> c2 <> rest, e0,
+                gp.head(zs => P(Chr{48} <> zs), c1, Chr{ll}, c2 <> rest, e1, kk(c2, rest)))
+
+def Laws.integer_not_date_time(cs, h):
+  gp.or({Laws.abnf.date_time(cs) == False{} : Bool}, Laws.abnf.dec_int(cs),
+    Bool.or(Laws.abnf.hex_int(cs), Bool.or(Laws.abnf.oct_int(cs), Laws.abnf.bin_int(cs))), h,
+    hd => gp.decint.dt(cs, hd),
+    hr => gp.or({Laws.abnf.date_time(cs) == False{} : Bool}, Laws.abnf.hex_int(cs),
+      Bool.or(Laws.abnf.oct_int(cs), Laws.abnf.bin_int(cs)), hr,
+      hx => gp.pre.case(zs => {Laws.abnf.date_time(zs) == False{} : Bool}, cs, 120, Laws.AHex{}, hx,
+        _c => _r => {==}),
+      hq => gp.or({Laws.abnf.date_time(cs) == False{} : Bool}, Laws.abnf.oct_int(cs), Laws.abnf.bin_int(cs), hq,
+        ho => gp.pre.case(zs => {Laws.abnf.date_time(zs) == False{} : Bool}, cs, 111, Laws.AOct{}, ho,
+          _c => _r => {==}),
+        hb => gp.pre.case(zs => {Laws.abnf.date_time(zs) == False{} : Bool}, cs, 98, Laws.ABin{}, hb,
+          _c => _r => {==}))))
+
+# a word is no float when nothing follows a first decimal-point or e (there
+# is none) and it is no special-float
+def gp.flo.zero(
+  +cs: List<&2, Char>,
+  ep: {Laws.abnf.cut.post(cs, Laws.ACutDot{}) == [] : List<&2, Char>},
+  es: {Laws.abnf.special_float(cs) == False{} : Bool}
+) -> {Laws.abnf.float(cs) == False{} : Bool}:
+  +aa = Laws.abnf.dec_int(Laws.abnf.cut.pre(cs, Laws.ACutDot{}))
+  +post = Laws.abnf.cut.post(cs, Laws.ACutDot{})
+  Equal.trans(Bool, Bool.or(Bool.and(aa, Bool.or(Laws.abnf.exp(post), Laws.abnf.frac_exp(post))),
+    Laws.abnf.special_float(cs)), Bool.or(Bool.and(aa, False{}), Laws.abnf.special_float(cs)), False{},
+    Equal.cong(List<&2, Char>, Bool, pp => Bool.or(Bool.and(aa, Bool.or(Laws.abnf.exp(pp), Laws.abnf.frac_exp(pp))),
+      Laws.abnf.special_float(cs)), post, [], ep),
+    Equal.trans(Bool, Bool.or(Bool.and(aa, False{}), Laws.abnf.special_float(cs)),
+      Bool.or(Bool.and(aa, False{}), False{}), False{},
+      Equal.cong(Bool, Bool, ss => Bool.or(Bool.and(aa, False{}), ss), Laws.abnf.special_float(cs), False{}, es),
+      Equal.cong(Bool, Bool, xx => Bool.or(xx, False{}), Bool.and(aa, False{}), False{}, gs.andf(aa))))
+
+# a word of DIGITs and underscores has no decimal-point or e
+def gp.decs.post(
+  cs: List<&2, Char>,
+  +h: {gp.decs(cs) == True{} : Bool}
+) -> {Laws.abnf.cut.post(cs, Laws.ACutDot{}) == [] : List<&2, Char>}:
+  match cs:
+    case []:
+      {==}
+    case +hh <> +tt:
+      +ec = {gp.dc.elim(zz => {Laws.abnf.cut.at(Laws.ACutDot{}, zz) == False{} : Bool}, hh,
+        Eq.and.left(gp.dc(hh), gp.decs(tt), h), {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+        : {Laws.abnf.cut.at(Laws.ACutDot{}, hh) == False{} : Bool}}
+      %Equal.sym(Bool, Laws.abnf.cut.at(Laws.ACutDot{}, hh), False{}, ec) :
+        {Laws.abnf.cut.post.pick(_, hh, tt, Laws.abnf.cut.post(tt, Laws.ACutDot{})) == [] : List<&2, Char>}
+      gp.decs.post(tt, Eq.and.right(gp.dc(hh), gp.decs(tt), h))
+
+# and it is no inf and no nan
+def gp.decs.noinf(
+  tt: List<&2, Char>,
+  +h: {gp.decs(tt) == True{} : Bool}
+) -> {Bool.or(Laws.abnf.inf(tt), Laws.abnf.nan(tt)) == False{} : Bool}:
+  match tt:
+    case []:
+      {==}
+    case +xx <> +yy:
+      gp.dc.elim(zz => {Bool.or(Laws.abnf.inf(zz <> yy), Laws.abnf.nan(zz <> yy)) == False{} : Bool}, xx,
+        Eq.and.left(gp.dc(xx), gp.decs(yy), h), {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# after a sign, a word of DIGITs and underscores is no special-float
+def gp.flo.sp(
+  +tt: List<&2, Char>,
+  +h: {gp.decs(tt) == True{} : Bool}
+) -> {Bool.or(Bool.or(Laws.abnf.inf(tt), Laws.abnf.nan(tt)), False{}) == False{} : Bool}:
+  Equal.cong(Bool, Bool, xx => Bool.or(xx, False{}), Bool.or(Laws.abnf.inf(tt), Laws.abnf.nan(tt)), False{},
+    gp.decs.noinf(tt, h))
+
+# a sign and an unsigned-dec-int is no float
+def gp.flo.signed(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  +ha: {Bool.and(Bool.or(Laws.abnf.minus(hh), Laws.abnf.plus(hh)), Laws.abnf.unsigned_dec_int(tt)) == True{} : Bool}
+) -> {Laws.abnf.float(hh <> tt) == False{} : Bool}:
+  +hd = {gp.udi.decs(tt, Eq.and.right(Bool.or(Laws.abnf.minus(hh), Laws.abnf.plus(hh)),
+    Laws.abnf.unsigned_dec_int(tt), ha)) : {gp.decs(tt) == True{} : Bool}}
+  gp.or({Laws.abnf.float(hh <> tt) == False{} : Bool}, Laws.abnf.minus(hh), Laws.abnf.plus(hh),
+    Eq.and.left(Bool.or(Laws.abnf.minus(hh), Laws.abnf.plus(hh)), Laws.abnf.unsigned_dec_int(tt), ha),
+    hm => gp.head(zs => {Laws.abnf.float(zs) == False{} : Bool}, hh, '-', tt, gs.minus(hh, hm),
+      gp.flo.zero('-' <> tt, gp.decs.post(tt, hd), gp.flo.sp(tt, hd))),
+    hp => gp.head(zs => {Laws.abnf.float(zs) == False{} : Bool}, hh, '+', tt, gs.plus(hh, hp),
+      gp.flo.zero('+' <> tt, gp.decs.post(tt, hd), gp.flo.sp(tt, hd))))
+
+# a word of DIGITs and underscores is no float
+def gp.flo.unsigned(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  +hd: {gp.decs(hh <> tt) == True{} : Bool}
+) -> {Laws.abnf.float(hh <> tt) == False{} : Bool}:
+  gp.flo.zero(hh <> tt, gp.decs.post(hh <> tt, hd),
+    gp.dc.elim(zz => {Laws.abnf.special_float(zz <> tt) == False{} : Bool}, hh,
+      Eq.and.left(gp.dc(hh), gp.decs(tt), hd), {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}))
+
+# a dec-int is no float
+def gp.decint.flo(
+  cs: List<&2, Char>,
+  +h: {Laws.abnf.dec_int(cs) == True{} : Bool}
+) -> {Laws.abnf.float(cs) == False{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {Laws.abnf.float([]) == False{} : Bool}, h)
+    case +hh <> +tt:
+      gp.or({Laws.abnf.float(hh <> tt) == False{} : Bool},
+        Bool.and(Bool.or(Laws.abnf.minus(hh), Laws.abnf.plus(hh)), Laws.abnf.unsigned_dec_int(tt)),
+        Laws.abnf.unsigned_dec_int(hh <> tt), h,
+        ha => gp.flo.signed(hh, tt, ha),
+        hb => gp.flo.unsigned(hh, tt, gp.udi.decs(hh <> tt, hb)))
+
+def Laws.integer_not_float(cs, h):
+  gp.or({Laws.abnf.float(cs) == False{} : Bool}, Laws.abnf.dec_int(cs),
+    Bool.or(Laws.abnf.hex_int(cs), Bool.or(Laws.abnf.oct_int(cs), Laws.abnf.bin_int(cs))), h,
+    hd => gp.decint.flo(cs, hd),
+    hr => gp.or({Laws.abnf.float(cs) == False{} : Bool}, Laws.abnf.hex_int(cs),
+      Bool.or(Laws.abnf.oct_int(cs), Laws.abnf.bin_int(cs)), hr,
+      hx => gp.pre.case(zs => {Laws.abnf.float(zs) == False{} : Bool}, cs, 120, Laws.AHex{}, hx, _c => _r => {==}),
+      hq => gp.or({Laws.abnf.float(cs) == False{} : Bool}, Laws.abnf.oct_int(cs), Laws.abnf.bin_int(cs), hq,
+        ho => gp.pre.case(zs => {Laws.abnf.float(zs) == False{} : Bool}, cs, 111, Laws.AOct{}, ho, _c => _r => {==}),
+        hb => gp.pre.case(zs => {Laws.abnf.float(zs) == False{} : Bool}, cs, 98, Laws.ABin{}, hb,
+          _c => _r => {==}))))
+
+# a special-float is no date-time: it starts with a sign, an i or an n
+def gp.spec.dt(
+  cs: List<&2, Char>,
+  +h: {Laws.abnf.special_float(cs) == True{} : Bool}
+) -> {Laws.abnf.date_time(cs) == False{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {Laws.abnf.date_time([]) == False{} : Bool}, h)
+    case +hh <> +tt:
+      gp.or({Laws.abnf.date_time(hh <> tt) == False{} : Bool},
+        Bool.and(Bool.or(Laws.abnf.minus(hh), Laws.abnf.plus(hh)), Bool.or(Laws.abnf.inf(tt), Laws.abnf.nan(tt))),
+        Bool.or(Laws.abnf.inf(hh <> tt), Laws.abnf.nan(hh <> tt)), h,
+        ha => gp.dt.sign(hh, tt, Eq.and.left(Bool.or(Laws.abnf.minus(hh), Laws.abnf.plus(hh)),
+          Bool.or(Laws.abnf.inf(tt), Laws.abnf.nan(tt)), ha)),
+        hb => gp.or({Laws.abnf.date_time(hh <> tt) == False{} : Bool}, Laws.abnf.inf(hh <> tt),
+          Laws.abnf.nan(hh <> tt), hb,
+          hi => gp.head(zs => {Laws.abnf.date_time(zs) == False{} : Bool}, hh, 'i', tt,
+            Eq.char_eq_true(hh, 'i', Eq.and.left(Char.is_eq(hh, 'i'), Laws.abnf.chars_are(tt, "nf"), hi)), {==}),
+          hn => gp.head(zs => {Laws.abnf.date_time(zs) == False{} : Bool}, hh, 'n', tt,
+            Eq.char_eq_true(hh, 'n', Eq.and.left(Char.is_eq(hh, 'n'), Laws.abnf.chars_are(tt, "an"), hn)), {==})))
+
+# the step of gp.pre.nd: a decimal-point or e first is no - or :, and a DIGIT
+# or underscore first leaves the rest
+def gp.pre.nd.go(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  cc: Bool,
+  +ec: {Laws.abnf.cut.at(Laws.ACutDot{}, hh) == cc : Bool},
+  +h: {gp.decs(Laws.abnf.cut.pre(hh <> tt, Laws.ACutDot{})) == True{} : Bool},
+  ih: {gp.decs(Laws.abnf.cut.pre(tt, Laws.ACutDot{})) == True{} : Bool} -> {gp.nd(tt) == True{} : Bool}
+) -> {gp.nd(hh <> tt) == True{} : Bool}:
+  match cc:
+    case True{}:
+      gp.or({gp.nd(hh <> tt) == True{} : Bool}, Laws.abnf.cp(hh, 46),
+        Bool.or(Laws.abnf.cp(hh, 101), Laws.abnf.cp(hh, 69)), ec,
+        hd => gp.head(zs => {gp.nd(zs) == True{} : Bool}, hh, Chr{46}, tt, gp.cp(hh, 46, hd), {==}),
+        he => gp.or({gp.nd(hh <> tt) == True{} : Bool}, Laws.abnf.cp(hh, 101), Laws.abnf.cp(hh, 69), he,
+          hl => gp.head(zs => {gp.nd(zs) == True{} : Bool}, hh, Chr{101}, tt, gp.cp(hh, 101, hl), {==}),
+          hu => gp.head(zs => {gp.nd(zs) == True{} : Bool}, hh, Chr{69}, tt, gp.cp(hh, 69, hu), {==})))
+    case False{}:
+      +pt = Laws.abnf.cut.pre(tt, Laws.ACutDot{})
+      +hq = {Equal.trans(Bool, gp.decs(hh <> pt),
+        gp.decs(Laws.abnf.cut.pre.pick(Laws.abnf.cut.at(Laws.ACutDot{}, hh), hh, pt)), True{},
+        Equal.cong(Bool, Bool, xx => gp.decs(Laws.abnf.cut.pre.pick(xx, hh, pt)), False{},
+          Laws.abnf.cut.at(Laws.ACutDot{}, hh), Equal.sym(Bool, Laws.abnf.cut.at(Laws.ACutDot{}, hh), False{}, ec)), h)
+        : {gp.decs(hh <> pt) == True{} : Bool}}
+      %Equal.sym(Bool, gp.dc(hh), True{}, Eq.and.left(gp.dc(hh), gp.decs(pt), hq)) :
+        {gp.nd.pick(_, hh, gp.nd(tt)) == True{} : Bool}
+      ih(Eq.and.right(gp.dc(hh), gp.decs(pt), hq))
+
+# a word whose part before its first decimal-point or e holds only DIGITs and
+# underscores has no - or : before a character that is none of those
+def gp.pre.nd(
+  cs: List<&2, Char>,
+  +h: {gp.decs(Laws.abnf.cut.pre(cs, Laws.ACutDot{})) == True{} : Bool}
+) -> {gp.nd(cs) == True{} : Bool}:
+  match cs:
+    case []:
+      {==}
+    case +hh <> +tt:
+      gp.pre.nd.go(hh, tt, Laws.abnf.cut.at(Laws.ACutDot{}, hh), {==}, h, hr => gp.pre.nd(tt, hr))
+
+# a word whose integer part is unsigned, before its first decimal-point or e,
+# is no date-time
+def gp.pre.dt.u(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  +hd: {gp.decs(hh <> Laws.abnf.cut.pre(tt, Laws.ACutDot{})) == True{} : Bool}
+) -> {Laws.abnf.date_time(hh <> tt) == False{} : Bool}:
+  +pt = Laws.abnf.cut.pre(tt, Laws.ACutDot{})
+  gp.nd.dt(hh <> tt, Equal.trans(Bool, gp.nd(hh <> tt), gp.nd(tt), True{},
+    Equal.cong(Bool, Bool, xx => gp.nd.pick(xx, hh, gp.nd(tt)), gp.dc(hh), True{},
+      Eq.and.left(gp.dc(hh), gp.decs(pt), hd)),
+    gp.pre.nd(tt, Eq.and.right(gp.dc(hh), gp.decs(pt), hd))))
+
+# the step of gp.pre.dt: a decimal-point or e first leaves no integer part,
+# and otherwise the integer part starts with this character
+def gp.pre.dt.go(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  cc: Bool,
+  +ec: {Laws.abnf.cut.at(Laws.ACutDot{}, hh) == cc : Bool},
+  +h: {Laws.abnf.dec_int(Laws.abnf.cut.pre(hh <> tt, Laws.ACutDot{})) == True{} : Bool}
+) -> {Laws.abnf.date_time(hh <> tt) == False{} : Bool}:
+  match cc:
+    case True{}:
+      +pt = Laws.abnf.cut.pre(tt, Laws.ACutDot{})
+      Eq.bit.absurd(&2, {Laws.abnf.date_time(hh <> tt) == False{} : Bool},
+        Equal.trans(Bool, False{}, Laws.abnf.dec_int(Laws.abnf.cut.pre.pick(Laws.abnf.cut.at(Laws.ACutDot{}, hh),
+          hh, pt)), True{},
+          Equal.cong(Bool, Bool, xx => Laws.abnf.dec_int(Laws.abnf.cut.pre.pick(xx, hh, pt)), True{},
+            Laws.abnf.cut.at(Laws.ACutDot{}, hh), Equal.sym(Bool, Laws.abnf.cut.at(Laws.ACutDot{}, hh), True{}, ec)),
+          h))
+    case False{}:
+      +pt = Laws.abnf.cut.pre(tt, Laws.ACutDot{})
+      +hq = {Equal.trans(Bool, Laws.abnf.dec_int(hh <> pt),
+        Laws.abnf.dec_int(Laws.abnf.cut.pre.pick(Laws.abnf.cut.at(Laws.ACutDot{}, hh), hh, pt)), True{},
+        Equal.cong(Bool, Bool, xx => Laws.abnf.dec_int(Laws.abnf.cut.pre.pick(xx, hh, pt)), False{},
+          Laws.abnf.cut.at(Laws.ACutDot{}, hh), Equal.sym(Bool, Laws.abnf.cut.at(Laws.ACutDot{}, hh), False{}, ec)), h)
+        : {Laws.abnf.dec_int(hh <> pt) == True{} : Bool}}
+      gp.or({Laws.abnf.date_time(hh <> tt) == False{} : Bool},
+        Bool.and(Bool.or(Laws.abnf.minus(hh), Laws.abnf.plus(hh)), Laws.abnf.unsigned_dec_int(pt)),
+        Laws.abnf.unsigned_dec_int(hh <> pt), hq,
+        ha => gp.dt.sign(hh, tt, Eq.and.left(Bool.or(Laws.abnf.minus(hh), Laws.abnf.plus(hh)),
+          Laws.abnf.unsigned_dec_int(pt), ha)),
+        hb => gp.pre.dt.u(hh, tt, gp.udi.decs(hh <> pt, hb)))
+
+# a word whose part before its first decimal-point or e is a dec-int is no
+# date-time
+def gp.pre.dt(
+  cs: List<&2, Char>,
+  +h: {Laws.abnf.dec_int(Laws.abnf.cut.pre(cs, Laws.ACutDot{})) == True{} : Bool}
+) -> {Laws.abnf.date_time(cs) == False{} : Bool}:
+  match cs:
+    case []:
+      Eq.bit.absurd(&2, {Laws.abnf.date_time([]) == False{} : Bool}, h)
+    case +hh <> +tt:
+      gp.pre.dt.go(hh, tt, Laws.abnf.cut.at(Laws.ACutDot{}, hh), {==}, h)
+
+def Laws.float_not_date_time(cs, h):
+  +post = Laws.abnf.cut.post(cs, Laws.ACutDot{})
+  +aa = Laws.abnf.dec_int(Laws.abnf.cut.pre(cs, Laws.ACutDot{}))
+  +bb = Bool.or(Laws.abnf.exp(post), Laws.abnf.frac_exp(post))
+  gp.or({Laws.abnf.date_time(cs) == False{} : Bool}, Bool.and(aa, bb), Laws.abnf.special_float(cs), h,
+    hs => gp.pre.dt(cs, Eq.and.left(aa, bb, hs)),
+    hp => gp.spec.dt(cs, hp))
