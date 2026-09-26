@@ -4534,3 +4534,146 @@ law key_found_in_document:
     String.append(gap(g), SCon{'=', rest}))))))) == True{} : Bool}
   {k3.has(T.root(T.parse(String.append(pre, String.append(gap(g0), k3.dk.text(ds, last, String.append(gap(g),
     SCon{'=', rest})))))), k3.key.table(stack, here, ds), k3.seg.name(last)) == True{} : Bool}
+
+# GRAMMAR SPIKE
+#
+# One rule of toml.abnf (TOML v1.0.0), dec-int, transcribed as a Bool
+# recognizer over a bare word's characters, one def per rule with the rule
+# quoted above it, as TOML-KEY-1's unquoted-key is. It tries the leaf form of
+# the grammar relation (docs/rfc/eztoml-grammar-proofs.md) against the numeral
+# scan. Bend has no hex literals, so each bound is in decimal with its hex
+# beside it.
+
+# minus = %x2D ; -
+# (%x2D is 45)
+def abnf.minus(cc: Char) -> Bool:
+  match cc:
+    case Chr{+cp}:
+      U32.is_eq(cp, 45)
+
+# plus = %x2B ; +
+# (%x2B is 43)
+def abnf.plus(cc: Char) -> Bool:
+  match cc:
+    case Chr{+cp}:
+      U32.is_eq(cp, 43)
+
+# underscore = %x5F ; _
+# (%x5F is 95)
+def abnf.underscore(cc: Char) -> Bool:
+  match cc:
+    case Chr{+cp}:
+      U32.is_eq(cp, 95)
+
+# digit1-9 = %x31-39 ; 1-9
+# (%x31 is 49, %x39 is 57)
+def abnf.digit1_9(cc: Char) -> Bool:
+  match cc:
+    case Chr{+cp}:
+      Bool.and(U32.is_ge(cp, 49), U32.is_le(cp, 57))
+
+# DIGIT = %x30-39 ; 0-9, over a character (abnf.digit is over a code point)
+def abnf.DIGIT(cc: Char) -> Bool:
+  match cc:
+    case Chr{+cp}:
+      abnf.digit(cp)
+
+# *( DIGIT / underscore DIGIT ): nothing, or one of the two and the rest. A
+# lone character left can only be a DIGIT, since underscore needs one after it
+def abnf.dec_rep(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      True{}
+    case +hh <> tt:
+      match tt:
+        case []:
+          abnf.DIGIT(hh)
+        case +h2 <> +t2:
+          Bool.or(Bool.and(abnf.DIGIT(hh), abnf.dec_rep(h2 <> t2)),
+            Bool.and(abnf.underscore(hh), Bool.and(abnf.DIGIT(h2), abnf.dec_rep(t2))))
+
+# 1*( DIGIT / underscore DIGIT ): the repetition, at least once
+def abnf.dec_rep1(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      False{}
+    case +hh <> tt:
+      abnf.dec_rep(hh <> tt)
+
+# unsigned-dec-int = DIGIT / digit1-9 1*( DIGIT / underscore DIGIT )
+def abnf.unsigned_dec_int(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      False{}
+    case +hh <> +tt:
+      Bool.or(Bool.and(abnf.DIGIT(hh), List.is_empty(&2, Char, tt)),
+        Bool.and(abnf.digit1_9(hh), abnf.dec_rep1(tt)))
+
+# dec-int = [ minus / plus ] unsigned-dec-int
+def abnf.dec_int(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case []:
+      False{}
+    case +hh <> +tt:
+      Bool.or(Bool.and(Bool.or(abnf.minus(hh), abnf.plus(hh)), abnf.unsigned_dec_int(tt)),
+        abnf.unsigned_dec_int(hh <> tt))
+
+# a character of a numeral kept unless it is an underscore
+def abnf.no_us.pick(us: Bool, cc: Char, rest: String) -> String:
+  match us:
+    case True{}:
+      rest
+    case False{}:
+      SCon{cc, rest}
+
+# a numeral's characters with its underscores removed
+def abnf.no_us(cs: List<&2, Char>) -> String:
+  match cs:
+    case []:
+      ""
+    case +hh <> tt:
+      abnf.no_us.pick(abnf.underscore(hh), hh, abnf.no_us(tt))
+
+# the sign a leading minus gives, and plus otherwise
+def abnf.sign.pick(minus: Bool) -> T.Sign:
+  match minus:
+    case True{}:
+      T.Minus{}
+    case False{}:
+      T.Plus{}
+
+# the sign a dec-int is read with: minus when it starts with one, else plus
+def abnf.dec_sign(cs: List<&2, Char>) -> T.Sign:
+  match cs:
+    case []:
+      T.Plus{}
+    case +hh <> _:
+      abnf.sign.pick(abnf.minus(hh))
+
+# the characters after a leading sign, or all of them
+def abnf.digits.pick(signed: Bool, cc: Char, rest: List<&2, Char>) -> String:
+  match signed:
+    case True{}:
+      abnf.no_us(rest)
+    case False{}:
+      abnf.no_us(cc <> rest)
+
+# the digits a dec-int is read as: after its sign, with the underscores
+# removed. unsigned-dec-int allows no leading zero except in 0 itself, so these
+# are its value's decimal digits
+def abnf.dec_digits(cs: List<&2, Char>) -> String:
+  match cs:
+    case []:
+      ""
+    case +hh <> tt:
+      abnf.digits.pick(Bool.or(abnf.minus(hh), abnf.plus(hh)), hh, tt)
+
+# LAW: a bare word that matches toml.abnf's dec-int and lies within signed 64
+# bits is read as an integer: minus when it starts with a minus and plus
+# otherwise, with the digits after the sign and the underscores removed
+# TOML-NUM-1
+law dec_int_word:
+  for +cs: List<&2, Char>
+  for +h: {abnf.dec_int(cs) == True{} : Bool}
+  for +r: {T.i64.fits(abnf.dec_sign(cs), abnf.dec_digits(cs)) == True{} : Bool}
+  {T.word.val(cs) == T.GotVal{T.VInt{abnf.dec_sign(cs), abnf.dec_digits(cs)}} : T.Got}

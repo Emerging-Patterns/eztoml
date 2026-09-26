@@ -62663,3 +62663,795 @@ def Laws.key_found_in_document(
             String.append(Laws.gap(g0), Laws.k3.dk.text(ds, last, String.append(Laws.gap(g), SCon{'=', rest}))))),
               Laws.k3.key.doc(at, g0, ds, last, g, rows, heads, here, stack, arrtab, back, qkind, uni, left, rest),
                 ep)), eo))
+
+# GRAMMAR SPIKE: dec_int_word. The transcribed rule is taken apart by the
+# characters it tests, and each part is read by the numeral lemmas of WP-N
+# (nw.lead, nw.sign, nw.step, dgo, int.fin): an underscore between digits
+# leaves the numeral as it was, so the scan reads the digits with the
+# underscores removed.
+
+# a DIGIT is a digit: the two tests are one test once the code point is out
+def gs.dig(cc: Char, h: {Laws.abnf.DIGIT(cc) == True{} : Bool}) -> {Char.is_digit(cc) == True{} : Bool}:
+  match cc:
+    case Chr{+cp}:
+      h
+
+# a digit is no underscore
+def gs.nous(cc: Char, hc: {Char.is_digit(cc) == True{} : Bool}) -> {Laws.abnf.underscore(cc) == False{} : Bool}:
+  dg.elim(zz => {Laws.abnf.underscore(zz) == False{} : Bool}, cc, hc,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# an underscore is the character _
+def gs.us(cc: Char, h: {Laws.abnf.underscore(cc) == True{} : Bool}) -> {cc == '_' : Char}:
+  match cc:
+    case Chr{+cp}:
+      Eq.char_eq_true(Chr{cp}, '_', h)
+
+# a minus is the character -
+def gs.minus(cc: Char, h: {Laws.abnf.minus(cc) == True{} : Bool}) -> {cc == '-' : Char}:
+  match cc:
+    case Chr{+cp}:
+      Eq.char_eq_true(Chr{cp}, '-', h)
+
+# a plus is the character +
+def gs.plus(cc: Char, h: {Laws.abnf.plus(cc) == True{} : Bool}) -> {cc == '+' : Char}:
+  match cc:
+    case Chr{+cp}:
+      Eq.char_eq_true(Chr{cp}, '+', h)
+
+# the 31 bits above a code point's lowest
+def gs.up(uu: U32) -> Word(31n):
+  match uu:
+    case U32{WCon{_bb, rr}}:
+      rr
+
+# 48 and 49 differ in their lowest bit only: a code point at least 49 is at
+# least 48
+def gs.ge01(
+  +b0: Bool,
+  tt: Cmp,
+  +h: {Cmp.is_ge(Word.cmp.fin(b0, True{}, tt)) == True{} : Bool}
+) -> {Cmp.is_ge(Word.cmp.fin(b0, False{}, tt)) == True{} : Bool}:
+  match b0 tt:
+    case _b LT{}:
+      h
+    case True{} EQ{}:
+      {==}
+    case False{} EQ{}:
+      {==}
+    case _b GT{}:
+      {==}
+
+# and is not 48
+def gs.eq01(
+  +b0: Bool,
+  tt: Cmp,
+  +h: {Cmp.is_ge(Word.cmp.fin(b0, True{}, tt)) == True{} : Bool}
+) -> {Cmp.is_eq(Word.cmp.fin(b0, False{}, tt)) == False{} : Bool}:
+  match b0 tt:
+    case _b LT{}:
+      {==}
+    case True{} EQ{}:
+      {==}
+    case False{} EQ{}:
+      Eq.bit.absurd(&2, {True{} == False{} : Bool}, h)
+    case _b GT{}:
+      {==}
+
+# a digit1-9 is a digit
+def gs.d19(cc: Char, +h: {Laws.abnf.digit1_9(cc) == True{} : Bool}) -> {Char.is_digit(cc) == True{} : Bool}:
+  match cc:
+    case Chr{U32{WCon{+b0, +rr}}}:
+      and.tt(Cmp.is_ge(Word.cmp.fin(b0, False{}, Word.cmp(31n, rr, gs.up(48)))),
+        Cmp.is_le(Word.cmp.fin(b0, True{}, Word.cmp(31n, rr, gs.up(57)))),
+        gs.ge01(b0, Word.cmp(31n, rr, gs.up(48)), Eq.and.left(Cmp.is_ge(Word.cmp.fin(b0, True{}, Word.cmp(31n, rr,
+          gs.up(48)))), Cmp.is_le(Word.cmp.fin(b0, True{}, Word.cmp(31n, rr, gs.up(57)))), h)),
+        Eq.and.right(Cmp.is_ge(Word.cmp.fin(b0, True{}, Word.cmp(31n, rr, gs.up(48)))),
+          Cmp.is_le(Word.cmp.fin(b0, True{}, Word.cmp(31n, rr, gs.up(57)))), h))
+
+# and is not 0
+def gs.d19z(cc: Char, h: {Laws.abnf.digit1_9(cc) == True{} : Bool}) -> {Char.is_eq(cc, '0') == False{} : Bool}:
+  match cc:
+    case Chr{U32{WCon{+b0, +rr}}}:
+      gs.eq01(b0, Word.cmp(31n, rr, gs.up(48)), Eq.and.left(Cmp.is_ge(Word.cmp.fin(b0, True{}, Word.cmp(31n, rr,
+        gs.up(48)))), Cmp.is_le(Word.cmp.fin(b0, True{}, Word.cmp(31n, rr, gs.up(57)))), h))
+
+# an and with False on its right is False
+def gs.andf(aa: Bool) -> {Bool.and(aa, False{}) == False{} : Bool}:
+  match aa:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# with a DIGIT first, the repetition is the repetition after it
+def gs.rep.dl(
+  +hh: Char,
+  +h2: Char,
+  +t2: List<&2, Char>,
+  +ed: {Laws.abnf.DIGIT(hh) == True{} : Bool},
+  +hu: {Laws.abnf.underscore(hh) == False{} : Bool}
+) -> {Bool.or(Laws.abnf.dec_rep(h2 <> t2), False{}) == Laws.abnf.dec_rep(hh <> h2 <> t2) : Bool}:
+  %Equal.sym(Bool, Laws.abnf.DIGIT(hh), True{}, ed) : {Bool.or(Laws.abnf.dec_rep(h2 <> t2), False{})
+    == Bool.or(Bool.and(_, Laws.abnf.dec_rep(h2 <> t2)), Bool.and(Laws.abnf.underscore(hh),
+    Bool.and(Laws.abnf.DIGIT(h2), Laws.abnf.dec_rep(t2)))) : Bool}
+  %Equal.sym(Bool, Laws.abnf.underscore(hh), False{}, hu) : {Bool.or(Laws.abnf.dec_rep(h2 <> t2), False{})
+    == Bool.or(Bool.and(True{}, Laws.abnf.dec_rep(h2 <> t2)), Bool.and(_, Bool.and(Laws.abnf.DIGIT(h2),
+    Laws.abnf.dec_rep(t2)))) : Bool}
+  {==}
+
+# with no DIGIT first, it is an underscore, a DIGIT and the rest
+def gs.rep.ul(
+  +hh: Char,
+  +h2: Char,
+  +t2: List<&2, Char>,
+  +ed: {Laws.abnf.DIGIT(hh) == False{} : Bool}
+) -> {Bool.and(Laws.abnf.underscore(hh), Bool.and(Laws.abnf.DIGIT(h2), Laws.abnf.dec_rep(t2)))
+  == Laws.abnf.dec_rep(hh <> h2 <> t2) : Bool}:
+  %Equal.sym(Bool, Laws.abnf.DIGIT(hh), False{}, ed) : {Bool.and(Laws.abnf.underscore(hh),
+    Bool.and(Laws.abnf.DIGIT(h2), Laws.abnf.dec_rep(t2))) == Bool.or(Bool.and(_, Laws.abnf.dec_rep(h2 <> t2)),
+    Bool.and(Laws.abnf.underscore(hh), Bool.and(Laws.abnf.DIGIT(h2), Laws.abnf.dec_rep(t2)))) : Bool}
+  {==}
+
+# The repetition *( DIGIT / underscore DIGIT ), taken apart: a claim of each
+# of its three shapes is a claim of every text it matches. A DIGIT leads, or
+# an underscore and a DIGIT do.
+def gs.rep.two(
+  -P: List<&2, Char> -> Type,
+  +hh: Char,
+  +h2: Char,
+  +t2: List<&2, Char>,
+  dd: Bool,
+  +ed: {Laws.abnf.DIGIT(hh) == dd : Bool},
+  +h: {Laws.abnf.dec_rep(hh <> h2 <> t2) == True{} : Bool},
+  kd: {Char.is_digit(hh) == True{} : Bool} -> {Laws.abnf.dec_rep(h2 <> t2) == True{} : Bool} -> P(hh <> h2 <> t2),
+  ku: {Char.is_digit(h2) == True{} : Bool} -> {Laws.abnf.dec_rep(t2) == True{} : Bool} -> P('_' <> h2 <> t2)
+) -> P(hh <> h2 <> t2):
+  match dd:
+    case True{}:
+      +hx = {gs.dig(hh, ed) : {Char.is_digit(hh) == True{} : Bool}}
+      kd(hx, or.fl(Laws.abnf.dec_rep(h2 <> t2), Equal.trans(Bool, Bool.or(Laws.abnf.dec_rep(h2 <> t2), False{}),
+        Laws.abnf.dec_rep(hh <> h2 <> t2), True{}, gs.rep.dl(hh, h2, t2, ed, gs.nous(hh, hx)), h)))
+    case False{}:
+      +hq = {Equal.trans(Bool, Bool.and(Laws.abnf.underscore(hh), Bool.and(Laws.abnf.DIGIT(h2),
+        Laws.abnf.dec_rep(t2))), Laws.abnf.dec_rep(hh <> h2 <> t2), True{}, gs.rep.ul(hh, h2, t2, ed), h)
+        : {Bool.and(Laws.abnf.underscore(hh), Bool.and(Laws.abnf.DIGIT(h2), Laws.abnf.dec_rep(t2))) == True{} : Bool}}
+      +hk = {Eq.and.right(Laws.abnf.underscore(hh), Bool.and(Laws.abnf.DIGIT(h2), Laws.abnf.dec_rep(t2)), hq)
+        : {Bool.and(Laws.abnf.DIGIT(h2), Laws.abnf.dec_rep(t2)) == True{} : Bool}}
+      %Equal.sym(Char, hh, '_', gs.us(hh, Eq.and.left(Laws.abnf.underscore(hh), Bool.and(Laws.abnf.DIGIT(h2),
+        Laws.abnf.dec_rep(t2)), hq))) : P(_ <> h2 <> t2)
+      ku(gs.dig(h2, Eq.and.left(Laws.abnf.DIGIT(h2), Laws.abnf.dec_rep(t2), hk)),
+        Eq.and.right(Laws.abnf.DIGIT(h2), Laws.abnf.dec_rep(t2), hk))
+
+# a digit joins the numeral
+def gs.join(
+  +sg: T.Sign,
+  +acc: List<&2, Char>,
+  +hh: Char,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  +hn: {nzl(acc) == True{} : Bool}
+) -> {T.num.step(ndig(sg, vals(acc)), hh) == ndig(sg, vals(hh <> acc)) : T.Num}:
+  Equal.trans(T.Num, T.num.step(ndig(sg, vals(acc)), hh), ndig(sg, T.dec.go(vals(acc), 10, T.dig.val(hh))),
+    ndig(sg, vals(hh <> acc)), nw.step(sg, vals(acc), hh, hx),
+    Equal.cong(List<&2, U32>, T.Num, ds => ndig(sg, ds), T.dec.go(vals(acc), 10, T.dig.val(hh)), vals(hh <> acc),
+      dgo(acc, hh, hx, hn)))
+
+# an underscore then a digit: the underscore leaves the numeral as it was
+def gs.us.step(
+  +sg: T.Sign,
+  +ds: List<&2, U32>,
+  dd: Char,
+  +hd: {Char.is_digit(dd) == True{} : Bool}
+) -> {T.num.step(T.num.step(ndig(sg, ds), '_'), dd) == ndig(sg, T.dec.go(ds, 10, T.dig.val(dd))) : T.Num}:
+  dg.elim(zz => {T.num.step(T.num.step(ndig(sg, ds), '_'), zz) == ndig(sg, T.dec.go(ds, 10, T.dig.val(zz))) : T.Num},
+    dd, hd, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# and so the digit joins it
+def gs.join2(
+  +sg: T.Sign,
+  +acc: List<&2, Char>,
+  +h2: Char,
+  +hx: {Char.is_digit(h2) == True{} : Bool},
+  +hn: {nzl(acc) == True{} : Bool}
+) -> {T.num.step(T.num.step(ndig(sg, vals(acc)), '_'), h2) == ndig(sg, vals(h2 <> acc)) : T.Num}:
+  Equal.trans(T.Num, T.num.step(T.num.step(ndig(sg, vals(acc)), '_'), h2),
+    ndig(sg, T.dec.go(vals(acc), 10, T.dig.val(h2))), ndig(sg, vals(h2 <> acc)), gs.us.step(sg, vals(acc), h2, hx),
+    Equal.cong(List<&2, U32>, T.Num, ds => ndig(sg, ds), T.dec.go(vals(acc), 10, T.dig.val(h2)), vals(h2 <> acc),
+      dgo(acc, h2, hx, hn)))
+
+# what the scan over the repetition claims: it reads the digits, underscores
+# removed, onto the numeral
+def gs.Scan(cs: List<&2, Char>, acc: List<&2, Char>, sg: T.Sign) -> Type:
+  {T.num.go(cs, ndig(sg, vals(acc))) == ndig(sg, vals(rev.onto(Laws.abnf.no_us(cs), acc))) : T.Num}
+
+# a DIGIT first
+def gs.scan.d(
+  +hh: Char,
+  +h2: Char,
+  +t2: List<&2, Char>,
+  +acc: List<&2, Char>,
+  +sg: T.Sign,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  +hn: {nzl(acc) == True{} : Bool},
+  ih: {nzl(hh <> acc) == True{} : Bool} -> gs.Scan(h2 <> t2, hh <> acc, sg)
+) -> gs.Scan(hh <> h2 <> t2, acc, sg):
+  %Equal.sym(Bool, Laws.abnf.underscore(hh), False{}, gs.nous(hh, hx)) : {T.num.go(hh <> h2 <> t2, ndig(sg,
+    vals(acc))) == ndig(sg, vals(rev.onto(Laws.abnf.no_us.pick(_, hh, Laws.abnf.no_us(h2 <> t2)), acc))) : T.Num}
+  Equal.trans(T.Num, T.num.go(h2 <> t2, T.num.step(ndig(sg, vals(acc)), hh)),
+    T.num.go(h2 <> t2, ndig(sg, vals(hh <> acc))), ndig(sg, vals(rev.onto(Laws.abnf.no_us(h2 <> t2), hh <> acc))),
+    Equal.cong(T.Num, T.Num, nn => T.num.go(h2 <> t2, nn), T.num.step(ndig(sg, vals(acc)), hh),
+      ndig(sg, vals(hh <> acc)), gs.join(sg, acc, hh, hx, hn)),
+    ih(nzl.cons(hh, acc, hx, hn)))
+
+# an underscore and a DIGIT first
+def gs.scan.u(
+  +h2: Char,
+  +t2: List<&2, Char>,
+  +acc: List<&2, Char>,
+  +sg: T.Sign,
+  +hx: {Char.is_digit(h2) == True{} : Bool},
+  +hn: {nzl(acc) == True{} : Bool},
+  ih: {nzl(h2 <> acc) == True{} : Bool} -> gs.Scan(t2, h2 <> acc, sg)
+) -> gs.Scan('_' <> h2 <> t2, acc, sg):
+  %Equal.sym(Bool, Laws.abnf.underscore(h2), False{}, gs.nous(h2, hx)) : {T.num.go('_' <> h2 <> t2, ndig(sg,
+    vals(acc))) == ndig(sg, vals(rev.onto(Laws.abnf.no_us.pick(_, h2, Laws.abnf.no_us(t2)), acc))) : T.Num}
+  Equal.trans(T.Num, T.num.go(t2, T.num.step(T.num.step(ndig(sg, vals(acc)), '_'), h2)),
+    T.num.go(t2, ndig(sg, vals(h2 <> acc))), ndig(sg, vals(rev.onto(Laws.abnf.no_us(t2), h2 <> acc))),
+    Equal.cong(T.Num, T.Num, nn => T.num.go(t2, nn), T.num.step(T.num.step(ndig(sg, vals(acc)), '_'), h2),
+      ndig(sg, vals(h2 <> acc)), gs.join2(sg, acc, h2, hx, hn)),
+    ih(nzl.cons(h2, acc, hx, hn)))
+
+# the numeral scan reads the repetition *( DIGIT / underscore DIGIT ) as its
+# digits with the underscores removed
+def gs.scan(
+  cs: List<&2, Char>,
+  +acc: List<&2, Char>,
+  +sg: T.Sign,
+  +h: {Laws.abnf.dec_rep(cs) == True{} : Bool},
+  +hn: {nzl(acc) == True{} : Bool}
+) -> gs.Scan(cs, acc, sg):
+  match cs:
+    case []:
+      {==}
+    case +hh <> tt:
+      match tt:
+        case []:
+          +hx = {gs.dig(hh, h) : {Char.is_digit(hh) == True{} : Bool}}
+          %Equal.sym(Bool, Laws.abnf.underscore(hh), False{}, gs.nous(hh, hx)) : {T.num.go([hh], ndig(sg,
+            vals(acc))) == ndig(sg, vals(rev.onto(Laws.abnf.no_us.pick(_, hh, ""), acc))) : T.Num}
+          gs.join(sg, acc, hh, hx, hn)
+        case +h2 <> +t2:
+          gs.rep.two(zs => gs.Scan(zs, acc, sg), hh, h2, t2, Laws.abnf.DIGIT(hh), {==}, h,
+            hx => hr => gs.scan.d(hh, h2, t2, acc, sg, hx, hn, ha => gs.scan(h2 <> t2, hh <> acc, sg, hr, ha)),
+            hx => hr => gs.scan.u(h2, t2, acc, sg, hx, hn, ha => gs.scan(t2, h2 <> acc, sg, hr, ha)))
+
+# what the digits lemma claims
+def gs.Dg(cs: List<&2, Char>) -> Type:
+  {T.wf.digits(Laws.abnf.no_us(cs)) == True{} : Bool}
+
+# a DIGIT first
+def gs.digits.d(
+  +hh: Char,
+  +h2: Char,
+  +t2: List<&2, Char>,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  ih: gs.Dg(h2 <> t2)
+) -> gs.Dg(hh <> h2 <> t2):
+  %Equal.sym(Bool, Laws.abnf.underscore(hh), False{}, gs.nous(hh, hx)) :
+    {T.wf.digits(Laws.abnf.no_us.pick(_, hh, Laws.abnf.no_us(h2 <> t2))) == True{} : Bool}
+  dgs.cons(hh, Laws.abnf.no_us(h2 <> t2), hx, ih)
+
+# an underscore and a DIGIT first
+def gs.digits.u(
+  +h2: Char,
+  +t2: List<&2, Char>,
+  +hx: {Char.is_digit(h2) == True{} : Bool},
+  ih: gs.Dg(t2)
+) -> gs.Dg('_' <> h2 <> t2):
+  %Equal.sym(Bool, Laws.abnf.underscore(h2), False{}, gs.nous(h2, hx)) :
+    {T.wf.digits(Laws.abnf.no_us.pick(_, h2, Laws.abnf.no_us(t2))) == True{} : Bool}
+  dgs.cons(h2, Laws.abnf.no_us(t2), hx, ih)
+
+# the repetition with its underscores removed is digits
+def gs.digits(cs: List<&2, Char>, +h: {Laws.abnf.dec_rep(cs) == True{} : Bool}) -> gs.Dg(cs):
+  match cs:
+    case []:
+      {==}
+    case +hh <> tt:
+      match tt:
+        case []:
+          +hx = {gs.dig(hh, h) : {Char.is_digit(hh) == True{} : Bool}}
+          %Equal.sym(Bool, Laws.abnf.underscore(hh), False{}, gs.nous(hh, hx)) :
+            {T.wf.digits(Laws.abnf.no_us.pick(_, hh, "")) == True{} : Bool}
+          dgs.cons(hh, "", hx, {==})
+        case +h2 <> +t2:
+          gs.rep.two(zs => gs.Dg(zs), hh, h2, t2, Laws.abnf.DIGIT(hh), {==}, h,
+            hx => hr => gs.digits.d(hh, h2, t2, hx, gs.digits(h2 <> t2, hr)),
+            hx => hr => gs.digits.u(h2, t2, hx, gs.digits(t2, hr)))
+
+# what the colon lemma claims
+def gs.Cl(cs: List<&2, Char>) -> Type:
+  {T.word.colon(cs) == False{} : Bool}
+
+# a DIGIT first
+def gs.colon.d(
+  +hh: Char,
+  +h2: Char,
+  +t2: List<&2, Char>,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  ih: gs.Cl(h2 <> t2)
+) -> gs.Cl(hh <> h2 <> t2):
+  %Equal.sym(Bool, Char.is_eq(hh, ':'), False{}, dg.nocolon(hh, hx)) :
+    {T.word.or(_, T.word.colon(h2 <> t2)) == False{} : Bool}
+  ih
+
+# an underscore and a DIGIT first
+def gs.colon.u(
+  +h2: Char,
+  +t2: List<&2, Char>,
+  +hx: {Char.is_digit(h2) == True{} : Bool},
+  ih: gs.Cl(t2)
+) -> gs.Cl('_' <> h2 <> t2):
+  %Equal.sym(Bool, Char.is_eq(h2, ':'), False{}, dg.nocolon(h2, hx)) :
+    {T.word.or(_, T.word.colon(t2)) == False{} : Bool}
+  ih
+
+# the repetition holds no colon
+def gs.colon(cs: List<&2, Char>, +h: {Laws.abnf.dec_rep(cs) == True{} : Bool}) -> gs.Cl(cs):
+  match cs:
+    case []:
+      {==}
+    case +hh <> tt:
+      match tt:
+        case []:
+          %Equal.sym(Bool, Char.is_eq(hh, ':'), False{}, dg.nocolon(hh, gs.dig(hh, h))) :
+            {T.word.or(_, T.word.colon([])) == False{} : Bool}
+          {==}
+        case +h2 <> +t2:
+          gs.rep.two(zs => gs.Cl(zs), hh, h2, t2, Laws.abnf.DIGIT(hh), {==}, h,
+            hx => hr => gs.colon.d(hh, h2, t2, hx, gs.colon(h2 <> t2, hr)),
+            hx => hr => gs.colon.u(h2, t2, hx, gs.colon(t2, hr)))
+
+# what the dash lemma claims
+def gs.Ds(cs: List<&2, Char>) -> Type:
+  {T.word.dash(cs, False{}) == False{} : Bool}
+
+# a DIGIT first
+def gs.dash.d(
+  +hh: Char,
+  +h2: Char,
+  +t2: List<&2, Char>,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  ih: gs.Ds(h2 <> t2)
+) -> gs.Ds(hh <> h2 <> t2):
+  %Equal.sym(Bool, T.word.dash.hit(False{}, hh), False{}, dash.hit.f(False{}, hh, hx)) :
+    {T.word.or(_, T.word.dash(h2 <> t2, False{})) == False{} : Bool}
+  ih
+
+# an underscore and a DIGIT first
+def gs.dash.u(
+  +h2: Char,
+  +t2: List<&2, Char>,
+  +hx: {Char.is_digit(h2) == True{} : Bool},
+  ih: gs.Ds(t2)
+) -> gs.Ds('_' <> h2 <> t2):
+  %Equal.sym(Bool, T.word.dash.hit(False{}, h2), False{}, dash.hit.f(False{}, h2, hx)) :
+    {T.word.or(_, T.word.dash(t2, False{})) == False{} : Bool}
+  ih
+
+# the repetition holds no dash
+def gs.dash(cs: List<&2, Char>, +h: {Laws.abnf.dec_rep(cs) == True{} : Bool}) -> gs.Ds(cs):
+  match cs:
+    case []:
+      {==}
+    case +hh <> tt:
+      match tt:
+        case []:
+          %Equal.sym(Bool, T.word.dash.hit(False{}, hh), False{}, dash.hit.f(False{}, hh, gs.dig(hh, h))) :
+            {T.word.or(_, T.word.dash([], False{})) == False{} : Bool}
+          {==}
+        case +h2 <> +t2:
+          gs.rep.two(zs => gs.Ds(zs), hh, h2, t2, Laws.abnf.DIGIT(hh), {==}, h,
+            hx => hr => gs.dash.d(hh, h2, t2, hx, gs.dash(h2 <> t2, hr)),
+            hx => hr => gs.dash.u(h2, t2, hx, gs.dash(t2, hr)))
+
+# a digit then the repetition holds no colon
+def gs.hc(
+  +hh: Char,
+  +rest: List<&2, Char>,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  +hr: {Laws.abnf.dec_rep(rest) == True{} : Bool}
+) -> {T.word.colon(hh <> rest) == False{} : Bool}:
+  %Equal.sym(Bool, Char.is_eq(hh, ':'), False{}, dg.nocolon(hh, hx)) :
+    {T.word.or(_, T.word.colon(rest)) == False{} : Bool}
+  gs.colon(rest, hr)
+
+# and no dash after its first character
+def gs.hd1(
+  +hh: Char,
+  +rest: List<&2, Char>,
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  +hr: {Laws.abnf.dec_rep(rest) == True{} : Bool}
+) -> {T.word.dash(hh <> rest, False{}) == False{} : Bool}:
+  %Equal.sym(Bool, T.word.dash.hit(False{}, hh), False{}, dash.hit.f(False{}, hh, hx)) :
+    {T.word.or(_, T.word.dash(rest, False{})) == False{} : Bool}
+  gs.dash(rest, hr)
+
+# a word that starts with a plus and a digit is no special: it differs from
+# +inf and +nan at the digit, and from the others at the plus
+def gs.spec.p(
+  +hh: Char,
+  +rest: List<&2, Char>,
+  +ei: {False{} == Char.is_eq(hh, 'i') : Bool},
+  +en: {False{} == Char.is_eq(hh, 'n') : Bool}
+) -> {T.word.spec(String.from_list('+' <> hh <> rest)) == T.GotBad{""} : T.Got}:
+  Equal.trans(T.Got,
+    T.word.spec.inf2(T.str.eq.step(String.from_list(rest), "nf", Char.is_eq(hh, 'i')), False{},
+      String.from_list('+' <> hh <> rest)),
+    T.word.spec.inf2(False{}, False{}, String.from_list('+' <> hh <> rest)),
+    T.GotBad{""},
+    Equal.cong(Bool, T.Got, bb => T.word.spec.inf2(bb, False{}, String.from_list('+' <> hh <> rest)),
+      T.str.eq.step(String.from_list(rest), "nf", Char.is_eq(hh, 'i')), False{},
+      str.eq.off2(String.from_list(rest), "nf", Char.is_eq(hh, 'i'), ei)),
+    Equal.cong(Bool, T.Got, bb => T.word.spec.nan2(bb, False{}),
+      T.str.eq.step(String.from_list(rest), "an", Char.is_eq(hh, 'n')), False{},
+      str.eq.off2(String.from_list(rest), "an", Char.is_eq(hh, 'n'), en)))
+
+# a digit that is no underscore is kept in front of the rest
+def gs.nu(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  +hu: {Laws.abnf.underscore(hh) == False{} : Bool}
+) -> {SCon{hh, Laws.abnf.no_us(tt)} == Laws.abnf.no_us(hh <> tt) : String}:
+  %Equal.sym(Bool, Laws.abnf.underscore(hh), False{}, hu) :
+    {SCon{hh, Laws.abnf.no_us(tt)} == Laws.abnf.no_us.pick(_, hh, Laws.abnf.no_us(tt)) : String}
+  {==}
+
+# after a first digit that is not 0, the scan reads the repetition and
+# finishes as the integer, in range
+def gs.fin(
+  +sg: T.Sign,
+  +hh: Char,
+  +t1: Char,
+  +ts: List<&2, Char>,
+  st0: T.Num,
+  +e0: {T.num.step(st0, hh) == ndig(sg, vals([hh])) : T.Num},
+  +hx: {Char.is_digit(hh) == True{} : Bool},
+  +hz: {Char.is_eq(hh, '0') == False{} : Bool},
+  +hr: {Laws.abnf.dec_rep(t1 <> ts) == True{} : Bool},
+  +hf: {T.i64.fits(sg, SCon{hh, Laws.abnf.no_us(t1 <> ts)}) == True{} : Bool},
+  +cs: List<&2, Char>
+) -> {T.num.fin(T.num.go(t1 <> ts, T.num.step(st0, hh)), cs)
+  == T.GotVal{T.VInt{sg, SCon{hh, Laws.abnf.no_us(t1 <> ts)}}} : T.Got}:
+  Equal.trans(T.Got, T.num.fin(T.num.go(t1 <> ts, T.num.step(st0, hh)), cs),
+    T.num.fin(ndig(sg, vals(rev.onto(Laws.abnf.no_us(t1 <> ts), [hh]))), cs),
+    T.GotVal{T.VInt{sg, SCon{hh, Laws.abnf.no_us(t1 <> ts)}}},
+    Equal.cong(T.Num, T.Got, nn => T.num.fin(nn, cs), T.num.go(t1 <> ts, T.num.step(st0, hh)),
+      ndig(sg, vals(rev.onto(Laws.abnf.no_us(t1 <> ts), [hh]))),
+      Equal.trans(T.Num, T.num.go(t1 <> ts, T.num.step(st0, hh)), T.num.go(t1 <> ts, ndig(sg, vals([hh]))),
+        ndig(sg, vals(rev.onto(Laws.abnf.no_us(t1 <> ts), [hh]))),
+        Equal.cong(T.Num, T.Num, nn => T.num.go(t1 <> ts, nn), T.num.step(st0, hh), ndig(sg, vals([hh])), e0),
+        gs.scan(t1 <> ts, [hh], sg, hr, nzl.one(hh, hx, hz)))),
+    int.fin(sg, hh, Laws.abnf.no_us(t1 <> ts), hx, hz, gs.digits(t1 <> ts, hr), hf, cs))
+
+# the digits are kept in front of the rest, so the bound is the scan's
+def gs.hf(
+  +sg: T.Sign,
+  +hh: Char,
+  +tt: List<&2, Char>,
+  +hu: {Laws.abnf.underscore(hh) == False{} : Bool},
+  +rr: {T.i64.fits(sg, Laws.abnf.no_us(hh <> tt)) == True{} : Bool}
+) -> {T.i64.fits(sg, SCon{hh, Laws.abnf.no_us(tt)}) == True{} : Bool}:
+  Equal.trans(Bool, T.i64.fits(sg, SCon{hh, Laws.abnf.no_us(tt)}), T.i64.fits(sg, Laws.abnf.no_us(hh <> tt)), True{},
+    Equal.cong(String, Bool, ss => T.i64.fits(sg, ss), SCon{hh, Laws.abnf.no_us(tt)}, Laws.abnf.no_us(hh <> tt),
+      gs.nu(hh, tt, hu)), rr)
+
+# an unsigned-dec-int of more than one character
+def gs.many.u(
+  +hh: Char,
+  +t1: Char,
+  +ts: List<&2, Char>,
+  +hd: {Laws.abnf.digit1_9(hh) == True{} : Bool},
+  +hr: {Laws.abnf.dec_rep(t1 <> ts) == True{} : Bool},
+  +rr: {T.i64.fits(T.Plus{}, Laws.abnf.no_us(hh <> t1 <> ts)) == True{} : Bool}
+) -> {T.word.val(hh <> t1 <> ts) == T.GotVal{T.VInt{T.Plus{}, Laws.abnf.no_us(hh <> t1 <> ts)}} : T.Got}:
+  +hx = {gs.d19(hh, hd) : {Char.is_digit(hh) == True{} : Bool}}
+  +hz = {gs.d19z(hh, hd) : {Char.is_eq(hh, '0') == False{} : Bool}}
+  +hu = {gs.nous(hh, hx) : {Laws.abnf.underscore(hh) == False{} : Bool}}
+  %gs.nu(hh, t1 <> ts, hu) : {T.word.val(hh <> t1 <> ts) == T.GotVal{T.VInt{T.Plus{}, _}} : T.Got}
+  Equal.trans(T.Got, T.word.val.pick(T.word.special(hh), hh <> t1 <> ts), T.word.val.pick(False{}, hh <> t1 <> ts),
+    T.GotVal{T.VInt{T.Plus{}, SCon{hh, Laws.abnf.no_us(t1 <> ts)}}},
+    Equal.cong(Bool, T.Got, bb => T.word.val.pick(bb, hh <> t1 <> ts), T.word.special(hh), False{},
+      dg.nospec(hh, hx)),
+    Equal.trans(T.Got, T.word.route(T.GotBad{""}, T.word.or(T.word.colon(hh <> t1 <> ts),
+      T.word.dash(hh <> t1 <> ts, True{})), hh <> t1 <> ts), T.word.num(hh <> t1 <> ts),
+      T.GotVal{T.VInt{T.Plus{}, SCon{hh, Laws.abnf.no_us(t1 <> ts)}}},
+      route.num(hh <> t1 <> ts, gs.hc(hh, t1 <> ts, hx, hr), gs.dash(t1 <> ts, hr)),
+      gs.fin(T.Plus{}, hh, t1, ts, T.num.start(), nw.lead(T.Plus{}, hh, hx, hz), hx, hz, hr,
+        gs.hf(T.Plus{}, hh, t1 <> ts, hu, rr), hh <> t1 <> ts)))
+
+# and after a minus
+def gs.many.m(
+  +hh: Char,
+  +t1: Char,
+  +ts: List<&2, Char>,
+  +hd: {Laws.abnf.digit1_9(hh) == True{} : Bool},
+  +hr: {Laws.abnf.dec_rep(t1 <> ts) == True{} : Bool},
+  +rr: {T.i64.fits(T.Minus{}, Laws.abnf.no_us(hh <> t1 <> ts)) == True{} : Bool}
+) -> {T.word.val('-' <> hh <> t1 <> ts) == T.GotVal{T.VInt{T.Minus{}, Laws.abnf.no_us(hh <> t1 <> ts)}} : T.Got}:
+  +hx = {gs.d19(hh, hd) : {Char.is_digit(hh) == True{} : Bool}}
+  +hz = {gs.d19z(hh, hd) : {Char.is_eq(hh, '0') == False{} : Bool}}
+  +hu = {gs.nous(hh, hx) : {Laws.abnf.underscore(hh) == False{} : Bool}}
+  %gs.nu(hh, t1 <> ts, hu) : {T.word.val('-' <> hh <> t1 <> ts) == T.GotVal{T.VInt{T.Minus{}, _}} : T.Got}
+  Equal.trans(T.Got, T.word.route(T.word.spec(String.from_list('-' <> hh <> t1 <> ts)),
+    T.word.or(T.word.colon('-' <> hh <> t1 <> ts), T.word.dash('-' <> hh <> t1 <> ts, True{})), '-' <> hh <> t1 <> ts),
+    T.word.route(T.GotBad{""}, T.word.or(T.word.colon('-' <> hh <> t1 <> ts), T.word.dash('-' <> hh <> t1 <> ts,
+      True{})), '-' <> hh <> t1 <> ts),
+    T.GotVal{T.VInt{T.Minus{}, SCon{hh, Laws.abnf.no_us(t1 <> ts)}}},
+    Equal.cong(T.Got, T.Got, gg => T.word.route(gg, T.word.or(T.word.colon('-' <> hh <> t1 <> ts),
+      T.word.dash('-' <> hh <> t1 <> ts, True{})), '-' <> hh <> t1 <> ts),
+      T.word.spec(String.from_list('-' <> hh <> t1 <> ts)), T.GotBad{""},
+      spec.m(hh, t1 <> ts, dg.noi(hh, hx), dg.non(hh, hx))),
+    Equal.trans(T.Got, T.word.route(T.GotBad{""}, T.word.or(T.word.colon('-' <> hh <> t1 <> ts),
+      T.word.dash('-' <> hh <> t1 <> ts, True{})), '-' <> hh <> t1 <> ts), T.word.num('-' <> hh <> t1 <> ts),
+      T.GotVal{T.VInt{T.Minus{}, SCon{hh, Laws.abnf.no_us(t1 <> ts)}}},
+      route.num('-' <> hh <> t1 <> ts, gs.hc(hh, t1 <> ts, hx, hr), gs.hd1(hh, t1 <> ts, hx, hr)),
+      gs.fin(T.Minus{}, hh, t1, ts, T.Num{T.NSign{}, T.Minus{}, 10, [], False{}, False{}, ""},
+        nw.sign(T.Minus{}, hh, hx, hz), hx, hz, hr, gs.hf(T.Minus{}, hh, t1 <> ts, hu, rr),
+        '-' <> hh <> t1 <> ts)))
+
+# and after a plus
+def gs.many.p(
+  +hh: Char,
+  +t1: Char,
+  +ts: List<&2, Char>,
+  +hd: {Laws.abnf.digit1_9(hh) == True{} : Bool},
+  +hr: {Laws.abnf.dec_rep(t1 <> ts) == True{} : Bool},
+  +rr: {T.i64.fits(T.Plus{}, Laws.abnf.no_us(hh <> t1 <> ts)) == True{} : Bool}
+) -> {T.word.val('+' <> hh <> t1 <> ts) == T.GotVal{T.VInt{T.Plus{}, Laws.abnf.no_us(hh <> t1 <> ts)}} : T.Got}:
+  +hx = {gs.d19(hh, hd) : {Char.is_digit(hh) == True{} : Bool}}
+  +hz = {gs.d19z(hh, hd) : {Char.is_eq(hh, '0') == False{} : Bool}}
+  +hu = {gs.nous(hh, hx) : {Laws.abnf.underscore(hh) == False{} : Bool}}
+  %gs.nu(hh, t1 <> ts, hu) : {T.word.val('+' <> hh <> t1 <> ts) == T.GotVal{T.VInt{T.Plus{}, _}} : T.Got}
+  Equal.trans(T.Got, T.word.route(T.word.spec(String.from_list('+' <> hh <> t1 <> ts)),
+    T.word.or(T.word.colon('+' <> hh <> t1 <> ts), T.word.dash('+' <> hh <> t1 <> ts, True{})), '+' <> hh <> t1 <> ts),
+    T.word.route(T.GotBad{""}, T.word.or(T.word.colon('+' <> hh <> t1 <> ts), T.word.dash('+' <> hh <> t1 <> ts,
+      True{})), '+' <> hh <> t1 <> ts),
+    T.GotVal{T.VInt{T.Plus{}, SCon{hh, Laws.abnf.no_us(t1 <> ts)}}},
+    Equal.cong(T.Got, T.Got, gg => T.word.route(gg, T.word.or(T.word.colon('+' <> hh <> t1 <> ts),
+      T.word.dash('+' <> hh <> t1 <> ts, True{})), '+' <> hh <> t1 <> ts),
+      T.word.spec(String.from_list('+' <> hh <> t1 <> ts)), T.GotBad{""},
+      gs.spec.p(hh, t1 <> ts, dg.noi(hh, hx), dg.non(hh, hx))),
+    Equal.trans(T.Got, T.word.route(T.GotBad{""}, T.word.or(T.word.colon('+' <> hh <> t1 <> ts),
+      T.word.dash('+' <> hh <> t1 <> ts, True{})), '+' <> hh <> t1 <> ts), T.word.num('+' <> hh <> t1 <> ts),
+      T.GotVal{T.VInt{T.Plus{}, SCon{hh, Laws.abnf.no_us(t1 <> ts)}}},
+      route.num('+' <> hh <> t1 <> ts, gs.hc(hh, t1 <> ts, hx, hr), gs.hd1(hh, t1 <> ts, hx, hr)),
+      gs.fin(T.Plus{}, hh, t1, ts, T.Num{T.NSign{}, T.Plus{}, 10, [], False{}, False{}, ""},
+        nw.sign(T.Plus{}, hh, hx, hz), hx, hz, hr, gs.hf(T.Plus{}, hh, t1 <> ts, hu, rr),
+        '+' <> hh <> t1 <> ts)))
+
+# a lone DIGIT, with no sign, a minus or a plus: a fixed text for each digit
+def gs.one.u(
+  hh: Char,
+  hx: {Char.is_digit(hh) == True{} : Bool}
+) -> {T.word.val([hh]) == T.GotVal{T.VInt{T.Plus{}, Laws.abnf.no_us([hh])}} : T.Got}:
+  dg.elim(zz => {T.word.val([zz]) == T.GotVal{T.VInt{T.Plus{}, Laws.abnf.no_us([zz])}} : T.Got}, hh, hx,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# after a minus
+def gs.one.m(
+  hh: Char,
+  hx: {Char.is_digit(hh) == True{} : Bool}
+) -> {T.word.val(['-', hh]) == T.GotVal{T.VInt{T.Minus{}, Laws.abnf.no_us([hh])}} : T.Got}:
+  dg.elim(zz => {T.word.val(['-', zz]) == T.GotVal{T.VInt{T.Minus{}, Laws.abnf.no_us([zz])}} : T.Got}, hh, hx,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# after a plus
+def gs.one.p(
+  hh: Char,
+  hx: {Char.is_digit(hh) == True{} : Bool}
+) -> {T.word.val(['+', hh]) == T.GotVal{T.VInt{T.Plus{}, Laws.abnf.no_us([hh])}} : T.Got}:
+  dg.elim(zz => {T.word.val(['+', zz]) == T.GotVal{T.VInt{T.Plus{}, Laws.abnf.no_us([zz])}} : T.Got}, hh, hx,
+    {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==}, {==})
+
+# a lone character that is an unsigned-dec-int is a DIGIT
+def gs.body.z(
+  +hh: Char,
+  +ed: {Laws.abnf.DIGIT(hh) == False{} : Bool}
+) -> {False{} == Laws.abnf.unsigned_dec_int([hh]) : Bool}:
+  %Equal.sym(Bool, Laws.abnf.DIGIT(hh), False{}, ed) : {False{} == Bool.or(Bool.and(_, True{}),
+    Bool.and(Laws.abnf.digit1_9(hh), False{})) : Bool}
+  Equal.sym(Bool, Bool.and(Laws.abnf.digit1_9(hh), False{}), False{}, gs.andf(Laws.abnf.digit1_9(hh)))
+
+# so it is a digit
+def gs.body.one(
+  +hh: Char,
+  dd: Bool,
+  +ed: {Laws.abnf.DIGIT(hh) == dd : Bool},
+  +hu: {Laws.abnf.unsigned_dec_int([hh]) == True{} : Bool}
+) -> {Char.is_digit(hh) == True{} : Bool}:
+  match dd:
+    case True{}:
+      gs.dig(hh, ed)
+    case False{}:
+      Eq.bit.absurd(&2, {Char.is_digit(hh) == True{} : Bool}, Equal.trans(Bool, False{},
+        Laws.abnf.unsigned_dec_int([hh]), True{}, gs.body.z(hh, ed), hu))
+
+# a longer one is a digit1-9 and the repetition
+def gs.body.e(
+  +hh: Char,
+  +t1: Char,
+  +ts: List<&2, Char>
+) -> {Bool.and(Laws.abnf.digit1_9(hh), Laws.abnf.dec_rep(t1 <> ts)) == Laws.abnf.unsigned_dec_int(hh <> t1 <> ts)
+  : Bool}:
+  %Equal.sym(Bool, Bool.and(Laws.abnf.DIGIT(hh), False{}), False{}, gs.andf(Laws.abnf.DIGIT(hh))) :
+    {Bool.and(Laws.abnf.digit1_9(hh), Laws.abnf.dec_rep(t1 <> ts)) == Bool.or(_, Bool.and(Laws.abnf.digit1_9(hh),
+    Laws.abnf.dec_rep(t1 <> ts))) : Bool}
+  {==}
+
+# so a longer one's first character is a digit1-9
+def gs.body.l(
+  +hh: Char,
+  +t1: Char,
+  +ts: List<&2, Char>,
+  hu: {Laws.abnf.unsigned_dec_int(hh <> t1 <> ts) == True{} : Bool}
+) -> {Laws.abnf.digit1_9(hh) == True{} : Bool}:
+  Eq.and.left(Laws.abnf.digit1_9(hh), Laws.abnf.dec_rep(t1 <> ts), Equal.trans(Bool, Bool.and(Laws.abnf.digit1_9(hh),
+    Laws.abnf.dec_rep(t1 <> ts)), Laws.abnf.unsigned_dec_int(hh <> t1 <> ts), True{}, gs.body.e(hh, t1, ts), hu))
+
+# and the rest is the repetition
+def gs.body.r(
+  +hh: Char,
+  +t1: Char,
+  +ts: List<&2, Char>,
+  hu: {Laws.abnf.unsigned_dec_int(hh <> t1 <> ts) == True{} : Bool}
+) -> {Laws.abnf.dec_rep(t1 <> ts) == True{} : Bool}:
+  Eq.and.right(Laws.abnf.digit1_9(hh), Laws.abnf.dec_rep(t1 <> ts), Equal.trans(Bool, Bool.and(Laws.abnf.digit1_9(hh),
+    Laws.abnf.dec_rep(t1 <> ts)), Laws.abnf.unsigned_dec_int(hh <> t1 <> ts), True{}, gs.body.e(hh, t1, ts), hu))
+
+# an unsigned-dec-int with no sign: a lone DIGIT, or a digit1-9 and the
+# repetition at least once
+def gs.uns(
+  +hh: Char,
+  tt: List<&2, Char>,
+  +hu: {Laws.abnf.unsigned_dec_int(hh <> tt) == True{} : Bool},
+  +rr: {T.i64.fits(T.Plus{}, Laws.abnf.no_us(hh <> tt)) == True{} : Bool}
+) -> {T.word.val(hh <> tt) == T.GotVal{T.VInt{T.Plus{}, Laws.abnf.no_us(hh <> tt)}} : T.Got}:
+  match tt:
+    case []:
+      gs.one.u(hh, gs.body.one(hh, Laws.abnf.DIGIT(hh), {==}, hu))
+    case +t1 <> +ts:
+      gs.many.u(hh, t1, ts, gs.body.l(hh, t1, ts, hu), gs.body.r(hh, t1, ts, hu), rr)
+
+# after a minus
+def gs.neg.go(
+  +hh: Char,
+  tt: List<&2, Char>,
+  +hu: {Laws.abnf.unsigned_dec_int(hh <> tt) == True{} : Bool},
+  +rr: {T.i64.fits(T.Minus{}, Laws.abnf.no_us(hh <> tt)) == True{} : Bool}
+) -> {T.word.val('-' <> hh <> tt) == T.GotVal{T.VInt{T.Minus{}, Laws.abnf.no_us(hh <> tt)}} : T.Got}:
+  match tt:
+    case []:
+      gs.one.m(hh, gs.body.one(hh, Laws.abnf.DIGIT(hh), {==}, hu))
+    case +t1 <> +ts:
+      gs.many.m(hh, t1, ts, gs.body.l(hh, t1, ts, hu), gs.body.r(hh, t1, ts, hu), rr)
+
+# a minus and an unsigned-dec-int
+def gs.neg(
+  tt: List<&2, Char>,
+  +hu: {Laws.abnf.unsigned_dec_int(tt) == True{} : Bool},
+  +rr: {T.i64.fits(T.Minus{}, Laws.abnf.no_us(tt)) == True{} : Bool}
+) -> {T.word.val('-' <> tt) == T.GotVal{T.VInt{T.Minus{}, Laws.abnf.no_us(tt)}} : T.Got}:
+  match tt:
+    case []:
+      Eq.bit.absurd(&2, {T.word.val(['-']) == T.GotVal{T.VInt{T.Minus{}, Laws.abnf.no_us([])}} : T.Got}, hu)
+    case +hh <> +tl:
+      gs.neg.go(hh, tl, hu, rr)
+
+# after a plus
+def gs.pos.go(
+  +hh: Char,
+  tt: List<&2, Char>,
+  +hu: {Laws.abnf.unsigned_dec_int(hh <> tt) == True{} : Bool},
+  +rr: {T.i64.fits(T.Plus{}, Laws.abnf.no_us(hh <> tt)) == True{} : Bool}
+) -> {T.word.val('+' <> hh <> tt) == T.GotVal{T.VInt{T.Plus{}, Laws.abnf.no_us(hh <> tt)}} : T.Got}:
+  match tt:
+    case []:
+      gs.one.p(hh, gs.body.one(hh, Laws.abnf.DIGIT(hh), {==}, hu))
+    case +t1 <> +ts:
+      gs.many.p(hh, t1, ts, gs.body.l(hh, t1, ts, hu), gs.body.r(hh, t1, ts, hu), rr)
+
+# a plus and an unsigned-dec-int
+def gs.pos(
+  tt: List<&2, Char>,
+  +hu: {Laws.abnf.unsigned_dec_int(tt) == True{} : Bool},
+  +rr: {T.i64.fits(T.Plus{}, Laws.abnf.no_us(tt)) == True{} : Bool}
+) -> {T.word.val('+' <> tt) == T.GotVal{T.VInt{T.Plus{}, Laws.abnf.no_us(tt)}} : T.Got}:
+  match tt:
+    case []:
+      Eq.bit.absurd(&2, {T.word.val(['+']) == T.GotVal{T.VInt{T.Plus{}, Laws.abnf.no_us([])}} : T.Got}, hu)
+    case +hh <> +tl:
+      gs.pos.go(hh, tl, hu, rr)
+
+# what dec_int_word claims of a word
+def gs.Goal(cs: List<&2, Char>) -> Type:
+  {T.word.val(cs) == T.GotVal{T.VInt{Laws.abnf.dec_sign(cs), Laws.abnf.dec_digits(cs)}} : T.Got}
+
+# with no sign, dec-int is unsigned-dec-int
+def gs.top.hu(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  +em: {Laws.abnf.minus(hh) == False{} : Bool},
+  +ep: {Laws.abnf.plus(hh) == False{} : Bool}
+) -> {Laws.abnf.unsigned_dec_int(hh <> tt) == Laws.abnf.dec_int(hh <> tt) : Bool}:
+  %Equal.sym(Bool, Laws.abnf.minus(hh), False{}, em) : {Laws.abnf.unsigned_dec_int(hh <> tt)
+    == Bool.or(Bool.and(Bool.or(_, Laws.abnf.plus(hh)), Laws.abnf.unsigned_dec_int(tt)),
+    Laws.abnf.unsigned_dec_int(hh <> tt)) : Bool}
+  %Equal.sym(Bool, Laws.abnf.plus(hh), False{}, ep) : {Laws.abnf.unsigned_dec_int(hh <> tt)
+    == Bool.or(Bool.and(Bool.or(False{}, _), Laws.abnf.unsigned_dec_int(tt)),
+    Laws.abnf.unsigned_dec_int(hh <> tt)) : Bool}
+  {==}
+
+# and it reads as plus, all its characters kept but the underscores
+def gs.top.r(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  +em: {Laws.abnf.minus(hh) == False{} : Bool},
+  +ep: {Laws.abnf.plus(hh) == False{} : Bool}
+) -> {T.i64.fits(T.Plus{}, Laws.abnf.no_us(hh <> tt))
+  == T.i64.fits(Laws.abnf.dec_sign(hh <> tt), Laws.abnf.dec_digits(hh <> tt)) : Bool}:
+  %Equal.sym(Bool, Laws.abnf.minus(hh), False{}, em) : {T.i64.fits(T.Plus{}, Laws.abnf.no_us(hh <> tt))
+    == T.i64.fits(Laws.abnf.sign.pick(_), Laws.abnf.digits.pick(Bool.or(_, Laws.abnf.plus(hh)), hh, tt)) : Bool}
+  %Equal.sym(Bool, Laws.abnf.plus(hh), False{}, ep) : {T.i64.fits(T.Plus{}, Laws.abnf.no_us(hh <> tt))
+    == T.i64.fits(T.Plus{}, Laws.abnf.digits.pick(Bool.or(False{}, _), hh, tt)) : Bool}
+  {==}
+
+# by the first character: a minus, a plus, or the first digit
+def gs.top(
+  +hh: Char,
+  +tt: List<&2, Char>,
+  mm: Bool,
+  +em: {Laws.abnf.minus(hh) == mm : Bool},
+  pp: Bool,
+  +ep: {Laws.abnf.plus(hh) == pp : Bool},
+  +h: {Laws.abnf.dec_int(hh <> tt) == True{} : Bool},
+  +rr: {T.i64.fits(Laws.abnf.dec_sign(hh <> tt), Laws.abnf.dec_digits(hh <> tt)) == True{} : Bool}
+) -> gs.Goal(hh <> tt):
+  match mm:
+    case True{}:
+      +ee = {Equal.sym(Char, hh, '-', gs.minus(hh, em)) : {'-' == hh : Char}}
+      %ee : gs.Goal(_ <> tt)
+      gs.neg(tt, or.fl(Laws.abnf.unsigned_dec_int(tt), Equal.trans(Bool, Laws.abnf.dec_int('-' <> tt),
+        Laws.abnf.dec_int(hh <> tt), True{}, Equal.cong(Char, Bool, cc => Laws.abnf.dec_int(cc <> tt), '-', hh, ee),
+        h)), Equal.trans(Bool, T.i64.fits(Laws.abnf.dec_sign('-' <> tt), Laws.abnf.dec_digits('-' <> tt)),
+        T.i64.fits(Laws.abnf.dec_sign(hh <> tt), Laws.abnf.dec_digits(hh <> tt)), True{},
+        Equal.cong(Char, Bool, cc => T.i64.fits(Laws.abnf.dec_sign(cc <> tt), Laws.abnf.dec_digits(cc <> tt)), '-',
+          hh, ee), rr))
+    case False{}:
+      match pp:
+        case True{}:
+          +ee = {Equal.sym(Char, hh, '+', gs.plus(hh, ep)) : {'+' == hh : Char}}
+          %ee : gs.Goal(_ <> tt)
+          gs.pos(tt, or.fl(Laws.abnf.unsigned_dec_int(tt), Equal.trans(Bool, Laws.abnf.dec_int('+' <> tt),
+            Laws.abnf.dec_int(hh <> tt), True{}, Equal.cong(Char, Bool, cc => Laws.abnf.dec_int(cc <> tt), '+', hh,
+            ee), h)), Equal.trans(Bool, T.i64.fits(Laws.abnf.dec_sign('+' <> tt), Laws.abnf.dec_digits('+' <> tt)),
+            T.i64.fits(Laws.abnf.dec_sign(hh <> tt), Laws.abnf.dec_digits(hh <> tt)), True{},
+            Equal.cong(Char, Bool, cc => T.i64.fits(Laws.abnf.dec_sign(cc <> tt), Laws.abnf.dec_digits(cc <> tt)),
+              '+', hh, ee), rr))
+        case False{}:
+          %Equal.sym(Bool, Laws.abnf.minus(hh), False{}, em) : {T.word.val(hh <> tt)
+            == T.GotVal{T.VInt{Laws.abnf.sign.pick(_), Laws.abnf.digits.pick(Bool.or(_, Laws.abnf.plus(hh)), hh,
+            tt)}} : T.Got}
+          %Equal.sym(Bool, Laws.abnf.plus(hh), False{}, ep) : {T.word.val(hh <> tt)
+            == T.GotVal{T.VInt{T.Plus{}, Laws.abnf.digits.pick(Bool.or(False{}, _), hh, tt)}} : T.Got}
+          gs.uns(hh, tt, Equal.trans(Bool, Laws.abnf.unsigned_dec_int(hh <> tt), Laws.abnf.dec_int(hh <> tt), True{},
+            gs.top.hu(hh, tt, em, ep), h), Equal.trans(Bool, T.i64.fits(T.Plus{}, Laws.abnf.no_us(hh <> tt)),
+            T.i64.fits(Laws.abnf.dec_sign(hh <> tt), Laws.abnf.dec_digits(hh <> tt)), True{},
+            gs.top.r(hh, tt, em, ep), rr))
+
+def Laws.dec_int_word(cs, h, r):
+  match cs:
+    case []:
+      Eq.bit.absurd(&1, gs.Goal([]), h)
+    case +hh <> +tt:
+      gs.top(hh, tt, Laws.abnf.minus(hh), {==}, Laws.abnf.plus(hh), {==}, h, r)
