@@ -517,3 +517,39 @@ Break checks: replacing `text_reads_as_replay`'s proof by `{==}` fails the gate,
 | an array forgets its key's parts (`lex.array`) | `kg.array`, `string_parses_as_denoted_in_array`, `vl.acc.a` | `aq.aopen` |
 
 **Left for WP-A.** Nothing. The accept direction is proved. What TOML-TEXT-1 and TOML-TEXT-2 still need belongs to the other packages: WP-D2 (the definition rules, on `replay`) and WP-R (the refusal direction).
+
+
+## Update (WP-R chunk 1)
+
+The first chunk of WP-R proper, in LAWS.bend's and PROOF.bend's `# WP-R (continued)` blocks, on top of two fixes found while planning it: REVIEW-G12 (a line-ending backslash in a one-line basic string, fixed in the code) and REVIEW-G13 (the spike's `r1.gp` claimed positions for `LVal` and `LAfter` with characters buffered, fixed in the spike). No law is added, so none is tagged TOML-TEXT-1 and SPEC.md is unchanged: the obligations are the pieces of the instance, which comes once every state is done.
+
+**Positions for every state (`r2.gp`).** A frame is now `R2Fr`: one of the spike's (`R2Old`), or a value state's. `R2Arr` and `R2Inl` are an array or an inline table after its opening bracket, as the rest of a value node (`r2.arr.rest`, `r2.inl.rest`, with `r2.is.arr`/`r2.is.inl` saying which node it is); since what follows a comma in an array is again `[ array-values ] ws-comment-newline ]`, `LArr` has the same position after `[` and after `,`. `R2InlK` is inline-table-keyvals after a comma, `R2Nl` the newline that ends a comment in an array, `R2Word{buf}` a bare word begun (the word is `List.reverse.go(buf, rest)`, so pushing a character is definitional), and `R2Date{buf}` the state after a date's space, where the word either goes on through the space or ended before it and the space is the blank space after the value. The string positions are defined too, so the next chunk has no law to change: `R2Str{stage, basic}` is a string after one, two or three quotes (`r2.s.rest`, `r2.s.fit`), one-line bodies reuse the spike's `RfKBasic`, `RfKLit`, `RfKEsc` and `RfKUni`, and multi-line bodies have `R2Mb`, `R2MbEsc`, `R2MbUni`, `R2MbFold`/`R2MbFold1` (a line-ending backslash before and after its newline), `R2MbQ`/`R2MlQ` (one or two quotes in a body) and `R2MEnd` (up to two quotes after the closing delimiter). `r2.C` gives `MOpen` and `MEat` real positions when their fields agree (`r2.q.ok`). The spike's thirteen states, `LTop`, `LLine` and `LVal` keep the spike's positions (`r2.lift`); `LVal`, `LAfter`, `LArr`, `LArrC` and a comment in an array claim nothing with a character buffered. That is 698 lines of law.
+
+**The obligations proved** (`r2.Ob`, the spike's `r1.Ob` over r2's positions), for every character:
+
+- the spike's thirteen, carried over: `r2.up` and `r2.dn` turn a completion of the spike's frames into one of r2's and back (every state's, `r2.dn.st`), so `r2.ob.X` is `up ∘ r1.ob.X ∘ dn`;
+- `LTop`, `LLine`, and a comment at the top level or after an expression, proved over the spike's frames the same way (`r2.ob1.*`) and carried: blank space, LF and CRLF, a comment, a table header and a keyval of any first segment (`r2.kv` builds the keyval from the spike's key frames);
+- a comment everywhere else (`r2.ob.com`, over its back state): in an array its newline is ws-comment-newline; after `=`, in an inline table, in a header and after a key's segment the newline that ends it is refused (`r2.cmd.*`, with `r2.nlel` taking a newline apart into LF and CR);
+- `LVal`: blank space, a refused newline, a doomed comment, a string's opening quote (to `MOpen`), `[`, `{`, and a bare word's first character;
+- `LArr`, `LArrC`: ws-comment-newline, `,`, `]` (the array placed, `r2.vt`: whatever the stack, the state a placed value leaves has `r2.aft` of it), and an item's first character, which LArr holds and LVal reads (`r2.ar.E` casts the one mode into the other);
+- `LInl`, `LInlK`, `LInlC`: a key's first character hands the key to the spike's key states and their `RfInlAfter` (`r2.ks.*`, `r2.ki`), `,` and `}`;
+- `LBare`, `LDate`: a kept character is pushed; a date's space waits in LDate; any other delimiter ends the word. `word.val` reading a word as a value means the word matches one of the four bare rules (`r2.wok.go`, from `integer_word_exact`, `float_word_exact`, `boolean_word_exact` and `date_time_word`), the step is the after-state's (WP-V's `vl.acc` and `vl.dacc`), and the after-state's obligation (LLine, LArrC or LInlC) gives the rest (`r2.aft.step`); a refused word leaves an error (`r2.w.bad`, with `bare_word_refusal_says_why`);
+- `LSink`, and the modes after a carriage return (`r2.ocr`), with a held character (`r2.ohd`) and at the first character, a byte-order mark or LTop's step (`r2.olead`).
+
+Findings: REVIEW-G12 and REVIEW-G13 (above). No other disagreement between the code and the grammar was found in the states covered. `main.bend` is unchanged from `e50a76a`.
+
+Size: 698 lines of law and 6,546 of proof: the frame conversion and the carried spike obligations about 690, LTop, LLine and comments about 1,500, the arrays and inline tables about 1,800, LVal about 420, the words about 900, the modes about 260, and the rest is headers wrapped one parameter per line. The gate takes 26 to 29 s, against 25 to 26 s at `95e02eb` on the same machine. Lint on a clean export: 0 errors, 140 warnings.
+
+Break checks. Stubbing any one of 36 new top-level defs fails the gate: the 27 obligations (`r2.ob.*`, with `r2.ob.com.LArr` and `r2.ob.com.LArrC`), the modes `r2.ocr`, `r2.ohd` and `r2.olead`, and `r2.up`, `r2.dn`, `r2.dn.st`, `r2.wok.go`, `r2.aft.step` and `r2.vt`. Four bugs planted in a scratch `main.bend`, with `isolate_mutant.py` stubbing the older proofs that fail first, are each caught by a WP-R proof:
+
+| planted bug | caught by |
+|---|---|
+| a comment accepts U+007F (`ch.ctl` without 127) | `r2.cm.c` |
+| `LVal` accepts a newline (`lex.val.nl`) | `r2.va.go` |
+| an array accepts a leading comma (`lex.arr` reads `,` as blank space) | `r2.ob.arr` |
+| an inline table accepts a trailing comma (`lex.inlc.comma` goes to `LInl`) | `r2.ic.go` |
+
+What is left, and the plan for chunk 2:
+
+- the ten string states and the modes `MOpen` and `MEat`, over the positions already defined: about 3,500 to 5,000 lines, with the spike's character-class and hexadecimal kits;
+- the end of the text (`ONil`) for every state, and the instance: `sipr.read` with `r2.C` as the motive, `wf.char` as the character predicate and `scalars` (every character a scalar value, to be defined) as the text's, a dispatch of `sr.OFull` over the thirty-five states, and `text_derived` from the start state's `[RfBom, RfTop]`: about 800 to 1,200 lines. With WP-A's `text_reads_as_replay` and WP-D2's meaning law, the same derivation gives `defs(d)`.
