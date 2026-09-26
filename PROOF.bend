@@ -42863,7 +42863,7 @@ def Laws.gd_bare_steps(lex, hl, st, eg, cc, ec) :
     case T.LTrim2{}:
       Eq.bit.absurd(&2, {Laws.good(T.read.on(T.LTrim2{}, st, cc)) == True{} : Bool}, hl)
     case T.LBare{}:
-      gd.g.bgo(T.ch.delim(cc), T.ch.sp(cc), st, cc, eg, ec)
+      gd.g.bgo(T.ch.delim(cc), T.ch.space(cc), st, cc, eg, ec)
     case T.LDate{}:
       gd.g.datego(Char.is_digit(cc), st, cc, eg, ec)
     case T.LCom{}:
@@ -60922,7 +60922,7 @@ def kk.on(
     case T.LTrim2{}:
       kg.trim2go(gg, U32.is_eq(Char.to_u32(cc), 10), st, cc, eg, kk.cllx(st, T.LTrim2{}, el))
     case T.LBare{}:
-      kg.bgo(gg, T.ch.delim(cc), T.ch.sp(cc), st, cc, eg, kk.cllx(st, T.LBare{}, el))
+      kg.bgo(gg, T.ch.delim(cc), T.ch.space(cc), st, cc, eg, kk.cllx(st, T.LBare{}, el))
     case T.LDate{}:
       kg.datego(gg, Char.is_digit(cc), st, cc, eg, kk.cllx(st, T.LDate{}, el))
     case T.LCom{}:
@@ -67437,7 +67437,7 @@ def sr.ff.bare(
   match dl:
     case False{}:
       %Equal.sym(Bool, T.ch.delim(cc), False{}, ed) : {T.read.fast.cons(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk,
-        sk, un, lf, at, cc) == T.read.once2(T.lex.bare.go(_, T.ch.sp(cc), sip.S(bd, rw, hs, he, pt, bf, T.LBare{},
+        sk, un, lf, at, cc) == T.read.once2(T.lex.bare.go(_, T.ch.space(cc), sip.S(bd, rw, hs, he, pt, bf, T.LBare{},
         bk, qk, sk, un, lf, at), cc)) : T.St}
       {==}
     case True{}:

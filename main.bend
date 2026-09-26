@@ -2431,6 +2431,10 @@ def tree.walk(path: List<&2, String>, tw: Tw, +skip: U32) -> End:
 def ch.sp(+cc: Char) -> Bool:
   Bool.or(U32.is_eq(Char.to_u32(cc), 32), U32.is_eq(Char.to_u32(cc), 9))
 
+# the space character itself, U+0020, the only one a datetime may hold
+def ch.space(+cc: Char) -> Bool:
+  U32.is_eq(Char.to_u32(cc), 32)
+
 # line feed or carriage return
 def ch.nl(+cc: Char) -> Bool:
   Bool.or(U32.is_eq(Char.to_u32(cc), 10), U32.is_eq(Char.to_u32(cc), 13))
@@ -3711,7 +3715,7 @@ def lex.bare.go(delim: Bool, sp: Bool, st: St, cc: Char) -> St:
 
 # a bare value
 def lex.bare(st: St, +cc: Char) -> St:
-  lex.bare.go(ch.delim(cc), ch.sp(cc), st, cc)
+  lex.bare.go(ch.delim(cc), ch.space(cc), st, cc)
 
 # the space and the digit belong to the datetime
 def lex.date.digit(st: St, cc: Char) -> St:
