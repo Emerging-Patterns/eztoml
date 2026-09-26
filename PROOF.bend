@@ -52796,3 +52796,1626 @@ def kh.xrep(
   ev: @q0: List<&2, String> -> {kh.hv(ww, q0, kk) == True{} : Bool} -> {kh.hv(vv, q0, kk) == True{} : Bool}
 ) -> kh.Ext(parent, T.rows.repl(parent, aa, vv), kk):
   pp => eh => kh.xrep.go(pp, parent, aa, ww, vv, kk, ef, ev, eh)
+
+# KEY-3: a walk keeps what the root held. A walk that ends with no error
+# gives back rows that hold every path the rows it started from held: a pair
+# is only put in front under a name the rows lack, a table's rows are only
+# replaced by rows that hold what they held, and an array of tables only
+# gains an element (kw.mono). kw.WI is the promise a walk carries down its
+# frames: whatever the current table's rows become, if they keep what they
+# held, putting the frames back keeps what the root held.
+
+# the root's rows once the frames are put back
+def kh.rb(stack: List<&2, T.Fr>, vs: List<&2, T.Val>) -> List<&2, T.Val>:
+  match stack:
+    case []:
+      vs
+    case fr <> tt:
+      kh.rb(tt, T.tree.wrap(fr, vs))
+
+# the rows a walk ends with
+def kw.evs(ee: T.End) -> List<&2, T.Val>:
+  match ee:
+    case T.End{vs, _b, _h}:
+      vs
+
+# the error a walk ends with
+def kw.ebad(ee: T.End) -> String:
+  match ee:
+    case T.End{_v, bad, _h}:
+      bad
+
+# a walk that ended with no error
+def kw.OK(ee: T.End) -> Data:
+  {String.is_empty(kw.ebad(ee)) == True{} : Bool}
+
+# putting the frames back gives the root's rows
+def kw.rbv(
+  stack: List<&2, T.Fr>,
+  vs: List<&2, T.Val>,
+  bad: String,
+  heads: List<&2, String>
+) -> {kw.evs(T.tree.rebuild(stack, vs, bad, heads)) == kh.rb(stack, vs) : List<&2, T.Val>}:
+  match stack:
+    case []:
+      {==}
+    case fr <> tt:
+      kw.rbv(tt, T.tree.wrap(fr, vs), bad, heads)
+
+# and keeps the error
+def kw.rbb(
+  stack: List<&2, T.Fr>,
+  vs: List<&2, T.Val>,
+  bad: String,
+  heads: List<&2, String>
+) -> {kw.ebad(T.tree.rebuild(stack, vs, bad, heads)) == bad : String}:
+  match stack:
+    case []:
+      {==}
+    case fr <> tt:
+      kw.rbb(tt, T.tree.wrap(fr, vs), bad, heads)
+
+# a walk's promise: the current rows, kept, keep the root
+def kw.WI(
+  _stack: List<&2, T.Fr>,
+  _vs: List<&2, T.Val>,
+  _root: List<&2, T.Val>,
+  +_kk: String
+) -> Type:
+  @v1: List<&2, T.Val> -> kh.Ext(_vs, v1, _kk) -> kh.Ext(_root, kh.rb(_stack, v1), _kk)
+
+# the promise while the walk has not failed
+def kw.T2(
+  ok: Bool,
+  stack: List<&2, T.Fr>,
+  vs: List<&2, T.Val>,
+  root: List<&2, T.Val>,
+  +kk: String
+) -> Type:
+  match ok:
+    case True{}:
+      kw.WI(stack, vs, root, kk)
+    case False{}:
+      {True{} == True{} : Bool}
+
+# the promise of a walk's state
+def kw.T(tw: T.Tw, root: List<&2, T.Val>, +kk: String) -> Type:
+  match tw:
+    case T.Tw{vs, _j, stack, +bad, _p, _h, _i}:
+      kw.T2(String.is_empty(bad), stack, vs, root, kk)
+
+# the first error, over a state with none, is the new one
+def kw.errf(
+  +bad: String,
+  +why: String,
+  +eo: {String.is_empty(bad) == True{} : Bool}
+) -> {String.is_empty(T.err.first(bad, why)) == String.is_empty(why) : Bool}:
+  %Equal.sym(Bool, String.is_empty(bad), True{}, eo) : {String.is_empty(T.err.first.go(_, bad, why))
+    == String.is_empty(why) : Bool}
+  {==}
+
+# the first error, by whether there was one
+def kw.efg(
+  bb: Bool,
+  +bad: String,
+  +why: String,
+  +eo: {String.is_empty(bad) == bb : Bool},
+  +ew: {String.is_empty(why) == False{} : Bool}
+) -> {String.is_empty(T.err.first.go(bb, bad, why)) == False{} : Bool}:
+  match bb:
+    case True{}:
+      ew
+    case False{}:
+      eo
+
+# the first error is never empty when the new one is not
+def kw.efne(
+  +bad: String,
+  +why: String,
+  +ew: {String.is_empty(why) == False{} : Bool}
+) -> {String.is_empty(T.err.first(bad, why)) == False{} : Bool}:
+  kw.efg(String.is_empty(bad), bad, why, {==}, ew)
+
+# a walk that ended well did not put the frames back with an error
+def kw.okrb(
+  +stack: List<&2, T.Fr>,
+  +vs: List<&2, T.Val>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +eb: {String.is_empty(kw.ebad(T.tree.rebuild(stack, vs, bad, heads))) == True{} : Bool}
+) -> {String.is_empty(bad) == True{} : Bool}:
+  Equal.trans(Bool, String.is_empty(bad), String.is_empty(kw.ebad(T.tree.rebuild(stack, vs, bad, heads))), True{},
+    Equal.cong(String, Bool, zz => String.is_empty(zz), bad, kw.ebad(T.tree.rebuild(stack, vs, bad, heads)),
+      Equal.sym(String, kw.ebad(T.tree.rebuild(stack, vs, bad, heads)), bad, kw.rbb(stack, vs, bad, heads))), eb)
+
+# nor with a new error
+def kw.nox(
+  +stack: List<&2, T.Fr>,
+  +vs: List<&2, T.Val>,
+  +bad: String,
+  +why: String,
+  +heads: List<&2, String>,
+  +ew: {String.is_empty(why) == False{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.rebuild(stack, vs, T.err.first(bad, why), heads))) == True{} : Bool}
+) -> {False{} == True{} : Bool}:
+  Equal.trans(Bool, False{}, String.is_empty(T.err.first(bad, why)), True{}, Equal.sym(Bool,
+    String.is_empty(T.err.first(bad, why)), False{}, kw.efne(bad, why, ew)), kw.okrb(stack, vs, T.err.first(bad,
+      why), heads, eb))
+
+# frames put back over rows that keep the current ones keep the root
+def kw.okx(
+  +stack: List<&2, T.Fr>,
+  +vs: List<&2, T.Val>,
+  +v1: List<&2, T.Val>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  wi: kw.WI(stack, vs, root, kk),
+  ex: kh.Ext(vs, v1, kk)
+) -> kh.Ext(root, kw.evs(T.tree.rebuild(stack, v1, bad, heads)), kk):
+  %Equal.sym(List<&2, T.Val>, kw.evs(T.tree.rebuild(stack, v1, bad, heads)), kh.rb(stack, v1), kw.rbv(stack, v1, bad,
+    heads)) : kh.Ext(root, _, kk)
+  wi(v1, ex)
+
+# a name get misses is not found
+def kw.miss(
+  +vs: List<&2, T.Val>,
+  +nn: String,
+  +eh: {T.rows.find(vs, nn) == T.Miss{} : T.Hit}
+) -> {kh.F(vs, nn) == False{} : Bool}:
+  Equal.cong(T.Hit, Bool, hh => Laws.k3.found(hh), T.rows.find(vs, nn), T.Miss{}, eh)
+
+# a name get finds is found
+def kw.hit(
+  +vs: List<&2, T.Val>,
+  +nn: String,
+  +ww: T.Val,
+  +eh: {T.rows.find(vs, nn) == T.Found{ww} : T.Hit}
+) -> {kh.F(vs, nn) == True{} : Bool}:
+  Equal.cong(T.Hit, Bool, hh => Laws.k3.found(hh), T.rows.find(vs, nn), T.Found{ww}, eh)
+
+# a put at the end of a walk
+def kw.put(
+  hit: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == hit : T.Hit},
+  wi: kw.WI(stack, vs, root, kk),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.put(hit, name, vs, val, stack, bad, heads))) == True{} : Bool}
+) -> kh.Ext(root, kw.evs(T.tree.leaf.put(hit, name, vs, val, stack, bad, heads)), kk):
+  match hit:
+    case T.Found{_v}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "duplicate key"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "duplicate key", heads, {==}, eb))
+    case T.Miss{}:
+      kw.okx(stack, vs, T.VPair{name, val} <> vs, bad, heads, root, kk, wi, kh.fresh(name, val, vs, kk, kw.miss(vs,
+        name, eh)))
+
+# an explicit header for a table that already exists
+def kw.dhead(
+  seen: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +p0: String,
+  +rows: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +path: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
+  wi: kw.WI(stack, vs, root, kk),
+  +eb: kw.OK(T.tree.leaf.def.head(seen, name, vs, rows, stack, bad, path, heads))
+) -> kh.Ext(root, kw.evs(T.tree.leaf.def.head(seen, name, vs, rows, stack, bad, path, heads)), kk):
+  match seen:
+    case True{}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "duplicate table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "duplicate table", heads, {==}, eb))
+    case False{}:
+      kw.okx(stack, vs, T.rows.repl(vs, name, T.VHead{path, rows}), bad, T.heads.by.head(path) <> heads, root, kk, wi,
+        kh.xrep(vs, name, T.VHead{p0, rows}, T.VHead{path, rows}, kk, eh, _q => ee => ee))
+
+# a table header at the end of a walk
+def kw.dhit(
+  hh: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +path: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == hh : T.Hit},
+  wi: kw.WI(stack, vs, root, kk),
+  +eb: kw.OK(T.tree.leaf.def.hit(kh.lk(hh), name, vs, stack, bad, path, heads))
+) -> kh.Ext(root, kw.evs(T.tree.leaf.def.hit(kh.lk(hh), name, vs, stack, bad, path, heads)), kk):
+  match hh:
+    case T.Miss{}:
+      kw.okx(stack, vs, T.VPair{name, T.VHead{path, []}} <> vs, bad, T.heads.by.head(path) <> heads, root, kk, wi,
+        kh.fresh(name, T.VHead{path, []}, vs, kk, kw.miss(vs, name, eh)))
+    case T.Found{T.VHead{+p0, +rows}}:
+      kw.dhead(T.heads.has(heads, path), name, vs, p0, rows, stack, bad, path, heads, root, kk, eh, wi, eb)
+    case T.Found{T.VInl{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad,
+        "inline table is closed"), heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad,
+          "inline table is closed", heads, {==}, eb))
+    case T.Found{T.VAots{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VStr{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VSpan{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VInt{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VFlo{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VBool{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VWhen{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VArr{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VAot{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VPair{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+
+# an array of tables that gains an element keeps what its elements held
+def kw.aotev(
+  +path: String,
+  +elems: List<&2, T.Val>,
+  +q0: List<&2, String>,
+  +kk: String,
+  +ee: {kh.S(elems, q0, kk) == True{} : Bool}
+) -> {kh.S(T.VAot{path, []} <> elems, q0, kk) == True{} : Bool}:
+  bo.t(kh.S(T.VAot{path, []} <> elems, q0, kk), Bool.or(kh.eS(T.VAot{path, []}, q0, kk), kh.S(elems, q0, kk)),
+    kh.uS(T.VAot{path, []}, q0, elems, kk), bo.or.tr(kh.eS(T.VAot{path, []}, q0, kk), kh.S(elems, q0, kk), ee))
+
+# an array-of-tables header at the end of a walk
+def kw.ahit(
+  hh: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +path: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == hh : T.Hit},
+  wi: kw.WI(stack, vs, root, kk),
+  +eb: kw.OK(T.tree.leaf.aot.hit(kh.lk(hh), name, vs, stack, bad, path, heads))
+) -> kh.Ext(root, kw.evs(T.tree.leaf.aot.hit(kh.lk(hh), name, vs, stack, bad, path, heads)), kk):
+  match hh:
+    case T.Miss{}:
+      kw.okx(stack, vs, T.VPair{name, T.VAots{path, [T.VAot{path, []}]}} <> vs, bad, heads, root, kk, wi,
+        kh.fresh(name, T.VAots{path, [T.VAot{path, []}]}, vs, kk, kw.miss(vs, name, eh)))
+    case T.Found{T.VAots{+p0, +elems}}:
+      kw.okx(stack, vs, T.rows.repl(vs, name, T.VAots{path, T.VAot{path, []} <> elems}), bad, T.heads.drop(heads, path
+        ++ "."), root, kk, wi, kh.xrep(vs, name, T.VAots{p0, elems}, T.VAots{path, T.VAot{path, []} <> elems}, kk, eh,
+          q0 => ee => kw.aotev(path, elems, q0, kk, ee)))
+    case T.Found{T.VHead{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VInl{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad,
+        "inline table is closed"), heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad,
+          "inline table is closed", heads, {==}, eb))
+    case T.Found{T.VStr{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VSpan{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VInt{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VFlo{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VBool{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VWhen{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VArr{_a}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VAot{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+    case T.Found{T.VPair{_a, _b}}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads, {==}, eb))
+
+# the job at the end of a walk
+def kw.job(
+  job: T.Job,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  wi: kw.WI(stack, vs, root, kk),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.job(job, name, vs, stack, bad, pre, heads))) == True{} : Bool}
+) -> kh.Ext(root, kw.evs(T.tree.leaf.job(job, name, vs, stack, bad, pre, heads)), kk):
+  match job:
+    case T.JPut{+val}:
+      kw.put(T.get(vs, name), name, vs, val, stack, bad, heads, root, kk, {==}, wi, eb)
+    case T.JDef{}:
+      %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
+        kh.Ext(root, kw.evs(T.tree.leaf.def.hit(_, name, vs, stack, bad, T.tree.pre(pre, name), heads)), kk)
+      kw.dhit(T.rows.find(vs, name), name, vs, stack, bad, T.tree.pre(pre, name), heads, root, kk, {==}, wi,
+        Equal.trans(Bool, String.is_empty(kw.ebad(T.tree.leaf.def.hit(kh.lk(T.rows.find(vs, name)), name, vs, stack,
+          bad, T.tree.pre(pre, name), heads))), String.is_empty(kw.ebad(T.tree.leaf.def.hit(T.rows.look(vs, name),
+            name, vs, stack, bad, T.tree.pre(pre, name), heads))), True{}, Equal.cong(T.Look, Bool, zz =>
+              String.is_empty(kw.ebad(T.tree.leaf.def.hit(zz, name, vs, stack, bad, T.tree.pre(pre, name), heads))),
+              kh.lk(T.rows.find(vs, name)), T.rows.look(vs, name), Equal.sym(T.Look, T.rows.look(vs, name),
+                kh.lk(T.rows.find(vs, name)), kh.look(vs, name))), eb))
+    case T.JAot{}:
+      %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
+        kh.Ext(root, kw.evs(T.tree.leaf.aot.hit(_, name, vs, stack, bad, T.tree.pre(pre, name), heads)), kk)
+      kw.ahit(T.rows.find(vs, name), name, vs, stack, bad, T.tree.pre(pre, name), heads, root, kk, {==}, wi,
+        Equal.trans(Bool, String.is_empty(kw.ebad(T.tree.leaf.aot.hit(kh.lk(T.rows.find(vs, name)), name, vs, stack,
+          bad, T.tree.pre(pre, name), heads))), String.is_empty(kw.ebad(T.tree.leaf.aot.hit(T.rows.look(vs, name),
+            name, vs, stack, bad, T.tree.pre(pre, name), heads))), True{}, Equal.cong(T.Look, Bool, zz =>
+              String.is_empty(kw.ebad(T.tree.leaf.aot.hit(zz, name, vs, stack, bad, T.tree.pre(pre, name), heads))),
+              kh.lk(T.rows.find(vs, name)), T.rows.look(vs, name), Equal.sym(T.Look, T.rows.look(vs, name),
+                kh.lk(T.rows.find(vs, name)), kh.look(vs, name))), eb))
+
+# the key at the end of a walk, by whether the walk failed
+def kw.leafok(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  wt: kw.T2(ok, stack, vs, root, kk),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.bad(ok, name, vs, job, stack, bad, pre, heads))) == True{} : Bool}
+) -> kh.Ext(root, kw.evs(T.tree.leaf.bad(ok, name, vs, job, stack, bad, pre, heads)), kk):
+  match ok:
+    case False{}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, bad, heads)), pp, kk) == True{}
+        : Bool}, Equal.trans(Bool, False{}, String.is_empty(bad), True{}, Equal.sym(Bool, String.is_empty(bad), False{},
+          eo), kw.okrb(stack, vs, bad, heads, eb)))
+    case True{}:
+      kw.job(job, name, vs, stack, bad, pre, heads, root, kk, wt, eb)
+
+# the key at the end of a walk
+def kw.leaf(
+  +name: String,
+  tw: T.Tw,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  wt: kw.T(tw, root, kk),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf(name, tw))) == True{} : Bool}
+) -> kh.Ext(root, kw.evs(T.tree.leaf(name, tw)), kk):
+  match tw:
+    case T.Tw{+vs, +job, +stack, +bad, +pre, +heads, _i}:
+      kw.leafok(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, root, kk, {==}, wt, eb)
+
+# a state a failed step leaves keeps the promise
+def kw.tfail(
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eo: {String.is_empty(bad) == False{} : Bool}
+) -> kw.T(T.Tw{vs, job, stack, bad, pre, heads, inl}, root, kk):
+  %Equal.sym(Bool, String.is_empty(bad), False{}, eo) : kw.T2(_, stack, vs, root, kk)
+  {==}
+
+# an or keeps True when its left half is replaced by one True whenever it is
+def bo.or.mono(
+  aa: Bool,
+  bb: Bool,
+  cc: Bool,
+  ff: @e1: {aa == True{} : Bool} -> {cc == True{} : Bool},
+  +ee: {Bool.or(aa, bb) == True{} : Bool}
+) -> {Bool.or(cc, bb) == True{} : Bool}:
+  match aa:
+    case True{}:
+      bo.or.tl(cc, bb, ff({==}))
+    case False{}:
+      bo.or.tr(cc, bb, ee)
+
+# a table entered or made by a walk
+def kw.hgo(
+  shut: Bool,
+  +p0: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
+  wi: kw.WI(stack, vs, root, kk)
+) -> kw.T(T.tree.sub.head.go(shut, p0, rows, name, vs, job, stack, pre, heads, inl, mark), root, kk):
+  match shut:
+    case True{}:
+      {==}
+    case False{}:
+      +v1 => ex => wi(T.rows.repl(vs, name, T.VHead{p0, v1}), kh.xrep(vs, name, T.VHead{p0, rows}, T.VHead{p0, v1}, kk,
+        eh, q0 => ee => ex(q0, ee)))
+
+# a table entered by a walk, by whether a dotted key asks
+def kw.hd(
+  dot: Bool,
+  +p0: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
+  wi: kw.WI(stack, vs, root, kk)
+) -> kw.T(T.tree.sub.head(dot, p0, rows, name, vs, job, stack, pre, heads, inl, mark), root, kk):
+  match dot:
+    case True{}:
+      kw.hgo(T.heads.head(heads, T.tree.pre(pre, name)), p0, rows, name, vs, job, stack, pre, heads, inl, mark, root,
+        kk, eh, wi)
+    case False{}:
+      kw.hgo(False{}, p0, rows, name, vs, job, stack, pre, heads, inl, mark, root, kk, eh, wi)
+
+# an element of an array of tables that holds a path, and the one that
+# replaces it holding what it held
+def kw.aotx(
+  +p0: String,
+  +p1: String,
+  +rows: List<&2, T.Val>,
+  +v1: List<&2, T.Val>,
+  +tt: List<&2, T.Val>,
+  +q0: List<&2, String>,
+  +kk: String,
+  ex: kh.Ext(rows, v1, kk),
+  +ee: {kh.S(T.VAot{p1, rows} <> tt, q0, kk) == True{} : Bool}
+) -> {kh.S(T.VAot{p0, v1} <> tt, q0, kk) == True{} : Bool}:
+  bo.t(kh.S(T.VAot{p0, v1} <> tt, q0, kk), Bool.or(Laws.k3.has(v1, q0, kk), kh.S(tt, q0, kk)), kh.uS(T.VAot{p0, v1},
+    q0, tt, kk), bo.or.mono(Laws.k3.has(rows, q0, kk), kh.S(tt, q0, kk), Laws.k3.has(v1, q0, kk), e1 => ex(q0, e1),
+      Equal.trans(Bool, Bool.or(Laws.k3.has(rows, q0, kk), kh.S(tt, q0, kk)), kh.S(T.VAot{p1, rows} <> tt, q0, kk),
+        True{}, Equal.sym(Bool, kh.S(T.VAot{p1, rows} <> tt, q0, kk), Bool.or(Laws.k3.has(rows, q0, kk), kh.S(tt, q0,
+          kk)), kh.uS(T.VAot{p1, rows}, q0, tt, kk)), ee)))
+
+# the newest element of an array of tables, entered by a walk
+def kw.last(
+  elems: List<&2, T.Val>,
+  +p0: String,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VAots{p0, elems}} : T.Hit},
+  wi: kw.WI(stack, vs, root, kk)
+) -> kw.T(T.tree.sub.aots(T.look.last(elems, p0), name, vs, job, stack, pre, heads, inl, p0), root, kk):
+  match elems:
+    case []:
+      {==}
+    case T.VAot{+p1, +rows} <> +tt:
+      +v1 => ex => wi(T.rows.repl(vs, name, T.VAots{p0, T.VAot{p0, v1} <> tt}), kh.xrep(vs, name, T.VAots{p0,
+        T.VAot{p1, rows} <> tt}, T.VAots{p0, T.VAot{p0, v1} <> tt}, kk, eh, q0 => ee => kw.aotx(p0, p1, rows, v1, tt,
+          q0, kk, ex, ee)))
+    case T.VStr{_a} <> _t:
+      {==}
+    case T.VSpan{_a, _b} <> _t:
+      {==}
+    case T.VInt{_a, _b} <> _t:
+      {==}
+    case T.VFlo{_a, _b} <> _t:
+      {==}
+    case T.VBool{_a} <> _t:
+      {==}
+    case T.VWhen{_a} <> _t:
+      {==}
+    case T.VArr{_a} <> _t:
+      {==}
+    case T.VInl{_a} <> _t:
+      {==}
+    case T.VHead{_a, _b} <> _t:
+      {==}
+    case T.VAots{_a, _b} <> _t:
+      {==}
+    case T.VPair{_a, _b} <> _t:
+      {==}
+
+# an array of tables entered by a walk, by whether a dotted key asks
+def kw.arr(
+  dot: Bool,
+  +p0: String,
+  +elems: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VAots{p0, elems}} : T.Hit},
+  wi: kw.WI(stack, vs, root, kk)
+) -> kw.T(T.tree.sub.arr(dot, p0, elems, name, vs, job, stack, pre, heads, inl), root, kk):
+  match dot:
+    case True{}:
+      {==}
+    case False{}:
+      kw.last(elems, p0, name, vs, job, stack, pre, heads, inl, root, kk, eh, wi)
+
+# one key a walk descends into
+def kw.shit(
+  hh: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eh: {T.rows.find(vs, name) == hh : T.Hit},
+  wi: kw.WI(stack, vs, root, kk)
+) -> kw.T(T.tree.sub.look(kh.lk(hh), name, vs, job, stack, pre, heads, inl, mark), root, kk):
+  match hh:
+    case T.Miss{}:
+      +v1 => _ex => wi(T.VPair{name, T.VHead{T.tree.pre(pre, name), v1}} <> vs, kh.fresh(name, T.VHead{T.tree.pre(pre,
+        name), v1}, vs, kk, kw.miss(vs, name, eh)))
+    case T.Found{T.VHead{+p0, +rows}}:
+      kw.hd(T.tree.sub.dot(T.tree.sub.job(mark, job)), p0, rows, name, vs, job, stack, pre, heads, inl, mark, root, kk,
+        eh, wi)
+    case T.Found{T.VAots{+p0, +elems}}:
+      kw.arr(T.tree.sub.dot(T.tree.sub.job(mark, job)), p0, elems, name, vs, job, stack, pre, heads, inl, root, kk, eh,
+        wi)
+    case T.Found{T.VStr{_a}}:
+      {==}
+    case T.Found{T.VSpan{_a, _b}}:
+      {==}
+    case T.Found{T.VInt{_a, _b}}:
+      {==}
+    case T.Found{T.VFlo{_a, _b}}:
+      {==}
+    case T.Found{T.VBool{_a}}:
+      {==}
+    case T.Found{T.VWhen{_a}}:
+      {==}
+    case T.Found{T.VArr{_a}}:
+      {==}
+    case T.Found{T.VInl{_a}}:
+      {==}
+    case T.Found{T.VAot{_a, _b}}:
+      {==}
+    case T.Found{T.VPair{_a, _b}}:
+      {==}
+
+# one key a walk descends into, by whether the walk failed
+def kw.subok(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  wt: kw.T2(ok, stack, vs, root, kk)
+) -> kw.T(T.tree.sub.bad(ok, name, vs, job, stack, bad, pre, heads, inl, mark), root, kk):
+  match ok:
+    case False{}:
+      kw.tfail(vs, job, stack, bad, pre, heads, inl, root, kk, eo)
+    case True{}:
+      %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
+        kw.T(T.tree.sub.look(_, name, vs, job, stack, pre, heads, inl, mark), root, kk)
+      kw.shit(T.rows.find(vs, name), name, vs, job, stack, pre, heads, inl, mark, root, kk, {==}, wt)
+
+# one key a walk descends into keeps the promise
+def kw.sub(
+  +name: String,
+  tw: T.Tw,
+  +mark: Bool,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  wt: kw.T(tw, root, kk)
+) -> kw.T(T.tree.sub(name, tw, mark), root, kk):
+  match tw:
+    case T.Tw{+vs, +job, +stack, +bad, +pre, +heads, +inl}:
+      kw.subok(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, inl, mark, root, kk, {==}, wt)
+
+# a walk with no key fails
+def kw.none(
+  tw: T.Tw,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  +eb: {String.is_empty(kw.ebad(T.tree.walk.none(tw))) == True{} : Bool}
+) -> kh.Ext(root, kw.evs(T.tree.walk.none(tw)), kk):
+  match tw:
+    case T.Tw{+vs, _j, +stack, +bad, _p, +heads, _i}:
+      pp => _e => Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "empty key"),
+        heads)), pp, kk) == True{} : Bool}, kw.nox(stack, vs, bad, "empty key", heads, {==}, eb))
+
+# a walk that ends with no error keeps every path the root held
+def kw.walk(
+  path: List<&2, String>,
+  +tw: T.Tw,
+  +skip: U32,
+  +root: List<&2, T.Val>,
+  +kk: String,
+  wt: kw.T(tw, root, kk),
+  +eb: {String.is_empty(kw.ebad(T.tree.walk(path, tw, skip))) == True{} : Bool}
+) -> kh.Ext(root, kw.evs(T.tree.walk(path, tw, skip)), kk):
+  match path:
+    case []:
+      kw.none(tw, root, kk, eb)
+    case +nm <> rest:
+      match rest:
+        case []:
+          kw.leaf(nm, tw, root, kk, wt, eb)
+        case _h <> _t:
+          kw.walk(rest, T.tree.sub(nm, tw, U32.is_zero(skip)), T.path.dec(skip), root, kk, kw.sub(nm, tw,
+            U32.is_zero(skip), root, kk, wt), eb)
+
+# the promise at the root
+def kw.wi0(
+  +bad: String,
+  +rows: List<&2, T.Val>,
+  +kk: String,
+  +eo: {String.is_empty(bad) == True{} : Bool}
+) -> kw.T2(String.is_empty(bad), [], rows, rows, kk):
+  %Equal.sym(Bool, String.is_empty(bad), True{}, eo) : kw.T2(_, [], rows, rows, kk)
+  _v1 => ex => ex
+
+# LEMMA: a walk from the root that ends with no error keeps every path the
+# root held
+def kw.mono(
+  path: List<&2, String>,
+  +rows: List<&2, T.Val>,
+  +job: T.Job,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +skip: U32,
+  +kk: String,
+  +eo: {String.is_empty(bad) == True{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.walk(path, T.Tw{rows, job, [], bad, pre, heads, inl}, skip))) == True{} : Bool}
+) -> kh.Ext(rows, kw.evs(T.tree.walk(path, T.Tw{rows, job, [], bad, pre, heads, inl}, skip)), kk):
+  kw.walk(path, T.Tw{rows, job, [], bad, pre, heads, inl}, skip, rows, kk, kw.wi0(bad, rows, kk, eo), eb)
+
+# KEY-3: a walk makes what it puts. A walk that ends with no error gives back
+# rows that hold, under the walk's names, the pair it put or the table it
+# opened (kc.tab), and, when it put a value, every path the value holds
+# below the pair (kc.put). kc.CI is the promise a walk carries down its
+# frames: whatever the current table's rows hold, the root holds under the
+# names walked so far, rp, reversed.
+
+# a walk's promise: the current rows hold under the names walked so far
+def kc.CI(_stack: List<&2, T.Fr>, _rp: List<&2, String>) -> Type:
+  @k1: String -> @v1: List<&2, T.Val> -> @q0: List<&2, String> -> {Laws.k3.has(v1, q0, k1) == True{} : Bool} ->
+    {Laws.k3.has(kh.rb(_stack, v1), List.reverse.go(&2, String, _rp, q0), k1) == True{} : Bool}
+
+# the promise while the walk has not failed
+def kc.T2(ok: Bool, stack: List<&2, T.Fr>, rp: List<&2, String>) -> Type:
+  match ok:
+    case True{}:
+      kc.CI(stack, rp)
+    case False{}:
+      {True{} == True{} : Bool}
+
+# the promise of a walk's state
+def kc.T(tw: T.Tw, rp: List<&2, String>) -> Type:
+  match tw:
+    case T.Tw{_v, _j, stack, +bad, _p, _h, _i}:
+      kc.T2(String.is_empty(bad), stack, rp)
+
+# a replacement of every pair of a name found in rows, by a value that holds
+# a path, holds the path through the name
+def kh.mkr(
+  +xs: List<&2, T.Val>,
+  +aa: String,
+  +vv: T.Val,
+  +qq: List<&2, String>,
+  +kk: String,
+  +ef: {kh.F(xs, aa) == True{} : Bool},
+  +ev: {kh.hv(vv, qq, kk) == True{} : Bool}
+) -> {Laws.k3.has(T.rows.repl(xs, aa, vv), aa <> qq, kk) == True{} : Bool}:
+  gd.tt(kh.F(T.rows.repl(xs, aa, vv), aa), kh.A(T.rows.repl(xs, aa, vv), aa, qq, kk), bo.t(kh.F(T.rows.repl(xs, aa,
+    vv), aa), kh.F(xs, aa), kh.rF(xs, aa, vv, aa), ef), kh.rA.s(xs, aa, vv, qq, kk, ev))
+
+# a new newest element holds what its rows hold
+def kc.aotin(
+  +p0: String,
+  +v1: List<&2, T.Val>,
+  +tt: List<&2, T.Val>,
+  +q0: List<&2, String>,
+  +kk: String,
+  +ee: {Laws.k3.has(v1, q0, kk) == True{} : Bool}
+) -> {kh.S(T.VAot{p0, v1} <> tt, q0, kk) == True{} : Bool}:
+  bo.t(kh.S(T.VAot{p0, v1} <> tt, q0, kk), Bool.or(Laws.k3.has(v1, q0, kk), kh.S(tt, q0, kk)), kh.uS(T.VAot{p0, v1},
+    q0, tt, kk), bo.or.tl(Laws.k3.has(v1, q0, kk), kh.S(tt, q0, kk), ee))
+
+# a state a failed step leaves keeps the promise
+def kc.tfail(
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +rp: List<&2, String>,
+  +eo: {String.is_empty(bad) == False{} : Bool}
+) -> kc.T(T.Tw{vs, job, stack, bad, pre, heads, inl}, rp):
+  %Equal.sym(Bool, String.is_empty(bad), False{}, eo) : kc.T2(_, stack, rp)
+  {==}
+
+# a table entered or made by a walk
+def kc.hgo(
+  shut: Bool,
+  +p0: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
+  wi: kc.CI(stack, rp)
+) -> kc.T(T.tree.sub.head.go(shut, p0, rows, name, vs, job, stack, pre, heads, inl, mark), name <> rp):
+  match shut:
+    case True{}:
+      {==}
+    case False{}:
+      +k1 => +v1 => +q0 => ee => wi(k1, T.rows.repl(vs, name, T.VHead{p0, v1}), name <> q0, kh.mkr(vs, name, T.VHead{p0,
+        v1}, q0, k1, kw.hit(vs, name, T.VHead{p0, rows}, eh), ee))
+
+# a table entered by a walk, by whether a dotted key asks
+def kc.hd(
+  dot: Bool,
+  +p0: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
+  wi: kc.CI(stack, rp)
+) -> kc.T(T.tree.sub.head(dot, p0, rows, name, vs, job, stack, pre, heads, inl, mark), name <> rp):
+  match dot:
+    case True{}:
+      kc.hgo(T.heads.head(heads, T.tree.pre(pre, name)), p0, rows, name, vs, job, stack, pre, heads, inl, mark, rp,
+        eh, wi)
+    case False{}:
+      kc.hgo(False{}, p0, rows, name, vs, job, stack, pre, heads, inl, mark, rp, eh, wi)
+
+# the newest element of an array of tables, entered by a walk
+def kc.last(
+  elems: List<&2, T.Val>,
+  +p0: String,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VAots{p0, elems}} : T.Hit},
+  wi: kc.CI(stack, rp)
+) -> kc.T(T.tree.sub.aots(T.look.last(elems, p0), name, vs, job, stack, pre, heads, inl, p0), name <> rp):
+  match elems:
+    case []:
+      {==}
+    case T.VAot{+p1, +rows} <> +tt:
+      +k1 => +v1 => +q0 => ee => wi(k1, T.rows.repl(vs, name, T.VAots{p0, T.VAot{p0, v1} <> tt}), name <> q0,
+        kh.mkr(vs, name, T.VAots{p0, T.VAot{p0, v1} <> tt}, q0, k1, kw.hit(vs, name, T.VAots{p0, T.VAot{p1, rows} <>
+          tt}, eh), kc.aotin(p0, v1, tt, q0, k1, ee)))
+    case T.VStr{_a} <> _t:
+      {==}
+    case T.VSpan{_a, _b} <> _t:
+      {==}
+    case T.VInt{_a, _b} <> _t:
+      {==}
+    case T.VFlo{_a, _b} <> _t:
+      {==}
+    case T.VBool{_a} <> _t:
+      {==}
+    case T.VWhen{_a} <> _t:
+      {==}
+    case T.VArr{_a} <> _t:
+      {==}
+    case T.VInl{_a} <> _t:
+      {==}
+    case T.VHead{_a, _b} <> _t:
+      {==}
+    case T.VAots{_a, _b} <> _t:
+      {==}
+    case T.VPair{_a, _b} <> _t:
+      {==}
+
+# an array of tables entered by a walk, by whether a dotted key asks
+def kc.arr(
+  dot: Bool,
+  +p0: String,
+  +elems: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VAots{p0, elems}} : T.Hit},
+  wi: kc.CI(stack, rp)
+) -> kc.T(T.tree.sub.arr(dot, p0, elems, name, vs, job, stack, pre, heads, inl), name <> rp):
+  match dot:
+    case True{}:
+      {==}
+    case False{}:
+      kc.last(elems, p0, name, vs, job, stack, pre, heads, inl, rp, eh, wi)
+
+# one key a walk descends into
+def kc.shit(
+  hh: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == hh : T.Hit},
+  wi: kc.CI(stack, rp)
+) -> kc.T(T.tree.sub.look(kh.lk(hh), name, vs, job, stack, pre, heads, inl, mark), name <> rp):
+  match hh:
+    case T.Miss{}:
+      +k1 => +v1 => +q0 => ee => wi(k1, T.VPair{name, T.VHead{T.tree.pre(pre, name), v1}} <> vs, name <> q0,
+        kh.mk(name, T.VHead{T.tree.pre(pre, name), v1}, vs, q0, k1, kw.miss(vs, name, eh), ee))
+    case T.Found{T.VHead{+p0, +rows}}:
+      kc.hd(T.tree.sub.dot(T.tree.sub.job(mark, job)), p0, rows, name, vs, job, stack, pre, heads, inl, mark, rp,
+        eh, wi)
+    case T.Found{T.VAots{+p0, +elems}}:
+      kc.arr(T.tree.sub.dot(T.tree.sub.job(mark, job)), p0, elems, name, vs, job, stack, pre, heads, inl, rp, eh,
+        wi)
+    case T.Found{T.VStr{_a}}:
+      {==}
+    case T.Found{T.VSpan{_a, _b}}:
+      {==}
+    case T.Found{T.VInt{_a, _b}}:
+      {==}
+    case T.Found{T.VFlo{_a, _b}}:
+      {==}
+    case T.Found{T.VBool{_a}}:
+      {==}
+    case T.Found{T.VWhen{_a}}:
+      {==}
+    case T.Found{T.VArr{_a}}:
+      {==}
+    case T.Found{T.VInl{_a}}:
+      {==}
+    case T.Found{T.VAot{_a, _b}}:
+      {==}
+    case T.Found{T.VPair{_a, _b}}:
+      {==}
+
+# one key a walk descends into, by whether the walk failed
+def kc.subok(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool,
+  +rp: List<&2, String>,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  wt: kc.T2(ok, stack, rp)
+) -> kc.T(T.tree.sub.bad(ok, name, vs, job, stack, bad, pre, heads, inl, mark), name <> rp):
+  match ok:
+    case False{}:
+      kc.tfail(vs, job, stack, bad, pre, heads, inl, name <> rp, eo)
+    case True{}:
+      %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
+        kc.T(T.tree.sub.look(_, name, vs, job, stack, pre, heads, inl, mark), name <> rp)
+      kc.shit(T.rows.find(vs, name), name, vs, job, stack, pre, heads, inl, mark, rp, {==}, wt)
+
+# one key a walk descends into keeps the promise
+def kc.sub(
+  +name: String,
+  tw: T.Tw,
+  +mark: Bool,
+  +rp: List<&2, String>,
+  wt: kc.T(tw, rp)
+) -> kc.T(T.tree.sub(name, tw, mark), name <> rp):
+  match tw:
+    case T.Tw{+vs, +job, +stack, +bad, +pre, +heads, +inl}:
+      kc.subok(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, inl, mark, rp, {==}, wt)
+
+
+# a walk's job
+def kw.tjob(tw: T.Tw) -> T.Job:
+  match tw:
+    case T.Tw{_v, job, _s, _b, _p, _h, _i}:
+      job
+
+# the job a walk goes down with, after the newest element of an array of
+# tables is looked for
+def kc.jlast(
+  last: T.Last,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +path: String
+) -> {kw.tjob(T.tree.sub.aots(last, name, vs, job, stack, pre, heads, inl, path)) == job : T.Job}:
+  match last:
+    case T.LastSome{_p, _r, _w}:
+      {==}
+    case T.LastNo{_w}:
+      {==}
+
+# after an array of tables is entered
+def kc.jarr(
+  dot: Bool,
+  +path: String,
+  +elems: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool
+) -> {kw.tjob(T.tree.sub.arr(dot, path, elems, name, vs, job, stack, pre, heads, inl)) == job : T.Job}:
+  match dot:
+    case True{}:
+      {==}
+    case False{}:
+      kc.jlast(T.look.last(elems, path), name, vs, job, stack, pre, heads, inl, path)
+
+# after a table is entered
+def kc.jhgo(
+  shut: Bool,
+  +path: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool
+) -> {kw.tjob(T.tree.sub.head.go(shut, path, rows, name, vs, job, stack, pre, heads, inl, mark)) == job : T.Job}:
+  match shut:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# after a table is entered, by whether a dotted key asks
+def kc.jhd(
+  dot: Bool,
+  +path: String,
+  +rows: List<&2, T.Val>,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool
+) -> {kw.tjob(T.tree.sub.head(dot, path, rows, name, vs, job, stack, pre, heads, inl, mark)) == job : T.Job}:
+  match dot:
+    case True{}:
+      kc.jhgo(T.heads.head(heads, T.tree.pre(pre, name)), path, rows, name, vs, job, stack, pre, heads, inl, mark)
+    case False{}:
+      kc.jhgo(False{}, path, rows, name, vs, job, stack, pre, heads, inl, mark)
+
+# after one key is looked up
+def kc.jlook(
+  hit: T.Look,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool
+) -> {kw.tjob(T.tree.sub.look(hit, name, vs, job, stack, pre, heads, inl, mark)) == job : T.Job}:
+  match hit:
+    case T.KMiss{}:
+      {==}
+    case T.KHead{+path, +rows}:
+      kc.jhd(T.tree.sub.dot(T.tree.sub.job(mark, job)), path, rows, name, vs, job, stack, pre, heads, inl, mark)
+    case T.KInl{}:
+      {==}
+    case T.KAots{+path, +elems}:
+      kc.jarr(T.tree.sub.dot(T.tree.sub.job(mark, job)), path, elems, name, vs, job, stack, pre, heads, inl)
+    case T.KNo{_w}:
+      {==}
+
+# after one key, by whether the walk failed
+def kc.jok(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +inl: Bool,
+  +mark: Bool
+) -> {kw.tjob(T.tree.sub.bad(ok, name, vs, job, stack, bad, pre, heads, inl, mark)) == job : T.Job}:
+  match ok:
+    case False{}:
+      {==}
+    case True{}:
+      kc.jlook(T.rows.look(vs, name), name, vs, job, stack, pre, heads, inl, mark)
+
+# a walk goes down one key with its job
+def kc.subjob(+name: String, tw: T.Tw, +mark: Bool) -> {kw.tjob(T.tree.sub(name, tw, mark)) == kw.tjob(tw) : T.Job}:
+  match tw:
+    case T.Tw{+vs, +job, +stack, +bad, +pre, +heads, +inl}:
+      kc.jok(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, inl, mark)
+
+# the rows put back hold what the current rows did
+def kc.okx(
+  +stack: List<&2, T.Fr>,
+  +v1: List<&2, T.Val>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +q0: List<&2, String>,
+  +k1: String,
+  wi: kc.CI(stack, rp),
+  +ee: {Laws.k3.has(v1, q0, k1) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.rebuild(stack, v1, bad, heads)), List.reverse.go(&2, String, rp, q0), k1) == True{}
+  : Bool}:
+  %Equal.sym(List<&2, T.Val>, kw.evs(T.tree.rebuild(stack, v1, bad, heads)), kh.rb(stack, v1), kw.rbv(stack, v1, bad,
+    heads)) : {Laws.k3.has(_, List.reverse.go(&2, String, rp, q0), k1) == True{} : Bool}
+  wi(k1, v1, q0, ee)
+
+# a put at the end of a walk puts the pair
+def kc.tput(
+  hit: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +_eh: {T.rows.find(vs, name) == hit : T.Hit},
+  wi: kc.CI(stack, rp),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.put(hit, name, vs, val, stack, bad, heads))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.put(hit, name, vs, val, stack, bad, heads)), List.reverse.go(&2, String, rp, []),
+  name) == True{} : Bool}:
+  match hit:
+    case T.Found{_v}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "duplicate key"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "duplicate key", heads,
+          {==}, eb))
+    case T.Miss{}:
+      kc.okx(stack, T.VPair{name, val} <> vs, bad, heads, rp, [], name, wi, kh.mk0(name, val, vs))
+
+# an explicit header for a table that already exists
+def kc.tdhead(
+  seen: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +p0: String,
+  +rows: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +path: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
+  wi: kc.CI(stack, rp),
+  +eb: kw.OK(T.tree.leaf.def.head(seen, name, vs, rows, stack, bad, path, heads))
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.def.head(seen, name, vs, rows, stack, bad, path, heads)), List.reverse.go(&2,
+  String, rp, []), name) == True{} : Bool}:
+  match seen:
+    case True{}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "duplicate table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "duplicate table", heads,
+          {==}, eb))
+    case False{}:
+      kc.okx(stack, T.rows.repl(vs, name, T.VHead{path, rows}), bad, T.heads.by.head(path) <> heads, rp, [], name, wi,
+        bo.t(kh.F(T.rows.repl(vs, name, T.VHead{path, rows}), name), kh.F(vs, name), kh.rF(vs, name, T.VHead{path,
+          rows}, name), kw.hit(vs, name, T.VHead{p0, rows}, eh)))
+
+# a table header at the end of a walk opens the table
+def kc.tdhit(
+  hh: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +path: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == hh : T.Hit},
+  wi: kc.CI(stack, rp),
+  +eb: kw.OK(T.tree.leaf.def.hit(kh.lk(hh), name, vs, stack, bad, path, heads))
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.def.hit(kh.lk(hh), name, vs, stack, bad, path, heads)), List.reverse.go(&2,
+  String, rp, []), name) == True{} : Bool}:
+  match hh:
+    case T.Miss{}:
+      kc.okx(stack, T.VPair{name, T.VHead{path, []}} <> vs, bad, T.heads.by.head(path) <> heads, rp, [], name, wi,
+        kh.mk0(name, T.VHead{path, []}, vs))
+    case T.Found{T.VHead{+p0, +rows}}:
+      kc.tdhead(T.heads.has(heads, path), name, vs, p0, rows, stack, bad, path, heads, rp, eh, wi, eb)
+    case T.Found{T.VInl{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "inline table is closed"),
+        heads)), List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad,
+          "inline table is closed", heads, {==}, eb))
+    case T.Found{T.VStr{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VSpan{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VInt{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VFlo{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VBool{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VWhen{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VArr{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VAot{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VAots{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VPair{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+
+# an array-of-tables header at the end of a walk opens the array
+def kc.tahit(
+  hh: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +path: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +eh: {T.rows.find(vs, name) == hh : T.Hit},
+  wi: kc.CI(stack, rp),
+  +eb: kw.OK(T.tree.leaf.aot.hit(kh.lk(hh), name, vs, stack, bad, path, heads))
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.aot.hit(kh.lk(hh), name, vs, stack, bad, path, heads)), List.reverse.go(&2,
+  String, rp, []), name) == True{} : Bool}:
+  match hh:
+    case T.Miss{}:
+      kc.okx(stack, T.VPair{name, T.VAots{path, [T.VAot{path, []}]}} <> vs, bad, heads, rp, [], name, wi,
+        kh.mk0(name, T.VAots{path, [T.VAot{path, []}]}, vs))
+    case T.Found{T.VAots{+p0, +elems}}:
+      kc.okx(stack, T.rows.repl(vs, name, T.VAots{path, T.VAot{path, []} <> elems}), bad, T.heads.drop(heads, path
+        ++ "."), rp, [], name, wi, bo.t(kh.F(T.rows.repl(vs, name, T.VAots{path, T.VAot{path, []} <> elems}), name),
+          kh.F(vs, name), kh.rF(vs, name, T.VAots{path, T.VAot{path, []} <> elems}, name), kw.hit(vs, name,
+            T.VAots{p0, elems}, eh)))
+    case T.Found{T.VInl{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "inline table is closed"),
+        heads)), List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad,
+          "inline table is closed", heads, {==}, eb))
+    case T.Found{T.VStr{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VSpan{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VInt{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VFlo{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VBool{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VWhen{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VArr{_a}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VHead{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VAot{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+    case T.Found{T.VPair{_a, _b}}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "not a table"), heads)),
+        List.reverse.go(&2, String, rp, []), name) == True{} : Bool}, kw.nox(stack, vs, bad, "not a table", heads,
+          {==}, eb))
+
+# the job at the end of a walk makes what it names
+def kc.tjob(
+  job: T.Job,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  wi: kc.CI(stack, rp),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.job(job, name, vs, stack, bad, pre, heads))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.job(job, name, vs, stack, bad, pre, heads)), List.reverse.go(&2, String, rp, []),
+  name) == True{} : Bool}:
+  match job:
+    case T.JPut{+val}:
+      kc.tput(T.get(vs, name), name, vs, val, stack, bad, heads, rp, {==}, wi, eb)
+    case T.JDef{}:
+      %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
+        {Laws.k3.has(kw.evs(T.tree.leaf.def.hit(_, name, vs, stack, bad, T.tree.pre(pre, name), heads)),
+          List.reverse.go(&2, String, rp, []), name) == True{} : Bool}
+      kc.tdhit(T.rows.find(vs, name), name, vs, stack, bad, T.tree.pre(pre, name), heads, rp, {==}, wi,
+        Equal.trans(Bool, String.is_empty(kw.ebad(T.tree.leaf.def.hit(kh.lk(T.rows.find(vs, name)), name, vs, stack,
+          bad, T.tree.pre(pre, name), heads))), String.is_empty(kw.ebad(T.tree.leaf.def.hit(T.rows.look(vs, name),
+            name, vs, stack, bad, T.tree.pre(pre, name), heads))), True{}, Equal.cong(T.Look, Bool, zz =>
+              String.is_empty(kw.ebad(T.tree.leaf.def.hit(zz, name, vs, stack, bad, T.tree.pre(pre, name), heads))),
+              kh.lk(T.rows.find(vs, name)), T.rows.look(vs, name), Equal.sym(T.Look, T.rows.look(vs, name),
+                kh.lk(T.rows.find(vs, name)), kh.look(vs, name))), eb))
+    case T.JAot{}:
+      %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
+        {Laws.k3.has(kw.evs(T.tree.leaf.aot.hit(_, name, vs, stack, bad, T.tree.pre(pre, name), heads)),
+          List.reverse.go(&2, String, rp, []), name) == True{} : Bool}
+      kc.tahit(T.rows.find(vs, name), name, vs, stack, bad, T.tree.pre(pre, name), heads, rp, {==}, wi,
+        Equal.trans(Bool, String.is_empty(kw.ebad(T.tree.leaf.aot.hit(kh.lk(T.rows.find(vs, name)), name, vs, stack,
+          bad, T.tree.pre(pre, name), heads))), String.is_empty(kw.ebad(T.tree.leaf.aot.hit(T.rows.look(vs, name),
+            name, vs, stack, bad, T.tree.pre(pre, name), heads))), True{}, Equal.cong(T.Look, Bool, zz =>
+              String.is_empty(kw.ebad(T.tree.leaf.aot.hit(zz, name, vs, stack, bad, T.tree.pre(pre, name), heads))),
+              kh.lk(T.rows.find(vs, name)), T.rows.look(vs, name), Equal.sym(T.Look, T.rows.look(vs, name),
+                kh.lk(T.rows.find(vs, name)), kh.look(vs, name))), eb))
+
+# the key at the end of a walk, by whether the walk failed
+def kc.tleafok(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  wt: kc.T2(ok, stack, rp),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.bad(ok, name, vs, job, stack, bad, pre, heads))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.bad(ok, name, vs, job, stack, bad, pre, heads)), List.reverse.go(&2, String, rp,
+  []), name) == True{} : Bool}:
+  match ok:
+    case False{}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, bad, heads)), List.reverse.go(&2, String, rp,
+        []), name) == True{} : Bool}, Equal.trans(Bool, False{},
+        String.is_empty(bad), True{}, Equal.sym(Bool, String.is_empty(bad), False{}, eo), kw.okrb(stack, vs, bad, heads,
+          eb)))
+    case True{}:
+      kc.tjob(job, name, vs, stack, bad, pre, heads, rp, wt, eb)
+
+# the key at the end of a walk
+def kc.tleaf(
+  +name: String,
+  tw: T.Tw,
+  +rp: List<&2, String>,
+  wt: kc.T(tw, rp),
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf(name, tw))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf(name, tw)), List.reverse.go(&2, String, rp, []), name) == True{} : Bool}:
+  match tw:
+    case T.Tw{+vs, +job, +stack, +bad, +pre, +heads, _i}:
+      kc.tleafok(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, rp, {==}, wt, eb)
+
+# whether a job is a put
+def kc.isput(job: T.Job) -> Bool:
+  match job:
+    case T.JPut{_v}:
+      True{}
+    case _j:
+      False{}
+
+# the value a put puts
+def kc.jval(job: T.Job) -> T.Val:
+  match job:
+    case T.JPut{vv}:
+      vv
+    case _j:
+      T.VBool{False{}}
+
+# a put at the end of a walk puts a value that holds what it held
+def kc.pput(
+  hit: T.Hit,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +val: T.Val,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +q0: List<&2, String>,
+  +k1: String,
+  +eh: {T.rows.find(vs, name) == hit : T.Hit},
+  wi: kc.CI(stack, rp),
+  +ev: {kh.hv(val, q0, k1) == True{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.put(hit, name, vs, val, stack, bad, heads))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.put(hit, name, vs, val, stack, bad, heads)), List.reverse.go(&2, String, rp,
+  name <> q0), k1) == True{} : Bool}:
+  match hit:
+    case T.Found{_v}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, T.err.first(bad, "duplicate key"), heads)),
+        List.reverse.go(&2, String, rp, name <> q0), k1) == True{} : Bool},
+        kw.nox(stack, vs, bad, "duplicate key", heads, {==}, eb))
+    case T.Miss{}:
+      kc.okx(stack, T.VPair{name, val} <> vs, bad, heads, rp, name <> q0, k1, wi, kh.mk(name, val, vs, q0, k1,
+        kw.miss(vs, name, eh), ev))
+
+# the put at the end of a walk, whatever the job was said to be
+def kc.pjob(
+  job: T.Job,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +val: T.Val,
+  +q0: List<&2, String>,
+  +k1: String,
+  wi: kc.CI(stack, rp),
+  +ej: {job == T.JPut{val} : T.Job},
+  +ev: {kh.hv(val, q0, k1) == True{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.job(job, name, vs, stack, bad, pre, heads))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.job(job, name, vs, stack, bad, pre, heads)), List.reverse.go(&2, String, rp,
+  name <> q0), k1) == True{} : Bool}:
+  match job:
+    case T.JPut{+v2}:
+      kc.pput(T.get(vs, name), name, vs, v2, stack, bad, heads, rp, q0, k1, {==}, wi, Equal.trans(Bool, kh.hv(v2, q0,
+        k1), kh.hv(val, q0, k1), True{}, Equal.cong(T.Val, Bool, zz => kh.hv(zz, q0, k1), v2, val, Equal.cong(T.Job,
+          T.Val, jj => kc.jval(jj), T.JPut{v2}, T.JPut{val}, ej)), ev), eb)
+    case T.JDef{}:
+      Eq.bit.absurd2(&2, {Laws.k3.has(kw.evs(T.tree.leaf.job(T.JDef{}, name, vs, stack, bad, pre, heads)),
+        List.reverse.go(&2, String, rp, name <> q0), k1) == True{} : Bool},
+        Equal.cong(T.Job, Bool, jj => Bool.not(kc.isput(jj)), T.JDef{}, T.JPut{val}, ej))
+    case T.JAot{}:
+      Eq.bit.absurd2(&2, {Laws.k3.has(kw.evs(T.tree.leaf.job(T.JAot{}, name, vs, stack, bad, pre, heads)),
+        List.reverse.go(&2, String, rp, name <> q0), k1) == True{} : Bool},
+        Equal.cong(T.Job, Bool, jj => Bool.not(kc.isput(jj)), T.JAot{}, T.JPut{val}, ej))
+
+# the put at the end of a walk, by whether the walk failed
+def kc.pleafok(
+  ok: Bool,
+  +name: String,
+  +vs: List<&2, T.Val>,
+  +job: T.Job,
+  +stack: List<&2, T.Fr>,
+  +bad: String,
+  +pre: String,
+  +heads: List<&2, String>,
+  +rp: List<&2, String>,
+  +val: T.Val,
+  +q0: List<&2, String>,
+  +k1: String,
+  +eo: {String.is_empty(bad) == ok : Bool},
+  wt: kc.T2(ok, stack, rp),
+  +ej: {job == T.JPut{val} : T.Job},
+  +ev: {kh.hv(val, q0, k1) == True{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf.bad(ok, name, vs, job, stack, bad, pre, heads))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf.bad(ok, name, vs, job, stack, bad, pre, heads)), List.reverse.go(&2, String, rp,
+  name <> q0), k1) == True{} : Bool}:
+  match ok:
+    case False{}:
+      Eq.bit.absurd(&2, {Laws.k3.has(kw.evs(T.tree.rebuild(stack, vs, bad, heads)), List.reverse.go(&2, String, rp,
+        name <> q0), k1) == True{} : Bool}, Equal.trans(Bool, False{},
+        String.is_empty(bad), True{}, Equal.sym(Bool, String.is_empty(bad), False{}, eo), kw.okrb(stack, vs, bad, heads,
+          eb)))
+    case True{}:
+      kc.pjob(job, name, vs, stack, bad, pre, heads, rp, val, q0, k1, wt, ej, ev, eb)
+
+# the put at the end of a walk
+def kc.pleaf(
+  +name: String,
+  tw: T.Tw,
+  +rp: List<&2, String>,
+  +val: T.Val,
+  +q0: List<&2, String>,
+  +k1: String,
+  wt: kc.T(tw, rp),
+  +ej: {kw.tjob(tw) == T.JPut{val} : T.Job},
+  +ev: {kh.hv(val, q0, k1) == True{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.leaf(name, tw))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.leaf(name, tw)), List.reverse.go(&2, String, rp, name <> q0), k1) == True{} : Bool}:
+  match tw:
+    case T.Tw{+vs, +job, +stack, +bad, +pre, +heads, _i}:
+      kc.pleafok(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, rp, val, q0, k1, {==}, wt, ej, ev, eb)
+
+# all but the last name of a path
+def kc.initn(path: List<&2, String>) -> List<&2, String>:
+  match path:
+    case []:
+      []
+    case +nm <> rest:
+      match rest:
+        case []:
+          []
+        case _h <> _t:
+          nm <> kc.initn(rest)
+
+# the last name of a path
+def kc.lastn(path: List<&2, String>) -> String:
+  match path:
+    case []:
+      ""
+    case +nm <> rest:
+      match rest:
+        case []:
+          nm
+        case _h <> _t:
+          kc.lastn(rest)
+
+# a walk with no key fails
+def kc.none(
+  tw: T.Tw,
+  +goal: Bool,
+  +eb: {String.is_empty(kw.ebad(T.tree.walk.none(tw))) == True{} : Bool}
+) -> {goal == True{} : Bool}:
+  match tw:
+    case T.Tw{+vs, _j, +stack, +bad, _p, +heads, _i}:
+      Eq.bit.absurd(&2, {goal == True{} : Bool}, kw.nox(stack, vs, bad, "empty key", heads, {==}, eb))
+
+# LEMMA: a walk that ends with no error makes the pair or table it names,
+# under its other names
+def kc.wtab(
+  path: List<&2, String>,
+  +tw: T.Tw,
+  +skip: U32,
+  +rp: List<&2, String>,
+  wt: kc.T(tw, rp),
+  +eb: {String.is_empty(kw.ebad(T.tree.walk(path, tw, skip))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.walk(path, tw, skip)), List.reverse.go(&2, String, rp, kc.initn(path)), kc.lastn(path))
+  == True{} : Bool}:
+  match path:
+    case []:
+      kc.none(tw, Laws.k3.has(kw.evs(T.tree.walk.none(tw)), List.reverse.go(&2, String, rp, []), ""), eb)
+    case +nm <> rest:
+      match rest:
+        case []:
+          kc.tleaf(nm, tw, rp, wt, eb)
+        case _h <> _t:
+          kc.wtab(rest, T.tree.sub(nm, tw, U32.is_zero(skip)), T.path.dec(skip), nm <> rp, kc.sub(nm, tw,
+            U32.is_zero(skip), rp, wt), eb)
+
+# LEMMA: a put's walk that ends with no error puts its value, and every path
+# the value holds, under the walk's names
+def kc.wput(
+  path: List<&2, String>,
+  +tw: T.Tw,
+  +skip: U32,
+  +rp: List<&2, String>,
+  +val: T.Val,
+  +q0: List<&2, String>,
+  +k1: String,
+  wt: kc.T(tw, rp),
+  +ej: {kw.tjob(tw) == T.JPut{val} : T.Job},
+  +ev: {kh.hv(val, q0, k1) == True{} : Bool},
+  +eb: {String.is_empty(kw.ebad(T.tree.walk(path, tw, skip))) == True{} : Bool}
+) -> {Laws.k3.has(kw.evs(T.tree.walk(path, tw, skip)), List.reverse.go(&2, String, rp, List.append(&2, String, path,
+  q0)), k1) == True{} : Bool}:
+  match path:
+    case []:
+      kc.none(tw, Laws.k3.has(kw.evs(T.tree.walk.none(tw)), List.reverse.go(&2, String, rp, q0), k1), eb)
+    case +nm <> rest:
+      match rest:
+        case []:
+          kc.pleaf(nm, tw, rp, val, q0, k1, wt, ej, ev, eb)
+        case _h <> _t:
+          kc.wput(rest, T.tree.sub(nm, tw, U32.is_zero(skip)), T.path.dec(skip), nm <> rp, val, q0, k1, kc.sub(nm, tw,
+            U32.is_zero(skip), rp, wt), Equal.trans(T.Job, kw.tjob(T.tree.sub(nm, tw, U32.is_zero(skip))), kw.tjob(tw),
+              T.JPut{val}, kc.subjob(nm, tw, U32.is_zero(skip)), ej), ev, eb)
