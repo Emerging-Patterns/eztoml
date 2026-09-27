@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.6.0...v0.7.0) (2026-09-27)
+
+
+### Performance Improvements
+
+* **render:** build key text only on the pass that writes it ([#71](https://github.com/Emerging-Patterns/eztoml/issues/71)) ([885e52b](https://github.com/Emerging-Patterns/eztoml/commit/885e52b530aa74b13660a75242a871f36820c82e))
+
 ## [0.6.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.5.0...v0.6.0) (2026-09-26)
 
 
