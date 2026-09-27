@@ -44950,14 +44950,16 @@ def r2.sp.o(
     case True{}:
       r2.as4("[[", pp, "]]\n", nn, rr)
 
-# a key's text and the separator, then the rest
+# a key's text and the separator, then the rest. The text is a thunk, so the
+# pass that writes tables does not build it.
 def r2.sp.v(
   tb: Bool,
   +text: String,
   +tt: List<&2, T.Val>,
   +gg: String,
   +rr: String
-) -> {T.render.val(tb, text, tt, gg, True{}, _u => rr) == String.append(r2.key(tb, text, gg), rr) : String}:
+) -> {T.render.late(tb, _u => text, tt, gg, True{}, _v => rr)
+  == String.append(r2.key(tb, text, gg), rr) : String}:
   match tb:
     case True{}:
       {==}
