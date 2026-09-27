@@ -5908,17 +5908,20 @@ def render.aot(
       "[[" ++ path ++ "]]\n" ++ render.use(rows, nest(Unit{})) ++
         render.rest(tail, gap, trail, rest)
 
-# a value left out of the table pass
-def render.val.skip(_text: String, _tail: List<&2, Val>, _gap: String, _trail: Bool, rest: Unit -> String) -> String:
-  rest(Unit{})
-
-# a key, an array, or an inline table. The table pass leaves it
-def render.val(tabs: Bool, text: String, tail: List<&2, Val>, gap: String, trail: Bool, rest: Unit -> String) -> String:
+# a key, an array, or an inline table. The text is built only by the pass that writes keys
+def render.late(
+  tabs: Bool,
+  text: Unit -> String,
+  tail: List<&2, Val>,
+  gap: String,
+  trail: Bool,
+  rest: Unit -> String
+) -> String:
   match tabs:
     case True{}:
-      render.val.skip(text, tail, gap, trail, rest)
+      rest(Unit{})
     case False{}:
-      text ++ render.suf(gap, trail, List.is_empty(&2, Val, tail)) ++ rest(Unit{})
+      text(Unit{}) ++ render.suf(gap, trail, List.is_empty(&2, Val, tail)) ++ rest(Unit{})
 
 # one pass: keys, or the tables that follow them
 def render.pass(vs: List<&2, Val>, +gap: String, +trail: Bool, +tabs: Bool) -> String:
@@ -5941,23 +5944,23 @@ def render.pass(vs: List<&2, Val>, +gap: String, +trail: Bool, +tabs: Bool) -> S
           render.pass(rows, "\n", True{}, True{}),
         _u => render.pass(t, gap, trail, tabs))
     case VPair{name, VArr{items}} <> +t:
-      render.val(tabs, key(name) ++ " = [" ++ render.go(items, ", ", False{}) ++ "]",
-        t, gap, trail, _u => render.pass(t, gap, trail, tabs))
+      render.late(tabs, _u => key(name) ++ " = [" ++ render.go(items, ", ", False{}) ++ "]",
+        t, gap, trail, _v => render.pass(t, gap, trail, tabs))
     case VPair{name, VInl{rows}} <> +t:
-      render.val(tabs, key(name) ++ " = {" ++ render.go(rows, ", ", False{}) ++ "}",
-        t, gap, trail, _u => render.pass(t, gap, trail, tabs))
+      render.late(tabs, _u => key(name) ++ " = {" ++ render.go(rows, ", ", False{}) ++ "}",
+        t, gap, trail, _v => render.pass(t, gap, trail, tabs))
     case VPair{name, val} <> +t:
-      render.val(tabs, key(name) ++ " = " ++ render.atom(val), t, gap, trail,
-        _u => render.pass(t, gap, trail, tabs))
+      render.late(tabs, _u => key(name) ++ " = " ++ render.atom(val), t, gap, trail,
+        _v => render.pass(t, gap, trail, tabs))
     case VArr{items} <> +t:
-      render.val(tabs, "[" ++ render.go(items, ", ", False{}) ++ "]", t, gap, trail,
-        _u => render.pass(t, gap, trail, tabs))
+      render.late(tabs, _u => "[" ++ render.go(items, ", ", False{}) ++ "]",
+        t, gap, trail, _v => render.pass(t, gap, trail, tabs))
     case VInl{rows} <> +t:
-      render.val(tabs, "{" ++ render.go(rows, ", ", False{}) ++ "}", t, gap, trail,
-        _u => render.pass(t, gap, trail, tabs))
+      render.late(tabs, _u => "{" ++ render.go(rows, ", ", False{}) ++ "}",
+        t, gap, trail, _v => render.pass(t, gap, trail, tabs))
     case v <> +t:
-      render.val(tabs, render.atom(v), t, gap, trail,
-        _u => render.pass(t, gap, trail, tabs))
+      render.late(tabs, _u => render.atom(v), t, gap, trail,
+        _v => render.pass(t, gap, trail, tabs))
 
 # keys first, then tables and arrays of tables
 def render.both(+vs: List<&2, Val>, +gap: String, +trail: Bool) -> String:
