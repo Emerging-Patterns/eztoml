@@ -1,0 +1,1378 @@
+# generated fixture for eztoml parse bench
+[app]
+name = "wave-gateway"
+env = "production"
+workers = 16
+timeout_ms = 2500
+ratio = 0.875
+boot = 2022-01-01T00:00:00Z
+tags = ["prod", "edge", "tls"]
+
+[app.logging]
+level = "info"
+format = "json"
+
+[database]
+url = "postgres://user:pass@db.internal:5432/app"
+pool = 32
+hosts = ["r1.internal", "r2.internal", "r3.internal"]
+
+[[servers]]
+name = "svc-000"
+host = "10.0.0.0"
+port = 8000
+weight = 0.50
+enabled = false
+started = 2023-01-01T12:00:00Z
+tags = ["prod", "tier-0", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-000.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-001"
+host = "10.0.0.1"
+port = 8001
+weight = 0.55
+enabled = true
+started = 2023-02-02T12:00:00Z
+tags = ["prod", "tier-1", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-001.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-002"
+host = "10.0.0.2"
+port = 8002
+weight = 0.60
+enabled = true
+started = 2023-03-03T12:00:00Z
+tags = ["prod", "tier-2", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-002.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-003"
+host = "10.0.0.3"
+port = 8003
+weight = 0.65
+enabled = false
+started = 2023-04-04T12:00:00Z
+tags = ["prod", "tier-3", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-003.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-004"
+host = "10.0.0.4"
+port = 8004
+weight = 0.70
+enabled = true
+started = 2023-05-05T12:00:00Z
+tags = ["prod", "tier-0", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-004.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-005"
+host = "10.0.0.5"
+port = 8005
+weight = 0.75
+enabled = true
+started = 2023-06-06T12:00:00Z
+tags = ["prod", "tier-1", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-005.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-006"
+host = "10.0.0.6"
+port = 8006
+weight = 0.80
+enabled = false
+started = 2023-07-07T12:00:00Z
+tags = ["prod", "tier-2", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-006.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-007"
+host = "10.0.0.7"
+port = 8007
+weight = 0.85
+enabled = true
+started = 2023-08-08T12:00:00Z
+tags = ["prod", "tier-3", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-007.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-008"
+host = "10.0.0.8"
+port = 8008
+weight = 0.90
+enabled = true
+started = 2023-09-09T12:00:00Z
+tags = ["prod", "tier-0", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-008.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-009"
+host = "10.0.0.9"
+port = 8009
+weight = 0.95
+enabled = false
+started = 2023-10-10T12:00:00Z
+tags = ["prod", "tier-1", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-009.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-010"
+host = "10.0.0.10"
+port = 8010
+weight = 0.50
+enabled = true
+started = 2023-11-11T12:00:00Z
+tags = ["prod", "tier-2", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-010.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-011"
+host = "10.0.0.11"
+port = 8011
+weight = 0.55
+enabled = true
+started = 2023-12-12T12:00:00Z
+tags = ["prod", "tier-3", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-011.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-012"
+host = "10.0.0.12"
+port = 8012
+weight = 0.60
+enabled = false
+started = 2023-01-13T12:00:00Z
+tags = ["prod", "tier-0", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-012.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-013"
+host = "10.0.0.13"
+port = 8013
+weight = 0.65
+enabled = true
+started = 2023-02-14T12:00:00Z
+tags = ["prod", "tier-1", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-013.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-014"
+host = "10.0.0.14"
+port = 8014
+weight = 0.70
+enabled = true
+started = 2023-03-15T12:00:00Z
+tags = ["prod", "tier-2", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-014.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-015"
+host = "10.0.0.15"
+port = 8015
+weight = 0.75
+enabled = false
+started = 2023-04-16T12:00:00Z
+tags = ["prod", "tier-3", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-015.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-016"
+host = "10.0.0.16"
+port = 8016
+weight = 0.80
+enabled = true
+started = 2023-05-17T12:00:00Z
+tags = ["prod", "tier-0", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-016.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-017"
+host = "10.0.0.17"
+port = 8017
+weight = 0.85
+enabled = true
+started = 2023-06-18T12:00:00Z
+tags = ["prod", "tier-1", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-017.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-018"
+host = "10.0.0.18"
+port = 8018
+weight = 0.90
+enabled = false
+started = 2023-07-19T12:00:00Z
+tags = ["prod", "tier-2", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-018.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-019"
+host = "10.0.0.19"
+port = 8019
+weight = 0.95
+enabled = true
+started = 2023-08-20T12:00:00Z
+tags = ["prod", "tier-3", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-019.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-020"
+host = "10.0.0.20"
+port = 8020
+weight = 0.50
+enabled = true
+started = 2023-09-21T12:00:00Z
+tags = ["prod", "tier-0", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-020.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-021"
+host = "10.0.0.21"
+port = 8021
+weight = 0.55
+enabled = false
+started = 2023-10-22T12:00:00Z
+tags = ["prod", "tier-1", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-021.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-022"
+host = "10.0.0.22"
+port = 8022
+weight = 0.60
+enabled = true
+started = 2023-11-23T12:00:00Z
+tags = ["prod", "tier-2", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-022.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-023"
+host = "10.0.0.23"
+port = 8023
+weight = 0.65
+enabled = true
+started = 2023-12-24T12:00:00Z
+tags = ["prod", "tier-3", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-023.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-024"
+host = "10.0.0.24"
+port = 8024
+weight = 0.70
+enabled = false
+started = 2023-01-25T12:00:00Z
+tags = ["prod", "tier-0", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-024.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-025"
+host = "10.0.0.25"
+port = 8025
+weight = 0.75
+enabled = true
+started = 2023-02-26T12:00:00Z
+tags = ["prod", "tier-1", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-025.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-026"
+host = "10.0.0.26"
+port = 8026
+weight = 0.80
+enabled = true
+started = 2023-03-27T12:00:00Z
+tags = ["prod", "tier-2", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-026.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-027"
+host = "10.0.0.27"
+port = 8027
+weight = 0.85
+enabled = false
+started = 2023-04-28T12:00:00Z
+tags = ["prod", "tier-3", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-027.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-028"
+host = "10.0.0.28"
+port = 8028
+weight = 0.90
+enabled = true
+started = 2023-05-01T12:00:00Z
+tags = ["prod", "tier-0", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-028.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-029"
+host = "10.0.0.29"
+port = 8029
+weight = 0.95
+enabled = true
+started = 2023-06-02T12:00:00Z
+tags = ["prod", "tier-1", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-029.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-030"
+host = "10.0.0.30"
+port = 8030
+weight = 0.50
+enabled = false
+started = 2023-07-03T12:00:00Z
+tags = ["prod", "tier-2", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-030.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-031"
+host = "10.0.0.31"
+port = 8031
+weight = 0.55
+enabled = true
+started = 2023-08-04T12:00:00Z
+tags = ["prod", "tier-3", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-031.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-032"
+host = "10.0.0.32"
+port = 8032
+weight = 0.60
+enabled = true
+started = 2023-09-05T12:00:00Z
+tags = ["prod", "tier-0", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-032.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-033"
+host = "10.0.0.33"
+port = 8033
+weight = 0.65
+enabled = false
+started = 2023-10-06T12:00:00Z
+tags = ["prod", "tier-1", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-033.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-034"
+host = "10.0.0.34"
+port = 8034
+weight = 0.70
+enabled = true
+started = 2023-11-07T12:00:00Z
+tags = ["prod", "tier-2", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-034.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-035"
+host = "10.0.0.35"
+port = 8035
+weight = 0.75
+enabled = true
+started = 2023-12-08T12:00:00Z
+tags = ["prod", "tier-3", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-035.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-036"
+host = "10.0.0.36"
+port = 8036
+weight = 0.80
+enabled = false
+started = 2023-01-09T12:00:00Z
+tags = ["prod", "tier-0", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-036.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-037"
+host = "10.0.0.37"
+port = 8037
+weight = 0.85
+enabled = true
+started = 2023-02-10T12:00:00Z
+tags = ["prod", "tier-1", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-037.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-038"
+host = "10.0.0.38"
+port = 8038
+weight = 0.90
+enabled = true
+started = 2023-03-11T12:00:00Z
+tags = ["prod", "tier-2", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-038.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-039"
+host = "10.0.0.39"
+port = 8039
+weight = 0.95
+enabled = false
+started = 2023-04-12T12:00:00Z
+tags = ["prod", "tier-3", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-039.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-040"
+host = "10.0.0.40"
+port = 8040
+weight = 0.50
+enabled = true
+started = 2023-05-13T12:00:00Z
+tags = ["prod", "tier-0", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-040.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-041"
+host = "10.0.0.41"
+port = 8041
+weight = 0.55
+enabled = true
+started = 2023-06-14T12:00:00Z
+tags = ["prod", "tier-1", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-041.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-042"
+host = "10.0.0.42"
+port = 8042
+weight = 0.60
+enabled = false
+started = 2023-07-15T12:00:00Z
+tags = ["prod", "tier-2", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-042.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-043"
+host = "10.0.0.43"
+port = 8043
+weight = 0.65
+enabled = true
+started = 2023-08-16T12:00:00Z
+tags = ["prod", "tier-3", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-043.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-044"
+host = "10.0.0.44"
+port = 8044
+weight = 0.70
+enabled = true
+started = 2023-09-17T12:00:00Z
+tags = ["prod", "tier-0", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-044.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-045"
+host = "10.0.0.45"
+port = 8045
+weight = 0.75
+enabled = false
+started = 2023-10-18T12:00:00Z
+tags = ["prod", "tier-1", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-045.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-046"
+host = "10.0.0.46"
+port = 8046
+weight = 0.80
+enabled = true
+started = 2023-11-19T12:00:00Z
+tags = ["prod", "tier-2", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-046.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-047"
+host = "10.0.0.47"
+port = 8047
+weight = 0.85
+enabled = true
+started = 2023-12-20T12:00:00Z
+tags = ["prod", "tier-3", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-047.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-048"
+host = "10.0.0.48"
+port = 8048
+weight = 0.90
+enabled = false
+started = 2023-01-21T12:00:00Z
+tags = ["prod", "tier-0", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-048.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-049"
+host = "10.0.0.49"
+port = 8049
+weight = 0.95
+enabled = true
+started = 2023-02-22T12:00:00Z
+tags = ["prod", "tier-1", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-049.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-050"
+host = "10.0.0.50"
+port = 8050
+weight = 0.50
+enabled = true
+started = 2023-03-23T12:00:00Z
+tags = ["prod", "tier-2", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-050.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-051"
+host = "10.0.0.51"
+port = 8051
+weight = 0.55
+enabled = false
+started = 2023-04-24T12:00:00Z
+tags = ["prod", "tier-3", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-051.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-052"
+host = "10.0.0.52"
+port = 8052
+weight = 0.60
+enabled = true
+started = 2023-05-25T12:00:00Z
+tags = ["prod", "tier-0", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-052.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-053"
+host = "10.0.0.53"
+port = 8053
+weight = 0.65
+enabled = true
+started = 2023-06-26T12:00:00Z
+tags = ["prod", "tier-1", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-053.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-054"
+host = "10.0.0.54"
+port = 8054
+weight = 0.70
+enabled = false
+started = 2023-07-27T12:00:00Z
+tags = ["prod", "tier-2", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-054.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-055"
+host = "10.0.0.55"
+port = 8055
+weight = 0.75
+enabled = true
+started = 2023-08-28T12:00:00Z
+tags = ["prod", "tier-3", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-055.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-056"
+host = "10.0.0.56"
+port = 8056
+weight = 0.80
+enabled = true
+started = 2023-09-01T12:00:00Z
+tags = ["prod", "tier-0", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-056.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-057"
+host = "10.0.0.57"
+port = 8057
+weight = 0.85
+enabled = false
+started = 2023-10-02T12:00:00Z
+tags = ["prod", "tier-1", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-057.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-058"
+host = "10.0.0.58"
+port = 8058
+weight = 0.90
+enabled = true
+started = 2023-11-03T12:00:00Z
+tags = ["prod", "tier-2", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-058.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-059"
+host = "10.0.0.59"
+port = 8059
+weight = 0.95
+enabled = true
+started = 2023-12-04T12:00:00Z
+tags = ["prod", "tier-3", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-059.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-060"
+host = "10.0.0.60"
+port = 8060
+weight = 0.50
+enabled = false
+started = 2023-01-05T12:00:00Z
+tags = ["prod", "tier-0", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-060.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-061"
+host = "10.0.0.61"
+port = 8061
+weight = 0.55
+enabled = true
+started = 2023-02-06T12:00:00Z
+tags = ["prod", "tier-1", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-061.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-062"
+host = "10.0.0.62"
+port = 8062
+weight = 0.60
+enabled = true
+started = 2023-03-07T12:00:00Z
+tags = ["prod", "tier-2", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-062.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-063"
+host = "10.0.0.63"
+port = 8063
+weight = 0.65
+enabled = false
+started = 2023-04-08T12:00:00Z
+tags = ["prod", "tier-3", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-063.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-064"
+host = "10.0.0.64"
+port = 8064
+weight = 0.70
+enabled = true
+started = 2023-05-09T12:00:00Z
+tags = ["prod", "tier-0", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-064.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-065"
+host = "10.0.0.65"
+port = 8065
+weight = 0.75
+enabled = true
+started = 2023-06-10T12:00:00Z
+tags = ["prod", "tier-1", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-065.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-066"
+host = "10.0.0.66"
+port = 8066
+weight = 0.80
+enabled = false
+started = 2023-07-11T12:00:00Z
+tags = ["prod", "tier-2", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-066.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-067"
+host = "10.0.0.67"
+port = 8067
+weight = 0.85
+enabled = true
+started = 2023-08-12T12:00:00Z
+tags = ["prod", "tier-3", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-067.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-068"
+host = "10.0.0.68"
+port = 8068
+weight = 0.90
+enabled = true
+started = 2023-09-13T12:00:00Z
+tags = ["prod", "tier-0", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-068.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-069"
+host = "10.0.0.69"
+port = 8069
+weight = 0.95
+enabled = false
+started = 2023-10-14T12:00:00Z
+tags = ["prod", "tier-1", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-069.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-070"
+host = "10.0.0.70"
+port = 8070
+weight = 0.50
+enabled = true
+started = 2023-11-15T12:00:00Z
+tags = ["prod", "tier-2", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-070.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-071"
+host = "10.0.0.71"
+port = 8071
+weight = 0.55
+enabled = true
+started = 2023-12-16T12:00:00Z
+tags = ["prod", "tier-3", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-071.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-072"
+host = "10.0.0.72"
+port = 8072
+weight = 0.60
+enabled = false
+started = 2023-01-17T12:00:00Z
+tags = ["prod", "tier-0", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-072.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-073"
+host = "10.0.0.73"
+port = 8073
+weight = 0.65
+enabled = true
+started = 2023-02-18T12:00:00Z
+tags = ["prod", "tier-1", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-073.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-074"
+host = "10.0.0.74"
+port = 8074
+weight = 0.70
+enabled = true
+started = 2023-03-19T12:00:00Z
+tags = ["prod", "tier-2", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-074.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-075"
+host = "10.0.0.75"
+port = 8075
+weight = 0.75
+enabled = false
+started = 2023-04-20T12:00:00Z
+tags = ["prod", "tier-3", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-075.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-076"
+host = "10.0.0.76"
+port = 8076
+weight = 0.80
+enabled = true
+started = 2023-05-21T12:00:00Z
+tags = ["prod", "tier-0", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-076.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-077"
+host = "10.0.0.77"
+port = 8077
+weight = 0.85
+enabled = true
+started = 2023-06-22T12:00:00Z
+tags = ["prod", "tier-1", "az-3"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-077.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-078"
+host = "10.0.0.78"
+port = 8078
+weight = 0.90
+enabled = false
+started = 2023-07-23T12:00:00Z
+tags = ["prod", "tier-2", "az-1"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-078.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[[servers]]
+name = "svc-079"
+host = "10.0.0.79"
+port = 8079
+weight = 0.95
+enabled = true
+started = 2023-08-24T12:00:00Z
+tags = ["prod", "tier-3", "az-2"]
+retries = [1, 2, 4, 8]
+[servers.tls]
+cert = "/etc/certs/svc-079.pem"
+alpn = ["h2", "http/1.1"]
+min = "1.2"
+
+[deps.crate-000]
+version = "1.0.0"
+optional = true
+features = ["a", "b-0", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000000"
+
+[deps.crate-001]
+version = "1.1.1"
+optional = false
+features = ["a", "b-1", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000001"
+
+[deps.crate-002]
+version = "1.2.2"
+optional = true
+features = ["a", "b-2", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000002"
+
+[deps.crate-003]
+version = "1.3.3"
+optional = false
+features = ["a", "b-3", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000003"
+
+[deps.crate-004]
+version = "1.4.4"
+optional = true
+features = ["a", "b-4", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000004"
+
+[deps.crate-005]
+version = "1.5.5"
+optional = false
+features = ["a", "b-5", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000005"
+
+[deps.crate-006]
+version = "1.6.6"
+optional = true
+features = ["a", "b-6", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000006"
+
+[deps.crate-007]
+version = "1.7.0"
+optional = false
+features = ["a", "b-7", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000007"
+
+[deps.crate-008]
+version = "1.8.1"
+optional = true
+features = ["a", "b-8", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000008"
+
+[deps.crate-009]
+version = "1.9.2"
+optional = false
+features = ["a", "b-9", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000009"
+
+[deps.crate-010]
+version = "1.0.3"
+optional = true
+features = ["a", "b-10", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000010"
+
+[deps.crate-011]
+version = "1.1.4"
+optional = false
+features = ["a", "b-11", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000011"
+
+[deps.crate-012]
+version = "1.2.5"
+optional = true
+features = ["a", "b-12", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000012"
+
+[deps.crate-013]
+version = "1.3.6"
+optional = false
+features = ["a", "b-13", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000013"
+
+[deps.crate-014]
+version = "1.4.0"
+optional = true
+features = ["a", "b-14", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000014"
+
+[deps.crate-015]
+version = "1.5.1"
+optional = false
+features = ["a", "b-15", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000015"
+
+[deps.crate-016]
+version = "1.6.2"
+optional = true
+features = ["a", "b-16", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000016"
+
+[deps.crate-017]
+version = "1.7.3"
+optional = false
+features = ["a", "b-17", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000017"
+
+[deps.crate-018]
+version = "1.8.4"
+optional = true
+features = ["a", "b-18", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000018"
+
+[deps.crate-019]
+version = "1.9.5"
+optional = false
+features = ["a", "b-19", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000019"
+
+[deps.crate-020]
+version = "1.0.6"
+optional = true
+features = ["a", "b-20", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000020"
+
+[deps.crate-021]
+version = "1.1.0"
+optional = false
+features = ["a", "b-21", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000021"
+
+[deps.crate-022]
+version = "1.2.1"
+optional = true
+features = ["a", "b-22", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000022"
+
+[deps.crate-023]
+version = "1.3.2"
+optional = false
+features = ["a", "b-23", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000023"
+
+[deps.crate-024]
+version = "1.4.3"
+optional = true
+features = ["a", "b-24", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000024"
+
+[deps.crate-025]
+version = "1.5.4"
+optional = false
+features = ["a", "b-25", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000025"
+
+[deps.crate-026]
+version = "1.6.5"
+optional = true
+features = ["a", "b-26", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000026"
+
+[deps.crate-027]
+version = "1.7.6"
+optional = false
+features = ["a", "b-27", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000027"
+
+[deps.crate-028]
+version = "1.8.0"
+optional = true
+features = ["a", "b-28", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000028"
+
+[deps.crate-029]
+version = "1.9.1"
+optional = false
+features = ["a", "b-29", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000029"
+
+[deps.crate-030]
+version = "1.0.2"
+optional = true
+features = ["a", "b-30", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000030"
+
+[deps.crate-031]
+version = "1.1.3"
+optional = false
+features = ["a", "b-31", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000031"
+
+[deps.crate-032]
+version = "1.2.4"
+optional = true
+features = ["a", "b-32", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000032"
+
+[deps.crate-033]
+version = "1.3.5"
+optional = false
+features = ["a", "b-33", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000033"
+
+[deps.crate-034]
+version = "1.4.6"
+optional = true
+features = ["a", "b-34", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000034"
+
+[deps.crate-035]
+version = "1.5.0"
+optional = false
+features = ["a", "b-35", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000035"
+
+[deps.crate-036]
+version = "1.6.1"
+optional = true
+features = ["a", "b-36", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000036"
+
+[deps.crate-037]
+version = "1.7.2"
+optional = false
+features = ["a", "b-37", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000037"
+
+[deps.crate-038]
+version = "1.8.3"
+optional = true
+features = ["a", "b-38", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000038"
+
+[deps.crate-039]
+version = "1.9.4"
+optional = false
+features = ["a", "b-39", "serde"]
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa00000000000000000000000000000039"
