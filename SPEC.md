@@ -2,7 +2,7 @@
 
 This is the list of every behavior eztoml guarantees, each under a stable requirement ID. There are two families: conformance to [TOML v1.0.0](https://toml.io/en/v1.0.0) and its [toml.abnf](https://github.com/toml-lang/toml/blob/1.0.0/toml.abnf) (TOML-TEXT, TOML-STR, TOML-NUM, TOML-TIME), and the public interface in `main.bend` (TOML-RT, TOML-KEY, TOML-GET, TOML-READ). The interface is the defs `parse`, `render`, `get`, `at`, `root`, `bad`, `string`, `digits`, `flag`, `str`, `integer`, `float`, `boolean`, `array`, `inline`, `table`, `pair`, `key`, `bare` and `wf`, and the types `Doc`, `Val`, `Hit`, `Sign`, `When`, `Date`, `Clock` and `Zone`. Every other def in `main.bend` is internal and carries no promise.
 
-Every requirement has one of two levels. A **Proved** requirement holds for every input, and is backed by a quantified law (a `for` or `exs` binder) in `LAWS.bend` that passes the proof gate. A **Trusted** requirement is an assumption eztoml cannot check from inside its own gate, and it is listed in the trust boundary below. A Proved requirement whose laws have not all landed has status **pending**: we intend to prove it, and until then it is not guaranteed. The proof gate is this check: the first line `bend PROOF.bend` prints is exactly `All terms check.` Tests and fixtures are never evidence for a requirement.
+Every requirement has one of two levels. A **Proved** requirement holds for every input, and is backed by a quantified law (a `for` or `exs` binder) in `LAWS.bend` that passes the proof gate. A **Trusted** requirement is an assumption eztoml cannot check from inside its own gate, and it is listed in the trust boundary below. A Proved requirement whose laws have not all landed has status **pending**: we intend to prove it, and until then it is not guaranteed. The proof gate is this check: the first line `bend PROOF.bend` prints is exactly `ALL PROOFS CHECK`. Tests and fixtures are never evidence for a requirement.
 
 A document is **well-formed** when `wf` holds of it: the shapes `parse` returns. `same` is the specification relation "the same TOML document", which ignores whether a string is owned or a span of the source and the order of a table's pairs. `wf` is public, in `main.bend`; `same` and `own` (which reads every span into an owned string) are specification helpers in `LAWS.bend`. `same` compares tables as maps and arrays in order, and compares neither the stored paths nor the error field.
 
@@ -72,7 +72,7 @@ A tag may name a proved or a pending requirement, never a Trusted one or an ID n
 | ID | Requirement | Level | Status | Law |
 | :---- | :---- | :---- | :---- | :---- |
 | TOML-TRUST-1 | The Bend checker is sound: a proof it accepts proves its law | Trusted |  |  |
-| TOML-TRUST-2 | The proof-gate runner fails the build unless the first line of `bend PROOF.bend` is `All terms check.` | Trusted |  |  |
+| TOML-TRUST-2 | The proof-gate runner fails the build unless the first line of `bend PROOF.bend` is `ALL PROOFS CHECK` | Trusted |  |  |
 | TOML-TRUST-3 | A TOML file's bytes reach `parse` as the code points of their UTF-8 decoding, and invalid UTF-8 is the reader's to reject | Trusted |  |  |
 
 ## Left to prove
@@ -94,5 +94,5 @@ These assumptions sit outside the proofs. They are the complete list of Trusted 
 | ID | Assumption | Why it is trusted |
 | :---- | :---- | :---- |
 | TOML-TRUST-1 | The Bend checker is sound: a proof it accepts proves its law. | It cannot be checked from inside Bend; this is EZ-TRUST-1. eztoml's code and the proof gate build with the flake's `bend` input. |
-| TOML-TRUST-2 | The proof-gate runner fails the build unless the first line of `bend PROOF.bend` is `All terms check.` | It is ez's `mkProofs` (`ez prove`), run by `nix flake check` in CI; this is EZ-TRUST-4. |
+| TOML-TRUST-2 | The proof-gate runner fails the build unless the first line of `bend PROOF.bend` is `ALL PROOFS CHECK` | It is the flake's `checks.proofs`, run by `nix flake check` in CI: it runs every PROOF.bend on the flake's `bend` (2.0.34), whose verdict line is `ALL PROOFS CHECK` or `SOME PROOFS FAIL`. It stands in for ez's `mkProofs` (EZ-TRUST-4) until ez runs on 2.0.34. |
 | TOML-TRUST-3 | A TOML file's bytes reach `parse` as the code points of their UTF-8 decoding, and invalid UTF-8 is the reader's to reject. | `parse` takes a `String`. Bend's `File.read` decodes before eztoml sees the text, and replaces an invalid byte with U+FFFD rather than rejecting it (checked with a driver that dumps the code points it read), so a U+FFFD in a comment or string reads as valid text. A caller that must refuse invalid bytes checks the file as UTF-8 before `parse` (README); a byte-level entry point that refuses them is a Future Step (docs/rfc/eztoml-grammar-proofs.md, REVIEW-G8). |

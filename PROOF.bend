@@ -1,5 +1,5 @@
 # Proofs of the eztoml laws. The gate: `bend PROOF.bend` prints exactly
-# `All terms check.` as its first line.
+# `ALL PROOFS CHECK` as its first line.
 import Base
 import ./main.bend as T
 import ./src/eq.bend as Eq
@@ -132,15 +132,15 @@ def str.eq.agree.cmp(
   cc: Cmp,
   ih: {T.str.eq(xt, yt) == String.eq(xt, yt) : Bool}
 ) -> {T.str.eq.step(xt, yt, Cmp.is_eq(cc))
-  == String.eq.fin(String.cmp.fin(xt, yt, ((hx, hy), cc))) : Bool}:
+  == Cmp.is_eq(Pair.snd(String & String, Cmp, String.cmp.fin(xt, yt, ((hx, hy), cc)))) : Bool}:
   match cc:
     case LT{}:
       str.eq.step.false(xt, yt)
     case EQ{}:
       Equal.trans(Bool, T.str.eq(xt, yt), String.eq(xt, yt),
-        String.eq.fin(String.cmp.rec(hx, hy, String.cmp(xt, yt))), ih,
+        Cmp.is_eq(Pair.snd(String & String, Cmp, String.cmp.rec(hx, hy, String.cmp(xt, yt)))), ih,
         Equal.sym(Bool,
-          String.eq.fin(String.cmp.rec(hx, hy, String.cmp(xt, yt))),
+          Cmp.is_eq(Pair.snd(String & String, Cmp, String.cmp.rec(hx, hy, String.cmp(xt, yt)))),
           String.eq(xt, yt), Eq.eq_fin_rec(hx, hy, String.cmp(xt, yt))))
     case GT{}:
       str.eq.step.false(xt, yt)
