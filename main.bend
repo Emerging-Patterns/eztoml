@@ -1,3 +1,5 @@
+# eztoml: TOML for Bend 2, a proven parser and renderer for TOML documents.
+#
 # eztoml reads and writes TOML documents. Values are strings, integers, floats,
 # booleans, datetimes, arrays, inline tables, tables, and arrays of tables.
 # Comments and blank lines are passed over.
