@@ -90,9 +90,10 @@ law string_eq_self:
   for +s: String
   {String.eq(s, s) == True{} : Bool}
 
-# equality is the comparison read as a bit, so the comparison's law answers
+# equality is the comparison's verdict read as a bit (Base 2.0.33 reads it
+# through String.order), so the comparison's law answers
 def string_eq_self(s):
-  Equal.cong((String & String) & Cmp, Bool, r => String.eq.fin(r),
+  Equal.cong((String & String) & Cmp, Bool, r => Cmp.is_eq(Pair.snd(String & String, Cmp, r)),
     String.cmp(s, s), ((s, s), EQ{}), string_cmp_self(s))
 
 # LAW: a char equals itself
@@ -663,7 +664,8 @@ law eq_fin_rec:
   for h1: Char
   for h2: Char
   for r: (String & String) & Cmp
-  {String.eq.fin(String.cmp.rec(h1, h2, r)) == String.eq.fin(r) : Bool}
+  {Cmp.is_eq(Pair.snd(String & String, Cmp, String.cmp.rec(h1, h2, r)))
+    == Cmp.is_eq(Pair.snd(String & String, Cmp, r)) : Bool}
 
 # the comparison, taken apart and put back together
 def eq_fin_rec(_h1, _h2, r):

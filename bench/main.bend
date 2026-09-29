@@ -293,8 +293,8 @@ def run.named.at(zz: Bool, +cmd: String, +aa: String, +bb: String, +cc: String) 
 def run.named(+cmd: String, +aa: String, +bb: String, +cc: String) -> IO(Unit):
   run.named.at(String.eq(cmd, "parse"), cmd, aa, bb, cc)
 
-# the first four argv strings, empty when missing
-def args4(xs: List<String>) -> String & String & String & String:  # noqa: L001 bench harness, outside the spec
+# the first four strings of a list, empty when missing
+def args4.go(xs: List<String>) -> String & String & String & String:
   match xs:
     case a <> b <> c <> d <> _t:
       (a, b, c, d)
@@ -304,6 +304,15 @@ def args4(xs: List<String>) -> String & String & String & String:  # noqa: L001 
       (a, b, "", "")
     case a <> Nil{}:
       (a, "", "", "")
+    case Nil{}:
+      ("", "", "", "")
+
+# the first four arguments, empty when missing. IO.args starts with the
+# program as invoked (bend 2.0.32), so the arguments follow its head.
+def args4(xs: List<String>) -> String & String & String & String:  # noqa: L001 bench harness, outside the spec
+  match xs:
+    case _p <> ys:
+      args4.go(ys)
     case Nil{}:
       ("", "", "", "")
 
