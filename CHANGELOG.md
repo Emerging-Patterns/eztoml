@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.7.0...v0.8.0) (2026-09-30)
+
+
+### Bug Fixes
+
+* a one-line package description on the hub ([#75](https://github.com/Emerging-Patterns/eztoml/issues/75)) ([933c2d9](https://github.com/Emerging-Patterns/eztoml/commit/933c2d9df3c6c0a2990a6534f281233cd043be59))
+
 ## [0.7.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.6.0...v0.7.0) (2026-09-27)
 
 
