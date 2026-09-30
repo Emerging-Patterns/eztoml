@@ -19,7 +19,7 @@
 
   outputs = { self, nixpkgs, ... }@inputs:
     let
-      version = "0.7.0"; # x-release-please-version
+      version = "0.8.0"; # x-release-please-version
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
       ez = inputs.ez.lib.${system};
