@@ -7,7 +7,7 @@ TOML for [Bend 2](https://github.com/bendlang/bend).
 With [Bend](https://github.com/bendlang/bend) alone there is nothing to
 install: import eztoml by its hub name and version, and `bend` fetches it
 from [the hub](https://hub.bend-lang.com) into `~/.bend/lib` on the first
-run; no install step. eztoml is built and checked on Bend 2.0.35.
+run; no install step. eztoml is built and checked on Bend 2.0.36.
 
 ```
 import emerging-eztoml@0.8.0.0/main.bend as Toml
