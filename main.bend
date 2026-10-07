@@ -307,10 +307,21 @@ def basic.go(cs: List<&2, Char>, out: List<&2, Char>) -> List<&2, Char>:
     case +h <> t:
       basic.go(t, basic.one(h, out))
 
+# the buffer is reversed, so each head goes on the front of the text
+def buf.str.go(buf: List<&2, Char>, acc: String) -> String:
+  match buf:
+    case []:
+      acc
+    case +h <> t:
+      buf.str.go(t, SCon{h, acc})
+
+# the buffer, in order
+def buf.str(buf: List<&2, Char>) -> String:
+  buf.str.go(buf, "")
+
 # a basic string: quotes, with controls and quotes escaped
 def key.basic(+ss: String) -> String:
-  "\"" ++ String.from_list(List.reverse(&2, Char,
-    basic.go(String.to_list(ss), []))) ++ "\""
+  "\"" ++ buf.str(basic.go(String.to_list(ss), [])) ++ "\""
 
 # bare when the name allows it, otherwise a basic string
 def key.go(ok: Bool, +ss: String) -> String:
@@ -411,7 +422,7 @@ def dec.drop.end(lead: Bool, out: List<&2, Char>) -> String:
     case True{}:
       "0"
     case False{}:
-      String.from_list(List.reverse(&2, Char, out))
+      buf.str(out)
 
 # drop leading zeros from a most-significant-first digit list
 def dec.drop(cs: List<&2, Char>, +lead: Bool, out: List<&2, Char>) -> String:
@@ -757,7 +768,7 @@ def when.frac.end.go(some: Bool, rev: List<&2, Char>, clock: Clock, date: Date, 
     case False{}:
       WFail{"invalid fraction"}
     case True{}:
-      when.zone(rest, clock.with(clock, String.from_list(List.reverse(&2, Char, rev))),
+      when.zone(rest, clock.with(clock, buf.str(rev)),
         date)
 
 # the fraction must hold a digit
@@ -2536,18 +2547,6 @@ def date.eq(cs: List<&2, Char>, pat: List<&2, Char>) -> Bool:
 # the buffer is a calendar date
 def date.shaped(buf: List<&2, Char>) -> Bool:
   date.eq(List.reverse(&2, Char, buf), String.to_list("DDDD-DD-DD"))
-
-# the buffer is reversed, so each head goes on the front of the text
-def buf.str.go(buf: List<&2, Char>, acc: String) -> String:
-  match buf:
-    case []:
-      acc
-    case +h <> t:
-      buf.str.go(t, SCon{h, acc})
-
-# the buffer, in order
-def buf.str(buf: List<&2, Char>) -> String:
-  buf.str.go(buf, "")
 
 # the first n characters of a source span
 def span.str(src: String, +nn: U32, zz: Bool) -> String:
@@ -5756,7 +5755,7 @@ def span.quote.fin(hit: Sq, src: String, +nn: U32) -> String:
     case SqNo{}:
       key.basic(span.str(src, nn, U32.is_zero(nn)))
     case SqOk{rev}:
-      String.from_list(List.reverse(&2, Char, '"' <> rev))
+      buf.str('"' <> rev)
 
 # a plain string span, quoted without rebuilding an escaped copy
 def span.quote(+src: String, +nn: U32) -> String:

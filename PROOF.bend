@@ -4531,10 +4531,65 @@ def go.txt(
             String.append(String.from_list(List.reverse(&2, Char, out)), Laws.esc(hh)), one.txt(hh, out)),
           Eq.append_assoc(String.from_list(List.reverse(&2, Char, out)), Laws.esc(hh), Laws.escs(tt))))
 
+# a reversed buffer folded onto a string with SCon is that buffer read in order, then the accumulator
+def fold.ord(
+  xs: List<&2, Char>,
+  +acc: String
+) -> {T.buf.str.go(xs, acc) == String.append(String.from_list(List.reverse(&2, Char, xs)), acc) : String}:
+  match xs:
+    case []:
+      {==}
+    case +h <> +t:
+      Equal.trans(String,
+        T.buf.str.go(t, SCon{h, acc}),
+        String.append(String.from_list(List.reverse(&2, Char, t)), SCon{h, acc}),
+        String.append(String.from_list(List.reverse(&2, Char, h <> t)), acc),
+        fold.ord(t, SCon{h, acc}),
+        Equal.trans(String,
+          String.append(String.from_list(List.reverse(&2, Char, t)), SCon{h, acc}),
+          String.append(String.from_list(List.reverse(&2, Char, t)), String.append(String.from_list([h]), acc)),
+          String.append(String.from_list(List.reverse.go(&2, Char, t, [h])), acc),
+          Equal.cong(String, String, zz => String.append(String.from_list(List.reverse(&2, Char, t)), zz),
+            SCon{h, acc}, String.append(String.from_list([h]), acc), {==}),
+          Equal.trans(String,
+            String.append(String.from_list(List.reverse(&2, Char, t)), String.append(String.from_list([h]), acc)),
+            String.append(String.append(String.from_list(List.reverse(&2, Char, t)), String.from_list([h])), acc),
+            String.append(String.from_list(List.reverse.go(&2, Char, t, [h])), acc),
+            Equal.sym(String,
+              String.append(String.append(String.from_list(List.reverse(&2, Char, t)), String.from_list([h])), acc),
+              String.append(String.from_list(List.reverse(&2, Char, t)), String.append(String.from_list([h]), acc)),
+              Eq.append_assoc(String.from_list(List.reverse(&2, Char, t)), String.from_list([h]), acc)),
+            Equal.cong(String, String, zz => String.append(zz, acc),
+              String.append(String.from_list(List.reverse(&2, Char, t)), String.from_list([h])),
+              String.from_list(List.reverse.go(&2, Char, t, [h])),
+              Equal.sym(String,
+                String.from_list(List.reverse.go(&2, Char, t, [h])),
+                String.append(String.from_list(List.reverse(&2, Char, t)), String.from_list([h])),
+                txt.onto(t, [h]))))))
+
+# the fold with an empty accumulator is the reversed buffer read as a string
+def fold.nil(
+  +xs: List<&2, Char>
+) -> {T.buf.str.go(xs, "") == String.from_list(List.reverse(&2, Char, xs)) : String}:
+  Equal.trans(String,
+    T.buf.str.go(xs, ""),
+    String.append(String.from_list(List.reverse(&2, Char, xs)), ""),
+    String.from_list(List.reverse(&2, Char, xs)),
+    fold.ord(xs, ""),
+    Eq.append_nil(String.from_list(List.reverse(&2, Char, xs))))
+
 # key.basic is the quotes around escs
 def Laws.basic_escs(s):
-  Equal.cong(String, String, zz => String.append("\"", String.append(zz, "\"")),
-    String.from_list(List.reverse(&2, Char, T.basic.go(String.to_list(s), []))), Laws.escs(s), go.txt(s, []))
+  Equal.trans(String,
+    SCon{'"', String.append(T.buf.str.go(T.basic.go(String.to_list(s), []), ""), "\"")},
+    SCon{'"', String.append(String.from_list(List.reverse(&2, Char, T.basic.go(String.to_list(s), []))), "\"")},
+    SCon{'"', String.append(Laws.escs(s), "\"")},
+    Equal.cong(String, String, zz => SCon{'"', String.append(zz, "\"")},
+      T.buf.str.go(T.basic.go(String.to_list(s), []), ""),
+      String.from_list(List.reverse(&2, Char, T.basic.go(String.to_list(s), []))),
+      fold.nil(T.basic.go(String.to_list(s), []))),
+    Equal.cong(String, String, zz => String.append("\"", String.append(zz, "\"")),
+      String.from_list(List.reverse(&2, Char, T.basic.go(String.to_list(s), []))), Laws.escs(s), go.txt(s, [])))
 
 # The span fast path. span.quote copies a span's characters until one needs an
 # escape, and then gives up to key.basic.
@@ -4717,12 +4772,11 @@ def sq.fin(
       {==}
     case True{}:
       Equal.trans(String,
-        String.from_list(List.reverse.go(&2, Char,
-          T.basic.go(String.to_list(T.span.str(src, nn, U32.is_zero(nn))), ['"']), ['"'])),
+        T.buf.str.go(T.basic.go(String.to_list(T.span.str(src, nn, U32.is_zero(nn))), ['"']), "\""),
         String.append(String.from_list(List.reverse(&2, Char,
           T.basic.go(String.to_list(T.span.str(src, nn, U32.is_zero(nn))), ['"']))), "\""),
         T.key.basic(T.span.str(src, nn, U32.is_zero(nn))),
-        txt.onto(T.basic.go(String.to_list(T.span.str(src, nn, U32.is_zero(nn))), ['"']), ['"']),
+        fold.ord(T.basic.go(String.to_list(T.span.str(src, nn, U32.is_zero(nn))), ['"']), "\""),
         Equal.trans(String,
           String.append(String.from_list(List.reverse(&2, Char,
             T.basic.go(String.to_list(T.span.str(src, nn, U32.is_zero(nn))), ['"']))), "\""),
@@ -12927,7 +12981,7 @@ def dd.kept(
 ) -> {T.dec.drop(cs, False{}, out) == String.from_list(List.reverse.go(&2, Char, out, cs)) : String}:
   match cs:
     case []:
-      {==}
+      fold.nil(out)
     case hh <> tt:
       dd.kept(tt, hh <> out)
 
@@ -16222,17 +16276,20 @@ def frac.all(
         fdig(SCon{cc, tt}, [], zs, T.Clock{hh, mi, ss, ""}, dt, hd, hz),
         Equal.trans(T.WhenOut,
           T.when.frac.end.go(T.cs.some(rev.onto(tt, [cc])), rev.onto(tt, [cc]), T.Clock{hh, mi, ss, ""}, dt, tl(zs)),
-          T.when.zone(tl(zs), T.clock.with(T.Clock{hh, mi, ss, ""}, String.from_list(List.reverse(&2, Char,
-            rev.onto(tt, [cc])))), dt),
+          T.when.zone(tl(zs), T.Clock{hh, mi, ss, T.buf.str.go(rev.onto(tt, [cc]), "")}, dt),
           T.when.zone(tl(zs), T.Clock{hh, mi, ss, SCon{cc, tt}}, dt),
           Equal.cong(Bool, T.WhenOut, bb => T.when.frac.end.go(bb, rev.onto(tt, [cc]), T.Clock{hh, mi, ss, ""}, dt,
             tl(zs)), T.cs.some(rev.onto(tt, [cc])), True{}, some.rev(tt, cc, [])),
           Equal.cong(String, T.WhenOut, fs => T.when.zone(tl(zs), T.Clock{hh, mi, ss, fs}, dt),
-            String.from_list(List.reverse(&2, Char, rev.onto(tt, [cc]))), SCon{cc, tt},
-            Equal.trans(String, String.from_list(List.reverse(&2, Char, rev.onto(tt, [cc]))),
-              String.from_list(String.to_list(SCon{cc, tt})), SCon{cc, tt},
-              Equal.cong(List<&2, Char>, String, ls => String.from_list(ls), List.reverse(&2, Char, rev.onto(tt, [cc])),
-                String.to_list(SCon{cc, tt}), wd.order(cc, tt)), ftl(SCon{cc, tt})))))
+            T.buf.str.go(rev.onto(tt, [cc]), ""), SCon{cc, tt},
+            Equal.trans(String, T.buf.str.go(rev.onto(tt, [cc]), ""),
+              String.from_list(List.reverse(&2, Char, rev.onto(tt, [cc]))), SCon{cc, tt},
+              fold.nil(rev.onto(tt, [cc])),
+              Equal.trans(String, String.from_list(List.reverse(&2, Char, rev.onto(tt, [cc]))),
+                String.from_list(String.to_list(SCon{cc, tt})), SCon{cc, tt},
+                Equal.cong(List<&2, Char>, String, ls => String.from_list(ls),
+                  List.reverse(&2, Char, rev.onto(tt, [cc])),
+                  String.to_list(SCon{cc, tt}), wd.order(cc, tt)), ftl(SCon{cc, tt}))))))
 
 # a numeric offset, after its sign
 def zoff(
@@ -39793,8 +39850,17 @@ def gd.wf.endgo(
     case False{}:
       {==}
     case True{}:
-      gd.wz(rest, T.clock.with(clock, String.from_list(List.reverse(&2, Char, rev))), date, ed,
-        gd.clock.with(clock, String.from_list(List.reverse(&2, Char, rev)), ec, gd.dl.rev(rev, [], er, {==})))
+      gd.wz(rest, T.clock.with(clock, T.buf.str.go(rev, "")), date, ed,
+        gd.clock.with(clock, T.buf.str.go(rev, ""), ec,
+          Equal.trans(Bool,
+            T.wf.digits(T.buf.str.go(rev, "")),
+            T.wf.digits(String.from_list(List.reverse(&2, Char, rev))),
+            True{},
+            Equal.cong(String, Bool, fs => T.wf.digits(fs),
+              T.buf.str.go(rev, ""),
+              String.from_list(List.reverse(&2, Char, rev)),
+              fold.nil(rev)),
+            gd.dl.rev(rev, [], er, {==}))))
 
 # the fraction's digits, one at a time
 def gd.wf.dig(
@@ -40418,7 +40484,15 @@ def gd.drop.f(
         case []:
           Eq.bit.absurd(&2, {T.wf.dec(T.dec.drop([], False{}, [])) == True{} : Bool}, eo)
         case +o1 <> +ot:
-          gd.rd.dec(ot, o1, [], eo, {==})
+          Equal.trans(Bool,
+            T.wf.dec(T.buf.str.go(ot, SCon{o1, ""})),
+            T.wf.dec(String.from_list(List.reverse.go(&2, Char, ot, [o1]))),
+            True{},
+            Equal.cong(String, Bool, ss => T.wf.dec(ss),
+              T.buf.str.go(ot, SCon{o1, ""}),
+              String.from_list(List.reverse.go(&2, Char, ot, [o1])),
+              fold.nil(o1 <> ot)),
+            gd.rd.dec(ot, o1, [], eo, {==}))
     case +hh <> +tt:
       match out:
         case []:
@@ -57322,7 +57396,7 @@ def kw2.frac.end.go(
     case False{}:
       {==}
     case True{}:
-      kw2.zone(rest, T.clock.with(clock, String.from_list(List.reverse(&2, Char, rev))), date)
+      kw2.zone(rest, T.clock.with(clock, T.buf.str.go(rev, "")), date)
 
 # the fraction must hold a digit
 def kw2.frac.end(
@@ -65053,13 +65127,25 @@ def t1.F.end(
     Laws.g.take_digits(uu), [Chr{yy}]), T.Clock{hh, mi, ss, ""}, date, Laws.abnf.drop_digits(uu)))
     == fin(Laws.abnf.drop_digits(uu), T.Clock{hh, mi, ss, String.from_list(Chr{yy} <> Laws.g.take_digits(uu))},
     Laws.abnf.drop_digits(uu)) : T1o}
-  %Equal.sym(List<&2, Char>, List.reverse.go(&2, Char, List.reverse.go(&2, Char, Laws.g.take_digits(uu), [Chr{yy}]),
-    []),
-    Chr{yy} <> Laws.g.take_digits(uu), t1.revrev(Laws.g.take_digits(uu), [Chr{yy}])) :
-    {t1.obs(md, T.when.zone(Laws.abnf.drop_digits(uu), T.Clock{hh, mi, ss, String.from_list(_)}, date))
-    == fin(Laws.abnf.drop_digits(uu), T.Clock{hh, mi, ss, String.from_list(Chr{yy} <> Laws.g.take_digits(uu))},
-    Laws.abnf.drop_digits(uu)) : T1o}
-  hz(Laws.abnf.drop_digits(uu), T.Clock{hh, mi, ss, String.from_list(Chr{yy} <> Laws.g.take_digits(uu))})
+  Equal.trans(T1o,
+    t1.obs(md, T.when.zone(Laws.abnf.drop_digits(uu), T.Clock{hh, mi, ss, T.buf.str.go(List.reverse.go(&2, Char,
+      Laws.g.take_digits(uu), [Chr{yy}]), "")}, date)),
+    t1.obs(md, T.when.zone(Laws.abnf.drop_digits(uu), T.Clock{hh, mi, ss, String.from_list(Chr{yy}
+      <> Laws.g.take_digits(uu))}, date)),
+    fin(Laws.abnf.drop_digits(uu), T.Clock{hh, mi, ss, String.from_list(Chr{yy} <> Laws.g.take_digits(uu))},
+      Laws.abnf.drop_digits(uu)),
+    Equal.cong(String, T1o, fs => t1.obs(md, T.when.zone(Laws.abnf.drop_digits(uu), T.Clock{hh, mi, ss, fs}, date)),
+      T.buf.str.go(List.reverse.go(&2, Char, Laws.g.take_digits(uu), [Chr{yy}]), ""),
+      String.from_list(Chr{yy} <> Laws.g.take_digits(uu)),
+      Equal.trans(String,
+        T.buf.str.go(List.reverse.go(&2, Char, Laws.g.take_digits(uu), [Chr{yy}]), ""),
+        String.from_list(List.reverse.go(&2, Char, List.reverse.go(&2, Char, Laws.g.take_digits(uu), [Chr{yy}]), [])),
+        String.from_list(Chr{yy} <> Laws.g.take_digits(uu)),
+        fold.nil(List.reverse.go(&2, Char, Laws.g.take_digits(uu), [Chr{yy}])),
+        Equal.cong(List<&2, Char>, String, ls => String.from_list(ls),
+          List.reverse.go(&2, Char, List.reverse.go(&2, Char, Laws.g.take_digits(uu), [Chr{yy}]), []),
+          Chr{yy} <> Laws.g.take_digits(uu), t1.revrev(Laws.g.take_digits(uu), [Chr{yy}])))),
+    hz(Laws.abnf.drop_digits(uu), T.Clock{hh, mi, ss, String.from_list(Chr{yy} <> Laws.g.take_digits(uu))}))
 
 # the fraction's first digit, and the rest of its digits
 def t1.F.d1(
