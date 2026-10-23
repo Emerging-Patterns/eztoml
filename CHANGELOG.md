@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.8.0...v0.9.0) (2026-10-23)
+
+
+### Bug Fixes
+
+* port to bend 2.0.38 ([#82](https://github.com/Emerging-Patterns/eztoml/issues/82)) ([24351fa](https://github.com/Emerging-Patterns/eztoml/commit/24351fa541d51347ac9a3137add2f6288634dac2))
+
 ## [0.8.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.7.0...v0.8.0) (2026-09-30)
 
 
