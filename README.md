@@ -10,12 +10,12 @@ from [the hub](https://hub.bend-lang.com) into `~/.bend/lib` on the first
 run; no install step. eztoml is built and checked on Bend 2.0.38.
 
 ```
-import emerging-eztoml@0.8.0.0/main.bend as Toml
+import emerging-eztoml@0.9.0.0/main.bend as Toml
 ```
 
-`emerging-eztoml@0.8.0.0` is eztoml v0.8.0 and resolves to
-`0x8fb95168b7719a8faec16af7ee47b246`; to pin by content, import
-`0x8fb95168b7719a8faec16af7ee47b246/main.bend` instead.
+`emerging-eztoml@0.9.0.0` is eztoml v0.9.0 and resolves to
+`0xc5d9d3e28b79ea98be22eb42c7e37802`; to pin by content, import
+`0xc5d9d3e28b79ea98be22eb42c7e37802/main.bend` instead.
 
 Or with [ez](https://github.com/Emerging-Patterns/ez), which records the
 package in `ez.toml` (`ez init` makes one):
@@ -34,7 +34,7 @@ a boolean. `root` is the document's table and `bad` is the first error.
 build values. `key` writes a name bare or as a basic string.
 
 ```
-import emerging-eztoml@0.8.0.0/main.bend as Toml
+import emerging-eztoml@0.9.0.0/main.bend as Toml
 
 def main() -> IO(Unit):
   +doc = Toml.parse("[pkg]\nname = \"app\"\nver = 1\non = true\n")
