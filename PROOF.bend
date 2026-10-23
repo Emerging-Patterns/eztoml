@@ -123,27 +123,53 @@ def str.eq.step.false(
     case SCon{_x, _xt} SCon{_y, _yt}:
       {==}
 
+# a walk that already compared LT ends there, whatever is left, and
+# str.eq's walk ends False
+def str.eq.step.lt(
+  aa: String,
+  bb: String
+) -> {T.str.eq.step(aa, bb, False{}) == Cmp.is_eq(String.order.go(aa, bb, LT{})) : Bool}:
+  match aa bb:
+    case SNil{} SNil{}:
+      {==}
+    case SNil{} SCon{_h, _t}:
+      {==}
+    case SCon{_h, _t} SNil{}:
+      {==}
+    case SCon{Chr{_x}, _xt} SCon{Chr{_y}, _yt}:
+      {==}
+
+# and the same for GT
+def str.eq.step.gt(
+  aa: String,
+  bb: String
+) -> {T.str.eq.step(aa, bb, False{}) == Cmp.is_eq(String.order.go(aa, bb, GT{})) : Bool}:
+  match aa bb:
+    case SNil{} SNil{}:
+      {==}
+    case SNil{} SCon{_h, _t}:
+      {==}
+    case SCon{_h, _t} SNil{}:
+      {==}
+    case SCon{Chr{_x}, _xt} SCon{Chr{_y}, _yt}:
+      {==}
+
 # after two first chars that compared as cc, both walks give the same answer
+# (Base 2.0.37 walks String.eq as String.order.go, carrying cc)
 def str.eq.agree.cmp(
   +xt: String,
   +yt: String,
-  hx: Char,
-  hy: Char,
   cc: Cmp,
   ih: {T.str.eq(xt, yt) == String.eq(xt, yt) : Bool}
 ) -> {T.str.eq.step(xt, yt, Cmp.is_eq(cc))
-  == Cmp.is_eq(Pair.snd(String & String, Cmp, String.cmp.fin(xt, yt, ((hx, hy), cc)))) : Bool}:
+  == Cmp.is_eq(String.order.go(xt, yt, cc)) : Bool}:
   match cc:
     case LT{}:
-      str.eq.step.false(xt, yt)
+      str.eq.step.lt(xt, yt)
     case EQ{}:
-      Equal.trans(Bool, T.str.eq(xt, yt), String.eq(xt, yt),
-        Cmp.is_eq(Pair.snd(String & String, Cmp, String.cmp.rec(hx, hy, String.cmp(xt, yt)))), ih,
-        Equal.sym(Bool,
-          Cmp.is_eq(Pair.snd(String & String, Cmp, String.cmp.rec(hx, hy, String.cmp(xt, yt)))),
-          String.eq(xt, yt), Eq.eq_fin_rec(hx, hy, String.cmp(xt, yt))))
+      ih
     case GT{}:
-      str.eq.step.false(xt, yt)
+      str.eq.step.gt(xt, yt)
 
 # the code's string equality is Base's, on every pair of strings
 def str.eq.agree(
@@ -158,8 +184,7 @@ def str.eq.agree(
     case SCon{_h, _t} SNil{}:
       {==}
     case SCon{Chr{+uu}, +xt} SCon{Chr{+ww}, +yt}:
-      str.eq.agree.cmp(xt, yt, Chr{uu}, Chr{ww}, U32.cmp(uu, ww),
-        str.eq.agree(xt, yt))
+      str.eq.agree.cmp(xt, yt, U32.cmp(uu, ww), str.eq.agree(xt, yt))
 
 # a pair whose name is not k is passed over
 def get.skip(

@@ -90,11 +90,29 @@ law string_eq_self:
   for +s: String
   {String.eq(s, s) == True{} : Bool}
 
-# equality is the comparison's verdict read as a bit (Base 2.0.33 reads it
-# through String.order), so the comparison's law answers
+# String.order walks a string against itself one char at a time (Base
+# 2.0.37): each char's U32.cmp is EQ, so the walk ends EQ, by induction
+def string_order_self(
+  ss: String
+) -> {String.order.go(ss, ss, EQ{}) == EQ{} : Cmp}:
+  match ss:
+    case SNil{}:
+      {==}
+    case SCon{hh, +tt}:
+      match hh:
+        case Chr{+xx}:
+          Equal.trans(Cmp,
+            String.order.go(tt, tt, U32.cmp(xx, xx)),
+            String.order.go(tt, tt, EQ{}),
+            EQ{},
+            Equal.cong(Cmp, Cmp, rr => String.order.go(tt, tt, rr), U32.cmp(xx, xx), EQ{},
+              u32_cmp_self(xx)),
+            string_order_self(tt))
+
+# equality is the order's verdict read as a bit, so the walk's law answers
 def string_eq_self(s):
-  Equal.cong((String & String) & Cmp, Bool, r => Cmp.is_eq(Pair.snd(String & String, Cmp, r)),
-    String.cmp(s, s), ((s, s), EQ{}), string_cmp_self(s))
+  Equal.cong(Cmp, Bool, r => Cmp.is_eq(r), String.order.go(s, s, EQ{}), EQ{},
+    string_order_self(s))
 
 # LAW: a char equals itself
 law char_eq_self:
@@ -214,11 +232,11 @@ def starts_append(a, b):
       starts_nil(b)
     case SCon{+h, +t}:
       Equal.trans(Bool,
-        String.starts_with.if(String.append(t, b), t, Char.is_eq(h, h)),
-        String.starts_with.if(String.append(t, b), t, True{}),
+        String.starts_with.go.if(t, String.append(t, b), Char.is_eq(h, h)),
+        String.starts_with.go.if(t, String.append(t, b), True{}),
         True{},
         Equal.cong(Bool, Bool,
-          x => String.starts_with.if(String.append(t, b), t, x),
+          x => String.starts_with.go.if(t, String.append(t, b), x),
           Char.is_eq(h, h), True{}, char_eq_self(h)),
         starts_append(t, b))
 
