@@ -17,55 +17,66 @@
   outputs = { self, nixpkgs, ... }@inputs:
     let
       version = "0.9.0"; # x-release-please-version
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
-      ez = inputs.ez.lib.${system};
-      ezBin = inputs.ez.packages.${system}.default;
-      bend = inputs.bend.packages.${system}.default;
-      bend-cc = ez.bend-cc;
-      demo = ez.mkPackage {
-        inherit bend;
-        src = self;
-        pname = "demo";
-        entry = "examples/demo/main.bend";
-      };
+      systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
+      forEach = nixpkgs.lib.genAttrs systems;
+      outputsFor = system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          ez = inputs.ez.lib.${system};
+          ezBin = inputs.ez.packages.${system}.default;
+          bend = inputs.bend.packages.${system}.default;
+          bend-cc = ez.bend-cc;
+          demo = ez.mkPackage {
+            inherit bend;
+            src = self;
+            pname = "demo";
+            entry = "examples/demo/main.bend";
+          };
 
-      bench = import ./bench {
-        inherit pkgs bend bend-cc self;
-        lib = pkgs.lib;
-      };
+          bench = import ./bench {
+            inherit pkgs bend bend-cc self;
+            lib = pkgs.lib;
+          };
+        in {
+          packages = {
+            inherit bend demo bend-cc;
+            ez = ezBin;
+            default = demo;
+          } // bench.packages;
+
+          apps = bench.apps;
+
+          checks = {
+            inherit demo;
+            # every PROOF.bend must print ALL PROOFS CHECK (ez prove, on 2.0.38)
+            proofs = ez.mkProofs { ez = ezBin; src = self; };
+            # bolt at the `[tools.bolt]` pin in ez.lock.toml, graded by ./bolt.bend
+            lint = ez.mkLint { src = self; };
+          } // bench.checks;
+
+          # `src` puts every locked `[tools.*]` (bolt) on PATH
+          devShells.default = ez.mkShell {
+            src = self;
+            packages = [
+              bend
+              bend-cc
+              ezBin
+              pkgs.python3
+              pkgs.cargo
+              pkgs.rustc
+              bench.packages.eztoml-bench-drv
+              bench.packages.eztoml-rust-ref
+              bench.packages.eztoml-wave-check
+              bench.packages.eztoml-wave-bench
+            ];
+          };
+        };
+      perSystem = forEach outputsFor;
+      each = name: forEach (system: perSystem.${system}.${name});
     in {
-      packages.${system} = {
-        inherit bend demo bend-cc;
-        ez = ezBin;
-        default = demo;
-      } // bench.packages;
-
-      apps.${system} = bench.apps;
-
-      checks.${system} = {
-        inherit demo;
-        # every PROOF.bend must print ALL PROOFS CHECK (ez prove, on 2.0.38)
-        proofs = ez.mkProofs { ez = ezBin; src = self; };
-        # bolt at the `[tools.bolt]` pin in ez.lock.toml, graded by ./bolt.bend
-        lint = ez.mkLint { src = self; };
-      } // bench.checks;
-
-      # `src` puts every locked `[tools.*]` (bolt) on PATH
-      devShells.${system}.default = ez.mkShell {
-        src = self;
-        packages = [
-          bend
-          bend-cc
-          ezBin
-          pkgs.python3
-          pkgs.cargo
-          pkgs.rustc
-          bench.packages.eztoml-bench-drv
-          bench.packages.eztoml-rust-ref
-          bench.packages.eztoml-wave-check
-          bench.packages.eztoml-wave-bench
-        ];
-      };
+      packages = each "packages";
+      checks = each "checks";
+      apps = each "apps";
+      devShells = each "devShells";
     };
 }
