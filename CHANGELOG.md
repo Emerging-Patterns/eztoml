@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.9.0...v0.10.0) (2026-10-25)
+
+
+### Features
+
+* **nix:** build and check on x86_64-linux, aarch64-linux and aarch64-darwin ([#88](https://github.com/Emerging-Patterns/eztoml/issues/88)) ([75800a4](https://github.com/Emerging-Patterns/eztoml/commit/75800a48b5a4f561cfc8541ed0fb3149809f2401))
+
 ## [0.9.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.8.0...v0.9.0) (2026-10-23)
 
 
