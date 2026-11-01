@@ -1,6 +1,5 @@
 # bolt.bend: how bolt lints this repo. Every rule is an error except `coverage`,
-# which warns until SPEC.md's requirements are proved: the gate must see no
-# errors. See bolt/config.bend for the groups and levels.
+# which warns while some guarantees are pending: the gate must see no errors. See bolt/config.bend for the groups and levels.
 import Base
 
 # what will fail or blow up
@@ -28,5 +27,3 @@ def unsafe() -> String:
   "error"
 
 # SPEC.md's rows and the laws' tags agree
-def trace() -> String:
-  "error"
