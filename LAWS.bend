@@ -17,8 +17,9 @@
 # through parse are stated for short texts. same, own and short are under
 # laws/defs/.
 #
-# The reasoning behind each guarantee is in docs/rfc/eztoml-spec.md, which
-# names them by the requirement IDs SPEC.md once gave them.
+# The reasoning behind each guarantee is in docs/rfc/eztoml-spec.md. It
+# names the guarantees by the requirement IDs of docs/SPEC.md, the table these
+# files replaced.
 import Base
 import ./laws/AotHeaderExtendsArray.bend as AotHeaderExtendsArray
 import ./laws/AotHeaderStartsArray.bend as AotHeaderStartsArray
