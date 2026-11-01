@@ -11,7 +11,7 @@ def shown.text(hh: Toml.Hit) -> String:
       ""
 
 # a document with a root key, a table, an array, an inline table, and a datetime
-def shown() -> String:  # noqa: L001 demo, outside the spec
+def shown() -> String:
   +doc = Toml.parse("name = \"app\"\nver = 1\non = true\n" ++
     "items = [1, 2]\nmeta = { os = \"linux\" }\n" ++
     "when = 1979-05-27T07:32:00Z\n\n[pkg]\nname = \"eztoml\"\n\n" ++
@@ -19,5 +19,5 @@ def shown() -> String:  # noqa: L001 demo, outside the spec
   "[" ++ Toml.bad(doc) ++ "]\n" ++ Toml.render(doc) ++
     shown.text(Toml.get(Toml.root(doc), "name"))
 
-def main() -> IO(Unit):  # noqa: L001 demo, outside the spec
+def main() -> IO(Unit):
   IO.print(shown())

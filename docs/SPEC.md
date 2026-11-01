@@ -8,7 +8,7 @@ A document is **well-formed** when `wf` holds of it: the shapes `parse` returns.
 
 A text is **short** when it is shorter than 2^32 characters (`short` in `LAWS.bend`): the scanner counts a plain string's characters in a U32, so a longer string would not read back (the round-trip design, REVIEW-R1). The rows that go through `parse` are stated for short texts, as ezjson's are.
 
-The reasoning behind each requirement, the verdict of each against the code at `d3c1356`, and the decisions that shaped them are in [docs/rfc/eztoml-spec.md](docs/rfc/eztoml-spec.md). Every law as it stood then, what the audit found, and the progress of the rollout are in [docs/rfc/eztoml-law-inventory.md](docs/rfc/eztoml-law-inventory.md).
+The reasoning behind each requirement, the verdict of each against the code at `d3c1356`, and the decisions that shaped them are in [docs/rfc/eztoml-spec.md](rfc/eztoml-spec.md). Every law as it stood then, what the audit found, and the progress of the rollout are in [docs/rfc/eztoml-law-inventory.md](rfc/eztoml-law-inventory.md).
 
 ## Format
 

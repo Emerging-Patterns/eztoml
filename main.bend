@@ -6076,7 +6076,9 @@ def render(doc: Doc) -> String:
   Doc{_bad, rows} = doc
   render.both(rows, "\n", True{})
 
-# a document read from TOML text
+# a document read from TOML text. The text is code points: Bend's File.read
+# decodes UTF-8 and replaces an invalid byte with U+FFFD rather than refusing
+# it, so a caller that must refuse invalid bytes checks the file first
 def parse(text: String) -> Doc:
   doc.read(text, MScan{st.start()})
 

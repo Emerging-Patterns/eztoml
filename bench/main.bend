@@ -21,7 +21,7 @@ def wrote.close(file: File, ok: Unit) -> IO(Unit):
       File.close(file)
 
 # force a write Result, then close the file
-def wrote(pair: File & Result<&1, &1, U32 & String, Unit>) -> IO(Unit):  # noqa: L001 bench harness, outside the spec
+def wrote(pair: File & Result<&1, &1, U32 & String, Unit>) -> IO(Unit):
   (file, result) = pair
   do IO<Unit>:
     ok : Unit <- IO.pass(Unit, result)
@@ -309,7 +309,7 @@ def args4.go(xs: List<String>) -> String & String & String & String:
 
 # the first four arguments, empty when missing. IO.args starts with the
 # program as invoked (bend 2.0.32), so the arguments follow its head.
-def args4(xs: List<String>) -> String & String & String & String:  # noqa: L001 bench harness, outside the spec
+def args4(xs: List<String>) -> String & String & String & String:
   match xs:
     case _p <> ys:
       args4.go(ys)
@@ -322,7 +322,7 @@ def main.go(quad: String & String & String & String) -> IO(Unit):
   run.named(a, b, c, d)
 
 # CLI entry: dispatch by the first argv word
-def main() -> IO(Unit):  # noqa: L001 bench harness, outside the spec
+def main() -> IO(Unit):
   do IO<Unit>:
     args : List<String> <- IO.args()
     main.go(args4(args))
