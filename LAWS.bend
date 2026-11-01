@@ -2,10 +2,11 @@
 # its quantified laws under it; proofs/<name>.bend proves it. A law file that
 # says pending proves part of its guarantee, not all of it. There are two
 # families: conformance to TOML v1.0.0 and its toml.abnf, and the public
-# interface in main.bend -- the defs parse, render, get, at, root, bad, string,
-# digits, flag, str, integer, float, boolean, array, inline, table, pair, key,
-# bare and wf, and the types Doc, Val, Hit, Sign, When, Date, Clock and Zone.
-# Every other def in main.bend is internal and carries no promise.
+# interface in main.bend -- the defs parse, render, get, at, root, bad,
+# string, digits, flag, str, integer, float, boolean, array, inline, table,
+# pair, key, bare and wf, and the types Doc, Val, Hit, Sign, When, Date, Clock
+# and Zone. Every other def in main.bend is internal: a law about one holds it
+# in place without making it interface.
 #
 # A document is well-formed when wf holds of it: the shapes parse returns.
 # same is "the same TOML document": it ignores whether a string is owned or a
