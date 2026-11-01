@@ -1,4 +1,3 @@
-# part of: laws/KeyNameIsItsCharacters.bend, laws/ParsesExactlyTheGrammar.bend
 import Base
 import ../main.bend as T
 import ./defs/BareValueGrammar.bend as D1

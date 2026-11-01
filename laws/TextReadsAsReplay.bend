@@ -1,4 +1,3 @@
-# part of: laws/ParsesExactlyTheGrammar.bend, laws/DefinesEachTableOnce.bend
 import Base
 import ../main.bend as T
 import ./defs/AbnfGrammar.bend as D1

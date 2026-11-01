@@ -1,5 +1,3 @@
-# part of: laws/IntegerReadExactly.bend, laws/FloatReadExactly.bend,
-# laws/DateTimeReadExactly.bend
 import Base
 import ../main.bend as T
 import ./defs/BareValueGrammar.bend as D1
