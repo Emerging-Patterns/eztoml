@@ -8,3 +8,4 @@ bin/
 .claude/
 bench/ref/target/
 **/target/
+.direnv/
