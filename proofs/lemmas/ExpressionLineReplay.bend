@@ -656,14 +656,14 @@ def ap.cm.f9(
   +lf: U32,
   +ab: Bool,
   +e9: {U32.is_eq(uu, 9) == t9 : Bool}
-) -> {T.read.fast.com(t9, "", rw, hs, he, pt, [], bk, qk, sk, un, lf, ab, Chr{uu}) == ap.s(T.LCom{}, bk, rw, hs, he,
+) -> {T.read.fast.com(t9, qk, T.Fast{"", rw, hs, he, pt, [], bk, sk, un, lf, ab}, Chr{uu}) == ap.s(T.LCom{}, bk, rw, hs,
+  he,
   pt, qk, sk, un, lf, ab)
   : T.St}:
   match t9:
     case True{}:
-      %Equal.sym(U32, uu, 9, M2.s1.is9(uu, e9)) : {T.read.fast.com(True{}, "", rw, hs, he, pt, [], bk, qk, sk, un, lf,
-          ab,
-        Chr{_}) == ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab) : T.St}
+      %Equal.sym(U32, uu, 9, M2.s1.is9(uu, e9)) : {T.read.fast.com(True{}, qk, T.Fast{"", rw, hs, he, pt, [], bk, sk,
+        un, lf, ab}, Chr{_}) == ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab) : T.St}
       {==}
     case False{}:
       {==}
@@ -685,7 +685,8 @@ def ap.cm.fast(
 ) -> {T.read.fast(ap.s(T.LCom{}, bk, rw, hs, he, pt, qk, sk, un, lf, ab), Chr{uu}) == ap.s(T.LCom{}, bk, rw, hs, he,
   pt, qk, sk, un, lf, ab) : T.St}:
   %Equal.sym(Bool, Bool.or(U32.is_lt(uu, 32), U32.is_eq(uu, 127)), U32.is_eq(uu, 9), ap.cm.c9(uu, hn))
-    : {T.read.fast.com(_, "", rw, hs, he, pt, [], bk, qk, sk, un, lf, ab, Chr{uu}) == ap.s(T.LCom{}, bk, rw, hs, he,
+    : {T.read.fast.com(_, qk, T.Fast{"", rw, hs, he, pt, [], bk, sk, un, lf, ab}, Chr{uu}) == ap.s(T.LCom{}, bk, rw, hs,
+      he,
       pt, qk, sk, un, lf, ab)
     : T.St}
   ap.cm.f9(U32.is_eq(uu, 9), uu, bk, rw, hs, he, pt, qk, sk, un, lf, ab, {==})
@@ -2068,11 +2069,13 @@ def ap.lead.fast(
   +cc: Char,
   +hb: {U32.is_eq(Char.to_u32(cc), 65279) == False{} : Bool}
 ) -> {T.read.fast(T.st.start(), cc) == T.read.fast(ap.s0(), cc) : T.St}:
-  %Equal.sym(T.St, T.read.fast.lex(T.LTop{}, T.QBasic{}, "", [], [], [], [], [], T.LTop{}, [], 0, 0, False{}, cc),
-    T.read.fast.old("", [], [], [], [], [], T.LTop{}, T.LTop{}, T.QBasic{}, [], 0, 0, False{}, cc), M3.sr.ff(T.LTop{},
+  %Equal.sym(T.St, T.read.fast.lex(T.LTop{}, T.QBasic{}, T.Fast{"", [], [], [], [], [], T.LTop{}, [], 0, 0, False{}},
+    cc),
+    T.read.fast.old(T.LTop{}, T.QBasic{}, T.Fast{"", [], [], [], [], [], T.LTop{}, [], 0, 0, False{}},
+      cc), M3.sr.ff(T.LTop{},
     T.QBasic{}, "", [], [], [], [], [], T.LTop{}, [], 0, 0, False{}, cc)) : {T.read.fast(T.st.start(), cc) == _ : T.St}
   %Equal.sym(Bool, U32.is_eq(Char.to_u32(cc), 65279), False{}, hb) : {T.read.once2(T.read.step.bom(_, ap.s0(), cc))
-    == T.read.fast.old("", [], [], [], [], [], T.LTop{}, T.LTop{}, T.QBasic{}, [], 0, 0, False{}, cc) : T.St}
+    == T.read.fast.old(T.LTop{}, T.QBasic{}, T.Fast{"", [], [], [], [], [], T.LTop{}, [], 0, 0, False{}}, cc) : T.St}
   {==}
 
 # and so doc.scan takes it the same way

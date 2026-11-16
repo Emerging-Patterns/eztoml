@@ -231,7 +231,7 @@ def vl.vt.inl(
   +lf: U32,
   +ab: Bool,
   pi: vl.Sh(P, T.LInlC{})
-) -> P(T.take.inl(end, rw, hs, he, ps, rest, bk, qk, un, lf, ab, False{})):
+) -> P(T.take.inl(end, rw, hs, he, ps, rest, T.Keep{bk, qk, un, lf, ab, False{}})):
   match end:
     case T.End{+inl, +bad, _heads}:
       pi(bad, rw, hs, he, [], bk, qk, T.CInl{inl, ps, he} <> rest, un, lf, ab)
@@ -294,14 +294,16 @@ def vl.ws(
   +ab: Bool,
   +cc: Char,
   es: {sp == True{} : Bool}
-) -> {T.read.fast.ws(sp, nl, keep, bd, rw, hs, he, ps, buf, lx, bk, qk, sk, un, lf, ab, cc) == M3.fs.st(bd, rw, hs, he,
+) -> {T.read.fast.ws(sp, nl, keep, lx, qk, T.Fast{bd, rw, hs, he, ps, buf, bk, sk, un, lf, ab}, cc) == M3.fs.st(bd, rw,
+  hs, he,
     ps,
   buf, lx, bk, qk, sk, un, lf, ab) : T.St}:
   match sp:
     case True{}:
       {==}
     case False{}:
-      Eq.bit.absurd(&2, {T.read.fast.ws(False{}, nl, keep, bd, rw, hs, he, ps, buf, lx, bk, qk, sk, un, lf, ab, cc)
+      Eq.bit.absurd(&2, {T.read.fast.ws(False{}, nl, keep, lx, qk, T.Fast{bd, rw, hs, he, ps, buf, bk, sk, un, lf, ab},
+        cc)
         == M3.fs.st(bd, rw, hs, he, ps, buf, lx, bk, qk, sk, un, lf, ab) : T.St}, es)
 
 # a space or a tab after a placed value is skipped

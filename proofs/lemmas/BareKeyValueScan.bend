@@ -49,9 +49,9 @@ def key.bom(
         Eq.refute_char(Chr{xx}, Chr{65279}, ch => T.bare.at(ch), ebom, ee, {==}))
     case False{}:
       Equal.cong(T.St, T.St, s => T.read.once2(s),
-        T.lex.top.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'),
-          Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''),
-          T.bare.at(Chr{xx}), T.St{"", [], [], [], [], [], T.LTop{}, T.LTop{}, T.QBasic{},
+        T.lex.top.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'), T.TopCh{Char.is_eq(Chr{xx}, '['),
+          Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx},
+          '\''), T.bare.at(Chr{xx})}, T.St{"", [], [], [], [], [], T.LTop{}, T.LTop{}, T.QBasic{},
           [], T.HNone{}, 0, 0, False{}, False{}}, Chr{xx}),
         T.st.push(T.St{"", [], [], [], [], [], T.LTop{}, T.LTop{}, T.QBasic{}, [],
           T.HNone{}, 0, 0, False{}, False{}}, Chr{xx}, T.LKey{}),
@@ -83,14 +83,14 @@ def key.fast(
   +xx: U32,
   eok: {T.bare.at(Chr{xx}) == ok : Bool},
   ee: {T.bare.at(Chr{xx}) == True{} : Bool}
-) -> {T.read.fast.key(ok, "", [], [], [], [], buf, T.LTop{}, T.QBasic{}, [], 0, 0, False{},
+) -> {T.read.fast.key(ok, T.QBasic{}, T.Fast{"", [], [], [], [], buf, T.LTop{}, [], 0, 0, False{}},
   Chr{xx}) == ky(Chr{xx} <> buf) : T.St}:
   match ok:
     case True{}:
       {==}
     case False{}:
-      M5.clash(&2, {T.read.fast.key(False{}, "", [], [], [], [], buf, T.LTop{}, T.QBasic{}, [],
-        0, 0, False{}, Chr{xx}) == ky(Chr{xx} <> buf) : T.St},
+      M5.clash(&2, {T.read.fast.key(False{}, T.QBasic{}, T.Fast{"", [], [], [], [], buf, T.LTop{}, [], 0, 0, False{}},
+        Chr{xx}) == ky(Chr{xx} <> buf) : T.St},
         Equal.trans(Bool, False{}, T.bare.at(Chr{xx}), True{},
           Equal.sym(Bool, T.bare.at(Chr{xx}), False{}, eok), ee))
 

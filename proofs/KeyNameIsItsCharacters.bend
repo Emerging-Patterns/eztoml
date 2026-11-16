@@ -65,10 +65,9 @@ def wh.b1.fast(
   match dt:
     case False{}:
       Equal.cong(T.St, T.St, st => T.read.once2(st),
-        T.lex.head.go(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}),
-          Char.is_eq(Chr{xx}, '.'), Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '"'),
-          Char.is_eq(Chr{xx}, '\''), Char.is_eq(Chr{xx}, '#'),
-          M6.wh.st(rows, heads, here, [], [], T.LHead{}, back, qkind, arrtab), Chr{xx}),
+        T.lex.head.go(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}), Char.is_eq(Chr{xx}, '.'),
+          Char.is_eq(Chr{xx}, ']'), T.HeadCh{Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), Char.is_eq(Chr{xx},
+          '#')}, M6.wh.st(rows, heads, here, [], [], T.LHead{}, back, qkind, arrtab), Chr{xx}),
         T.lex.head.ch(M6.wh.st(rows, heads, here, [], [], T.LHead{}, back, qkind, arrtab),
           Chr{xx}),
         M6.wh.go.bare(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}),
@@ -171,19 +170,17 @@ def wh.b2(
         Chr{xx}),
       M6.wh.st(rows, heads, here, parts, Chr{xx} <> dd <> bb, T.LHead{}, back, qkind, arrtab),
       Equal.trans(T.St,
-        T.read.once2(T.lex.head.go(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}),
-          T.ch.sp(Chr{xx}), Char.is_eq(Chr{xx}, '.'), Char.is_eq(Chr{xx}, ']'),
-          Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), Char.is_eq(Chr{xx}, '#'),
-          M6.wh.st(rows, heads, here, parts, dd <> bb, T.LHead{}, back, qkind, arrtab), Chr{xx})),
+        T.read.once2(T.lex.head.go(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}), Char.is_eq(Chr{xx},
+          '.'), Char.is_eq(Chr{xx}, ']'), T.HeadCh{Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx},
+          '\''), Char.is_eq(Chr{xx}, '#')}, M6.wh.st(rows, heads, here, parts, dd <> bb, T.LHead{}, back, qkind,
+            arrtab), Chr{xx})),
         T.read.once2(T.lex.head.ch(M6.wh.st(rows, heads, here, parts, dd <> bb, T.LHead{}, back,
           qkind, arrtab), Chr{xx})),
         M6.wh.st(rows, heads, here, parts, Chr{xx} <> dd <> bb, T.LHead{}, back, qkind, arrtab),
         Equal.cong(T.St, T.St, st => T.read.once2(st),
-          T.lex.head.go(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}),
-            Char.is_eq(Chr{xx}, '.'), Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '"'),
-            Char.is_eq(Chr{xx}, '\''), Char.is_eq(Chr{xx}, '#'),
-            M6.wh.st(rows, heads, here, parts, dd <> bb, T.LHead{}, back, qkind, arrtab),
-            Chr{xx}),
+          T.lex.head.go(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}), Char.is_eq(Chr{xx}, '.'),
+            Char.is_eq(Chr{xx}, ']'), T.HeadCh{Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), Char.is_eq(Chr{xx},
+            '#')}, M6.wh.st(rows, heads, here, parts, dd <> bb, T.LHead{}, back, qkind, arrtab), Chr{xx}),
           T.lex.head.ch(M6.wh.st(rows, heads, here, parts, dd <> bb, T.LHead{}, back, qkind,
             arrtab), Chr{xx}),
           M6.wh.go.bare(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}),
@@ -1390,13 +1387,13 @@ def kl.kfast(
   +xx: U32,
   eok: {T.bare.at(Chr{xx}) == ok : Bool},
   ee: {T.bare.at(Chr{xx}) == True{} : Bool}
-) -> {T.read.fast.key(ok, "", rows, heads, here, parts, buf, back, qkind, [], 0, 0, arrtab, Chr{xx})
+) -> {T.read.fast.key(ok, qkind, T.Fast{"", rows, heads, here, parts, buf, back, [], 0, 0, arrtab}, Chr{xx})
   == M6.wh.st(rows, heads, here, parts, Chr{xx} <> buf, T.LKey{}, back, qkind, arrtab) : T.St}:
   match ok:
     case True{}:
       {==}
     case False{}:
-      M15.clash(&2, {T.read.fast.key(False{}, "", rows, heads, here, parts, buf, back, qkind, [], 0, 0, arrtab,
+      M15.clash(&2, {T.read.fast.key(False{}, qkind, T.Fast{"", rows, heads, here, parts, buf, back, [], 0, 0, arrtab},
         Chr{xx}) == M6.wh.st(rows, heads, here, parts, Chr{xx} <> buf, T.LKey{}, back, qkind, arrtab) : T.St},
         Equal.trans(Bool, False{}, T.bare.at(Chr{xx}), True{},
           Equal.sym(Bool, T.bare.at(Chr{xx}), False{}, eok), ee))
@@ -1872,7 +1869,7 @@ def dsub.Goal(
   +inl: Bool,
   +mark: Bool
 ) -> Type:
-  {T.tree.sub.look(look, seg, vs, T.JPut{v}, stack, pre, heads, inl, mark)
+  {T.tree.sub.look(look, seg, vs, T.Walk{T.JPut{v}, stack, pre, heads, inl}, mark)
     == T.Tw{D1.tb.into(look), T.JPut{v}, M8.tb.fr(look, seg, vs, pre) <> stack, "", T.tree.pre(pre, seg),
       Laws.dk.mark(mark, T.tree.pre(pre, seg), heads), inl} : T.Tw}
 
@@ -1909,12 +1906,12 @@ def dsub.dot(
         dk.mark.eq(T.heads.has(heads, T.tree.pre(pre, seg)), T.tree.pre(pre, seg), heads))
     case T.KHead{+p, +rr}:
       Equal.trans(T.Tw,
-        T.tree.sub.head.go(T.heads.head(heads, T.tree.pre(pre, seg)), p, rr, seg, vs, T.JPut{v}, stack, pre, heads,
-          inl, True{}),
-        T.tree.sub.head.go(False{}, p, rr, seg, vs, T.JPut{v}, stack, pre, heads, inl, True{}),
+        T.tree.sub.head.go(T.heads.head(heads, T.tree.pre(pre, seg)), p, rr, seg, vs, T.Walk{T.JPut{v}, stack, pre,
+          heads, inl}, True{}),
+        T.tree.sub.head.go(False{}, p, rr, seg, vs, T.Walk{T.JPut{v}, stack, pre, heads, inl}, True{}),
         T.Tw{rr, T.JPut{v}, T.FrRep{seg, vs, p} <> stack, "", T.tree.pre(pre, seg),
           Laws.dk.mark(True{}, T.tree.pre(pre, seg), heads), inl},
-        Equal.cong(Bool, T.Tw, bb => T.tree.sub.head.go(bb, p, rr, seg, vs, T.JPut{v}, stack, pre, heads, inl,
+        Equal.cong(Bool, T.Tw, bb => T.tree.sub.head.go(bb, p, rr, seg, vs, T.Walk{T.JPut{v}, stack, pre, heads, inl},
           True{}), T.heads.head(heads, T.tree.pre(pre, seg)), False{},
           Eq.not.true(T.heads.head(heads, T.tree.pre(pre, seg)), ec)),
         Equal.cong(List<&2, String>, T.Tw, hh => T.Tw{rr, T.JPut{v}, T.FrRep{seg, vs, p} <> stack, "",
@@ -2443,7 +2440,8 @@ def hg.lead(
   +qkind: T.QKind,
   +arrtab: Bool
 ) -> {T.doc.read(String.append(D2.gap(g0), xx), T.MScan{M6.wh.st(rows, heads, here, [], [], T.LHead{}, back, qkind,
-  arrtab)}) == T.doc.read(xx, T.MScan{M6.wh.st(rows, heads, here, M12.wh.ps(hg.nz(g0), []), [], M12.wh.lex0(hg.nz(g0)), back,  # noqa: S002
+  arrtab)}) == T.doc.read(xx, T.MScan{M6.wh.st(rows, heads, here, M12.wh.ps(hg.nz(g0),
+    []), [], M12.wh.lex0(hg.nz(g0)), back,
   qkind, arrtab)}) : T.Doc}:
   match g0:
     case []:
@@ -2627,7 +2625,8 @@ def hg.bseg(
   +ee: {T.bare.all.step(T.bare.at(Chr{xx}), _u => T.bare.all(String.to_list(tt))) == True{} : Bool},
   ih: wh.Then(cl, rows, heads, here, SCon{Chr{xx}, tt} <> M12.wh.ps(dt, parts), arrtab, rest, goal)
 ) -> {T.doc.read(String.append(SCon{Chr{xx}, tt}, String.append(D2.gap(gs), SCon{M12.wh.dl(cl), rest})),
-  T.MScan{M6.wh.st(rows, heads, here, M12.wh.ps(dt, parts), [], M12.wh.lex0(dt), back, qkind, arrtab)}) == goal : T.Doc}:  # noqa: S002
+  T.MScan{M6.wh.st(rows, heads, here, M12.wh.ps(dt, parts), [], M12.wh.lex0(dt), back, qkind,
+    arrtab)}) == goal : T.Doc}:
   Equal.trans(T.Doc,
     T.doc.read(String.append(tt, String.append(D2.gap(gs), SCon{M12.wh.dl(cl), rest})), T.doc.scan(M6.wh.st(rows,
       heads, here, M12.wh.ps(dt, parts), [], M12.wh.lex0(dt), back, qkind, arrtab), Chr{xx})),
@@ -2694,7 +2693,8 @@ def hg.qseg(
   +goal: T.Doc,
   ih: wh.Then(cl, rows, heads, here, ss <> M12.wh.ps(dt, parts), arrtab, rest, goal)
 ) -> {T.doc.read(String.append(T.key.basic(ss), String.append(D2.gap(gs), SCon{M12.wh.dl(cl), rest})),
-  T.MScan{M6.wh.st(rows, heads, here, M12.wh.ps(dt, parts), [], M12.wh.lex0(dt), back, qkind, arrtab)}) == goal : T.Doc}:  # noqa: S002
+  T.MScan{M6.wh.st(rows, heads, here, M12.wh.ps(dt, parts), [], M12.wh.lex0(dt), back, qkind,
+    arrtab)}) == goal : T.Doc}:
   Equal.trans(T.Doc,
     T.doc.read(String.append(T.key.basic(ss), String.append(D2.gap(gs), SCon{M12.wh.dl(cl), rest})),
       T.MScan{M6.wh.st(rows, heads, here, M12.wh.ps(dt, parts), [], M12.wh.lex0(dt), back, qkind, arrtab)}),
@@ -2765,7 +2765,8 @@ def hg.lseg(
   el: {Laws.lit.text(ss) == True{} : Bool},
   ih: wh.Then(cl, rows, heads, here, ss <> M12.wh.ps(dt, parts), arrtab, rest, goal)
 ) -> {T.doc.read(String.append(SCon{'\'', String.append(ss, "'")}, String.append(D2.gap(gs),
-  SCon{M12.wh.dl(cl), rest})), T.MScan{M6.wh.st(rows, heads, here, M12.wh.ps(dt, parts), [], M12.wh.lex0(dt), back, qkind,  # noqa: S002
+  SCon{M12.wh.dl(cl), rest})), T.MScan{M6.wh.st(rows, heads, here, M12.wh.ps(dt,
+    parts), [], M12.wh.lex0(dt), back, qkind,
   arrtab)}) == goal : T.Doc}:
   Equal.trans(T.Doc,
     T.doc.read(String.append(String.append(ss, "'"), String.append(D2.gap(gs), SCon{M12.wh.dl(cl), rest})),
@@ -2827,7 +2828,8 @@ def hg.seg(
   eo: {Laws.seg.ok(sg) == True{} : Bool},
   ih: wh.Then(cl, rows, heads, here, Laws.seg.name(sg) <> M12.wh.ps(dt, parts), arrtab, rest, goal)
 ) -> {T.doc.read(String.append(Laws.seg.text(sg), String.append(D2.gap(gs), SCon{M12.wh.dl(cl), rest})),
-  T.MScan{M6.wh.st(rows, heads, here, M12.wh.ps(dt, parts), [], M12.wh.lex0(dt), back, qkind, arrtab)}) == goal : T.Doc}:  # noqa: S002
+  T.MScan{M6.wh.st(rows, heads, here, M12.wh.ps(dt, parts), [], M12.wh.lex0(dt), back, qkind,
+    arrtab)}) == goal : T.Doc}:
   match sg:
     case D3.Seg{sp, +name}:
       match sp:
@@ -5373,7 +5375,7 @@ def kw.hgo(
   +kk: String,
   +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
   wi: kw.WI(stack, vs, root, kk)
-) -> kw.T(T.tree.sub.head.go(shut, p0, rows, name, vs, job, stack, pre, heads, inl, mark), root, kk):
+) -> kw.T(T.tree.sub.head.go(shut, p0, rows, name, vs, T.Walk{job, stack, pre, heads, inl}, mark), root, kk):
   match shut:
     case True{}:
       {==}
@@ -5398,7 +5400,7 @@ def kw.hd(
   +kk: String,
   +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
   wi: kw.WI(stack, vs, root, kk)
-) -> kw.T(T.tree.sub.head(dot, p0, rows, name, vs, job, stack, pre, heads, inl, mark), root, kk):
+) -> kw.T(T.tree.sub.head(dot, p0, rows, name, vs, T.Walk{job, stack, pre, heads, inl}, mark), root, kk):
   match dot:
     case True{}:
       kw.hgo(T.heads.head(heads, T.tree.pre(pre, name)), p0, rows, name, vs, job, stack, pre, heads, inl, mark, root,
@@ -5440,7 +5442,7 @@ def kw.last(
   +kk: String,
   +eh: {T.rows.find(vs, name) == T.Found{T.VAots{p0, elems}} : T.Hit},
   wi: kw.WI(stack, vs, root, kk)
-) -> kw.T(T.tree.sub.aots(T.look.last(elems, p0), name, vs, job, stack, pre, heads, inl, p0), root, kk):
+) -> kw.T(T.tree.sub.aots(T.look.last(elems, p0), name, vs, T.Walk{job, stack, pre, heads, inl}, p0), root, kk):
   match elems:
     case []:
       {==}
@@ -5487,7 +5489,7 @@ def kw.arr(
   +kk: String,
   +eh: {T.rows.find(vs, name) == T.Found{T.VAots{p0, elems}} : T.Hit},
   wi: kw.WI(stack, vs, root, kk)
-) -> kw.T(T.tree.sub.arr(dot, p0, elems, name, vs, job, stack, pre, heads, inl), root, kk):
+) -> kw.T(T.tree.sub.arr(dot, p0, elems, name, vs, T.Walk{job, stack, pre, heads, inl}), root, kk):
   match dot:
     case True{}:
       {==}
@@ -5509,7 +5511,7 @@ def kw.shit(
   +kk: String,
   +eh: {T.rows.find(vs, name) == hh : T.Hit},
   wi: kw.WI(stack, vs, root, kk)
-) -> kw.T(T.tree.sub.look(kh.lk(hh), name, vs, job, stack, pre, heads, inl, mark), root, kk):
+) -> kw.T(T.tree.sub.look(kh.lk(hh), name, vs, T.Walk{job, stack, pre, heads, inl}, mark), root, kk):
   match hh:
     case T.Miss{}:
       +v1 => _ex => wi(T.VPair{name, T.VHead{T.tree.pre(pre, name), v1}} <> vs, kh.fresh(name, T.VHead{T.tree.pre(pre,
@@ -5557,13 +5559,13 @@ def kw.subok(
   +kk: String,
   +eo: {String.is_empty(bad) == ok : Bool},
   wt: kw.T2(ok, stack, vs, root, kk)
-) -> kw.T(T.tree.sub.bad(ok, name, vs, job, stack, bad, pre, heads, inl, mark), root, kk):
+) -> kw.T(T.tree.sub.bad(ok, name, vs, bad, T.Walk{job, stack, pre, heads, inl}, mark), root, kk):
   match ok:
     case False{}:
       kw.tfail(vs, job, stack, bad, pre, heads, inl, root, kk, eo)
     case True{}:
       %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
-        kw.T(T.tree.sub.look(_, name, vs, job, stack, pre, heads, inl, mark), root, kk)
+        kw.T(T.tree.sub.look(_, name, vs, T.Walk{job, stack, pre, heads, inl}, mark), root, kk)
       kw.shit(T.rows.find(vs, name), name, vs, job, stack, pre, heads, inl, mark, root, kk, {==}, wt)
 
 # one key a walk descends into keeps the promise
@@ -5722,7 +5724,7 @@ def kc.hgo(
   +rp: List<&2, String>,
   +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
   wi: kc.CI(stack, rp)
-) -> kc.T(T.tree.sub.head.go(shut, p0, rows, name, vs, job, stack, pre, heads, inl, mark), name <> rp):
+) -> kc.T(T.tree.sub.head.go(shut, p0, rows, name, vs, T.Walk{job, stack, pre, heads, inl}, mark), name <> rp):
   match shut:
     case True{}:
       {==}
@@ -5746,7 +5748,7 @@ def kc.hd(
   +rp: List<&2, String>,
   +eh: {T.rows.find(vs, name) == T.Found{T.VHead{p0, rows}} : T.Hit},
   wi: kc.CI(stack, rp)
-) -> kc.T(T.tree.sub.head(dot, p0, rows, name, vs, job, stack, pre, heads, inl, mark), name <> rp):
+) -> kc.T(T.tree.sub.head(dot, p0, rows, name, vs, T.Walk{job, stack, pre, heads, inl}, mark), name <> rp):
   match dot:
     case True{}:
       kc.hgo(T.heads.head(heads, T.tree.pre(pre, name)), p0, rows, name, vs, job, stack, pre, heads, inl, mark, rp,
@@ -5768,7 +5770,7 @@ def kc.last(
   +rp: List<&2, String>,
   +eh: {T.rows.find(vs, name) == T.Found{T.VAots{p0, elems}} : T.Hit},
   wi: kc.CI(stack, rp)
-) -> kc.T(T.tree.sub.aots(T.look.last(elems, p0), name, vs, job, stack, pre, heads, inl, p0), name <> rp):
+) -> kc.T(T.tree.sub.aots(T.look.last(elems, p0), name, vs, T.Walk{job, stack, pre, heads, inl}, p0), name <> rp):
   match elems:
     case []:
       {==}
@@ -5814,7 +5816,7 @@ def kc.arr(
   +rp: List<&2, String>,
   +eh: {T.rows.find(vs, name) == T.Found{T.VAots{p0, elems}} : T.Hit},
   wi: kc.CI(stack, rp)
-) -> kc.T(T.tree.sub.arr(dot, p0, elems, name, vs, job, stack, pre, heads, inl), name <> rp):
+) -> kc.T(T.tree.sub.arr(dot, p0, elems, name, vs, T.Walk{job, stack, pre, heads, inl}), name <> rp):
   match dot:
     case True{}:
       {==}
@@ -5835,7 +5837,7 @@ def kc.shit(
   +rp: List<&2, String>,
   +eh: {T.rows.find(vs, name) == hh : T.Hit},
   wi: kc.CI(stack, rp)
-) -> kc.T(T.tree.sub.look(kh.lk(hh), name, vs, job, stack, pre, heads, inl, mark), name <> rp):
+) -> kc.T(T.tree.sub.look(kh.lk(hh), name, vs, T.Walk{job, stack, pre, heads, inl}, mark), name <> rp):
   match hh:
     case T.Miss{}:
       +k1 => +v1 => +q0 => ee => wi(k1, T.VPair{name, T.VHead{T.tree.pre(pre, name), v1}} <> vs, name <> q0,
@@ -5882,13 +5884,13 @@ def kc.subok(
   +rp: List<&2, String>,
   +eo: {String.is_empty(bad) == ok : Bool},
   wt: kc.T2(ok, stack, rp)
-) -> kc.T(T.tree.sub.bad(ok, name, vs, job, stack, bad, pre, heads, inl, mark), name <> rp):
+) -> kc.T(T.tree.sub.bad(ok, name, vs, bad, T.Walk{job, stack, pre, heads, inl}, mark), name <> rp):
   match ok:
     case False{}:
       kc.tfail(vs, job, stack, bad, pre, heads, inl, name <> rp, eo)
     case True{}:
       %Equal.sym(T.Look, T.rows.look(vs, name), kh.lk(T.rows.find(vs, name)), kh.look(vs, name)) :
-        kc.T(T.tree.sub.look(_, name, vs, job, stack, pre, heads, inl, mark), name <> rp)
+        kc.T(T.tree.sub.look(_, name, vs, T.Walk{job, stack, pre, heads, inl}, mark), name <> rp)
       kc.shit(T.rows.find(vs, name), name, vs, job, stack, pre, heads, inl, mark, rp, {==}, wt)
 
 # one key a walk descends into keeps the promise
@@ -5921,7 +5923,7 @@ def kc.jlast(
   +heads: List<&2, String>,
   +inl: Bool,
   +path: String
-) -> {kw.tjob(T.tree.sub.aots(last, name, vs, job, stack, pre, heads, inl, path)) == job : T.Job}:
+) -> {kw.tjob(T.tree.sub.aots(last, name, vs, T.Walk{job, stack, pre, heads, inl}, path)) == job : T.Job}:
   match last:
     case T.LastSome{_p, _r, _w}:
       {==}
@@ -5940,7 +5942,7 @@ def kc.jarr(
   +pre: String,
   +heads: List<&2, String>,
   +inl: Bool
-) -> {kw.tjob(T.tree.sub.arr(dot, path, elems, name, vs, job, stack, pre, heads, inl)) == job : T.Job}:
+) -> {kw.tjob(T.tree.sub.arr(dot, path, elems, name, vs, T.Walk{job, stack, pre, heads, inl})) == job : T.Job}:
   match dot:
     case True{}:
       {==}
@@ -5960,7 +5962,8 @@ def kc.jhgo(
   +heads: List<&2, String>,
   +inl: Bool,
   +mark: Bool
-) -> {kw.tjob(T.tree.sub.head.go(shut, path, rows, name, vs, job, stack, pre, heads, inl, mark)) == job : T.Job}:
+) -> {kw.tjob(T.tree.sub.head.go(shut, path, rows, name, vs, T.Walk{job, stack, pre, heads, inl},
+  mark)) == job : T.Job}:
   match shut:
     case True{}:
       {==}
@@ -5980,7 +5983,7 @@ def kc.jhd(
   +heads: List<&2, String>,
   +inl: Bool,
   +mark: Bool
-) -> {kw.tjob(T.tree.sub.head(dot, path, rows, name, vs, job, stack, pre, heads, inl, mark)) == job : T.Job}:
+) -> {kw.tjob(T.tree.sub.head(dot, path, rows, name, vs, T.Walk{job, stack, pre, heads, inl}, mark)) == job : T.Job}:
   match dot:
     case True{}:
       kc.jhgo(T.heads.head(heads, T.tree.pre(pre, name)), path, rows, name, vs, job, stack, pre, heads, inl, mark)
@@ -5998,7 +6001,7 @@ def kc.jlook(
   +heads: List<&2, String>,
   +inl: Bool,
   +mark: Bool
-) -> {kw.tjob(T.tree.sub.look(hit, name, vs, job, stack, pre, heads, inl, mark)) == job : T.Job}:
+) -> {kw.tjob(T.tree.sub.look(hit, name, vs, T.Walk{job, stack, pre, heads, inl}, mark)) == job : T.Job}:
   match hit:
     case T.KMiss{}:
       {==}
@@ -6023,7 +6026,7 @@ def kc.jok(
   +heads: List<&2, String>,
   +inl: Bool,
   +mark: Bool
-) -> {kw.tjob(T.tree.sub.bad(ok, name, vs, job, stack, bad, pre, heads, inl, mark)) == job : T.Job}:
+) -> {kw.tjob(T.tree.sub.bad(ok, name, vs, bad, T.Walk{job, stack, pre, heads, inl}, mark)) == job : T.Job}:
   match ok:
     case False{}:
       {==}
@@ -7641,8 +7644,8 @@ def kk.tarr(
   +arrtab: Bool,
   +lead: Bool,
   +et: {kk.Kt(gg, bad, rows, here, parts, T.CArr{items, saved, at} <> rest, vv) == True{} : Bool}
-) -> {kk.K(gg, T.take.top(T.CArr{items, saved, at} <> rest, vv, bad, rows, heads, here, parts, back, qkind, uni,
-  left, arrtab, lead)) == True{} : Bool}:
+) -> {kk.K(gg, T.take.top(T.CArr{items, saved, at} <> rest, vv, bad, rows, heads, here, parts, T.Keep{back, qkind, uni,
+  left, arrtab, lead})) == True{} : Bool}:
   kk.bimp(Bool.not(String.is_empty(bad)), Bool.or(kk.PF(gg, T.CArr{items, saved, at} <> rest), Bool.or(kk.L(gg,
     T.CArr{items, saved, at} <> rest, rows), kk.sfx(Laws.k3.pl(rest, at, saved, []), kk.tp(gg), HVal{vv}, kk.key(gg)))),
       Bool.or(kk.PF(gg,
@@ -7688,7 +7691,8 @@ def kk.tinl(
   +arrtab: Bool,
   +lead: Bool,
   +ee: {kk.KI(gg, end, rows, at, saved, rest) == True{} : Bool}
-) -> {kk.K(gg, T.take.inl(end, rows, heads, at, saved, rest, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+) -> {kk.K(gg, T.take.inl(end, rows, heads, at, saved, rest, T.Keep{back, qkind, uni, left, arrtab,
+  lead})) == True{} : Bool}:
   match end:
     case T.End{+vs, +bad, _h}:
       ee
@@ -8001,7 +8005,8 @@ def kk.ttop(
   +arrtab: Bool,
   +lead: Bool,
   +et: {kk.Kt(gg, bad, rows, here, parts, stack, vv) == True{} : Bool}
-) -> {kk.K(gg, T.take.top(stack, vv, bad, rows, heads, here, parts, back, qkind, uni, left, arrtab, lead)) == True{}
+) -> {kk.K(gg, T.take.top(stack, vv, bad, rows, heads, here, parts, T.Keep{back, qkind, uni, left, arrtab,
+  lead})) == True{}
   : Bool}:
   match stack:
     case []:
@@ -8515,7 +8520,7 @@ def kk.arrtop(
   +h0: List<&2, String>,
   +p0: List<&2, String>,
   +ek: {kk.Kc(gg, cc, bad, rows, h0, p0, stack) == True{} : Bool}
-) -> {kk.K(gg, T.arr.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+) -> {kk.K(gg, T.arr.top(stack, bad, rows, heads, T.Keep{back, qkind, uni, left, arrtab, lead})) == True{} : Bool}:
   match stack:
     case T.CArr{+xs, +parts, +here} <> +rest:
       kk.ttop(gg, rest, T.VArr{List.reverse(&2, T.Val, xs)}, bad, rows, heads, here, parts, back, qkind, uni, left,
@@ -8565,7 +8570,7 @@ def kk.inltop(
   +p0: List<&2, String>,
   +env: {kk.isv(cc) == False{} : Bool},
   +ek: {kk.Kc(gg, cc, bad, rows, h0, p0, stack) == True{} : Bool}
-) -> {kk.K(gg, T.inl.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+) -> {kk.K(gg, T.inl.top(stack, bad, rows, heads, T.Keep{back, qkind, uni, left, arrtab, lead})) == True{} : Bool}:
   match stack:
     case T.CInl{+xs, +parts, +here} <> +rest:
       kk.ttop(gg, rest, T.VInl{T.inl.seal(xs)}, bad, rows, heads, here, parts, back, qkind, uni, left, arrtab, lead,
@@ -9477,7 +9482,7 @@ def kk.hjob(
   +left: U32,
   +lead: Bool,
   +ee: {Bool.or(Bool.not(String.is_empty(bad)), Laws.k3.has(rows, kk.tp(gg), kk.key(gg))) == True{} : Bool}
-) -> {kk.K(gg, T.head.job(arr, bad, rows, heads, segs, back, qkind, uni, left, lead)) == True{} : Bool}:
+) -> {kk.K(gg, T.head.job(arr, bad, rows, heads, segs, T.HeadKeep{back, qkind, uni, left}, lead)) == True{} : Bool}:
   match arr:
     case True{}:
       kk.happly(gg, T.tree.walk(segs, T.Tw{rows, T.JAot{}, [], bad, "", heads, False{}}, 0), segs, back, qkind, uni,
@@ -9911,7 +9916,7 @@ def kg.hbare(
   +cc: Char,
   +eg: {kk.K(gg, st) == True{} : Bool},
   +ecl: {kk.cl(st) == KcH{} : KC}
-) -> {kk.K(gg, T.lex.head.bare(bare, sp, dot, end, qq, lit, hash, st, cc)) == True{} : Bool}:
+) -> {kk.K(gg, T.lex.head.bare(bare, sp, dot, end, T.HeadCh{qq, lit, hash}, st, cc)) == True{} : Bool}:
   match bare:
     case True{}:
       kg.ch(gg, st, cc, eg, ecl)
@@ -9933,7 +9938,7 @@ def kg.hgo(
   +cc: Char,
   +eg: {kk.K(gg, st) == True{} : Bool},
   +ecl: {kk.cl(st) == KcH{} : KC}
-) -> {kk.K(gg, T.lex.head.go(br, bare, sp, dot, end, qq, lit, hash, st, cc)) == True{} : Bool}:
+) -> {kk.K(gg, T.lex.head.go(br, bare, sp, dot, end, T.HeadCh{qq, lit, hash}, st, cc)) == True{} : Bool}:
   match br:
     case True{}:
       kg.br(gg, st, eg, ecl)
@@ -10199,7 +10204,7 @@ def kg.tgo(
   +cc: Char,
   +eg: {kk.K(gg, st) == True{} : Bool},
   +ecl: {kk.cl(st) == KcH{} : KC}
-) -> {kk.K(gg, T.lex.top.go(sp, nl, hash, br, qq, lit, bare, st, cc)) == True{} : Bool}:
+) -> {kk.K(gg, T.lex.top.go(sp, nl, hash, T.TopCh{br, qq, lit, bare}, st, cc)) == True{} : Bool}:
   match sp:
     case True{}:
       eg
@@ -10722,7 +10727,7 @@ def kg.vgo(
   +cc: Char,
   +eg: {kk.K(gg, st) == True{} : Bool},
   +ecl: {kk.cl(st) == KcV{} : KC}
-) -> {kk.K(gg, T.lex.val.go(sp, nl, hash, qq, lit, br, inl, st, cc)) == True{} : Bool}:
+) -> {kk.K(gg, T.lex.val.go(sp, nl, hash, T.ValCh{qq, lit, br, inl}, st, cc)) == True{} : Bool}:
   match sp:
     case True{}:
       eg

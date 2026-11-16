@@ -1,5 +1,5 @@
-# bolt.bend: how bolt lints this repo. Every rule is an error except `coverage`,
-# which warns while some guarantees are pending: the gate must see no errors. See bolt/config.bend for the groups and levels.
+# bolt.bend: how bolt lints this repo. Every rule is an error: the gate must
+# see no findings. See bolt's src/config.bend for the groups and levels.
 import Base
 
 # what will fail or blow up
@@ -14,16 +14,14 @@ def suspicious() -> String:
 def style() -> String:
   "error"
 
-# a def no quantified law reaches: advice while guarantees are pending
+# the laws rules
 def laws() -> String:
-  "warn"
+  "error"
 
-# a law with no binder
+# a law with no binder (opt-in)
 def closed() -> String:
   "error"
 
-# a def no quantified law reaches (L001); off since bolt 1.26 unless named.
-# warn, not error: bolt 1.27's coverage finds defs bolt 1.22 passed (listed
-# in the PR that set this); back to error once they are covered
+# a def no quantified law reaches (L001, opt-in)
 def coverage() -> String:
-  "warn"
+  "error"

@@ -474,7 +474,7 @@ def bw.put(
   lf: U32,
   ab: Bool
 ) -> T.St:
-  T.take.top(sk, vv, "", rw, hs, he, ps, bk, qk, un, lf, ab, False{})
+  T.take.top(sk, vv, "", rw, hs, he, ps, T.Keep{bk, qk, un, lf, ab, False{}})
 
 # the value of the one pair of rows when it is named kk, or none
 def bw.got.one(last: Bool, hit: Bool, vv: T.Val) -> T.Got:

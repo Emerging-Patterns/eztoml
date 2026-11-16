@@ -41,6 +41,7 @@ import ./laws/BooleanParsesAsDenotedInArray.bend as BooleanParsesAsDenotedInArra
 import ./laws/BooleanParsesAsDenotedInInlineTable.bend as BooleanParsesAsDenotedInInlineTable
 import ./laws/BooleanParsesExactly.bend as BooleanParsesExactly
 import ./laws/BooleanWordExact.bend as BooleanWordExact
+import ./laws/BuildersMakeValues.bend as BuildersMakeValues
 import ./laws/DateTimeReadExactly.bend as DateTimeReadExactly
 import ./laws/DefinesEachTableOnce.bend as DefinesEachTableOnce
 import ./laws/ErrorStays.bend as ErrorStays

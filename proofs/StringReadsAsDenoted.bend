@@ -761,8 +761,8 @@ def s1.root(
   +un: U32,
   +lf: U32,
   hv: Laws.s1.holds(vv, ss)
-) -> sw.Own(T.Doc{"", [T.VPair{kk, T.VStr{ss}}]}, T.doc.read("\n", T.MScan{T.take.top([], vv, "", [], [], [], [kk], bk,
-  qk, un, lf, False{}, False{})})):
+) -> sw.Own(T.Doc{"", [T.VPair{kk, T.VStr{ss}}]}, T.doc.read("\n", T.MScan{T.take.top([], vv, "", [], [], [], [kk],
+  T.Keep{bk, qk, un, lf, False{}, False{}})})):
   match vv:
     case T.VStr{tx}:
       Equal.cong(String, T.Doc, xs => T.Doc{"", [T.VPair{kk, T.VStr{xs}}]}, tx, ss, hv)
@@ -827,7 +827,7 @@ def s1.item(
   +lf: U32,
   hv: Laws.s1.holds(vv, ss)
 ) -> sw.Own(T.Doc{"", [T.VPair{kk, T.VArr{[T.VStr{ss}]}}]}, T.doc.read("]\n", T.MScan{T.take.top([T.CArr{[], [kk], []}],
-  vv, "", [], [], [], [], bk, qk, un, lf, False{}, False{})})):
+  vv, "", [], [], [], [], T.Keep{bk, qk, un, lf, False{}, False{}})})):
   match vv:
     case T.VStr{tx}:
       Equal.cong(String, T.Doc, xs => T.Doc{"", [T.VPair{kk, T.VArr{[T.VStr{xs}]}}]}, tx, ss, hv)
@@ -893,7 +893,7 @@ def s1.inl.val(
   +lf: U32,
   hv: Laws.s1.holds(vv, ss)
 ) -> sw.Own(T.Doc{"", [T.VPair{kk, T.VInl{[T.VPair{"v", T.VStr{ss}}]}}]}, T.doc.read("}\n",
-  T.MScan{T.take.top([T.CInl{[], [kk], []}], vv, "", [], [], [], ["v"], bk, qk, un, lf, False{}, False{})})):
+  T.MScan{T.take.top([T.CInl{[], [kk], []}], vv, "", [], [], [], ["v"], T.Keep{bk, qk, un, lf, False{}, False{}})})):
   match vv:
     case T.VStr{tx}:
       Equal.cong(String, T.Doc, xs => T.Doc{"", [T.VPair{kk, T.VInl{[T.VPair{"v", T.VStr{xs}}]}}]}, tx, ss, hv)

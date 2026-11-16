@@ -33,17 +33,19 @@ def vl.arr.ws(
   +cc: Char,
   hsp: {sp == False{} : Bool},
   hnl: {nl == False{} : Bool}
-) -> {T.read.fast.ws(sp, nl, True{}, "", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un, lf, ab, cc)
-  == T.read.fast.old("", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un, lf, ab, cc) : T.St}:
+) -> {T.read.fast.ws(sp, nl, True{}, T.LArr{}, qk, T.Fast{"", rw, hs, he, ps, [], bk, sk, un, lf, ab}, cc)
+  == T.read.fast.old(T.LArr{}, qk, T.Fast{"", rw, hs, he, ps, [], bk, sk, un, lf, ab}, cc) : T.St}:
   match sp:
     case True{}:
-      Eq.bit.absurd2(&2, {T.read.fast.ws(True{}, nl, True{}, "", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un, lf, ab,
-        cc) == T.read.fast.old("", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un, lf, ab, cc) : T.St}, hsp)
+      Eq.bit.absurd2(&2, {T.read.fast.ws(True{}, nl, True{}, T.LArr{}, qk, T.Fast{"", rw, hs, he, ps, [], bk, sk, un,
+        lf, ab}, cc) == T.read.fast.old(T.LArr{}, qk, T.Fast{"", rw, hs, he, ps, [], bk, sk, un, lf, ab}, cc) : T.St},
+          hsp)
     case False{}:
       match nl:
         case True{}:
-          Eq.bit.absurd2(&2, {T.read.fast.ws(False{}, True{}, True{}, "", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un,
-            lf, ab, cc) == T.read.fast.old("", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un, lf, ab, cc) : T.St}, hnl)
+          Eq.bit.absurd2(&2, {T.read.fast.ws(False{}, True{}, True{}, T.LArr{}, qk, T.Fast{"", rw, hs, he, ps, [], bk,
+            sk, un, lf, ab}, cc) == T.read.fast.old(T.LArr{}, qk, T.Fast{"", rw, hs, he, ps, [], bk, sk, un, lf, ab},
+              cc) : T.St}, hnl)
         case False{}:
           {==}
 
@@ -141,9 +143,9 @@ def vl.arr.first(
     Equal.trans(T.Mode, T.MScan{T.read.fast(st, Chr{xx})}, T.MScan{T.st.push(sv, Chr{xx}, T.LBare{})},
       T.doc.scan(D2.vpos(rw, hs, he, ps, T.LVal{}, qk, sk, un, lf, ab), Chr{xx}),
       Equal.cong(T.St, T.Mode, ss => T.MScan{ss}, T.read.fast(st, Chr{xx}), T.st.push(sv, Chr{xx}, T.LBare{}),
-        Equal.trans(T.St, T.read.fast.ws(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), True{}, "", rw, hs, he, ps, [], T.LArr{},
-          bk, qk, sk, un, lf, ab, Chr{xx}), T.read.fast.old("", rw, hs, he, ps, [], T.LArr{}, bk, qk, sk, un, lf, ab,
-          Chr{xx}), T.st.push(sv, Chr{xx}, T.LBare{}),
+        Equal.trans(T.St, T.read.fast.ws(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), True{}, T.LArr{}, qk, T.Fast{"", rw, hs,
+          he, ps, [], bk, sk, un, lf, ab}, Chr{xx}), T.read.fast.old(T.LArr{}, qk, T.Fast{"", rw, hs, he, ps, [], bk,
+            sk, un, lf, ab}, Chr{xx}), T.st.push(sv, Chr{xx}, T.LBare{}),
           vl.arr.ws(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), rw, hs, he, ps, bk, qk, sk, un, lf, ab, Chr{xx}, fsp, fnl),
           Equal.trans(T.St, T.read.once2(T.lex.arr.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'),
             Char.is_eq(Chr{xx}, ']'), st, Chr{xx})), T.read.once2(T.lex.arr.end(False{}, st, Chr{xx})),

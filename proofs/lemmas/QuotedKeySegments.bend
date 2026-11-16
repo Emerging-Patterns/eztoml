@@ -501,10 +501,10 @@ def qs.escs(
   +ab: Bool,
   +back: T.Lex,
   +buf: List<&2, Char>,
-  +rest: String,
-  +goal: T.Doc,
-  ih: @bk: T.Lex -> {T.doc.read(rest, T.MScan{M3.qs(hd, rw, hs, he, ps, sk, ab, bk, M2.rev.onto(ss, buf))}) == goal : T.Doc}  # noqa: S002
-) -> {T.doc.read(String.append(L1.escs(ss), rest), T.MScan{M3.qs(hd, rw, hs, he, ps, sk, ab, back, buf)}) == goal
+  +rs: String,
+  +gl: T.Doc,
+  ih: @bk: T.Lex -> {T.doc.read(rs, T.MScan{M3.qs(hd, rw, hs, he, ps, sk, ab, bk, M2.rev.onto(ss, buf))}) == gl : T.Doc}
+) -> {T.doc.read(String.append(L1.escs(ss), rs), T.MScan{M3.qs(hd, rw, hs, he, ps, sk, ab, back, buf)}) == gl
   : T.Doc}:
   match ss:
     case SNil{}:
@@ -513,17 +513,17 @@ def qs.escs(
       match hh:
         case Chr{+uu}:
           Equal.trans(T.Doc,
-            T.doc.read(String.append(String.append(L1.esc(Chr{uu}), L1.escs(tt)), rest),
+            T.doc.read(String.append(String.append(L1.esc(Chr{uu}), L1.escs(tt)), rs),
               T.MScan{M3.qs(hd, rw, hs, he, ps, sk, ab, back, buf)}),
-            T.doc.read(String.append(L1.esc(Chr{uu}), String.append(L1.escs(tt), rest)),
+            T.doc.read(String.append(L1.esc(Chr{uu}), String.append(L1.escs(tt), rs)),
               T.MScan{M3.qs(hd, rw, hs, he, ps, sk, ab, back, buf)}),
-            goal,
+            gl,
             Equal.cong(String, T.Doc, xs => T.doc.read(xs, T.MScan{M3.qs(hd, rw, hs, he, ps, sk, ab, back, buf)}),
-              String.append(String.append(L1.esc(Chr{uu}), L1.escs(tt)), rest),
-              String.append(L1.esc(Chr{uu}), String.append(L1.escs(tt), rest)),
-              Eq.append_assoc(L1.esc(Chr{uu}), L1.escs(tt), rest)),
-            qs.one(uu, hd, rw, hs, he, ps, sk, ab, back, buf, String.append(L1.escs(tt), rest), goal)(
-              bk => qs.escs(tt, hd, rw, hs, he, ps, sk, ab, bk, Chr{uu} <> buf, rest, goal, ih)))
+              String.append(String.append(L1.esc(Chr{uu}), L1.escs(tt)), rs),
+              String.append(L1.esc(Chr{uu}), String.append(L1.escs(tt), rs)),
+              Eq.append_assoc(L1.esc(Chr{uu}), L1.escs(tt), rs)),
+            qs.one(uu, hd, rw, hs, he, ps, sk, ab, back, buf, String.append(L1.escs(tt), rs), gl)(
+              bk => qs.escs(tt, hd, rw, hs, he, ps, sk, ab, bk, Chr{uu} <> buf, rs, gl, ih)))
 
 # a buffer of a name's characters names the pair by the name
 def kq.name(

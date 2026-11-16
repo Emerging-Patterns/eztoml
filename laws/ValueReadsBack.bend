@@ -107,7 +107,7 @@ def vrest(
 ) -> Type:
   @vv: T.Val -> @bk: T.Lex -> @qk: T.QKind -> @un: U32 -> @lf: U32 ->
     {cv.own1(vv) == cv.raw1(ww) : T.Val} ->
-    PP(T.doc.read(rest, T.MScan{T.take.top(sk, vv, "", rw, hs, he, ps, bk, qk, un, lf, ab, False{})}))
+    PP(T.doc.read(rest, T.MScan{T.take.top(sk, vv, "", rw, hs, he, ps, T.Keep{bk, qk, un, lf, ab, False{}})}))
 
 # LAW: a value render writes in a value position reads back: from every
 # state that waits for a value, the text of a well-formed value whose strings

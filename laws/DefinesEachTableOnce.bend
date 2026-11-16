@@ -45,8 +45,8 @@ law dotted_key_refused_in_header_table:
   for heads: List<&2, String>
   for inl: Bool
   for e: {T.heads.head(heads, T.tree.pre(pre, name)) == True{} : Bool}
-  {String.is_empty(tw_bad(T.tree.sub.look(T.KHead{path, rows}, name, vs,
-    T.JPut{val}, stack, pre, heads, inl, True{}))) == False{} : Bool}
+  {String.is_empty(tw_bad(T.tree.sub.look(T.KHead{path, rows}, name, vs, T.Walk{T.JPut{val}, stack, pre, heads, inl},
+    True{}))) == False{} : Bool}
 
 # LAW: a dotted key goes on into a table no header defined, such as one other
 # dotted keys defined
@@ -61,8 +61,8 @@ law dotted_key_enters_other_table:
   for heads: List<&2, String>
   for inl: Bool
   for e: {T.heads.head(heads, T.tree.pre(pre, name)) == False{} : Bool}
-  {tw_bad(T.tree.sub.look(T.KHead{path, rows}, name, vs, T.JPut{val}, stack,
-    pre, heads, inl, True{})) == "" : String}
+  {tw_bad(T.tree.sub.look(T.KHead{path, rows}, name, vs, T.Walk{T.JPut{val}, stack, pre, heads, inl},
+    True{})) == "" : String}
 
 # LAW: a dotted key cannot add to an array of tables
 law dotted_key_refused_in_array_of_tables:
@@ -75,8 +75,8 @@ law dotted_key_refused_in_array_of_tables:
   for pre: String
   for heads: List<&2, String>
   for inl: Bool
-  {String.is_empty(tw_bad(T.tree.sub.look(T.KAots{path, elems}, name, vs,
-    T.JPut{val}, stack, pre, heads, inl, True{}))) == False{} : Bool}
+  {String.is_empty(tw_bad(T.tree.sub.look(T.KAots{path, elems}, name, vs, T.Walk{T.JPut{val}, stack, pre, heads, inl},
+    True{}))) == False{} : Bool}
 
 # LAW: a header goes on through every table on its path, whoever defined it
 law header_enters_any_table:
@@ -90,8 +90,8 @@ law header_enters_any_table:
   for heads: List<&2, String>
   for inl: Bool
   for mark: Bool
-  {tw_bad(T.tree.sub.look(T.KHead{path, rows}, name, vs, D1.header_job(arr),
-    stack, pre, heads, inl, mark)) == "" : String}
+  {tw_bad(T.tree.sub.look(T.KHead{path, rows}, name, vs, T.Walk{D1.header_job(arr), stack, pre, heads, inl},
+    mark)) == "" : String}
 
 # LAW: a [table] header that makes a new table records it as defined by a
 # header
@@ -179,8 +179,8 @@ law inline_table_refuses_keys:
   for heads: List<&2, String>
   for inl: Bool
   for mark: Bool
-  {String.is_empty(tw_bad(T.tree.sub.look(T.KInl{}, name, vs, job, stack, pre,
-    heads, inl, mark))) == False{} : Bool}
+  {String.is_empty(tw_bad(T.tree.sub.look(T.KInl{}, name, vs, T.Walk{job, stack, pre, heads, inl},
+    mark))) == False{} : Bool}
 
 # whether a lookup missed
 def is_miss(hh: T.Hit) -> Bool:

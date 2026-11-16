@@ -2254,23 +2254,25 @@ def tree.leaf(name: String, tw: Tw) -> End:
   Tw{vs, job, stack, +bad, pre, heads, _inl} = tw
   tree.leaf.bad(String.is_empty(bad), name, vs, job, stack, bad, pre, heads)
 
+# the walk fields a descent into one key carries through
+type Walk is Data:
+  Walk{job: Job, stack: List<&2, Fr>, pre: String, heads: List<&2, String>, inl: Bool}
+
 # enter the last element of an array of tables
 def tree.sub.aots(
   last: Last,
   +name: String,
   +vs: List<&2, Val>,
-  job: Job,
-  stack: List<&2, Fr>,
-  +pre: String,
-  heads: List<&2, String>,
-  inl: Bool,
+  walk: Walk,
   path: String
 ) -> Tw:
   match last:
     case LastSome{_p, prefix, rows}:
+      Walk{job, stack, +pre, heads, inl} = walk
       Tw{rows, job, FrAot{name, vs, prefix, path} <> stack, "", tree.pre(pre, name),
         heads, inl}
     case LastNo{why}:
+      Walk{job, stack, +pre, heads, inl} = walk
       Tw{vs, job, stack, why, pre, heads, inl}
 
 # a prefix of the current table is navigation; a dotted segment defines a table
@@ -2296,17 +2298,15 @@ def tree.sub.head.go(
   rows: List<&2, Val>,
   +name: String,
   vs: List<&2, Val>,
-  +job: Job,
-  stack: List<&2, Fr>,
-  +pre: String,
-  heads: List<&2, String>,
-  inl: Bool,
+  walk: Walk,
   mark: Bool
 ) -> Tw:
   match shut:
     case True{}:
+      Walk{+job, stack, +pre, heads, inl} = walk
       Tw{vs, job, stack, "duplicate table", pre, heads, inl}
     case False{}:
+      Walk{+job, stack, +pre, heads, inl} = walk
       Tw{rows, job, FrRep{name, vs, path} <> stack, "", tree.pre(pre, name),
         heads.define(tree.sub.job(mark, job), tree.pre(pre, name), heads), inl}
 
@@ -2317,19 +2317,16 @@ def tree.sub.head(
   rows: List<&2, Val>,
   +name: String,
   vs: List<&2, Val>,
-  job: Job,
-  stack: List<&2, Fr>,
-  +pre: String,
-  +heads: List<&2, String>,
-  inl: Bool,
+  walk: Walk,
   mark: Bool
 ) -> Tw:
   match dot:
     case True{}:
-      tree.sub.head.go(heads.head(heads, tree.pre(pre, name)), path, rows, name, vs, job,
-        stack, pre, heads, inl, mark)
+      Walk{job, stack, +pre, +heads, inl} = walk
+      tree.sub.head.go(heads.head(heads, tree.pre(pre, name)), path, rows, name, vs,
+        Walk{job, stack, pre, heads, inl}, mark)
     case False{}:
-      tree.sub.head.go(False{}, path, rows, name, vs, job, stack, pre, heads, inl, mark)
+      tree.sub.head.go(False{}, path, rows, name, vs, walk, mark)
 
 # a header enters the last element of an array of tables; a dotted key cannot
 # add to an array of tables
@@ -2339,44 +2336,42 @@ def tree.sub.arr(
   elems: List<&2, Val>,
   +name: String,
   +vs: List<&2, Val>,
-  job: Job,
-  stack: List<&2, Fr>,
-  +pre: String,
-  heads: List<&2, String>,
-  inl: Bool
+  walk: Walk
 ) -> Tw:
   match dot:
     case True{}:
+      Walk{job, stack, +pre, heads, inl} = walk
       Tw{vs, job, stack, "duplicate table", pre, heads, inl}
     case False{}:
-      tree.sub.aots(look.last(elems, path), name, vs, job, stack, pre, heads, inl, path)
+      tree.sub.aots(look.last(elems, path), name, vs, walk, path)
 
 # descend into one key, or record why it cannot be entered
 def tree.sub.look(
   hit: Look,
   +name: String,
   +vs: List<&2, Val>,
-  +job: Job,
-  stack: List<&2, Fr>,
-  +pre: String,
-  heads: List<&2, String>,
-  +inl: Bool,
+  walk: Walk,
   +mark: Bool
 ) -> Tw:
   match hit:
     case KMiss{}:
+      Walk{+job, stack, +pre, heads, +inl} = walk
       Tw{[], job, FrNew{name, vs, tree.pre(pre, name)} <> stack, "",
         tree.pre(pre, name), heads.define(tree.sub.job(mark, job), tree.pre(pre, name),
           heads), inl}
     case KHead{path, rows}:
-      tree.sub.head(tree.sub.dot(tree.sub.job(mark, job)), path, rows, name, vs, job,
-        stack, pre, heads, inl, mark)
+      Walk{+job, stack, +pre, heads, +inl} = walk
+      tree.sub.head(tree.sub.dot(tree.sub.job(mark, job)), path, rows, name, vs, Walk{job,
+        stack, pre, heads, inl}, mark)
     case KInl{}:
+      Walk{+job, stack, +pre, heads, +inl} = walk
       Tw{vs, job, stack, "inline table is closed", pre, heads, inl}
     case KAots{path, elems}:
-      tree.sub.arr(tree.sub.dot(tree.sub.job(mark, job)), path, elems, name, vs, job,
-        stack, pre, heads, inl)
+      Walk{+job, stack, +pre, heads, +inl} = walk
+      tree.sub.arr(tree.sub.dot(tree.sub.job(mark, job)), path, elems, name, vs, Walk{job,
+        stack, pre, heads, inl})
     case KNo{why}:
+      Walk{+job, stack, +pre, heads, +inl} = walk
       Tw{vs, job, stack, why, pre, heads, inl}
 
 # descend into one key when the walk is still well
@@ -2384,24 +2379,22 @@ def tree.sub.bad(
   ok: Bool,
   +name: String,
   +vs: List<&2, Val>,
-  job: Job,
-  stack: List<&2, Fr>,
   bad: String,
-  pre: String,
-  heads: List<&2, String>,
-  inl: Bool,
+  walk: Walk,
   mark: Bool
 ) -> Tw:
   match ok:
     case False{}:
+      Walk{job, stack, pre, heads, inl} = walk
       Tw{vs, job, stack, bad, pre, heads, inl}
     case True{}:
-      tree.sub.look(rows.look(vs, name), name, vs, job, stack, pre, heads, inl, mark)
+      tree.sub.look(rows.look(vs, name), name, vs, walk, mark)
 
 # descend into one key
 def tree.sub(name: String, tw: Tw, mark: Bool) -> Tw:
   Tw{+vs, job, stack, +bad, pre, heads, inl} = tw
-  tree.sub.bad(String.is_empty(bad), name, vs, job, stack, bad, pre, heads, inl, mark)
+  tree.sub.bad(String.is_empty(bad), name, vs, bad, Walk{job, stack, pre, heads, inl},
+    mark)
 
 # how many segments are already the current table
 def path.len(xs: List<&2, String>, nn: U32) -> U32:
@@ -2659,6 +2652,10 @@ def take.root(
   St{bad, rows, heads, here, [], [], LLine{}, back, qkind, [], HNone{}, uni, left, arrtab,
     lead}
 
+# the scanner fields placing a finished value keeps
+type Keep is Data:
+  Keep{back: Lex, qkind: QKind, uni: U32, left: U32, arrtab: Bool, lead: Bool}
+
 # a finished value inside an inline table
 def take.inl(
   end: End,
@@ -2667,14 +2664,10 @@ def take.inl(
   +here: List<&2, String>,
   +parts: List<&2, String>,
   rest: List<&2, Ctx>,
-  back: Lex,
-  qkind: QKind,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  lead: Bool
+  keep: Keep
 ) -> St:
   End{inl, bad, _h} = end
+  Keep{back, qkind, uni, left, arrtab, lead} = keep
   St{bad, rows, heads, here, [], [], LInlC{}, back, qkind,
     CInl{inl, parts, here} <> rest, HNone{}, uni, left, arrtab, lead}
 
@@ -2687,33 +2680,29 @@ def take.top(
   heads: List<&2, String>,
   +here: List<&2, String>,
   parts: List<&2, String>,
-  back: Lex,
-  qkind: QKind,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  lead: Bool
+  keep: Keep
 ) -> St:
   match stack:
     case []:
+      Keep{back, qkind, uni, left, arrtab, lead} = keep
       take.root(tree.walk(path.cat(here, parts),
         Tw{rows, JPut{val}, [], bad, "", heads, False{}}, path.len(here, 0)), here,
         back, qkind, uni, left, arrtab, lead)
     case CArr{items, +saved, +at} <> rest:
+      Keep{back, qkind, uni, left, arrtab, lead} = keep
       St{bad, rows, heads, at, saved, [], LArrC{}, back, qkind,
         CArr{val <> items, saved, at} <> rest, HNone{}, uni, left, arrtab, lead}
     case CInl{inl, +saved, +at} <> rest:
       take.inl(tree.walk(List.reverse(&2, String, parts),
-        Tw{inl, JPut{val}, [], bad, "", [], True{}}, 0), rows, heads, at, saved, rest,
-        back,
-        qkind, uni, left, arrtab, lead)
+        Tw{inl, JPut{val}, [], bad, "", [],
+          True{}}, 0), rows, heads, at, saved, rest, keep)
 
 # place a finished value
 def val.take(st: St, val: Val) -> St:
   St{bad, rows, heads, here, parts, _buf, _lex, back, qkind, stack, _hold, uni, left,
     arrtab, lead} = st
-  take.top(stack, val, bad, rows, heads, here, parts, back, qkind, uni, left, arrtab,
-    lead)
+  take.top(stack, val, bad, rows, heads, here, parts, Keep{back, qkind, uni, left, arrtab,
+    lead})
 
 # hold the delimiter when the following state must see it
 def bare.hold.on(st: St, cc: Char) -> St:
@@ -2776,6 +2765,10 @@ def head.apply(end: End, segs: List<&2, String>, back: Lex, qkind: QKind, uni: U
   St{bad, rows, heads, segs, [], [], LLine{}, back, qkind, [], HNone{}, uni, left,
     False{}, lead}
 
+# the scanner fields opening a header keeps
+type HeadKeep is Data:
+  HeadKeep{back: Lex, qkind: QKind, uni: U32, left: U32}
+
 # an array-of-tables header, or a table header
 def head.job(
   arr: Bool,
@@ -2783,18 +2776,17 @@ def head.job(
   rows: List<&2, Val>,
   heads: List<&2, String>,
   +segs: List<&2, String>,
-  back: Lex,
-  qkind: QKind,
-  uni: U32,
-  left: U32,
+  hkeep: HeadKeep,
   lead: Bool
 ) -> St:
   match arr:
     case True{}:
+      HeadKeep{back, qkind, uni, left} = hkeep
       head.apply(tree.walk(segs, Tw{rows, JAot{}, [], bad, "", heads, False{}}, 0),
         segs,
         back, qkind, uni, left, lead)
     case False{}:
+      HeadKeep{back, qkind, uni, left} = hkeep
       head.apply(tree.walk(segs, Tw{rows, JDef{}, [], bad, "", heads, False{}}, 0),
         segs,
         back, qkind, uni, left, lead)
@@ -2803,7 +2795,7 @@ def head.job(
 def head.on(st: St, segs: List<&2, String>) -> St:
   St{bad, rows, heads, _here, _parts, _buf, _lex, back, qkind, _stack, _hold, uni, left,
     arrtab, lead} = st
-  head.job(arrtab, bad, rows, heads, segs, back, qkind, uni, left, lead)
+  head.job(arrtab, bad, rows, heads, segs, HeadKeep{back, qkind, uni, left}, lead)
 
 # the header key is ready
 def head.go(empty: Bool, st: St, segs: List<&2, String>) -> St:
@@ -2843,18 +2835,15 @@ def arr.top(
   bad: String,
   rows: List<&2, Val>,
   heads: List<&2, String>,
-  back: Lex,
-  qkind: QKind,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  lead: Bool
+  keep: Keep
 ) -> St:
   match stack:
     case CArr{items, parts, here} <> rest:
+      Keep{back, qkind, uni, left, arrtab, lead} = keep
       val.take(St{bad, rows, heads, here, parts, [], LTop{}, back, qkind, rest, HNone{},
         uni, left, arrtab, lead}, VArr{List.reverse(&2, Val, items)})
     case _:
+      Keep{back, qkind, uni, left, arrtab, lead} = keep
       St{err.first(bad, "unclosed"), rows, heads, [], [], [], LSink{}, back, qkind, [],
         HNone{}, uni, left, arrtab, lead}
 
@@ -2862,7 +2851,7 @@ def arr.top(
 def arr.close(st: St) -> St:
   St{bad, rows, heads, _here, _parts, _buf, _lex, back, qkind, stack, _hold, uni, left,
     arrtab, lead} = st
-  arr.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)
+  arr.top(stack, bad, rows, heads, Keep{back, qkind, uni, left, arrtab, lead})
 
 # an inline table is closed once written: the tables its dotted keys made,
 # open while it was read, close with it
@@ -2881,18 +2870,15 @@ def inl.top(
   bad: String,
   rows: List<&2, Val>,
   heads: List<&2, String>,
-  back: Lex,
-  qkind: QKind,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  lead: Bool
+  keep: Keep
 ) -> St:
   match stack:
     case CInl{inl, parts, here} <> rest:
+      Keep{back, qkind, uni, left, arrtab, lead} = keep
       val.take(St{bad, rows, heads, here, parts, [], LTop{}, back, qkind, rest, HNone{},
         uni, left, arrtab, lead}, VInl{inl.seal(inl)})
     case _:
+      Keep{back, qkind, uni, left, arrtab, lead} = keep
       St{err.first(bad, "unclosed"), rows, heads, [], [], [], LSink{}, back, qkind, [],
         HNone{}, uni, left, arrtab, lead}
 
@@ -2900,7 +2886,7 @@ def inl.top(
 def inl.close(st: St) -> St:
   St{bad, rows, heads, _here, _parts, _buf, _lex, back, qkind, stack, _hold, uni, left,
     arrtab, lead} = st
-  inl.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)
+  inl.top(stack, bad, rows, heads, Keep{back, qkind, uni, left, arrtab, lead})
 
 # the innermost frame is an inline table
 def inl.open(stack: List<&2, Ctx>) -> Bool:
@@ -3040,47 +3026,40 @@ def esc.sp(sp: Bool, bb: Bool, tt: Bool, nn: Bool, ff: Bool, rr: Bool, uuu: Bool
     case False{}:
       esc.letter(bb, tt, nn, ff, rr, uuu, uu)
 
+# which escape letter a character is: b, t, n, f, r, u, or U
+type Letters is Data:
+  Letters{bb: Bool, tt: Bool, nn: Bool, ff: Bool, rr: Bool, uuu: Bool, uu: Bool}
+
 # a line-ending backslash, or a letter
-def esc.fold(nl: Bool, sp: Bool, bb: Bool, tt: Bool, nn: Bool, ff: Bool, rr: Bool, uuu: Bool, uu: Bool) -> Esc:
+def esc.fold(nl: Bool, sp: Bool, letters: Letters) -> Esc:
   match nl:
     case True{}:
       EFold{True{}}
     case False{}:
+      Letters{bb, tt, nn, ff, rr, uuu, uu} = letters
       esc.sp(sp, bb, tt, nn, ff, rr, uuu, uu)
 
 # a backslash or a letter
-def esc.bs(bs: Bool, bb: Bool, tt: Bool, nn: Bool, ff: Bool, rr: Bool, uuu: Bool, uu: Bool, nl: Bool, sp: Bool) -> Esc:
+def esc.bs(bs: Bool, letters: Letters, nl: Bool, sp: Bool) -> Esc:
   match bs:
     case True{}:
       EChar{'\\'}
     case False{}:
-      esc.fold(nl, sp, bb, tt, nn, ff, rr, uuu, uu)
+      esc.fold(nl, sp, letters)
 
 # a quote, a backslash, or a letter
-def esc.of.go(
-  qq: Bool,
-  bs: Bool,
-  bb: Bool,
-  tt: Bool,
-  nn: Bool,
-  ff: Bool,
-  rr: Bool,
-  uuu: Bool,
-  uu: Bool,
-  nl: Bool,
-  sp: Bool
-) -> Esc:
+def esc.of.go(qq: Bool, bs: Bool, letters: Letters, nl: Bool, sp: Bool) -> Esc:
   match qq:
     case True{}:
       EChar{'"'}
     case False{}:
-      esc.bs(bs, bb, tt, nn, ff, rr, uuu, uu, nl, sp)
+      esc.bs(bs, letters, nl, sp)
 
 # classify one escaped character
 def esc.of(+cc: Char) -> Esc:
-  esc.of.go(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), Char.is_eq(cc, 'b'),
-    Char.is_eq(cc, 't'), Char.is_eq(cc, 'n'), Char.is_eq(cc, 'f'), Char.is_eq(cc, 'r'),
-    Char.is_eq(cc, 'u'), Char.is_eq(cc, 'U'), ch.nl(cc), ch.sp(cc))
+  esc.of.go(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), Letters{Char.is_eq(cc, 'b'),
+    Char.is_eq(cc, 't'), Char.is_eq(cc, 'n'), Char.is_eq(cc, 'f'), Char.is_eq(cc,
+    'r'), Char.is_eq(cc, 'u'), Char.is_eq(cc, 'U')}, ch.nl(cc), ch.sp(cc))
 
 # the lex state that reads the hex digits of an escape
 def esc.uni.lex(back: Lex) -> Lex:
@@ -3218,18 +3197,23 @@ def lex.top.nl(nl: Bool, hash: Bool, br: Bool, qq: Bool, lit: Bool, bare: Bool, 
     case False{}:
       lex.top.hash(hash, br, qq, lit, bare, st, cc)
 
+# what a top-level character may open: a header, a quoted key, or a bare key
+type TopCh is Data:
+  TopCh{br: Bool, qq: Bool, lit: Bool, bare: Bool}
+
 # whitespace, a comment, a header, or a key
-def lex.top.go(sp: Bool, nl: Bool, hash: Bool, br: Bool, qq: Bool, lit: Bool, bare: Bool, st: St, cc: Char) -> St:
+def lex.top.go(sp: Bool, nl: Bool, hash: Bool, topch: TopCh, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
+      TopCh{br, qq, lit, bare} = topch
       lex.top.nl(nl, hash, br, qq, lit, bare, st, cc)
 
 # top level: a key, a header, a comment, or whitespace
 def lex.top(st: St, +cc: Char) -> St:
-  lex.top.go(ch.sp(cc), ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '['),
-    Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), bare.at(cc), st, cc)
+  lex.top.go(ch.sp(cc), ch.nl(cc), Char.is_eq(cc, '#'), TopCh{Char.is_eq(cc, '['),
+    Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), bare.at(cc)}, st, cc)
 
 # a newline before equals is rejected
 def lex.key.nl(nl: Bool, st: St, _c: Char) -> St:
@@ -3423,18 +3407,23 @@ def lex.val.nl(nl: Bool, hash: Bool, qq: Bool, lit: Bool, br: Bool, inl: Bool, s
     case False{}:
       lex.val.hash(hash, qq, lit, br, inl, st, cc)
 
+# what a value's first character may open: a string, an array, or an inline table
+type ValCh is Data:
+  ValCh{qq: Bool, lit: Bool, br: Bool, inl: Bool}
+
 # whitespace or the value itself
-def lex.val.go(sp: Bool, nl: Bool, hash: Bool, qq: Bool, lit: Bool, br: Bool, inl: Bool, st: St, cc: Char) -> St:
+def lex.val.go(sp: Bool, nl: Bool, hash: Bool, valch: ValCh, st: St, cc: Char) -> St:
   match sp:
     case True{}:
       st
     case False{}:
+      ValCh{qq, lit, br, inl} = valch
       lex.val.nl(nl, hash, qq, lit, br, inl, st, cc)
 
 # the start of a value
 def lex.val(st: St, +cc: Char) -> St:
-  lex.val.go(ch.sp(cc), ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'),
-    Char.is_eq(cc, '\''), Char.is_eq(cc, '['), Char.is_eq(cc, '{'), st, cc)
+  lex.val.go(ch.sp(cc), ch.nl(cc), Char.is_eq(cc, '#'), ValCh{Char.is_eq(cc, '"'),
+    Char.is_eq(cc, '\''), Char.is_eq(cc, '['), Char.is_eq(cc, '{')}, st, cc)
 
 # a second quote may start a multiline string; otherwise the first character is held
 def lex.q.go(same: Bool, st: St, cc: Char) -> St:
@@ -3959,12 +3948,25 @@ def lex.head.sp(sp: Bool, dot: Bool, end: Bool, qq: Bool, lit: Bool, hash: Bool,
     case False{}:
       lex.head.dot(dot, end, qq, lit, hash, st, cc)
 
+# a header character that is a quote or starts a comment
+type HeadCh is Data:
+  HeadCh{qq: Bool, lit: Bool, hash: Bool}
+
 # a bare character, whitespace, a dot, or the end
-def lex.head.bare(bare: Bool, sp: Bool, dot: Bool, end: Bool, qq: Bool, lit: Bool, hash: Bool, st: St, cc: Char) -> St:
+def lex.head.bare(
+  bare: Bool,
+  sp: Bool,
+  dot: Bool,
+  end: Bool,
+  headch: HeadCh,
+  st: St,
+  cc: Char
+) -> St:
   match bare:
     case True{}:
       lex.head.ch(st, cc)
     case False{}:
+      HeadCh{qq, lit, hash} = headch
       lex.head.sp(sp, dot, end, qq, lit, hash, st, cc)
 
 # a second bracket, a key character, or whitespace
@@ -3974,9 +3976,7 @@ def lex.head.go(
   sp: Bool,
   dot: Bool,
   end: Bool,
-  qq: Bool,
-  lit: Bool,
-  hash: Bool,
+  headch: HeadCh,
   st: St,
   cc: Char
 ) -> St:
@@ -3984,13 +3984,13 @@ def lex.head.go(
     case True{}:
       lex.head.br(st)
     case False{}:
-      lex.head.bare(bare, sp, dot, end, qq, lit, hash, st, cc)
+      lex.head.bare(bare, sp, dot, end, headch, st, cc)
 
 # inside a header
 def lex.head(st: St, +cc: Char) -> St:
   lex.head.go(Char.is_eq(cc, '['), bare.at(cc), ch.sp(cc), Char.is_eq(cc, '.'),
-    Char.is_eq(cc, ']'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc, '#'),
-    st, cc)
+    Char.is_eq(cc, ']'), HeadCh{Char.is_eq(cc, '"'), Char.is_eq(cc, '\''), Char.is_eq(cc,
+    '#')}, st, cc)
 
 # the end, or a comment
 def lex.hgap.end(end: Bool, hash: Bool, st: St) -> St:
@@ -4446,78 +4446,78 @@ def lex.hq(st: St, +cc: Char) -> St:
   lex.kq(st, cc, LHeadGap{}, LHeadQ{})
 
 # one character, dispatched on the lex state
-def read.on(lex: Lex, st: St, cc: Char) -> St:
+def read.on(lex: Lex, st: St, char: Char) -> St:
   match lex:
     case LTop{}:
-      lex.top(st, cc)
+      lex.top(st, char)
     case LLine{}:
-      lex.line(st, cc)
+      lex.line(st, char)
     case LKey{}:
-      lex.key(st, cc)
+      lex.key(st, char)
     case LKeyDot{}:
-      lex.kdot(st, cc)
+      lex.kdot(st, char)
     case LAfter{}:
-      lex.after(st, cc)
+      lex.after(st, char)
     case LKeyQ{}:
-      lex.kq(st, cc, LAfter{}, LKeyQ{})
+      lex.kq(st, char, LAfter{}, LKeyQ{})
     case LKeyE{}:
-      esc.use(esc.of(cc), st, LKeyQ{})
+      esc.use(esc.of(char), st, LKeyQ{})
     case LKeyU{}:
-      uni.step(st, cc, LKeyQ{})
+      uni.step(st, char, LKeyQ{})
     case LVal{}:
-      lex.val(st, cc)
+      lex.val(st, char)
     case LQ{}:
-      lex.q(st, cc)
+      lex.q(st, char)
     case LQ2{}:
-      lex.q2(st, cc)
+      lex.q2(st, char)
     case LStr{}:
-      lex.str(st, cc)
+      lex.str(st, char)
     case LEsc{}:
-      lex.esc(st, cc)
+      lex.esc(st, char)
     case LUni{}:
-      uni.step(st, cc, LStr{})
+      uni.step(st, char, LStr{})
     case LFold{}:
-      lex.fold(st, cc)
+      lex.fold(st, char)
     case LMq{}:
-      lex.mq.step(st, cc)
+      lex.mq.step(st, char)
     case LMqEnd{}:
-      lex.mq.end(st, cc)
+      lex.mq.end(st, char)
     case LTrim{}:
-      lex.trim(st, cc)
+      lex.trim(st, char)
     case LTrim2{}:
-      lex.trim2(st, cc)
+      lex.trim2(st, char)
     case LBare{}:
-      lex.bare(st, cc)
+      lex.bare(st, char)
     case LDate{}:
-      lex.date(st, cc)
+      lex.date(st, char)
     case LCom{}:
-      lex.com(st, cc)
+      lex.com(st, char)
     case LHead{}:
-      lex.head(st, cc)
+      lex.head(st, char)
     case LHeadGap{}:
-      lex.head.gap.step(st, cc)
+      lex.head.gap.step(st, char)
     case LHeadDot{}:
-      lex.head.dot.step(st, cc)
+      lex.head.dot.step(st, char)
     case LHeadQ{}:
-      lex.hq(st, cc)
+      lex.hq(st, char)
     case LHeadE{}:
-      esc.use(esc.of(cc), st, LHeadQ{})
+      esc.use(esc.of(char), st, LHeadQ{})
     case LHeadU{}:
-      uni.step(st, cc, LHeadQ{})
+      uni.step(st, char, LHeadQ{})
     case LHeadR{}:
-      lex.head.r(st, cc)
+      lex.head.r(st, char)
     case LArr{}:
-      lex.arr(st, cc)
+      lex.arr(st, char)
     case LArrC{}:
-      lex.arrc(st, cc)
+      lex.arrc(st, char)
     case LInl{}:
-      lex.inl(st, cc)
+      lex.inl(st, char)
     case LInlK{}:
-      lex.inlk(st, cc)
+      lex.inlk(st, char)
     case LInlC{}:
-      lex.inlc(st, cc)
+      lex.inlc(st, char)
     case LSink{}:
-      lex.sink(st, cc)
+      lex.sink(st, char)
 
 # read the lex state and step
 def read.on.st(st: St, cc: Char) -> St:
@@ -4702,433 +4702,174 @@ def read.fin2(st: St) -> Doc:
 def read.fin(st: St) -> Doc:
   read.fin2(read.fin.close(st))
 
+# the scanner fields the fast step carries through unchanged
+type Fast is Data:
+  Fast{bad: String, rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
+    parts: List<&2, String>, buf: List<&2, Char>, back: Lex, stack: List<&2, Ctx>,
+    uni: U32, left: U32, arrtab: Bool}
+
 # one scanner state, with the hold cleared and the first character already taken
-def read.fast.st(
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  lex: Lex,
-  back: Lex,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool
-) -> St:
+def read.fast.st(lex: Lex, qkind: QKind, fast: Fast) -> St:
+  Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab} = fast
   St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, HNone{}, uni, left,
     arrtab, False{}}
 
 # the character joins the buffer and the state stays
-def read.fast.cons(
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  lex: Lex,
-  back: Lex,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
-  read.fast.st(bad, rows, heads, here, parts, cc <> buf, lex, back, qkind, stack, uni,
-    left, arrtab)
+def read.fast.cons(lex: Lex, qkind: QKind, fast: Fast, +cc: Char) -> St:
+  Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab} = fast
+  read.fast.st(lex, qkind, Fast{bad, rows, heads, here, parts, cc <> buf, back, stack,
+    uni, left, arrtab})
 
 # a quote, an escape, or a state this step does not special-case
-def read.fast.old(
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  lex: Lex,
-  back: Lex,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
-  read.once2(read.on.st(read.fast.st(bad, rows, heads, here, parts, buf, lex, back,
-    qkind, stack, uni, left, arrtab), cc))
+def read.fast.old(lex: Lex, qkind: QKind, fast: Fast, +cc: Char) -> St:
+  read.once2(read.on.st(read.fast.st(lex, qkind, fast), cc))
 
 # a forbidden control takes the full step; a plain character is stored
-def read.fast.push(
-  ctrl: Bool,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  lex: Lex,
-  back: Lex,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
+def read.fast.push(ctrl: Bool, lex: Lex, qkind: QKind, fast: Fast, +cc: Char) -> St:
   match ctrl:
     case False{}:
-      read.fast.cons(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
-        left, arrtab, cc)
+      read.fast.cons(lex, qkind, fast, cc)
     case True{}:
-      read.fast.old(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
-        left, arrtab, cc)
+      read.fast.old(lex, qkind, fast, cc)
 
 # a basic-string character that is not a quote
-def read.fast.basic.bs(
-  bs: Bool,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
+def read.fast.basic.bs(bs: Bool, fast: Fast, +cc: Char) -> St:
   match bs:
     case True{}:
-      read.fast.old(bad, rows, heads, here, parts, buf, LStr{}, back, QBasic{}, stack,
-        uni, left, arrtab, cc)
+      read.fast.old(LStr{}, QBasic{}, fast, cc)
     case False{}:
-      read.fast.push(str.bad(Char.to_u32(cc), False{}), bad, rows, heads, here, parts,
-        buf, LStr{}, back, QBasic{}, stack, uni, left, arrtab, cc)
+      read.fast.push(str.bad(Char.to_u32(cc), False{}), LStr{}, QBasic{}, fast, cc)
 
 # a basic-string character: a quote or a backslash still takes the full step
-def read.fast.basic(
-  quote: Bool,
-  bs: Bool,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
+def read.fast.basic(quote: Bool, bs: Bool, fast: Fast, +cc: Char) -> St:
   match quote:
     case True{}:
-      read.fast.old(bad, rows, heads, here, parts, buf, LStr{}, back, QBasic{}, stack,
-        uni, left, arrtab, cc)
+      read.fast.old(LStr{}, QBasic{}, fast, cc)
     case False{}:
-      read.fast.basic.bs(bs, bad, rows, heads, here, parts, buf, back, stack, uni, left,
-        arrtab, cc)
+      read.fast.basic.bs(bs, fast, cc)
 
 # a literal-string character: a quote still takes the full step
-def read.fast.lit(
-  quote: Bool,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
+def read.fast.lit(quote: Bool, fast: Fast, +cc: Char) -> St:
   match quote:
     case True{}:
-      read.fast.old(bad, rows, heads, here, parts, buf, LStr{}, back, QLit{}, stack,
-        uni, left, arrtab, cc)
+      read.fast.old(LStr{}, QLit{}, fast, cc)
     case False{}:
-      read.fast.push(str.bad(Char.to_u32(cc), False{}), bad, rows, heads, here, parts,
-        buf, LStr{}, back, QLit{}, stack, uni, left, arrtab, cc)
+      read.fast.push(str.bad(Char.to_u32(cc), False{}), LStr{}, QLit{}, fast, cc)
 
 # one character of a string
-def read.fast.str(
-  qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
+def read.fast.str(qkind: QKind, fast: Fast, +cc: Char) -> St:
   match qkind:
     case QBasic{}:
-      read.fast.basic(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), bad, rows, heads, here,
-        parts, buf, back, stack, uni, left, arrtab, cc)
+      read.fast.basic(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), fast, cc)
     case QLit{}:
-      read.fast.lit(Char.is_eq(cc, '\''), bad, rows, heads, here, parts, buf, back,
-        stack, uni, left, arrtab, cc)
+      read.fast.lit(Char.is_eq(cc, '\''), fast, cc)
     case other:
-      read.fast.old(bad, rows, heads, here, parts, buf, LStr{}, back, other, stack,
-        uni, left, arrtab, cc)
+      read.fast.old(LStr{}, other, fast, cc)
 
 # one character of a bare key
-def read.fast.key(
-  ok: Bool,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
+def read.fast.key(ok: Bool, qkind: QKind, fast: Fast, +cc: Char) -> St:
   match ok:
     case True{}:
-      read.fast.cons(bad, rows, heads, here, parts, buf, LKey{}, back, qkind, stack,
-        uni, left, arrtab, cc)
+      read.fast.cons(LKey{}, qkind, fast, cc)
     case False{}:
-      read.fast.old(bad, rows, heads, here, parts, buf, LKey{}, back, qkind, stack,
-        uni, left, arrtab, cc)
+      read.fast.old(LKey{}, qkind, fast, cc)
 
 # one character of a bare value
-def read.fast.bare(
-  delim: Bool,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
+def read.fast.bare(delim: Bool, qkind: QKind, fast: Fast, +cc: Char) -> St:
   match delim:
     case False{}:
-      read.fast.cons(bad, rows, heads, here, parts, buf, LBare{}, back, qkind, stack,
-        uni, left, arrtab, cc)
+      read.fast.cons(LBare{}, qkind, fast, cc)
     case True{}:
-      read.fast.old(bad, rows, heads, here, parts, buf, LBare{}, back, qkind, stack,
-        uni, left, arrtab, cc)
+      read.fast.old(LBare{}, qkind, fast, cc)
 
 # one character of a comment. a control, a newline among them, takes the full step
-def read.fast.com(
-  ctl: Bool,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
+def read.fast.com(ctl: Bool, qkind: QKind, fast: Fast, +cc: Char) -> St:
   match ctl:
     case False{}:
-      read.fast.st(bad, rows, heads, here, parts, buf, LCom{}, back, qkind, stack,
-        uni, left, arrtab)
+      read.fast.st(LCom{}, qkind, fast)
     case True{}:
-      read.fast.old(bad, rows, heads, here, parts, buf, LCom{}, back, qkind, stack,
-        uni, left, arrtab, cc)
+      read.fast.old(LCom{}, qkind, fast, cc)
 
 # whitespace that this state ignores. keep is true when a newline is also ignored
-def read.fast.ws.keep(
-  keep: Bool,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  lex: Lex,
-  back: Lex,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
+def read.fast.ws.keep(keep: Bool, lex: Lex, qkind: QKind, fast: Fast, +cc: Char) -> St:
   match keep:
     case True{}:
-      read.fast.st(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
-        left, arrtab)
+      read.fast.st(lex, qkind, fast)
     case False{}:
-      read.fast.old(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
-        left, arrtab, cc)
+      read.fast.old(lex, qkind, fast, cc)
 
 # a newline this state ignores, or the full step
 def read.fast.ws.nl(
   nl: Bool,
   keep: Bool,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
   lex: Lex,
-  back: Lex,
   qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
+  fast: Fast,
   +cc: Char
 ) -> St:
   match nl:
     case True{}:
-      read.fast.ws.keep(keep, bad, rows, heads, here, parts, buf, lex, back, qkind,
-        stack, uni, left, arrtab, cc)
+      read.fast.ws.keep(keep, lex, qkind, fast, cc)
     case False{}:
-      read.fast.old(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
-        left, arrtab, cc)
+      read.fast.old(lex, qkind, fast, cc)
 
 # space stays in this state; a newline stays only when keep is set
 def read.fast.ws(
   sp: Bool,
   nl: Bool,
   keep: Bool,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
   lex: Lex,
-  back: Lex,
   qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
+  fast: Fast,
   +cc: Char
 ) -> St:
   match sp:
     case True{}:
-      read.fast.st(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni,
-        left, arrtab)
+      read.fast.st(lex, qkind, fast)
     case False{}:
-      read.fast.ws.nl(nl, keep, bad, rows, heads, here, parts, buf, lex, back, qkind,
-        stack, uni, left, arrtab, cc)
+      read.fast.ws.nl(nl, keep, lex, qkind, fast, cc)
 
 # the states whose plain characters do not change the scanner
-def read.fast.lex(
-  lex: Lex,
-  qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
+def read.fast.lex(lex: Lex, qkind: QKind, fast: Fast, +char: Char) -> St:
   match lex:
     case LStr{}:
-      read.fast.str(qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left,
-        arrtab, cc)
+      read.fast.str(qkind, fast, char)
     case LKey{}:
-      read.fast.key(bare.at(cc), bad, rows, heads, here, parts, buf, back, qkind,
-        stack, uni, left, arrtab, cc)
+      read.fast.key(bare.at(char), qkind, fast, char)
     case LBare{}:
-      read.fast.bare(ch.delim(cc), bad, rows, heads, here, parts, buf, back, qkind,
-        stack, uni, left, arrtab, cc)
+      read.fast.bare(ch.delim(char), qkind, fast, char)
     case LCom{}:
-      read.fast.com(ch.ctl(cc), bad, rows, heads, here, parts, buf, back, qkind, stack,
-        uni, left, arrtab, cc)
+      read.fast.com(ch.ctl(char), qkind, fast, char)
     case LTop{}:
-      read.fast.ws(ch.sp(cc), ch.nl(cc), True{}, bad, rows, heads, here, parts, buf,
-        LTop{}, back, qkind, stack, uni, left, arrtab, cc)
+      read.fast.ws(ch.sp(char), ch.nl(char), True{}, LTop{}, qkind, fast, char)
     case LArr{}:
-      read.fast.ws(ch.sp(cc), ch.nl(cc), True{}, bad, rows, heads, here, parts, buf,
-        LArr{}, back, qkind, stack, uni, left, arrtab, cc)
+      read.fast.ws(ch.sp(char), ch.nl(char), True{}, LArr{}, qkind, fast, char)
     case LArrC{}:
-      read.fast.ws(ch.sp(cc), ch.nl(cc), True{}, bad, rows, heads, here, parts, buf,
-        LArrC{}, back, qkind, stack, uni, left, arrtab, cc)
+      read.fast.ws(ch.sp(char), ch.nl(char), True{}, LArrC{}, qkind, fast, char)
     case LLine{}:
-      read.fast.ws(ch.sp(cc), ch.nl(cc), False{}, bad, rows, heads, here, parts, buf,
-        LLine{}, back, qkind, stack, uni, left, arrtab, cc)
+      read.fast.ws(ch.sp(char), ch.nl(char), False{}, LLine{}, qkind, fast, char)
     case LVal{}:
-      read.fast.ws(ch.sp(cc), ch.nl(cc), False{}, bad, rows, heads, here, parts, buf,
-        LVal{}, back, qkind, stack, uni, left, arrtab, cc)
+      read.fast.ws(ch.sp(char), ch.nl(char), False{}, LVal{}, qkind, fast, char)
     case LAfter{}:
-      read.fast.ws(ch.sp(cc), ch.nl(cc), False{}, bad, rows, heads, here, parts, buf,
-        LAfter{}, back, qkind, stack, uni, left, arrtab, cc)
+      read.fast.ws(ch.sp(char), ch.nl(char), False{}, LAfter{}, qkind, fast, char)
     case LInl{}:
-      read.fast.ws(ch.sp(cc), ch.nl(cc), False{}, bad, rows, heads, here, parts, buf,
-        LInl{}, back, qkind, stack, uni, left, arrtab, cc)
+      read.fast.ws(ch.sp(char), ch.nl(char), False{}, LInl{}, qkind, fast, char)
     case LInlK{}:
-      read.fast.ws(ch.sp(cc), ch.nl(cc), False{}, bad, rows, heads, here, parts, buf,
-        LInlK{}, back, qkind, stack, uni, left, arrtab, cc)
+      read.fast.ws(ch.sp(char), ch.nl(char), False{}, LInlK{}, qkind, fast, char)
     case LInlC{}:
-      read.fast.ws(ch.sp(cc), ch.nl(cc), False{}, bad, rows, heads, here, parts, buf,
-        LInlC{}, back, qkind, stack, uni, left, arrtab, cc)
+      read.fast.ws(ch.sp(char), ch.nl(char), False{}, LInlC{}, qkind, fast, char)
     case other:
-      read.fast.old(bad, rows, heads, here, parts, buf, other, back, qkind, stack,
-        uni, left, arrtab, cc)
+      read.fast.old(other, qkind, fast, char)
 
 # the first character may be a byte-order mark; later characters take the fast step
-def read.fast.lead(
-  lead: Bool,
-  lex: Lex,
-  qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  +cc: Char
-) -> St:
+def read.fast.lead(lead: Bool, lex: Lex, qkind: QKind, fast: Fast, +cc: Char) -> St:
   match lead:
     case True{}:
+      Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab} = fast
       read.once(St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack,
         HNone{}, uni, left, arrtab, True{}}, cc)
     case False{}:
-      read.fast.lex(lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni,
-        left, arrtab, cc)
+      read.fast.lex(lex, qkind, fast, cc)
 
 # a held character is still read by the full step, then this character
 def read.fast.hold(
@@ -5136,33 +4877,23 @@ def read.fast.hold(
   lead: Bool,
   lex: Lex,
   qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
+  fast: Fast,
   +cc: Char
 ) -> St:
   match hold:
     case HChar{held}:
+      Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab} = fast
       read.once(read.once2(St{bad, rows, heads, here, parts, buf, lex, back, qkind,
         stack, HChar{held}, uni, left, arrtab, lead}), cc)
     case HNone{}:
-      read.fast.lead(lead, lex, qkind, bad, rows, heads, here, parts, buf, back,
-        stack, uni, left, arrtab, cc)
+      read.fast.lead(lead, lex, qkind, fast, cc)
 
 # one source character
 def read.fast(st: St, +cc: Char) -> St:
   St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
     arrtab, lead} = st
-  read.fast.hold(hold, lead, lex, qkind, bad, rows, heads, here, parts, buf, back,
-    stack, uni, left, arrtab, cc)
+  read.fast.hold(hold, lead, lex, qkind, Fast{bad, rows, heads, here, parts, buf, back,
+    stack, uni, left, arrtab}, cc)
 
 # where the next source character is read. MEat is the body of a plain string, and
 # MCr follows a carriage return, which only a line feed may follow
@@ -5177,58 +4908,27 @@ type Mode is Data:
     heads: List<&2, String>, here: List<&2, String>, parts: List<&2, String>,
     qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32, arrtab: Bool}
 
+# the scanner fields a plain-string span carries through unchanged
+type Carry is Data:
+  Carry{bad: String, rows: List<&2, Val>, heads: List<&2, String>, here: List<&2, String>,
+    parts: List<&2, String>, qkind: QKind, stack: List<&2, Ctx>, uni: U32, left: U32,
+    arrtab: Bool}
+
 # an unclosed string
-def eat.fin(
-  _n: U32,
-  _u: Unit,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool
-) -> Doc:
+def eat.fin(_n: U32, _u: Unit, carry: Carry) -> Doc:
+  Carry{bad, rows, heads, here, parts, qkind, stack, uni, left, arrtab} = carry
   read.fin.unclosed(St{bad, rows, heads, here, parts, [], LStr{}, LStr{}, qkind, stack,
     HNone{}, uni, left, arrtab, False{}})
 
 # a plain string is the first n characters of the source suffix
-def eat.close(
-  cut: String,
-  nn: U32,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool
-) -> St:
+def eat.close(cut: String, nn: U32, carry: Carry) -> St:
+  Carry{bad, rows, heads, here, parts, qkind, stack, uni, left, arrtab} = carry
   val.take(St{bad, rows, heads, here, parts, [], LStr{}, LStr{}, qkind, stack, HNone{},
     uni, left, arrtab, False{}}, VSpan{cut, nn})
 
 # an escape or a forbidden control copies the span so far and continues
-def eat.copy(
-  +cc: Char,
-  cut: String,
-  +nn: U32,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool
-) -> Mode:
+def eat.copy(+cc: Char, cut: String, +nn: U32, carry: Carry) -> Mode:
+  Carry{bad, rows, heads, here, parts, qkind, stack, uni, left, arrtab} = carry
   MScan{lex.str(St{bad, rows, heads, here, parts, span.rev(cut, nn, U32.is_zero(nn), []),
     LStr{}, LStr{}, qkind, stack, HNone{}, uni, left, arrtab, False{}}, cc)}
 
@@ -5240,22 +4940,13 @@ def eat.ctrl(
   cc: Char,
   cut: String,
   nn: U32,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool
+  carry: Carry
 ) -> Mode:
   match badc:
     case True{}:
-      eat.copy(cc, cut, nn, bad, rows, heads, here, parts, qkind, stack, uni, left,
-        arrtab)
+      eat.copy(cc, cut, nn, carry)
     case False{}:
+      Carry{bad, rows, heads, here, parts, qkind, stack, uni, left, arrtab} = carry
       MEat{basic, qq, cut, U32.add(nn, 1), bad, rows, heads, here, parts, qkind, stack,
         uni, left, arrtab}
 
@@ -5267,24 +4958,13 @@ def eat.bs(
   +cc: Char,
   cut: String,
   nn: U32,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool
+  carry: Carry
 ) -> Mode:
   match bs:
     case True{}:
-      eat.copy(cc, cut, nn, bad, rows, heads, here, parts, qkind, stack, uni, left,
-        arrtab)
+      eat.copy(cc, cut, nn, carry)
     case False{}:
-      eat.ctrl(str.bad(Char.to_u32(cc), False{}), basic, qq, cc, cut, nn, bad, rows, heads,
-        here, parts, qkind, stack, uni, left, arrtab)
+      eat.ctrl(str.bad(Char.to_u32(cc), False{}), basic, qq, cc, cut, nn, carry)
 
 # a literal string keeps a backslash; a basic string does not
 def eat.basic(
@@ -5293,24 +4973,13 @@ def eat.basic(
   +cc: Char,
   cut: String,
   nn: U32,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool
+  carry: Carry
 ) -> Mode:
   match basic:
     case False{}:
-      eat.ctrl(str.bad(Char.to_u32(cc), False{}), False{}, qq, cc, cut, nn, bad, rows, heads,
-        here, parts, qkind, stack, uni, left, arrtab)
+      eat.ctrl(str.bad(Char.to_u32(cc), False{}), False{}, qq, cc, cut, nn, carry)
     case True{}:
-      eat.bs(Char.is_eq(cc, '\\'), True{}, qq, cc, cut, nn, bad, rows, heads, here, parts,
-        qkind, stack, uni, left, arrtab)
+      eat.bs(Char.is_eq(cc, '\\'), True{}, qq, cc, cut, nn, carry)
 
 # a quote closes the span
 def eat.feed.q(
@@ -5320,24 +4989,13 @@ def eat.feed.q(
   cc: Char,
   cut: String,
   nn: U32,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool
+  carry: Carry
 ) -> Mode:
   match quote:
     case True{}:
-      MScan{eat.close(cut, nn, bad, rows, heads, here, parts, qkind, stack, uni, left,
-        arrtab)}
+      MScan{eat.close(cut, nn, carry)}
     case False{}:
-      eat.basic(basic, qq, cc, cut, nn, bad, rows, heads, here, parts, qkind, stack, uni,
-        left, arrtab)
+      eat.basic(basic, qq, cc, cut, nn, carry)
 
 # one character of a plain string. cut is the suffix where the text began
 def eat.feed(
@@ -5345,20 +5003,10 @@ def eat.feed(
   +qq: Char,
   cut: String,
   nn: U32,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
+  carry: Carry,
   +cc: Char
 ) -> Mode:
-  eat.feed.q(Char.is_eq(cc, qq), basic, qq, cc, cut, nn, bad, rows, heads, here, parts,
-    qkind, stack, uni, left, arrtab)
+  eat.feed.q(Char.is_eq(cc, qq), basic, qq, cc, cut, nn, carry)
 
 # the opening quote's back state is not kept on the span
 def doc.open.eat(_back: Lex, mode: Mode) -> Mode:
@@ -5373,27 +5021,18 @@ def doc.open.buf(
   basic: Bool,
   qq: Char,
   qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
+  fast: Fast,
   cc: Char,
   tail: String
 ) -> Mode:
+  Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab} = fast
   match buf:
     case []:
       doc.open.eat(back, MEat{basic, qq, SCon{cc, tail}, 1, bad, rows, heads, here, parts,
         qkind, stack, uni, left, arrtab})
     case h <> t:
-      doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, bad, rows, heads, here, parts,
-        h <> t, back, stack, uni, left, arrtab, cc)})
+      doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, Fast{bad, rows, heads, here, parts,
+        h <> t, back, stack, uni, left, arrtab}, cc)})
 
 # a forbidden control leaves the span
 def doc.open.ok(
@@ -5401,81 +5040,45 @@ def doc.open.ok(
   basic: Bool,
   qq: Char,
   qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
+  fast: Fast,
   cc: Char,
   tail: String
 ) -> Mode:
   match badc:
     case True{}:
-      doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, bad, rows, heads, here, parts,
-        buf, back, stack, uni, left, arrtab, cc)})
+      doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, fast, cc)})
     case False{}:
-      doc.open.buf(basic, qq, qkind, bad, rows, heads, here, parts, buf, back, stack,
-        uni, left, arrtab, cc, tail)
+      doc.open.buf(basic, qq, qkind, fast, cc, tail)
 
 # a backslash in a basic string leaves the span
 def doc.open.bs(
   bs: Bool,
   qq: Char,
   qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
+  fast: Fast,
   +cc: Char,
   tail: String
 ) -> Mode:
   match bs:
     case True{}:
-      doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, bad, rows, heads, here, parts,
-        buf, back, stack, uni, left, arrtab, cc)})
+      doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, fast, cc)})
     case False{}:
-      doc.open.ok(str.bad(Char.to_u32(cc), False{}), True{}, qq, qkind, bad, rows, heads,
-        here, parts, buf, back, stack, uni, left, arrtab, cc, tail)
+      doc.open.ok(str.bad(Char.to_u32(cc), False{}), True{}, qq, qkind, fast, cc, tail)
 
 # a literal string keeps a backslash; a basic string does not
 def doc.open.b(
   basic: Bool,
   qq: Char,
   qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
+  fast: Fast,
   +cc: Char,
   tail: String
 ) -> Mode:
   match basic:
     case False{}:
-      doc.open.ok(str.bad(Char.to_u32(cc), False{}), False{}, qq, qkind, bad, rows, heads,
-        here, parts, buf, back, stack, uni, left, arrtab, cc, tail)
+      doc.open.ok(str.bad(Char.to_u32(cc), False{}), False{}, qq, qkind, fast, cc, tail)
     case True{}:
-      doc.open.bs(Char.is_eq(cc, '\\'), qq, qkind, bad, rows, heads, here, parts, buf,
-        back, stack, uni, left, arrtab, cc, tail)
+      doc.open.bs(Char.is_eq(cc, '\\'), qq, qkind, fast, cc, tail)
 
 # a second quote is an empty string or the start of a multiline string
 def doc.open.q(
@@ -5483,148 +5086,70 @@ def doc.open.q(
   basic: Bool,
   qq: Char,
   qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
+  fast: Fast,
   cc: Char,
   tail: String
 ) -> Mode:
   match same:
     case True{}:
-      doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, bad, rows, heads, here, parts,
-        buf, back, stack, uni, left, arrtab, cc)})
+      doc.drop(tail, MScan{read.fast.lex(LQ{}, qkind, fast, cc)})
     case False{}:
-      doc.open.b(basic, qq, qkind, bad, rows, heads, here, parts, buf, back, stack, uni,
-        left, arrtab, cc, tail)
+      doc.open.b(basic, qq, qkind, fast, cc, tail)
 
 # the character after an opening quote
 def doc.open(
   basic: Bool,
   +qq: Char,
   qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
+  fast: Fast,
   +cc: Char,
   tail: String
 ) -> Mode:
-  doc.open.q(Char.is_eq(cc, qq), basic, qq, qkind, bad, rows, heads, here, parts, buf,
-    back, stack, uni, left, arrtab, cc, tail)
+  doc.open.q(Char.is_eq(cc, qq), basic, qq, qkind, fast, cc, tail)
 
 # a one-line string may be a span; a multiline string stays on the old path
-def doc.scan.kind(
-  qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool
-) -> Mode:
+def doc.scan.kind(qkind: QKind, fast: Fast) -> Mode:
   match qkind:
     case QBasic{}:
+      Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab} = fast
       MOpen{True{}, '"', QBasic{}, bad, rows, heads, here, parts, buf, back, stack,
         uni, left, arrtab}
     case QLit{}:
+      Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab} = fast
       MOpen{False{}, '\'', QLit{}, bad, rows, heads, here, parts, buf, back, stack,
         uni, left, arrtab}
     case other:
+      Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab} = fast
       MScan{St{bad, rows, heads, here, parts, buf, LQ{}, back, other, stack, HNone{},
         uni, left, arrtab, False{}}}
 
 # the first character of the file is still the old step
-def doc.scan.lead(
-  lead: Bool,
-  qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool
-) -> Mode:
+def doc.scan.lead(lead: Bool, qkind: QKind, fast: Fast) -> Mode:
   match lead:
     case True{}:
+      Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab} = fast
       MScan{St{bad, rows, heads, here, parts, buf, LQ{}, back, qkind, stack, HNone{},
         uni, left, arrtab, True{}}}
     case False{}:
-      doc.scan.kind(qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left,
-        arrtab)
+      doc.scan.kind(qkind, fast)
 
 # a held character is not the start of a span
-def doc.scan.hold(
-  hold: Hold,
-  lead: Bool,
-  qkind: QKind,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  stack: List<&2, Ctx>,
-  uni: U32,
-  left: U32,
-  arrtab: Bool
-) -> Mode:
+def doc.scan.hold(hold: Hold, lead: Bool, qkind: QKind, fast: Fast) -> Mode:
   match hold:
     case HChar{held}:
+      Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab} = fast
       MScan{St{bad, rows, heads, here, parts, buf, LQ{}, back, qkind, stack,
         HChar{held}, uni, left, arrtab, lead}}
     case HNone{}:
-      doc.scan.lead(lead, qkind, bad, rows, heads, here, parts, buf, back, stack, uni,
-        left, arrtab)
+      doc.scan.lead(lead, qkind, fast)
 
 # a quote opened a one-line string, or the state is rebuilt around that quote
-def doc.wrap.lex(
-  lex: Lex,
-  bad: String,
-  rows: List<&2, Val>,
-  heads: List<&2, String>,
-  here: List<&2, String>,
-  parts: List<&2, String>,
-  buf: List<&2, Char>,
-  back: Lex,
-  qkind: QKind,
-  stack: List<&2, Ctx>,
-  hold: Hold,
-  uni: U32,
-  left: U32,
-  arrtab: Bool,
-  lead: Bool
-) -> Mode:
+def doc.wrap.lex(lex: Lex, qkind: QKind, hold: Hold, fast: Fast, lead: Bool) -> Mode:
   match lex:
     case LQ{}:
-      doc.scan.hold(hold, lead, qkind, bad, rows, heads, here, parts, buf, back, stack,
-        uni, left, arrtab)
+      doc.scan.hold(hold, lead, qkind, fast)
     case other:
+      Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab} = fast
       MScan{St{bad, rows, heads, here, parts, buf, other, back, qkind, stack, hold,
         uni, left, arrtab, lead}}
 
@@ -5632,8 +5157,8 @@ def doc.wrap.lex(
 def doc.wrap(st: St) -> Mode:
   St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left,
     arrtab, lead} = st
-  doc.wrap.lex(lex, bad, rows, heads, here, parts, buf, back, qkind, stack, hold,
-    uni, left, arrtab, lead)
+  doc.wrap.lex(lex, qkind, hold, Fast{bad, rows, heads, here, parts, buf, back, stack,
+    uni, left, arrtab}, lead)
 
 # a carriage return must be followed by a line feed
 def doc.scan.cr(cr: Bool, st: St, cc: Char) -> Mode:
@@ -5685,16 +5210,16 @@ def doc.read(text: String, mode: Mode) -> Doc:
         stack, HNone{}, uni, left, arrtab, False{}}))
     case SNil{} MEat{_basic, _q, cut, n, bad, rows, heads, here, parts, qkind, stack,
       uni, left, arrtab}:
-      eat.fin(n, span.drop(cut), bad, rows, heads, here, parts, qkind, stack, uni,
-        left, arrtab)
+      eat.fin(n, span.drop(cut), Carry{bad, rows, heads, here, parts, qkind, stack, uni,
+        left, arrtab})
     case SCon{+h, +t} MOpen{basic, q, qkind, bad, rows, heads, here, parts, buf, back,
       stack, uni, left, arrtab}:
-      doc.read(t, doc.open(basic, q, qkind, bad, rows, heads, here, parts, buf, back,
-        stack, uni, left, arrtab, h, t))
+      doc.read(t, doc.open(basic, q, qkind, Fast{bad, rows, heads, here, parts, buf, back,
+        stack, uni, left, arrtab}, h, t))
     case SCon{+h, t} MEat{basic, q, cut, n, bad, rows, heads, here, parts, qkind,
       stack, uni, left, arrtab}:
-      doc.read(t, eat.feed(basic, q, cut, n, bad, rows, heads, here, parts, qkind,
-        stack, uni, left, arrtab, h))
+      doc.read(t, eat.feed(basic, q, cut, n, Carry{bad, rows, heads, here, parts, qkind,
+        stack, uni, left, arrtab}, h))
     case SCon{+h, t} MScan{st}:
       doc.read(t, doc.scan(st, h))
     case SCon{+h, t} MCr{st}:

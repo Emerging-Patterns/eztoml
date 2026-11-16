@@ -167,7 +167,7 @@ def s1.rest(
 ) -> Type:
   @vv: T.Val -> @bk: T.Lex -> @qk: T.QKind -> @un: U32 -> @lf: U32 ->
     s1.holds(vv, ss) ->
-    PP(T.doc.read(rest, T.MScan{T.take.top(sk, vv, "", rw, hs, he, ps, bk, qk, un, lf, ab, False{})}))
+    PP(T.doc.read(rest, T.MScan{T.take.top(sk, vv, "", rw, hs, he, ps, T.Keep{bk, qk, un, lf, ab, False{}})}))
 
 # LAW: a string of every form reads as the text it denotes: from every state
 # that waits for a value, the text of a string that matches its rule and
