@@ -68,14 +68,14 @@ def com.fast(
   no_nl: {T.ch.nl(Chr{xx}) == False{} : Bool},
   is_ctl: {T.ch.ctl(Chr{xx}) == True{} : Bool},
   no_tab: {U32.is_eq(xx, 9) == False{} : Bool}
-) -> {T.read.fast.com(ctl, bad, rows, heads, here, parts, buf, back, qkind, stack, uni,
-  left, arrtab, Chr{xx}) == T.st.err(T.St{bad, rows, heads, here, parts, buf, T.LCom{},
+) -> {T.read.fast.com(ctl, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab},
+  Chr{xx}) == T.st.err(T.St{bad, rows, heads, here, parts, buf, T.LCom{},
   back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, "invalid control in comment")
   : T.St}:
   match ctl:
     case False{}:
-      M4.clash(&2, {T.read.fast.com(False{}, bad, rows, heads, here, parts, buf, back, qkind,
-        stack, uni, left, arrtab, Chr{xx}) == T.st.err(T.St{bad, rows, heads, here, parts,
+      M4.clash(&2, {T.read.fast.com(False{}, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left,
+        arrtab}, Chr{xx}) == T.st.err(T.St{bad, rows, heads, here, parts,
         buf, T.LCom{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}},
         "invalid control in comment") : T.St},
         Equal.trans(Bool, False{}, T.ch.ctl(Chr{xx}), True{},
@@ -352,8 +352,7 @@ def inl.first(
   0)) == T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl
   : List<&2, T.Val>}:
   Equal.cong(T.Look, List<&2, T.Val>,
-    hh => Laws.end_rows(T.tree.leaf(cc, T.tree.sub.look(hh, bb, inl, T.JPut{vv}, [], "",
-      [], True{}, True{}))),
+    hh => Laws.end_rows(T.tree.leaf(cc, T.tree.sub.look(hh, bb, inl, T.Walk{T.JPut{vv}, [], "", [], True{}}, True{}))),
     T.rows.look(inl, bb), T.KMiss{}, look.misses(inl, bb, ee))
 
 # the second key goes on in that table: bb finds it, and dd is not cc
@@ -369,19 +368,18 @@ def inl.second(
   [T.VPair{cc, vv}]}} <> inl, T.JPut{ww}, [], "", "", [], True{}}, 0)) == "" : String}:
   Equal.trans(String,
     D1.end_bad(T.tree.leaf(dd, T.tree.sub.look(T.look.step(T.str.eq(bb, bb),
-      T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}, _u => T.rows.look(inl, bb)), bb,
-      T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl, T.JPut{ww},
-      [], "", [], True{}, True{}))),
+      T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}, _u => T.rows.look(inl,
+        bb)), bb, T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc,
+        vv}]}} <> inl, T.Walk{T.JPut{ww}, [], "", [], True{}}, True{}))),
     D1.end_bad(T.tree.leaf(dd, T.tree.sub.look(T.KHead{T.tree.pre("", bb),
-      [T.VPair{cc, vv}]}, bb,
-      T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl, T.JPut{ww},
-      [], "", [], True{}, True{}))),
+      [T.VPair{cc, vv}]}, bb, T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc,
+        vv}]}} <> inl, T.Walk{T.JPut{ww}, [], "", [], True{}}, True{}))),
     "",
     Equal.cong(Bool, String,
       xx => D1.end_bad(T.tree.leaf(dd, T.tree.sub.look(T.look.step(xx,
-        T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}, _u => T.rows.look(inl, bb)), bb,
-        T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}} <> inl, T.JPut{ww},
-        [], "", [], True{}, True{}))),
+        T.VHead{T.tree.pre("", bb), [T.VPair{cc, vv}]}, _u => T.rows.look(inl,
+          bb)), bb, T.VPair{bb, T.VHead{T.tree.pre("", bb), [T.VPair{cc,
+          vv}]}} <> inl, T.Walk{T.JPut{ww}, [], "", [], True{}}, True{}))),
       T.str.eq(bb, bb), True{}, M4.str.eq.self(bb)),
     Equal.cong(Bool, String,
       xx => D1.end_bad(T.tree.leaf.put(T.find.step(xx, vv, _u => T.rows.find([], dd)),

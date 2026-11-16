@@ -115,12 +115,12 @@ def failed.more(
         String.is_empty(bad), False{}, eb)
     case +r <> +rr:
       Equal.trans(T.End,
-        T.tree.walk(r <> rr, T.tree.sub.bad(String.is_empty(bad), name, rows, job, [], bad, pre, heads,
-          inl, U32.is_zero(skip)), T.path.dec(skip)),
+        T.tree.walk(r <> rr, T.tree.sub.bad(String.is_empty(bad), name, rows, bad, T.Walk{job, [], pre, heads, inl},
+          U32.is_zero(skip)), T.path.dec(skip)),
         T.tree.walk(r <> rr, T.Tw{rows, job, [], bad, pre, heads, inl}, T.path.dec(skip)),
         T.End{rows, bad, heads},
         Equal.cong(Bool, T.End,
-          bb => T.tree.walk(r <> rr, T.tree.sub.bad(bb, name, rows, job, [], bad, pre, heads, inl,
+          bb => T.tree.walk(r <> rr, T.tree.sub.bad(bb, name, rows, bad, T.Walk{job, [], pre, heads, inl},
             U32.is_zero(skip)), T.path.dec(skip)),
           String.is_empty(bad), False{}, eb),
         ih)

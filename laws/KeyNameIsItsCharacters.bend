@@ -825,45 +825,45 @@ def k3.found(hh: T.Hit) -> Bool:
     case T.Miss{}:
       False{}
 
-# whether a list, read as md says, holds a pair named kk at the end of the
-# path. A table's rows are read in place: kk found in them at the end of the
+# whether a list, read as md says, holds a pair called name at the end of the
+# path. A table's rows are read in place: name found in them at the end of the
 # path, or the next name found in them and every pair of it holding the rest
-def k3.h(xs: List<&2, T.Val>, md: KHm, +kk: String) -> Bool:
+def k3.h(xs: List<&2, T.Val>, md: KHm, +name: String) -> Bool:
   match xs md:
     case [] KhAll{_n, _p}:
       True{}
     case T.VPair{+mm, T.VHead{_q, rows}} <> tt KhAll{+nn, Nil{}}:
-      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.found(T.get(rows, kk))), k3.h(tt, KhAll{nn, []}, kk))
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.found(T.get(rows, name))), k3.h(tt, KhAll{nn, []}, name))
     case T.VPair{+mm, T.VHead{_q, +rows}} <> tt KhAll{+nn, +n2 <> +p2}:
       Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2},
-        kk))), k3.h(tt, KhAll{nn, n2 <> p2}, kk))
+        name))), k3.h(tt, KhAll{nn, n2 <> p2}, name))
     case T.VPair{+mm, T.VInl{rows}} <> tt KhAll{+nn, Nil{}}:
-      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.found(T.get(rows, kk))), k3.h(tt, KhAll{nn, []}, kk))
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.found(T.get(rows, name))), k3.h(tt, KhAll{nn, []}, name))
     case T.VPair{+mm, T.VInl{+rows}} <> tt KhAll{+nn, +n2 <> +p2}:
       Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2},
-        kk))), k3.h(tt, KhAll{nn, n2 <> p2}, kk))
+        name))), k3.h(tt, KhAll{nn, n2 <> p2}, name))
     case T.VPair{+mm, T.VAots{_q, es}} <> tt KhAll{+nn, +pp}:
-      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.h(es, KhSome{pp}, kk)), k3.h(tt, KhAll{nn, pp}, kk))
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.h(es, KhSome{pp}, name)), k3.h(tt, KhAll{nn, pp}, name))
     case T.VPair{+mm, T.VArr{items}} <> tt KhAll{+nn, +pp}:
-      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.h(items, KhSome{pp}, kk)), k3.h(tt, KhAll{nn, pp}, kk))
+      Bool.and(Bool.or(Bool.not(T.str.eq(mm, nn)), k3.h(items, KhSome{pp}, name)), k3.h(tt, KhAll{nn, pp}, name))
     case T.VPair{+mm, _v} <> tt KhAll{+nn, +pp}:
-      Bool.and(Bool.not(T.str.eq(mm, nn)), k3.h(tt, KhAll{nn, pp}, kk))
+      Bool.and(Bool.not(T.str.eq(mm, nn)), k3.h(tt, KhAll{nn, pp}, name))
     case _h <> tt KhAll{+nn, +pp}:
-      k3.h(tt, KhAll{nn, pp}, kk)
+      k3.h(tt, KhAll{nn, pp}, name)
     case [] KhSome{_p}:
       False{}
     case T.VAot{_q, rows} <> tt KhSome{Nil{}}:
-      Bool.or(k3.found(T.get(rows, kk)), k3.h(tt, KhSome{[]}, kk))
+      Bool.or(k3.found(T.get(rows, name)), k3.h(tt, KhSome{[]}, name))
     case T.VAot{_q, +rows} <> tt KhSome{+n2 <> +p2}:
-      Bool.or(Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2}, kk)), k3.h(tt, KhSome{n2 <> p2}, kk))
+      Bool.or(Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2}, name)), k3.h(tt, KhSome{n2 <> p2}, name))
     case T.VInl{rows} <> tt KhSome{Nil{}}:
-      Bool.or(k3.found(T.get(rows, kk)), k3.h(tt, KhSome{[]}, kk))
+      Bool.or(k3.found(T.get(rows, name)), k3.h(tt, KhSome{[]}, name))
     case T.VInl{+rows} <> tt KhSome{+n2 <> +p2}:
-      Bool.or(Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2}, kk)), k3.h(tt, KhSome{n2 <> p2}, kk))
+      Bool.or(Bool.and(k3.found(T.get(rows, n2)), k3.h(rows, KhAll{n2, p2}, name)), k3.h(tt, KhSome{n2 <> p2}, name))
     case T.VArr{items} <> tt KhSome{+pp}:
-      Bool.or(k3.h(items, KhSome{pp}, kk), k3.h(tt, KhSome{pp}, kk))
+      Bool.or(k3.h(items, KhSome{pp}, name), k3.h(tt, KhSome{pp}, name))
     case _v <> tt KhSome{+pp}:
-      k3.h(tt, KhSome{pp}, kk)
+      k3.h(tt, KhSome{pp}, name)
 
 # the path under which a value taken now is found at the end: the current
 # table and the key's parts at the root; an array's item is found where the

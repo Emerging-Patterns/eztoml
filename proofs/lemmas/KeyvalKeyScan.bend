@@ -131,17 +131,19 @@ def k3.ws(
   +cc: Char,
   hs0: {sp == False{} : Bool},
   hn: {nl == False{} : Bool}
-) -> {T.read.fast.old("", rw, hs, he, ps, buf, lex, bk, qk, sk, un, lf, ab, cc)
-  == T.read.fast.ws(sp, nl, keep, "", rw, hs, he, ps, buf, lex, bk, qk, sk, un, lf, ab, cc) : T.St}:
+) -> {T.read.fast.old(lex, qk, T.Fast{"", rw, hs, he, ps, buf, bk, sk, un, lf, ab}, cc)
+  == T.read.fast.ws(sp, nl, keep, lex, qk, T.Fast{"", rw, hs, he, ps, buf, bk, sk, un, lf, ab}, cc) : T.St}:
   match sp nl:
     case False{} False{}:
       {==}
     case True{} n2:
-      Eq.bit.absurd2(&2, {T.read.fast.old("", rw, hs, he, ps, buf, lex, bk, qk, sk, un, lf, ab, cc)
-        == T.read.fast.ws(True{}, n2, keep, "", rw, hs, he, ps, buf, lex, bk, qk, sk, un, lf, ab, cc) : T.St}, hs0)
+      Eq.bit.absurd2(&2, {T.read.fast.old(lex, qk, T.Fast{"", rw, hs, he, ps, buf, bk, sk, un, lf, ab}, cc)
+        == T.read.fast.ws(True{}, n2, keep, lex, qk, T.Fast{"", rw, hs, he, ps, buf, bk, sk, un, lf, ab},
+          cc) : T.St}, hs0)
     case False{} True{}:
-      Eq.bit.absurd2(&2, {T.read.fast.old("", rw, hs, he, ps, buf, lex, bk, qk, sk, un, lf, ab, cc)
-        == T.read.fast.ws(False{}, True{}, keep, "", rw, hs, he, ps, buf, lex, bk, qk, sk, un, lf, ab, cc) : T.St}, hn)
+      Eq.bit.absurd2(&2, {T.read.fast.old(lex, qk, T.Fast{"", rw, hs, he, ps, buf, bk, sk, un, lf, ab}, cc)
+        == T.read.fast.ws(False{}, True{}, keep, lex, qk, T.Fast{"", rw, hs, he, ps, buf, bk, sk, un, lf, ab},
+          cc) : T.St}, hn)
 
 # a bare character starts an inline table's key: the last of the tests
 def k3.kbare(
@@ -315,13 +317,15 @@ def k3.b1.top(
     {==})) : {T.MScan{M2.k3.w(rw, hs, he, [], [Chr{xx}], T.LKey{}, bk, qk, sk, un, lf, ab)} == T.MScan{_} : T.Mode}
   Equal.cong(T.St, T.Mode, st => T.MScan{T.read.once2(st)}, T.st.push(M2.k3.w(rw, hs, he, [], [], T.LTop{}, bk, qk, sk,
     un, lf, ab), Chr{xx}, T.LKey{}),
-    T.lex.top.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'), Char.is_eq(Chr{xx}, '['),
-      Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), T.bare.at(Chr{xx}), M2.k3.w(rw, hs, he, [], [], T.LTop{}, bk,
+    T.lex.top.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'), T.TopCh{Char.is_eq(Chr{xx}, '['),
+      Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx},
+      '\''), T.bare.at(Chr{xx})}, M2.k3.w(rw, hs, he, [], [], T.LTop{}, bk,
         qk, sk, un, lf, ab), Chr{xx}),
     Equal.sym(T.St, T.lex.top.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'),
-      Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), T.bare.at(Chr{xx}), M2.k3.w(rw, hs,
-        he, [], [], T.LTop{}, bk, qk, sk, un, lf, ab),
-      Chr{xx}), T.st.push(M2.k3.w(rw, hs, he, [], [], T.LTop{}, bk, qk, sk, un, lf, ab), Chr{xx}, T.LKey{}),
+      T.TopCh{Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''),
+      T.bare.at(Chr{xx})}, M2.k3.w(rw, hs,
+        he, [], [], T.LTop{}, bk, qk, sk, un, lf, ab), Chr{xx}), T.st.push(M2.k3.w(rw, hs, he, [], [], T.LTop{}, bk, qk,
+          sk, un, lf, ab), Chr{xx}, T.LKey{}),
       M5.key.top(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'), Char.is_eq(Chr{xx}, '['),
         Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), T.bare.at(Chr{xx}), M2.k3.w(rw, hs, he, [], [], T.LTop{},
           bk, qk, sk, un, lf, ab), xx, {==}, {==}, {==}, {==},
@@ -444,15 +448,14 @@ def k3.kfast(
   +xx: U32,
   eok: {T.bare.at(Chr{xx}) == ok : Bool},
   ee: {T.bare.at(Chr{xx}) == True{} : Bool}
-) -> {M2.k3.w(rw, hs, he, ps, Chr{xx} <> buf, T.LKey{}, bk, qk, sk, un, lf, ab) == T.read.fast.key(ok, "", rw, hs, he,
-  ps, buf, bk, qk, sk, un, lf, ab, Chr{xx}) : T.St}:
+) -> {M2.k3.w(rw, hs, he, ps, Chr{xx} <> buf, T.LKey{}, bk, qk, sk, un, lf, ab) == T.read.fast.key(ok, qk, T.Fast{"",
+  rw, hs, he, ps, buf, bk, sk, un, lf, ab}, Chr{xx}) : T.St}:
   match ok:
     case True{}:
       {==}
     case False{}:
       M4.clash(&2, {M2.k3.w(rw, hs, he, ps, Chr{xx} <> buf, T.LKey{}, bk, qk, sk, un, lf,
-          ab) == T.read.fast.key(False{},
-        "", rw, hs, he, ps, buf, bk, qk, sk, un, lf, ab, Chr{xx}) : T.St},
+          ab) == T.read.fast.key(False{}, qk, T.Fast{"", rw, hs, he, ps, buf, bk, sk, un, lf, ab}, Chr{xx}) : T.St},
         Equal.trans(Bool, False{}, T.bare.at(Chr{xx}), True{}, Equal.sym(Bool, T.bare.at(Chr{xx}), False{}, eok), ee))
 
 # the rest of a bare segment is pushed onto its buffer, whatever follows it

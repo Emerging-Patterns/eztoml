@@ -76,7 +76,7 @@ def sub.Goal(
   +inl: Bool,
   +mark: Bool
 ) -> Type:
-  {T.tree.sub.look(look, seg, vs, job, stack, pre, heads, inl, mark)
+  {T.tree.sub.look(look, seg, vs, T.Walk{job, stack, pre, heads, inl}, mark)
     == T.Tw{D1.tb.into(look), job, tb.fr(look, seg, vs, pre) <> stack, "", T.tree.pre(pre, seg),
       heads, inl} : T.Tw}
 
@@ -92,14 +92,14 @@ def sub.step.last(
   +heads: List<&2, String>,
   +inl: Bool,
   ec: {D1.tb.last.can(last) == True{} : Bool}
-) -> {T.tree.sub.aots(last, seg, vs, job, stack, pre, heads, inl, pp)
+) -> {T.tree.sub.aots(last, seg, vs, T.Walk{job, stack, pre, heads, inl}, pp)
   == T.Tw{D1.tb.last.rows(last), job, tb.last.fr(last, seg, vs, pp) <> stack, "",
     T.tree.pre(pre, seg), heads, inl} : T.Tw}:
   match last:
     case T.LastSome{_q, _older, _r}:
       {==}
     case T.LastNo{why}:
-      Eq.bit.absurd(&2, {T.tree.sub.aots(T.LastNo{why}, seg, vs, job, stack, pre, heads, inl, pp)
+      Eq.bit.absurd(&2, {T.tree.sub.aots(T.LastNo{why}, seg, vs, T.Walk{job, stack, pre, heads, inl}, pp)
         == T.Tw{D1.tb.last.rows(T.LastNo{why}), job, tb.last.fr(T.LastNo{why}, seg, vs, pp)
           <> stack, "", T.tree.pre(pre, seg), heads, inl} : T.Tw}, ec)
 
@@ -127,12 +127,12 @@ def sub.step(
         define.quiet(T.tree.sub.job(mark, job), T.tree.pre(pre, seg), heads, eq))
     case T.KHead{+p, +rr}:
       Equal.trans(T.Tw,
-        T.tree.sub.head(T.tree.sub.dot(T.tree.sub.job(mark, job)), p, rr, seg, vs, job, stack, pre,
-          heads, inl, mark),
-        T.tree.sub.head(False{}, p, rr, seg, vs, job, stack, pre, heads, inl, mark),
+        T.tree.sub.head(T.tree.sub.dot(T.tree.sub.job(mark, job)), p, rr, seg, vs, T.Walk{job, stack, pre, heads, inl},
+          mark),
+        T.tree.sub.head(False{}, p, rr, seg, vs, T.Walk{job, stack, pre, heads, inl}, mark),
         T.Tw{rr, job, T.FrRep{seg, vs, p} <> stack, "", T.tree.pre(pre, seg), heads, inl},
         Equal.cong(Bool, T.Tw,
-          bb => T.tree.sub.head(bb, p, rr, seg, vs, job, stack, pre, heads, inl, mark),
+          bb => T.tree.sub.head(bb, p, rr, seg, vs, T.Walk{job, stack, pre, heads, inl}, mark),
           T.tree.sub.dot(T.tree.sub.job(mark, job)), False{}, eq),
         Equal.cong(List<&2, String>, T.Tw,
           hh => T.Tw{rr, job, T.FrRep{seg, vs, p} <> stack, "", T.tree.pre(pre, seg), hh, inl},
@@ -140,21 +140,20 @@ def sub.step(
           define.quiet(T.tree.sub.job(mark, job), T.tree.pre(pre, seg), heads, eq)))
     case T.KAots{+p, +es}:
       Equal.trans(T.Tw,
-        T.tree.sub.arr(T.tree.sub.dot(T.tree.sub.job(mark, job)), p, es, seg, vs, job, stack, pre,
-          heads, inl),
-        T.tree.sub.aots(T.look.last(es, p), seg, vs, job, stack, pre, heads, inl, p),
+        T.tree.sub.arr(T.tree.sub.dot(T.tree.sub.job(mark, job)), p, es, seg, vs, T.Walk{job, stack, pre, heads, inl}),
+        T.tree.sub.aots(T.look.last(es, p), seg, vs, T.Walk{job, stack, pre, heads, inl}, p),
         T.Tw{D1.tb.last.rows(T.look.last(es, p)), job, tb.last.fr(T.look.last(es, p), seg, vs, p)
           <> stack, "", T.tree.pre(pre, seg), heads, inl},
         Equal.cong(Bool, T.Tw,
-          bb => T.tree.sub.arr(bb, p, es, seg, vs, job, stack, pre, heads, inl),
+          bb => T.tree.sub.arr(bb, p, es, seg, vs, T.Walk{job, stack, pre, heads, inl}),
           T.tree.sub.dot(T.tree.sub.job(mark, job)), False{}, eq),
         sub.step.last(T.look.last(es, p), p, seg, vs, job, stack, pre, heads, inl, ec))
     case T.KInl{}:
-      Eq.bit.absurd(&2, {T.tree.sub.look(T.KInl{}, seg, vs, job, stack, pre, heads, inl, mark)
+      Eq.bit.absurd(&2, {T.tree.sub.look(T.KInl{}, seg, vs, T.Walk{job, stack, pre, heads, inl}, mark)
         == T.Tw{D1.tb.into(T.KInl{}), job, tb.fr(T.KInl{}, seg, vs, pre) <> stack, "",
           T.tree.pre(pre, seg), heads, inl} : T.Tw}, ec)
     case T.KNo{why}:
-      Eq.bit.absurd(&2, {T.tree.sub.look(T.KNo{why}, seg, vs, job, stack, pre, heads, inl, mark)
+      Eq.bit.absurd(&2, {T.tree.sub.look(T.KNo{why}, seg, vs, T.Walk{job, stack, pre, heads, inl}, mark)
         == T.Tw{D1.tb.into(T.KNo{why}), job, tb.fr(T.KNo{why}, seg, vs, pre) <> stack, "",
           T.tree.pre(pre, seg), heads, inl} : T.Tw}, ec)
 

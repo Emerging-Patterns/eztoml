@@ -53,14 +53,14 @@ def rebuild.head(
 
 def Laws.dotted_key_refused_in_header_table(path, rows, name, vs, val, stack, pre, heads, inl, e):
   %Equal.sym(Bool, T.heads.head(heads, T.tree.pre(pre, name)), True{}, e)
-    : {String.is_empty(Laws.tw_bad(T.tree.sub.head.go(_, path, rows, name, vs,
-      T.JPut{val}, stack, pre, heads, inl, True{}))) == False{} : Bool}
+    : {String.is_empty(Laws.tw_bad(T.tree.sub.head.go(_, path, rows, name, vs, T.Walk{T.JPut{val}, stack, pre, heads,
+      inl}, True{}))) == False{} : Bool}
   {==}
 
 def Laws.dotted_key_enters_other_table(path, rows, name, vs, val, stack, pre, heads, inl, e):
   %Equal.sym(Bool, T.heads.head(heads, T.tree.pre(pre, name)), False{}, e)
-    : {Laws.tw_bad(T.tree.sub.head.go(_, path, rows, name, vs, T.JPut{val}, stack,
-      pre, heads, inl, True{})) == "" : String}
+    : {Laws.tw_bad(T.tree.sub.head.go(_, path, rows, name, vs, T.Walk{T.JPut{val}, stack, pre, heads, inl},
+      True{})) == "" : String}
   {==}
 
 def Laws.dotted_key_refused_in_array_of_tables(_path, _elems, _name, _vs, _val, _stack, _pre, _heads, _inl):

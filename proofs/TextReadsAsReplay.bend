@@ -1427,8 +1427,9 @@ def ow.saots(
   +heads: List<&2, String>,
   +inl: Bool,
   +path: String
-) -> {ow.tw(T.tree.sub.aots(last, name, vs, job, stack, pre, heads, inl, path)) == T.tree.sub.aots(ow.last(last), name,
-  D3.own.rows(vs), ow.job(job), ow.frs(stack), pre, heads, inl, path) : T.Tw}:
+) -> {ow.tw(T.tree.sub.aots(last, name, vs, T.Walk{job, stack, pre, heads, inl},
+  path)) == T.tree.sub.aots(ow.last(last), name, D3.own.rows(vs), T.Walk{ow.job(job), ow.frs(stack), pre, heads, inl},
+    path) : T.Tw}:
   match last:
     case T.LastSome{_p, _prefix, _rows}:
       {==}
@@ -1447,15 +1448,16 @@ def ow.sarr(
   +pre: String,
   +heads: List<&2, String>,
   +inl: Bool
-) -> {ow.tw(T.tree.sub.arr(dot, path, elems, name, vs, job, stack, pre, heads, inl)) == T.tree.sub.arr(dot, path,
-  D3.own.rows(elems), name, D3.own.rows(vs), ow.job(job), ow.frs(stack), pre, heads, inl) : T.Tw}:
+) -> {ow.tw(T.tree.sub.arr(dot, path, elems, name, vs, T.Walk{job, stack, pre, heads, inl})) == T.tree.sub.arr(dot,
+  path, D3.own.rows(elems), name, D3.own.rows(vs), T.Walk{ow.job(job), ow.frs(stack), pre, heads, inl}) : T.Tw}:
   match dot:
     case True{}:
       {==}
     case False{}:
       %Equal.sym(T.Last, T.look.last(D3.own.rows(elems), path), ow.last(T.look.last(elems, path)), ow.llast(elems,
-        path)) : {ow.tw(T.tree.sub.aots(T.look.last(elems, path), name, vs, job, stack, pre, heads, inl,
-        path)) == T.tree.sub.aots(_, name, D3.own.rows(vs), ow.job(job), ow.frs(stack), pre, heads, inl, path) : T.Tw}
+        path)) : {ow.tw(T.tree.sub.aots(T.look.last(elems, path), name, vs, T.Walk{job, stack, pre, heads, inl},
+          path)) == T.tree.sub.aots(_, name, D3.own.rows(vs), T.Walk{ow.job(job), ow.frs(stack), pre, heads, inl},
+            path) : T.Tw}
       ow.saots(T.look.last(elems, path), name, vs, job, stack, pre, heads, inl, path)
 
 # the step into a table, by the walk's job and whether it is a prefix
@@ -1471,8 +1473,9 @@ def ow.shgo(
   +pre: String,
   +heads: List<&2, String>,
   +inl: Bool
-) -> {ow.tw(T.tree.sub.head.go(shut, path, rows, name, vs, job, stack, pre, heads, inl, mark)) == T.tree.sub.head.go(
-  shut, path, D3.own.rows(rows), name, D3.own.rows(vs), ow.job(job), ow.frs(stack), pre, heads, inl, mark) : T.Tw}:
+) -> {ow.tw(T.tree.sub.head.go(shut, path, rows, name, vs, T.Walk{job, stack, pre, heads, inl},
+  mark)) == T.tree.sub.head.go(shut, path, D3.own.rows(rows), name, D3.own.rows(vs), T.Walk{ow.job(job), ow.frs(stack),
+    pre, heads, inl}, mark) : T.Tw}:
   match job mark shut:
     case T.JPut{+vv} True{} True{}:
       {==}
@@ -1511,9 +1514,9 @@ def ow.shead(
   +pre: String,
   +heads: List<&2, String>,
   +inl: Bool
-) -> {ow.tw(T.tree.sub.head(T.tree.sub.dot(T.tree.sub.job(mark, job)), path, rows, name, vs, job, stack, pre, heads,
-  inl, mark)) == T.tree.sub.head(T.tree.sub.dot(T.tree.sub.job(mark, ow.job(job))), path, D3.own.rows(rows), name,
-  D3.own.rows(vs), ow.job(job), ow.frs(stack), pre, heads, inl, mark) : T.Tw}:
+) -> {ow.tw(T.tree.sub.head(T.tree.sub.dot(T.tree.sub.job(mark, job)), path, rows, name, vs, T.Walk{job, stack, pre,
+  heads, inl}, mark)) == T.tree.sub.head(T.tree.sub.dot(T.tree.sub.job(mark, ow.job(job))), path, D3.own.rows(rows),
+    name, D3.own.rows(vs), T.Walk{ow.job(job), ow.frs(stack), pre, heads, inl}, mark) : T.Tw}:
   match job mark:
     case T.JPut{+vv} True{}:
       ow.shgo(T.JPut{vv}, True{}, T.heads.head(heads, T.tree.pre(pre, name)), path, rows, name, vs, stack, pre, heads,
@@ -1542,9 +1545,9 @@ def ow.sdot(
   +pre: String,
   +heads: List<&2, String>,
   +inl: Bool
-) -> {ow.tw(T.tree.sub.arr(T.tree.sub.dot(T.tree.sub.job(mark, job)), path, elems, name, vs, job, stack, pre, heads,
-  inl)) == T.tree.sub.arr(T.tree.sub.dot(T.tree.sub.job(mark, ow.job(job))), path, D3.own.rows(elems), name,
-  D3.own.rows(vs), ow.job(job), ow.frs(stack), pre, heads, inl) : T.Tw}:
+) -> {ow.tw(T.tree.sub.arr(T.tree.sub.dot(T.tree.sub.job(mark, job)), path, elems, name, vs, T.Walk{job, stack, pre,
+  heads, inl})) == T.tree.sub.arr(T.tree.sub.dot(T.tree.sub.job(mark, ow.job(job))), path, D3.own.rows(elems), name,
+    D3.own.rows(vs), T.Walk{ow.job(job), ow.frs(stack), pre, heads, inl}) : T.Tw}:
   match job mark:
     case T.JPut{+vv} True{}:
       ow.sarr(True{}, path, elems, name, vs, T.JPut{vv}, stack, pre, heads, inl)
@@ -1570,8 +1573,8 @@ def ow.slook(
   +pre: String,
   +heads: List<&2, String>,
   +inl: Bool
-) -> {ow.tw(T.tree.sub.look(lk, name, vs, job, stack, pre, heads, inl, mark)) == T.tree.sub.look(ow.look(lk), name,
-  D3.own.rows(vs), ow.job(job), ow.frs(stack), pre, heads, inl, mark) : T.Tw}:
+) -> {ow.tw(T.tree.sub.look(lk, name, vs, T.Walk{job, stack, pre, heads, inl}, mark)) == T.tree.sub.look(ow.look(lk),
+  name, D3.own.rows(vs), T.Walk{ow.job(job), ow.frs(stack), pre, heads, inl}, mark) : T.Tw}:
   match lk:
     case T.KMiss{}:
       match job mark:
@@ -1608,15 +1611,15 @@ def ow.sbad(
   +heads: List<&2, String>,
   +inl: Bool,
   +mark: Bool
-) -> {ow.tw(T.tree.sub.bad(ok, name, vs, job, stack, bad, pre, heads, inl, mark)) == T.tree.sub.bad(ok, name,
-  D3.own.rows(vs), ow.job(job), ow.frs(stack), bad, pre, heads, inl, mark) : T.Tw}:
+) -> {ow.tw(T.tree.sub.bad(ok, name, vs, bad, T.Walk{job, stack, pre, heads, inl}, mark)) == T.tree.sub.bad(ok, name,
+  D3.own.rows(vs), bad, T.Walk{ow.job(job), ow.frs(stack), pre, heads, inl}, mark) : T.Tw}:
   match ok:
     case False{}:
       {==}
     case True{}:
       %Equal.sym(T.Look, T.rows.look(D3.own.rows(vs), name), ow.look(T.rows.look(vs, name)), ow.rlook(vs, name))
-        : {ow.tw(T.tree.sub.look(T.rows.look(vs, name), name, vs, job, stack, pre, heads, inl, mark))
-        == T.tree.sub.look(_, name, D3.own.rows(vs), ow.job(job), ow.frs(stack), pre, heads, inl, mark) : T.Tw}
+        : {ow.tw(T.tree.sub.look(T.rows.look(vs, name), name, vs, T.Walk{job, stack, pre, heads, inl}, mark))
+        == T.tree.sub.look(_, name, D3.own.rows(vs), T.Walk{ow.job(job), ow.frs(stack), pre, heads, inl}, mark) : T.Tw}
       ow.slook(T.rows.look(vs, name), job, mark, name, vs, stack, pre, heads, inl)
 
 # one step of a walk
@@ -2508,7 +2511,7 @@ def aq.vk2(
     case SNil{}:
       @xv: T.Val -> @bk: T.Lex -> @qk: T.QKind -> @un: U32 -> @lf: U32 -> @hv: {ow.v(xv) == _vv : T.Val} ->
         @hc: {L11.cv.own1(xv) == _vv : T.Val} ->
-        PP(T.doc.read(rest, T.MScan{T.take.top(sk, xv, "", rw, hs, he, ps, bk, qk, un, lf, ab, False{})}))
+        PP(T.doc.read(rest, T.MScan{T.take.top(sk, xv, "", rw, hs, he, ps, T.Keep{bk, qk, un, lf, ab, False{}})}))
     case SCon{+c0, +cs}:
       PP(T.Doc{SCon{c0, cs}, T.rows.seal(rw)})
 
@@ -2564,7 +2567,7 @@ def aq.kstr(
   -PP: T.Doc -> Type,
   +hv: {ow.v(xv) == T.VStr{ss} : T.Val},
   kk: aq.vk2("", T.VStr{ss}, rw, hs, he, ps, sk, ab, rest, PP)
-) -> PP(T.doc.read(rest, T.MScan{T.take.top(sk, xv, "", rw, hs, he, ps, b2, q2, u2, l2, ab, False{})})):
+) -> PP(T.doc.read(rest, T.MScan{T.take.top(sk, xv, "", rw, hs, he, ps, T.Keep{b2, q2, u2, l2, ab, False{}})})):
   kk(xv, b2, q2, u2, l2, hv, aq.holdsc(xv, ss, hv))
 
 # a string of any form, from a value state
@@ -3370,8 +3373,8 @@ def aq.once.i(
   +un: U32,
   +lf: U32,
   +ab: Bool
-) -> {T.read.once2(T.take.inl(en, rw, hs, at, sv, sk, bk, qk, un, lf, ab, False{})) == T.take.inl(en, rw, hs, at, sv,
-  sk, bk, qk, un, lf, ab, False{}) : T.St}:
+) -> {T.read.once2(T.take.inl(en, rw, hs, at, sv, sk, T.Keep{bk, qk, un, lf, ab, False{}})) == T.take.inl(en, rw, hs,
+  at, sv, sk, T.Keep{bk, qk, un, lf, ab, False{}}) : T.St}:
   match en:
     case T.End{_rows, _bad, _heads}:
       {==}
@@ -3389,8 +3392,8 @@ def aq.once(
   +un: U32,
   +lf: U32,
   +ab: Bool
-) -> {T.read.once2(T.take.top(sk, xv, "", rw, hs, he, ps, bk, qk, un, lf, ab, False{})) == T.take.top(sk, xv, "", rw,
-  hs, he, ps, bk, qk, un, lf, ab, False{}) : T.St}:
+) -> {T.read.once2(T.take.top(sk, xv, "", rw, hs, he, ps, T.Keep{bk, qk, un, lf, ab, False{}})) == T.take.top(sk, xv,
+  "", rw, hs, he, ps, T.Keep{bk, qk, un, lf, ab, False{}}) : T.St}:
   match sk:
     case []:
       aq.once.r(T.tree.walk(T.path.cat(he, ps), T.Tw{rw, T.JPut{xv}, [], "", "", hs, False{}}, T.path.len(he, 0)), he,
@@ -3462,18 +3465,20 @@ def aq.aclose(
   +lf: U32,
   +ab: Bool
 ) -> {T.doc.scan(M11.ap.s(aq.alx(sp), bk, rw, hs, he, ps, qk, T.CArr{its, sv, at} <> sk, un, lf, ab),
-  ']') == T.MScan{T.take.top(sk, T.VArr{List.reverse(&2, T.Val, its)}, "", rw, hs, at, sv, bk, qk, un, lf, ab,
-    False{})} : T.Mode}:
+  ']') == T.MScan{T.take.top(sk, T.VArr{List.reverse(&2, T.Val, its)}, "", rw, hs, at, sv, T.Keep{bk, qk, un, lf, ab,
+    False{}})} : T.Mode}:
   match sp:
     case True{}:
-      Equal.cong(T.St, T.Mode, st => T.MScan{st}, T.read.once2(T.take.top(sk, T.VArr{List.reverse(&2, T.Val, its)},
-        "", rw, hs, at, sv, bk, qk, un, lf, ab, False{})), T.take.top(sk, T.VArr{List.reverse(&2, T.Val, its)}, "",
-          rw, hs, at, sv, bk, qk, un, lf, ab, False{}), aq.once(sk, T.VArr{List.reverse(&2, T.Val, its)}, rw, hs, at,
+      Equal.cong(T.St, T.Mode, st => T.MScan{st}, T.read.once2(T.take.top(sk, T.VArr{List.reverse(&2, T.Val, its)}, "",
+        rw, hs, at, sv, T.Keep{bk, qk, un, lf, ab, False{}})), T.take.top(sk, T.VArr{List.reverse(&2, T.Val,
+        its)}, "", rw, hs, at, sv, T.Keep{bk, qk, un, lf, ab, False{}}), aq.once(sk, T.VArr{List.reverse(&2, T.Val,
+          its)}, rw, hs, at,
             sv, bk, qk, un, lf, ab))
     case False{}:
-      Equal.cong(T.St, T.Mode, st => T.MScan{st}, T.read.once2(T.take.top(sk, T.VArr{List.reverse(&2, T.Val, its)},
-        "", rw, hs, at, sv, bk, qk, un, lf, ab, False{})), T.take.top(sk, T.VArr{List.reverse(&2, T.Val, its)}, "",
-          rw, hs, at, sv, bk, qk, un, lf, ab, False{}), aq.once(sk, T.VArr{List.reverse(&2, T.Val, its)}, rw, hs, at,
+      Equal.cong(T.St, T.Mode, st => T.MScan{st}, T.read.once2(T.take.top(sk, T.VArr{List.reverse(&2, T.Val, its)}, "",
+        rw, hs, at, sv, T.Keep{bk, qk, un, lf, ab, False{}})), T.take.top(sk, T.VArr{List.reverse(&2, T.Val,
+        its)}, "", rw, hs, at, sv, T.Keep{bk, qk, un, lf, ab, False{}}), aq.once(sk, T.VArr{List.reverse(&2, T.Val,
+          its)}, rw, hs, at,
             sv, bk, qk, un, lf, ab))
 
 # `}` closes an inline table: its rows sealed are placed as the frame's value
@@ -3493,16 +3498,19 @@ def aq.iclose(
   +lf: U32,
   +ab: Bool
 ) -> {T.doc.scan(M11.ap.s(aq.ilx(cl), bk, rw, hs, he, ps, qk, T.CInl{inl, sv, at} <> sk, un, lf, ab),
-  '}') == T.MScan{T.take.top(sk, T.VInl{T.inl.seal(inl)}, "", rw, hs, at, sv, bk, qk, un, lf, ab, False{})} : T.Mode}:
+  '}') == T.MScan{T.take.top(sk, T.VInl{T.inl.seal(inl)}, "", rw, hs, at, sv, T.Keep{bk, qk, un, lf, ab,
+    False{}})} : T.Mode}:
   match cl:
     case True{}:
       Equal.cong(T.St, T.Mode, st => T.MScan{st}, T.read.once2(T.take.top(sk, T.VInl{T.inl.seal(inl)}, "", rw, hs, at,
-        sv, bk, qk, un, lf, ab, False{})), T.take.top(sk, T.VInl{T.inl.seal(inl)}, "", rw, hs, at, sv, bk, qk, un, lf,
-          ab, False{}), aq.once(sk, T.VInl{T.inl.seal(inl)}, rw, hs, at, sv, bk, qk, un, lf, ab))
+        sv, T.Keep{bk, qk, un, lf, ab,
+        False{}})), T.take.top(sk, T.VInl{T.inl.seal(inl)}, "", rw, hs, at, sv, T.Keep{bk, qk, un, lf, ab, False{}}),
+          aq.once(sk, T.VInl{T.inl.seal(inl)}, rw, hs, at, sv, bk, qk, un, lf, ab))
     case False{}:
       Equal.cong(T.St, T.Mode, st => T.MScan{st}, T.read.once2(T.take.top(sk, T.VInl{T.inl.seal(inl)}, "", rw, hs, at,
-        sv, bk, qk, un, lf, ab, False{})), T.take.top(sk, T.VInl{T.inl.seal(inl)}, "", rw, hs, at, sv, bk, qk, un, lf,
-          ab, False{}), aq.once(sk, T.VInl{T.inl.seal(inl)}, rw, hs, at, sv, bk, qk, un, lf, ab))
+        sv, T.Keep{bk, qk, un, lf, ab,
+        False{}})), T.take.top(sk, T.VInl{T.inl.seal(inl)}, "", rw, hs, at, sv, T.Keep{bk, qk, un, lf, ab, False{}}),
+          aq.once(sk, T.VInl{T.inl.seal(inl)}, rw, hs, at, sv, bk, qk, un, lf, ab))
 
 # ws-comment-newline in a state that passes blank space over and takes a
 # comment, and stays after a newline: the rest is read from the same state,
@@ -4514,7 +4522,8 @@ def aq.arrk2(
   u2, l2, ab)})) == G : T.Doc}:
   %Equal.sym(T.Mode, T.doc.scan(M11.ap.s(aq.alx(sp), b3, rw, hs, he, ps, q2, T.CArr{its, ps, he} <> sk, u2, l2, ab),
       ']'),
-    T.MScan{T.take.top(sk, T.VArr{List.reverse(&2, T.Val, its)}, "", rw, hs, he, ps, b3, q2, u2, l2, ab, False{})},
+    T.MScan{T.take.top(sk, T.VArr{List.reverse(&2, T.Val, its)}, "", rw, hs, he, ps, T.Keep{b3, q2, u2, l2, ab,
+      False{}})},
       aq.aclose(sp, rw, hs, he, ps, its, ps, he, b3, q2, sk, u2, l2, ab)) : {D3.own(T.doc.read(rest, _)) == G : T.Doc}
   +hv = {Equal.cong(List<&2, T.Val>, T.Val, zs => T.VArr{zs}, D3.own.rows(List.reverse(&2, T.Val, its)),
     List.reverse(&2, T.Val, ri), M22.cv.own.rs(its, ri, hi)) : {T.VArr{D3.own.rows(List.reverse(&2, T.Val,
@@ -4651,8 +4660,8 @@ def aq.v.inl0(
         rw, hs, he, [], qk, T.CInl{[], ps, he} <> sk, un, lf, ab, {==}, h2)) : {D3.own(_) == G : T.Doc}
   %Equal.sym(T.Mode, T.doc.scan(M11.ap.s(aq.ilx(False{}), aq.bk0(m, bk), rw, hs, he, [], qk, T.CInl{[], ps, he} <> sk,
       un,
-    lf, ab), '}'), T.MScan{T.take.top(sk, T.VInl{T.inl.seal([])}, "", rw, hs, he, ps, aq.bk0(m, bk), qk, un, lf, ab,
-      False{})}, aq.iclose(False{}, rw, hs, he, [], [], ps, he, aq.bk0(m, bk), qk, sk, un, lf,
+    lf, ab), '}'), T.MScan{T.take.top(sk, T.VInl{T.inl.seal([])}, "", rw, hs, he, ps, T.Keep{aq.bk0(m, bk), qk, un, lf,
+      ab, False{}})}, aq.iclose(False{}, rw, hs, he, [], [], ps, he, aq.bk0(m, bk), qk, sk, un, lf,
         ab)) : {D3.own(T.doc.read(rest, _)) == G : T.Doc}
   kk(T.VInl{T.inl.seal([])}, aq.bk0(m, bk), qk, un, lf, {==}, {==})
 
@@ -4685,7 +4694,7 @@ def aq.inlk2(
       q2, T.CInl{inl, ps, he} <> sk, u2, l2, ab)}), M11.ap.ws(w2, SCon{'}', rest}, T.LInlC{}, b2, rw, hs, he, [], q2,
         T.CInl{inl, ps, he} <> sk, u2, l2, ab, {==}, h2)) : {D3.own(_) == G : T.Doc}
   %Equal.sym(T.Mode, T.doc.scan(M11.ap.s(aq.ilx(True{}), b2, rw, hs, he, [], q2, T.CInl{inl, ps, he} <> sk, u2, l2, ab),
-    '}'), T.MScan{T.take.top(sk, T.VInl{T.inl.seal(inl)}, "", rw, hs, he, ps, b2, q2, u2, l2, ab, False{})},
+    '}'), T.MScan{T.take.top(sk, T.VInl{T.inl.seal(inl)}, "", rw, hs, he, ps, T.Keep{b2, q2, u2, l2, ab, False{}})},
       aq.iclose(True{}, rw, hs, he, [], inl, ps, he, b2, q2, sk, u2, l2, ab)) : {D3.own(T.doc.read(rest,
         _)) == G : T.Doc}
   +hv = {Equal.cong(List<&2, T.Val>, T.Val, zs => T.VInl{zs}, D3.own.rows(T.inl.seal(inl)), T.inl.seal(ri),
@@ -4999,8 +5008,8 @@ def aq.ikw(
   +u2: U32,
   +l2: U32,
   kk: aq.RKG(D5.replay.end.rows(ow.end(en)), rw, hs, at, sv, sk0, ab, rest, G)
-) -> {D3.own(T.doc.read(rest, T.MScan{T.take.inl(en, rw, hs, at, sv, sk0, b2, q2, u2, l2, ab,
-  False{})})) == G : T.Doc}:
+) -> {D3.own(T.doc.read(rest, T.MScan{T.take.inl(en, rw, hs, at, sv, sk0, T.Keep{b2, q2, u2, l2, ab,
+  False{}})})) == G : T.Doc}:
   match en:
     case T.End{+inl2, +bad2, _h2}:
       match bad2:
@@ -5475,17 +5484,18 @@ def aq.kvk(
       match bd:
         case SNil{}:
           +xv => +b2 => +q2 => +u2 => +l2 => hv => _hc =>
-            %hv : {D3.own(T.doc.read(String.append(w2, D6.g.com.text(com, tail)), T.MScan{T.take.top([], xv, "",
-              rw, hs, he, acc, b2, q2, u2, l2, False{}, False{})})) == M11.ap.F(ls,
+            %hv : {D3.own(T.doc.read(String.append(w2, D6.g.com.text(com, tail)), T.MScan{T.take.top([], xv, "", rw, hs,
+              he, acc, T.Keep{b2, q2, u2, l2, False{}, False{}})})) == M11.ap.F(ls,
                 D5.replay.end(T.tree.walk(List.append(&2, String, he, names), T.Tw{D3.own.rows(rw), T.JPut{_}, [],
                   "", "", hs, False{}}, T.path.len(he, 0)), he)) : T.Doc}
-            %hp : {D3.own(T.doc.read(String.append(w2, D6.g.com.text(com, tail)), T.MScan{T.take.top([], xv, "",
-              rw, hs, he, acc, b2, q2, u2, l2, False{}, False{})})) == M11.ap.F(ls,
+            %hp : {D3.own(T.doc.read(String.append(w2, D6.g.com.text(com, tail)), T.MScan{T.take.top([], xv, "", rw, hs,
+              he, acc, T.Keep{b2, q2, u2, l2, False{}, False{}})})) == M11.ap.F(ls,
                 D5.replay.end(T.tree.walk(List.append(&2, String, he, _), T.Tw{D3.own.rows(rw), T.JPut{ow.v(xv)},
                   [], "", "", hs, False{}}, T.path.len(he, 0)), he)) : T.Doc}
             %ow.walk(List.append(&2, String, he, List.reverse(&2, String, acc)), T.Tw{rw, T.JPut{xv}, [], "", "", hs,
               False{}}, T.path.len(he, 0)) : {D3.own(T.doc.read(String.append(w2, D6.g.com.text(com, tail)),
-                T.MScan{T.take.top([], xv, "", rw, hs, he, acc, b2, q2, u2, l2, False{}, False{})})) == M11.ap.F(ls,
+                T.MScan{T.take.top([], xv, "", rw, hs, he, acc, T.Keep{b2, q2, u2, l2, False{},
+                  False{}})})) == M11.ap.F(ls,
                   D5.replay.end(_, he)) : T.Doc}
             aq.kvw(T.tree.walk(T.path.cat(he, acc), T.Tw{rw, T.JPut{xv}, [], "", "", hs, False{}}, T.path.len(he, 0)),
               he, w2, com, tail, ls, hw, hc, kk, ee, b2, q2, u2, l2)

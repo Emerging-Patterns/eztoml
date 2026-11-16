@@ -46,11 +46,11 @@ def wh.go.bare(
   ebr: {Char.is_eq(Chr{xx}, '[') == br : Bool},
   ebare: {T.bare.at(Chr{xx}) == bare : Bool},
   +ee: {T.bare.at(Chr{xx}) == True{} : Bool}
-) -> {T.lex.head.go(br, bare, sp, dot, end, qq, lit, hash, st, Chr{xx})
+) -> {T.lex.head.go(br, bare, sp, dot, end, T.HeadCh{qq, lit, hash}, st, Chr{xx})
   == T.lex.head.ch(st, Chr{xx}) : T.St}:
   match br:
     case True{}:
-      Eq.bit.gone(&2, {T.lex.head.go(True{}, bare, sp, dot, end, qq, lit, hash, st, Chr{xx})
+      Eq.bit.gone(&2, {T.lex.head.go(True{}, bare, sp, dot, end, T.HeadCh{qq, lit, hash}, st, Chr{xx})
         == T.lex.head.ch(st, Chr{xx}) : T.St},
         Eq.refute_char(Chr{xx}, '[', ch => T.bare.at(ch), ebr, ee, {==}))
     case False{}:
@@ -58,7 +58,7 @@ def wh.go.bare(
         case True{}:
           {==}
         case False{}:
-          M2.clash(&2, {T.lex.head.go(False{}, False{}, sp, dot, end, qq, lit, hash, st, Chr{xx})
+          M2.clash(&2, {T.lex.head.go(False{}, False{}, sp, dot, end, T.HeadCh{qq, lit, hash}, st, Chr{xx})
             == T.lex.head.ch(st, Chr{xx}) : T.St},
             Equal.trans(Bool, False{}, T.bare.at(Chr{xx}), True{},
               Equal.sym(Bool, T.bare.at(Chr{xx}), False{}, ebare), ee))

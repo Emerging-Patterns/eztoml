@@ -1609,7 +1609,8 @@ def gd.wlex(
   +at: Bool,
   +tl: String,
   +eg: {L1.good(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}) == True{} : Bool}
-) -> {L1.gd.md(T.doc.wrap.lex(lx, bd, rw, hs, he, pt, bf, bk, qk, sk, hd, un, lf, at, ld), tl) == True{} : Bool}:
+) -> {L1.gd.md(T.doc.wrap.lex(lx, qk, hd, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, ld),
+  tl) == True{} : Bool}:
   match lx:
     case T.LTop{}:
       eg
@@ -1794,7 +1795,8 @@ def gd.obuf(
   +ec: {T.wf.char(cc) == True{} : Bool},
   +et: {T.wf.text(tl) == True{} : Bool},
   +es: {D1.short(SCon{cc, tl}) == True{} : Bool}
-) -> {L1.gd.md(T.doc.open.buf(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl) == True{} : Bool}:
+) -> {L1.gd.md(T.doc.open.buf(ba, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc, tl),
+  tl) == True{} : Bool}:
   match bf:
     case []:
       M4.gd.tt(M4.gd.gf(bd, rw, he, pt, [], sk), Bool.and(gd.spm(SCon{cc, tl}, 1, tl), D1.counts(tl, 1)), eg,
@@ -1827,7 +1829,7 @@ def gd.ook(
   +ec: {T.wf.char(cc) == True{} : Bool},
   +et: {T.wf.text(tl) == True{} : Bool},
   +es: {D1.short(SCon{cc, tl}) == True{} : Bool}
-) -> {L1.gd.md(T.doc.open.ok(badc, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl),
+) -> {L1.gd.md(T.doc.open.ok(badc, ba, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc, tl),
   tl) == True{} : Bool}:
   match badc:
     case True{}:
@@ -1857,7 +1859,8 @@ def gd.obs(
   +ec: {T.wf.char(cc) == True{} : Bool},
   +et: {T.wf.text(tl) == True{} : Bool},
   +es: {D1.short(SCon{cc, tl}) == True{} : Bool}
-) -> {L1.gd.md(T.doc.open.bs(bs, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl) == True{} : Bool}:
+) -> {L1.gd.md(T.doc.open.bs(bs, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc, tl),
+  tl) == True{} : Bool}:
   match bs:
     case True{}:
       M4.gd.flex(T.LQ{}, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, eg, cc, ec)
@@ -1887,7 +1890,8 @@ def gd.ob(
   +ec: {T.wf.char(cc) == True{} : Bool},
   +et: {T.wf.text(tl) == True{} : Bool},
   +es: {D1.short(SCon{cc, tl}) == True{} : Bool}
-) -> {L1.gd.md(T.doc.open.b(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl) == True{} : Bool}:
+) -> {L1.gd.md(T.doc.open.b(ba, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc, tl),
+  tl) == True{} : Bool}:
   match ba:
     case False{}:
       gd.ook(T.str.bad(Char.to_u32(cc), False{}), False{}, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl,
@@ -1918,7 +1922,7 @@ def gd.oq(
   +ec: {T.wf.char(cc) == True{} : Bool},
   +et: {T.wf.text(tl) == True{} : Bool},
   +es: {D1.short(SCon{cc, tl}) == True{} : Bool}
-) -> {L1.gd.md(T.doc.open.q(same, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl),
+) -> {L1.gd.md(T.doc.open.q(same, ba, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc, tl),
   tl) == True{} : Bool}:
   match same:
     case True{}:
@@ -1946,7 +1950,7 @@ def gd.ecopy(
   +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
   +eh: {T.wf.char(hh) == True{} : Bool},
   _en: {D1.counts(SCon{hh, tt}, nn) == True{} : Bool}
-) -> {L1.gd.md(T.eat.copy(hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+) -> {L1.gd.md(T.eat.copy(hh, ct, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}), tt) == True{} : Bool}:
   M4.gd.g.str(T.St{bd, rw, hs, he, pt, T.span.rev(ct, nn, U32.is_zero(nn), []), T.LStr{}, T.LStr{}, qk, sk, T.HNone{},
     un, lf, at, False{}}, hh,
     M4.gd.tt(L1.gd.tr(bd, rw, sk), L1.gd.lx(he, pt, T.span.rev(ct, nn, U32.is_zero(nn), []), sk, T.HNone{}),
@@ -2012,7 +2016,8 @@ def gd.ectrl(
   +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
   +en: {D1.counts(SCon{hh, tt}, nn) == True{} : Bool},
   +eh: {T.wf.char(hh) == True{} : Bool}
-) -> {L1.gd.md(T.eat.ctrl(badc, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+) -> {L1.gd.md(T.eat.ctrl(badc, ba, qq, hh, ct, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}),
+  tt) == True{} : Bool}:
   match badc:
     case True{}:
       gd.ecopy(ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, en)
@@ -2042,7 +2047,7 @@ def gd.ebs(
   +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
   +en: {D1.counts(SCon{hh, tt}, nn) == True{} : Bool},
   +eh: {T.wf.char(hh) == True{} : Bool}
-) -> {L1.gd.md(T.eat.bs(bs, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+) -> {L1.gd.md(T.eat.bs(bs, ba, qq, hh, ct, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}), tt) == True{} : Bool}:
   match bs:
     case True{}:
       gd.ecopy(ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, tt, eg, ep, eh, en)
@@ -2072,7 +2077,7 @@ def gd.ebasic(
   +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
   +en: {D1.counts(SCon{hh, tt}, nn) == True{} : Bool},
   +eh: {T.wf.char(hh) == True{} : Bool}
-) -> {L1.gd.md(T.eat.basic(ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+) -> {L1.gd.md(T.eat.basic(ba, qq, hh, ct, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}), tt) == True{} : Bool}:
   match ba:
     case False{}:
       gd.ectrl(T.str.bad(Char.to_u32(hh), False{}), False{}, qq, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh,
@@ -2103,7 +2108,8 @@ def gd.eq(
   +ep: {gd.spm(ct, nn, SCon{hh, tt}) == True{} : Bool},
   +en: {D1.counts(SCon{hh, tt}, nn) == True{} : Bool},
   +eh: {T.wf.char(hh) == True{} : Bool}
-) -> {L1.gd.md(T.eat.feed.q(quote, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt) == True{} : Bool}:
+) -> {L1.gd.md(T.eat.feed.q(quote, ba, qq, hh, ct, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}),
+  tt) == True{} : Bool}:
   match quote:
     case True{}:
       M4.gd.g.take(T.St{bd, rw, hs, he, pt, [], T.LStr{}, T.LStr{}, qk, sk, T.HNone{}, un, lf, at, False{}},

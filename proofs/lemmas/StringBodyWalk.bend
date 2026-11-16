@@ -163,18 +163,19 @@ def s1.fb(
   hq: {quote == False{} : Bool},
   hb: {bs == False{} : Bool},
   sb: {T.str.bad(uu, False{}) == False{} : Bool}
-) -> {T.read.fast.basic(quote, bs, bd, rw, hs, he, ps, buf, bk, sk, un, lf, ab, Chr{uu})
+) -> {T.read.fast.basic(quote, bs, T.Fast{bd, rw, hs, he, ps, buf, bk, sk, un, lf, ab}, Chr{uu})
   == M4.fs.st(bd, rw, hs, he, ps, Chr{uu} <> buf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, ab) : T.St}:
   match quote bs:
     case True{} b2:
-      Eq.bit.absurd2(&2, {T.read.fast.basic(True{}, b2, bd, rw, hs, he, ps, buf, bk, sk, un, lf, ab, Chr{uu})
+      Eq.bit.absurd2(&2, {T.read.fast.basic(True{}, b2, T.Fast{bd, rw, hs, he, ps, buf, bk, sk, un, lf, ab}, Chr{uu})
         == M4.fs.st(bd, rw, hs, he, ps, Chr{uu} <> buf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, ab) : T.St}, hq)
     case False{} True{}:
-      Eq.bit.absurd2(&2, {T.read.fast.basic(False{}, True{}, bd, rw, hs, he, ps, buf, bk, sk, un, lf, ab, Chr{uu})
+      Eq.bit.absurd2(&2, {T.read.fast.basic(False{}, True{}, T.Fast{bd, rw, hs, he, ps, buf, bk, sk, un, lf, ab},
+        Chr{uu})
         == M4.fs.st(bd, rw, hs, he, ps, Chr{uu} <> buf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, ab) : T.St}, hb)
     case False{} False{}:
-      %Equal.sym(Bool, T.str.bad(uu, False{}), False{}, sb) : {T.read.fast.push(_, bd, rw, hs, he, ps, buf,
-        T.LStr{}, bk, T.QBasic{}, sk, un, lf, ab, Chr{uu})
+      %Equal.sym(Bool, T.str.bad(uu, False{}), False{}, sb) : {T.read.fast.push(_, T.LStr{}, T.QBasic{}, T.Fast{bd, rw,
+        hs, he, ps, buf, bk, sk, un, lf, ab}, Chr{uu})
         == M4.fs.st(bd, rw, hs, he, ps, Chr{uu} <> buf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, ab) : T.St}
       {==}
 
@@ -197,7 +198,8 @@ def s1.fm2(
   hb: {bs == False{} : Bool},
   sb: {T.str.bad(uu, True{}) == False{} : Bool}
 ) -> {T.read.once2(T.lex.str.bs(bs, True{}, M4.fs.st(bd, rw, hs, he, ps, buf, T.LStr{}, bk, T.QMulti{}, sk, un, lf, ab),
-  Chr{uu}, T.QMulti{})) == M4.fs.st(bd, rw, hs, he, ps, Chr{uu} <> buf, T.LStr{}, bk, T.QMulti{}, sk, un, lf, ab) : T.St}:  # noqa: S002
+  Chr{uu}, T.QMulti{})) == M4.fs.st(bd, rw, hs, he, ps, Chr{uu} <> buf, T.LStr{}, bk, T.QMulti{}, sk, un, lf,
+    ab) : T.St}:
   match bs:
     case True{}:
       Eq.bit.absurd2(&2, {T.read.once2(T.lex.str.bs(True{}, True{}, M4.fs.st(bd, rw, hs, he, ps, buf, T.LStr{}, bk,
@@ -493,7 +495,8 @@ def s1.hx.open(
   +buf: List<&2, Char>,
   +rest: String
 ) -> {T.doc.read(rest, T.MScan{M4.fs.st(bd, rw, hs, he, ps, buf, T.LUni{}, bk, s1.bk(ml), sk, 0, M8.k3.hx.n(lg), ab)})
-  == T.doc.read(SCon{'\\', SCon{M8.k3.hx.u(lg), rest}}, T.MScan{M4.fs.st(bd, rw, hs, he, ps, buf, T.LStr{}, bk, s1.bk(ml),  # noqa: S002
+  == T.doc.read(SCon{'\\', SCon{M8.k3.hx.u(lg), rest}}, T.MScan{M4.fs.st(bd, rw, hs, he, ps, buf, T.LStr{}, bk,
+    s1.bk(ml),
   sk, un, lf, ab)}) : T.Doc}:
   match lg ml:
     case False{} False{}:
@@ -700,7 +703,7 @@ def s1.Done(
 ) -> Type:
   @vv: T.Val -> @bk: T.Lex -> @qk: T.QKind -> @un: U32 -> @lf: U32 ->
     M8.sv.Is(vv, ss) ->
-    PP(T.doc.read(rest, T.MScan{T.take.top(sk, vv, bd, rw, hs, he, ps, bk, qk, un, lf, ab, False{})}))
+    PP(T.doc.read(rest, T.MScan{T.take.top(sk, vv, bd, rw, hs, he, ps, T.Keep{bk, qk, un, lf, ab, False{}})}))
 
 # WP-S's rest of the walk is s1.Done at a basic string's kind
 def s1.done.sv(
@@ -799,14 +802,14 @@ def s1.so.ok(
   +lf: U32,
   +ab: Bool,
   hc: {badc == False{} : Bool}
-) -> {T.doc.open.ok(badc, True{}, '"', T.QBasic{}, bd, rw, hs, he, ps, [], bk, sk, un, lf, ab, Chr{uu}, tail)
+) -> {T.doc.open.ok(badc, True{}, '"', T.QBasic{}, T.Fast{bd, rw, hs, he, ps, [], bk, sk, un, lf, ab}, Chr{uu}, tail)
   == M8.sv.eat(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}:
   match badc:
     case False{}:
       {==}
     case True{}:
-      Eq.bit.absurd2(&2, {T.doc.open.ok(True{}, True{}, '"', T.QBasic{}, bd, rw, hs, he, ps, [], bk, sk, un, lf, ab,
-        Chr{uu}, tail) == M8.sv.eat(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hc)
+      Eq.bit.absurd2(&2, {T.doc.open.ok(True{}, True{}, '"', T.QBasic{}, T.Fast{bd, rw, hs, he, ps, [], bk, sk, un, lf,
+        ab}, Chr{uu}, tail) == M8.sv.eat(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hc)
 
 # no backslash
 def s1.so.bs(
@@ -825,14 +828,14 @@ def s1.so.bs(
   +ab: Bool,
   hb: {bs == False{} : Bool},
   sb: {T.str.bad(uu, False{}) == False{} : Bool}
-) -> {T.doc.open.bs(bs, '"', T.QBasic{}, bd, rw, hs, he, ps, [], bk, sk, un, lf, ab, Chr{uu}, tail)
+) -> {T.doc.open.bs(bs, '"', T.QBasic{}, T.Fast{bd, rw, hs, he, ps, [], bk, sk, un, lf, ab}, Chr{uu}, tail)
   == M8.sv.eat(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}:
   match bs:
     case False{}:
       s1.so.ok(T.str.bad(uu, False{}), uu, tail, bd, rw, hs, he, ps, bk, sk, un, lf, ab, sb)
     case True{}:
-      Eq.bit.absurd2(&2, {T.doc.open.bs(True{}, '"', T.QBasic{}, bd, rw, hs, he, ps, [], bk, sk, un, lf, ab, Chr{uu},
-        tail) == M8.sv.eat(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hb)
+      Eq.bit.absurd2(&2, {T.doc.open.bs(True{}, '"', T.QBasic{}, T.Fast{bd, rw, hs, he, ps, [], bk, sk, un, lf, ab},
+        Chr{uu}, tail) == M8.sv.eat(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hb)
 
 # no quotation mark
 def s1.so.q(
@@ -852,14 +855,14 @@ def s1.so.q(
   hq: {same == False{} : Bool},
   hb: {U32.is_eq(uu, 92) == False{} : Bool},
   sb: {T.str.bad(uu, False{}) == False{} : Bool}
-) -> {T.doc.open.q(same, True{}, '"', T.QBasic{}, bd, rw, hs, he, ps, [], bk, sk, un, lf, ab, Chr{uu}, tail)
+) -> {T.doc.open.q(same, True{}, '"', T.QBasic{}, T.Fast{bd, rw, hs, he, ps, [], bk, sk, un, lf, ab}, Chr{uu}, tail)
   == M8.sv.eat(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}:
   match same:
     case False{}:
       s1.so.bs(U32.is_eq(uu, 92), uu, tail, bd, rw, hs, he, ps, bk, sk, un, lf, ab, hb, sb)
     case True{}:
-      Eq.bit.absurd2(&2, {T.doc.open.q(True{}, True{}, '"', T.QBasic{}, bd, rw, hs, he, ps, [], bk, sk, un, lf, ab,
-        Chr{uu}, tail) == M8.sv.eat(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hq)
+      Eq.bit.absurd2(&2, {T.doc.open.q(True{}, True{}, '"', T.QBasic{}, T.Fast{bd, rw, hs, he, ps, [], bk, sk, un, lf,
+        ab}, Chr{uu}, tail) == M8.sv.eat(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hq)
 
 # a first character that is no quotation mark and no backslash, and that
 # str.bad passes, opens the span
@@ -882,7 +885,7 @@ def s1.so.one(
 ) -> {T.doc.read(SCon{Chr{uu}, tail}, M8.sv.open(bd, rw, hs, he, ps, bk, sk, un, lf, ab))
   == T.doc.read(tail, M8.sv.eat(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab)) : T.Doc}:
   Equal.cong(T.Mode, T.Doc, md => T.doc.read(tail, md),
-    T.doc.open(True{}, '"', T.QBasic{}, bd, rw, hs, he, ps, [], bk, sk, un, lf, ab, Chr{uu}, tail),
+    T.doc.open(True{}, '"', T.QBasic{}, T.Fast{bd, rw, hs, he, ps, [], bk, sk, un, lf, ab}, Chr{uu}, tail),
     M8.sv.eat(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab),
     s1.so.q(U32.is_eq(uu, 34), uu, tail, bd, rw, hs, he, ps, bk, sk, un, lf, ab, e34, e92, sb))
 
@@ -902,14 +905,14 @@ def s1.se.ctl(
   +lf: U32,
   +ab: Bool,
   hc: {badc == False{} : Bool}
-) -> {T.eat.ctrl(badc, True{}, '"', Chr{uu}, cut, nn, bd, rw, hs, he, ps, T.QBasic{}, sk, un, lf, ab)
+) -> {T.eat.ctrl(badc, True{}, '"', Chr{uu}, cut, nn, T.Carry{bd, rw, hs, he, ps, T.QBasic{}, sk, un, lf, ab})
   == M8.sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}:
   match badc:
     case False{}:
       {==}
     case True{}:
-      Eq.bit.absurd2(&2, {T.eat.ctrl(True{}, True{}, '"', Chr{uu}, cut, nn, bd, rw, hs, he, ps, T.QBasic{}, sk, un, lf,
-        ab) == M8.sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hc)
+      Eq.bit.absurd2(&2, {T.eat.ctrl(True{}, True{}, '"', Chr{uu}, cut, nn, T.Carry{bd, rw, hs, he, ps, T.QBasic{}, sk,
+        un, lf, ab}) == M8.sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hc)
 
 # no backslash
 def s1.se.bs(
@@ -928,14 +931,14 @@ def s1.se.bs(
   +ab: Bool,
   hb: {bs == False{} : Bool},
   sb: {T.str.bad(uu, False{}) == False{} : Bool}
-) -> {T.eat.bs(bs, True{}, '"', Chr{uu}, cut, nn, bd, rw, hs, he, ps, T.QBasic{}, sk, un, lf, ab)
+) -> {T.eat.bs(bs, True{}, '"', Chr{uu}, cut, nn, T.Carry{bd, rw, hs, he, ps, T.QBasic{}, sk, un, lf, ab})
   == M8.sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}:
   match bs:
     case False{}:
       s1.se.ctl(T.str.bad(uu, False{}), uu, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab, sb)
     case True{}:
-      Eq.bit.absurd2(&2, {T.eat.bs(True{}, True{}, '"', Chr{uu}, cut, nn, bd, rw, hs, he, ps, T.QBasic{}, sk, un, lf,
-        ab) == M8.sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hb)
+      Eq.bit.absurd2(&2, {T.eat.bs(True{}, True{}, '"', Chr{uu}, cut, nn, T.Carry{bd, rw, hs, he, ps, T.QBasic{}, sk,
+        un, lf, ab}) == M8.sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hb)
 
 # no quotation mark
 def s1.se.q(
@@ -955,14 +958,14 @@ def s1.se.q(
   hq: {quote == False{} : Bool},
   hb: {U32.is_eq(uu, 92) == False{} : Bool},
   sb: {T.str.bad(uu, False{}) == False{} : Bool}
-) -> {T.eat.feed.q(quote, True{}, '"', Chr{uu}, cut, nn, bd, rw, hs, he, ps, T.QBasic{}, sk, un, lf, ab)
+) -> {T.eat.feed.q(quote, True{}, '"', Chr{uu}, cut, nn, T.Carry{bd, rw, hs, he, ps, T.QBasic{}, sk, un, lf, ab})
   == M8.sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}:
   match quote:
     case False{}:
       s1.se.bs(U32.is_eq(uu, 92), uu, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab, hb, sb)
     case True{}:
-      Eq.bit.absurd2(&2, {T.eat.feed.q(True{}, True{}, '"', Chr{uu}, cut, nn, bd, rw, hs, he, ps, T.QBasic{}, sk, un,
-        lf, ab) == M8.sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hq)
+      Eq.bit.absurd2(&2, {T.eat.feed.q(True{}, True{}, '"', Chr{uu}, cut, nn, T.Carry{bd, rw, hs, he, ps, T.QBasic{},
+        sk, un, lf, ab}) == M8.sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hq)
 
 # a later character that is no quotation mark and no backslash, and that
 # str.bad passes, grows the span by one
@@ -986,7 +989,7 @@ def s1.se.one(
 ) -> {T.doc.read(SCon{Chr{uu}, tail}, M8.sv.eat(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab))
   == T.doc.read(tail, M8.sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab)) : T.Doc}:
   Equal.cong(T.Mode, T.Doc, md => T.doc.read(tail, md),
-    T.eat.feed(True{}, '"', cut, nn, bd, rw, hs, he, ps, T.QBasic{}, sk, un, lf, ab, Chr{uu}),
+    T.eat.feed(True{}, '"', cut, nn, T.Carry{bd, rw, hs, he, ps, T.QBasic{}, sk, un, lf, ab}, Chr{uu}),
     M8.sv.eat(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab),
     s1.se.q(U32.is_eq(uu, 34), uu, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab, e34, e92, sb))
 
@@ -1340,14 +1343,14 @@ def s1.lo.ok(
   +lf: U32,
   +ab: Bool,
   hc: {badc == False{} : Bool}
-) -> {T.doc.open.ok(badc, False{}, '\'', T.QLit{}, bd, rw, hs, he, ps, [], bk, sk, un, lf, ab, Chr{uu}, tail)
+) -> {T.doc.open.ok(badc, False{}, '\'', T.QLit{}, T.Fast{bd, rw, hs, he, ps, [], bk, sk, un, lf, ab}, Chr{uu}, tail)
   == s1.le(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}:
   match badc:
     case False{}:
       {==}
     case True{}:
-      Eq.bit.absurd2(&2, {T.doc.open.ok(True{}, False{}, '\'', T.QLit{}, bd, rw, hs, he, ps, [], bk, sk, un, lf, ab,
-        Chr{uu}, tail) == s1.le(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hc)
+      Eq.bit.absurd2(&2, {T.doc.open.ok(True{}, False{}, '\'', T.QLit{}, T.Fast{bd, rw, hs, he, ps, [], bk, sk, un, lf,
+        ab}, Chr{uu}, tail) == s1.le(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hc)
 
 # no apostrophe
 def s1.lo.q(
@@ -1366,14 +1369,14 @@ def s1.lo.q(
   +ab: Bool,
   hq: {same == False{} : Bool},
   sb: {T.str.bad(uu, False{}) == False{} : Bool}
-) -> {T.doc.open.q(same, False{}, '\'', T.QLit{}, bd, rw, hs, he, ps, [], bk, sk, un, lf, ab, Chr{uu}, tail)
+) -> {T.doc.open.q(same, False{}, '\'', T.QLit{}, T.Fast{bd, rw, hs, he, ps, [], bk, sk, un, lf, ab}, Chr{uu}, tail)
   == s1.le(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}:
   match same:
     case False{}:
       s1.lo.ok(T.str.bad(uu, False{}), uu, tail, bd, rw, hs, he, ps, bk, sk, un, lf, ab, sb)
     case True{}:
-      Eq.bit.absurd2(&2, {T.doc.open.q(True{}, False{}, '\'', T.QLit{}, bd, rw, hs, he, ps, [], bk, sk, un, lf, ab,
-        Chr{uu}, tail) == s1.le(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hq)
+      Eq.bit.absurd2(&2, {T.doc.open.q(True{}, False{}, '\'', T.QLit{}, T.Fast{bd, rw, hs, he, ps, [], bk, sk, un, lf,
+        ab}, Chr{uu}, tail) == s1.le(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hq)
 
 # a first character that is no apostrophe, and that str.bad passes, opens
 # the span
@@ -1395,7 +1398,7 @@ def s1.lo.one(
 ) -> {T.doc.read(SCon{Chr{uu}, tail}, s1.lo(bd, rw, hs, he, ps, bk, sk, un, lf, ab))
   == T.doc.read(tail, s1.le(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab)) : T.Doc}:
   Equal.cong(T.Mode, T.Doc, md => T.doc.read(tail, md),
-    T.doc.open(False{}, '\'', T.QLit{}, bd, rw, hs, he, ps, [], bk, sk, un, lf, ab, Chr{uu}, tail),
+    T.doc.open(False{}, '\'', T.QLit{}, T.Fast{bd, rw, hs, he, ps, [], bk, sk, un, lf, ab}, Chr{uu}, tail),
     s1.le(SCon{Chr{uu}, tail}, 1, bd, rw, hs, he, ps, sk, un, lf, ab),
     s1.lo.q(U32.is_eq(uu, 39), uu, tail, bd, rw, hs, he, ps, bk, sk, un, lf, ab, e39, sb))
 
@@ -1415,14 +1418,14 @@ def s1.le.ctl(
   +lf: U32,
   +ab: Bool,
   hc: {badc == False{} : Bool}
-) -> {T.eat.ctrl(badc, False{}, '\'', Chr{uu}, cut, nn, bd, rw, hs, he, ps, T.QLit{}, sk, un, lf, ab)
+) -> {T.eat.ctrl(badc, False{}, '\'', Chr{uu}, cut, nn, T.Carry{bd, rw, hs, he, ps, T.QLit{}, sk, un, lf, ab})
   == s1.le(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}:
   match badc:
     case False{}:
       {==}
     case True{}:
-      Eq.bit.absurd2(&2, {T.eat.ctrl(True{}, False{}, '\'', Chr{uu}, cut, nn, bd, rw, hs, he, ps, T.QLit{}, sk, un, lf,
-        ab) == s1.le(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hc)
+      Eq.bit.absurd2(&2, {T.eat.ctrl(True{}, False{}, '\'', Chr{uu}, cut, nn, T.Carry{bd, rw, hs, he, ps, T.QLit{}, sk,
+        un, lf, ab}) == s1.le(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hc)
 
 # no apostrophe
 def s1.le.q(
@@ -1441,14 +1444,14 @@ def s1.le.q(
   +ab: Bool,
   hq: {quote == False{} : Bool},
   sb: {T.str.bad(uu, False{}) == False{} : Bool}
-) -> {T.eat.feed.q(quote, False{}, '\'', Chr{uu}, cut, nn, bd, rw, hs, he, ps, T.QLit{}, sk, un, lf, ab)
+) -> {T.eat.feed.q(quote, False{}, '\'', Chr{uu}, cut, nn, T.Carry{bd, rw, hs, he, ps, T.QLit{}, sk, un, lf, ab})
   == s1.le(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}:
   match quote:
     case False{}:
       s1.le.ctl(T.str.bad(uu, False{}), uu, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab, sb)
     case True{}:
-      Eq.bit.absurd2(&2, {T.eat.feed.q(True{}, False{}, '\'', Chr{uu}, cut, nn, bd, rw, hs, he, ps, T.QLit{}, sk, un,
-        lf, ab) == s1.le(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hq)
+      Eq.bit.absurd2(&2, {T.eat.feed.q(True{}, False{}, '\'', Chr{uu}, cut, nn, T.Carry{bd, rw, hs, he, ps, T.QLit{},
+        sk, un, lf, ab}) == s1.le(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab) : T.Mode}, hq)
 
 # a later character that is no apostrophe, and that str.bad passes, grows
 # the span by one
@@ -1471,7 +1474,7 @@ def s1.le.one(
 ) -> {T.doc.read(SCon{Chr{uu}, tail}, s1.le(cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab))
   == T.doc.read(tail, s1.le(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab)) : T.Doc}:
   Equal.cong(T.Mode, T.Doc, md => T.doc.read(tail, md),
-    T.eat.feed(False{}, '\'', cut, nn, bd, rw, hs, he, ps, T.QLit{}, sk, un, lf, ab, Chr{uu}),
+    T.eat.feed(False{}, '\'', cut, nn, T.Carry{bd, rw, hs, he, ps, T.QLit{}, sk, un, lf, ab}, Chr{uu}),
     s1.le(cut, U32.add(nn, 1), bd, rw, hs, he, ps, sk, un, lf, ab),
     s1.le.q(U32.is_eq(uu, 39), uu, cut, nn, bd, rw, hs, he, ps, sk, un, lf, ab, e39, sb))
 
@@ -1545,15 +1548,16 @@ def s1.lq2(
   +ab: Bool,
   hq: {same == False{} : Bool}
 ) -> {T.read.once2(T.lex.q2.go(same, M4.fs.st(bd, rw, hs, he, ps, [], T.LQ2{}, bk, T.QLit{}, sk, un, lf, ab), cc,
-  T.QLit{})) == T.read.fast(T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, T.QLit{}, un, lf, ab, False{}), cc)
+  T.QLit{})) == T.read.fast(T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, T.Keep{bk, T.QLit{}, un, lf, ab,
+    False{}}), cc)
   : T.St}:
   match same:
     case False{}:
       M4.fs.held(sk, T.VStr{""}, cc, bd, rw, hs, he, ps, bk, T.QLit{}, un, lf, ab)
     case True{}:
       Eq.bit.absurd2(&2, {T.read.once2(T.lex.q2.go(True{}, M4.fs.st(bd, rw, hs, he, ps, [], T.LQ2{}, bk, T.QLit{}, sk,
-        un, lf, ab), cc, T.QLit{})) == T.read.fast(T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, T.QLit{}, un, lf,
-        ab, False{}), cc) : T.St}, hq)
+        un, lf, ab), cc, T.QLit{})) == T.read.fast(T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, T.Keep{bk, T.QLit{},
+          un, lf, ab, False{}}), cc) : T.St}, hq)
 
 # `''` then a rest that may follow a string: the rest is read with the empty
 # string placed, back where the value position left it
@@ -1576,11 +1580,12 @@ def s1.lempty(
   match rest:
     case SNil{}:
       M8.pp.step(PP, T.doc.read(SCon{'\'', SNil{}}, s1.lo(bd, rw, hs, he, ps, bk, sk, un, lf, ab)),
-        T.doc.read(SNil{}, T.MScan{T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, T.QLit{}, un, lf, ab, False{})}),
+        T.doc.read(SNil{}, T.MScan{T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, T.Keep{bk, T.QLit{}, un, lf, ab,
+          False{}})}),
         Equal.cong(T.St, T.Doc, st => T.read.fin2(st),
-          T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, T.QLit{}, un, lf, ab, False{}),
-          T.read.fin.close(T.read.once2(T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, T.QLit{}, un, lf, ab,
-            False{}))),
+          T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, T.Keep{bk, T.QLit{}, un, lf, ab, False{}}),
+          T.read.fin.close(T.read.once2(T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, T.Keep{bk, T.QLit{}, un, lf, ab,
+            False{}}))),
           M8.tk.fin(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, T.QLit{}, un, lf, ab, False{})),
         ih(T.VStr{""}, bk, T.QLit{}, un, lf, {==}))
     case SCon{hh, +tt}:
@@ -1588,14 +1593,15 @@ def s1.lempty(
         case Chr{+uu}:
           M8.pp.step(PP,
             T.doc.read(SCon{'\'', SCon{Chr{uu}, tt}}, s1.lo(bd, rw, hs, he, ps, bk, sk, un, lf, ab)),
-            T.doc.read(SCon{Chr{uu}, tt}, T.MScan{T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, T.QLit{}, un, lf,
-              ab, False{})}),
+            T.doc.read(SCon{Chr{uu}, tt}, T.MScan{T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, T.Keep{bk, T.QLit{},
+              un, lf, ab, False{}})}),
             Equal.cong(T.Mode, T.Doc, md => T.doc.read(tt, md),
               T.doc.scan(M4.fs.st(bd, rw, hs, he, ps, [], T.LQ2{}, bk, T.QLit{}, sk, un, lf, ab), Chr{uu}),
-              T.doc.scan(T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, T.QLit{}, un, lf, ab, False{}), Chr{uu}),
+              T.doc.scan(T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, T.Keep{bk, T.QLit{}, un, lf, ab, False{}}),
+                Chr{uu}),
               M8.scan.fast(U32.is_eq(uu, 34), U32.is_eq(uu, 39), U32.is_eq(uu, 13),
                 M4.fs.st(bd, rw, hs, he, ps, [], T.LQ2{}, bk, T.QLit{}, sk, un, lf, ab),
-                T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, bk, T.QLit{}, un, lf, ab, False{}), Chr{uu},
+                T.take.top(sk, T.VStr{""}, bd, rw, hs, he, ps, T.Keep{bk, T.QLit{}, un, lf, ab, False{}}), Chr{uu},
                 s1.lq2(U32.is_eq(uu, 39), Chr{uu}, bd, rw, hs, he, ps, bk, sk, un, lf, ab,
                   s1.nor.r(U32.is_eq(uu, 34), U32.is_eq(uu, 39), hr)))),
             ih(T.VStr{""}, bk, T.QLit{}, un, lf, {==}))
@@ -1688,8 +1694,8 @@ def s1.Fin(
   -PP: T.Doc -> Type
 ) -> Type:
   @b2: T.Lex -> @q2: T.QKind -> @u2: U32 -> @l2: U32 ->
-    PP(T.doc.read(rest, T.MScan{T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, b2, q2, u2, l2, ab,
-      False{})}))
+    PP(T.doc.read(rest, T.MScan{T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, T.Keep{b2, q2, u2, l2, ab,
+      False{}})}))
 
 # A multi-line string's LStr step holds no character.
 
@@ -1940,7 +1946,8 @@ def s1.enter(
   hs0: {T.ch.sp(Chr{uu}) == False{} : Bool},
   +hn: {T.ch.nl(Chr{uu}) == False{} : Bool}
 ) -> {T.doc.read(SCon{Chr{uu}, tt}, T.MScan{s1.ms(tm, s1.mk(lit), bd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)})
-  == T.doc.read(SCon{Chr{uu}, tt}, T.MScan{M4.fs.st(bd, rw, hs, he, ps, buf, T.LStr{}, s1.eb(tm, bk), s1.mk(lit), sk, un,  # noqa: S002
+  == T.doc.read(SCon{Chr{uu}, tt}, T.MScan{M4.fs.st(bd, rw, hs, he, ps, buf, T.LStr{}, s1.eb(tm, bk), s1.mk(lit), sk,
+    un,
   s1.el(tm, lf), ab)}) : T.Doc}:
   match tm:
     case D1.TNone{}:
@@ -2030,7 +2037,8 @@ def s1.mq.go(
   hq: {quote == False{} : Bool}
 ) -> {T.read.once2(T.lex.mq.go(quote, U32.is_eq(s1.ql(two), 1), M4.fs.st(bd, rw, hs, he, ps, buf, T.LMq{}, bk,
   s1.mk(lit), sk, 0, s1.ql(two), ab), Chr{uu}, buf, s1.mk(lit), s1.ql(two)))
-  == T.lex.str(M4.fs.st(bd, rw, hs, he, ps, s1.qp(two, s1.qc(lit), buf), T.LStr{}, bk, s1.mk(lit), sk, 0, 0, ab), Chr{uu})  # noqa: S002
+  == T.lex.str(M4.fs.st(bd, rw, hs, he, ps, s1.qp(two, s1.qc(lit), buf), T.LStr{}, bk, s1.mk(lit), sk, 0, 0, ab),
+    Chr{uu})
   : T.St}:
   match quote lit two:
     case True{} l2 t2:
@@ -2625,7 +2633,8 @@ def s1.m3(
   +buf: List<&2, Char>,
   +xx: String
 ) -> {T.doc.read(SCon{s1.qc(lit), SCon{s1.qc(lit), SCon{s1.qc(lit), xx}}}, T.MScan{M4.fs.st(bd, rw, hs, he, ps, buf,
-  T.LStr{}, bk, s1.mk(lit), sk, un, lf, ab)}) == T.doc.read(xx, T.MScan{M4.fs.st(bd, rw, hs, he, ps, buf, T.LMqEnd{}, bk,  # noqa: S002
+  T.LStr{}, bk, s1.mk(lit), sk, un, lf, ab)}) == T.doc.read(xx, T.MScan{M4.fs.st(bd, rw, hs, he, ps, buf, T.LMqEnd{},
+    bk,
   s1.mk(lit), sk, 0, 0, ab)}) : T.Doc}:
   match lit:
     case True{}:
@@ -2732,15 +2741,16 @@ def s1.me.go(
   hq: {quote == False{} : Bool}
 ) -> {T.read.once2(T.lex.mq.end.go(quote, room, M4.fs.st(bd, rw, hs, he, ps, fb, T.LMqEnd{}, bk, qk, sk, un, lx, ab),
     cc))
-  == T.read.fast(T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, bk, qk, un, lx, ab, False{}), cc) : T.St}:
+  == T.read.fast(T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, T.Keep{bk, qk, un, lx, ab, False{}}),
+    cc) : T.St}:
   match quote:
     case False{}:
       M4.fs.held(sk, T.VStr{T.buf.str(fb)}, cc, bd, rw, hs, he, ps, bk, qk, un, lx, ab)
     case True{}:
       Eq.bit.absurd2(&2, {T.read.once2(T.lex.mq.end.go(True{}, room, M4.fs.st(bd, rw, hs, he, ps, fb, T.LMqEnd{}, bk,
           qk,
-        sk, un, lx, ab), cc)) == T.read.fast(T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, bk, qk, un, lx,
-        ab, False{}), cc) : T.St}, hq)
+        sk, un, lx, ab), cc)) == T.read.fast(T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, T.Keep{bk, qk,
+          un, lx, ab, False{}}), cc) : T.St}, hq)
 
 # and so for the string's own kind and quote
 def s1.me.q(
@@ -2759,7 +2769,7 @@ def s1.me.q(
   +fb: List<&2, Char>,
   hr: {Bool.not(Char.is_eq(Chr{uu}, s1.qc(lit))) == True{} : Bool}
 ) -> {T.read.fast(M4.fs.st(bd, rw, hs, he, ps, fb, T.LMqEnd{}, bk, s1.mk(lit), sk, un, lx, ab), Chr{uu})
-  == T.read.fast(T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, bk, s1.mk(lit), un, lx, ab, False{}),
+  == T.read.fast(T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, T.Keep{bk, s1.mk(lit), un, lx, ab, False{}}),
     Chr{uu})
   : T.St}:
   match lit:
@@ -2795,12 +2805,12 @@ def s1.mend(
     case SNil{}:
       M8.pp.step(PP, T.doc.read(SNil{}, T.MScan{M4.fs.st(bd, rw, hs, he, ps, fb, T.LMqEnd{}, bk, s1.mk(lit), sk, un, lx,
         ab)}),
-        T.doc.read(SNil{}, T.MScan{T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, bk, s1.mk(lit), un, lx, ab,
-          False{})}),
+        T.doc.read(SNil{}, T.MScan{T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, T.Keep{bk, s1.mk(lit), un,
+          lx, ab, False{}})}),
         Equal.cong(T.St, T.Doc, st => T.read.fin2(st),
-          T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, bk, s1.mk(lit), un, lx, ab, False{}),
-          T.read.fin.close(T.read.once2(T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, bk, s1.mk(lit), un,
-            lx, ab, False{}))),
+          T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, T.Keep{bk, s1.mk(lit), un, lx, ab, False{}}),
+          T.read.fin.close(T.read.once2(T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, T.Keep{bk, s1.mk(lit),
+            un, lx, ab, False{}}))),
           M8.tk.fin(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, bk, s1.mk(lit), un, lx, ab, False{})),
         ih(bk, s1.mk(lit), un, lx))
     case SCon{hh, +tt}:
@@ -2810,15 +2820,17 @@ def s1.mend(
             T.doc.read(SCon{Chr{uu}, tt}, T.MScan{M4.fs.st(bd, rw, hs, he, ps, fb, T.LMqEnd{}, bk, s1.mk(lit), sk, un,
                 lx,
               ab)}),
-            T.doc.read(SCon{Chr{uu}, tt}, T.MScan{T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, bk,
-              s1.mk(lit), un, lx, ab, False{})}),
+            T.doc.read(SCon{Chr{uu}, tt}, T.MScan{T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, T.Keep{bk,
+              s1.mk(lit), un, lx, ab, False{}})}),
             Equal.cong(T.Mode, T.Doc, md => T.doc.read(tt, md),
               T.doc.scan(M4.fs.st(bd, rw, hs, he, ps, fb, T.LMqEnd{}, bk, s1.mk(lit), sk, un, lx, ab), Chr{uu}),
-              T.doc.scan(T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, bk, s1.mk(lit), un, lx, ab, False{}),
+              T.doc.scan(T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, T.Keep{bk, s1.mk(lit), un, lx, ab,
+                False{}}),
                 Chr{uu}),
               M8.scan.fast(U32.is_eq(uu, 34), U32.is_eq(uu, 39), U32.is_eq(uu, 13),
                 M4.fs.st(bd, rw, hs, he, ps, fb, T.LMqEnd{}, bk, s1.mk(lit), sk, un, lx, ab),
-                T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, bk, s1.mk(lit), un, lx, ab, False{}), Chr{uu},
+                T.take.top(sk, T.VStr{T.buf.str(fb)}, bd, rw, hs, he, ps, T.Keep{bk, s1.mk(lit), un, lx, ab,
+                  False{}}), Chr{uu},
                 s1.me.q(lit, uu, bd, rw, hs, he, ps, sk, ab, bk, un, lx, fb, hr))),
             ih(bk, s1.mk(lit), un, lx))
 
@@ -3118,7 +3130,8 @@ def s1.enter.eq(
   hs0: {T.ch.sp(Chr{uu}) == False{} : Bool},
   hn: {T.ch.nl(Chr{uu}) == False{} : Bool}
 ) -> {T.doc.read(tx, T.MScan{s1.ms(tm, T.QMulti{}, bd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)})
-  == T.doc.read(tx, T.MScan{M4.fs.st(bd, rw, hs, he, ps, buf, T.LStr{}, s1.eb(tm, bk), T.QMulti{}, sk, un, s1.el(tm, lf),  # noqa: S002
+  == T.doc.read(tx, T.MScan{M4.fs.st(bd, rw, hs, he, ps, buf, T.LStr{}, s1.eb(tm, bk), T.QMulti{}, sk, un, s1.el(tm,
+    lf),
   ab)}) : T.Doc}:
   Equal.trans(T.Doc, T.doc.read(tx, T.MScan{s1.ms(tm, T.QMulti{}, bd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)}),
     T.doc.read(SCon{Chr{uu}, xx}, T.MScan{s1.ms(tm, T.QMulti{}, bd, rw, hs, he, ps, sk, ab, bk, un, lf, buf)}),
@@ -3345,7 +3358,9 @@ def s1.mb.qx(
   hbr: {D1.abnf.ml_basic_body(gm <> r2, True{}) == True{} : Bool}
 ) -> {T.doc.read(D4.g.mlb.text(gm <> r2, SCon{'"', SCon{'"', SCon{'"', rest}}}), T.MScan{M4.fs.st(bd, rw, hs, he, ps,
   buf, T.LMq{}, bk, T.QMulti{}, sk, 0, s1.ql(two), ab)}) == T.doc.read(D4.g.mlb.text(gm <> r2, SCon{'"', SCon{'"',
-  SCon{'"', rest}}}), T.MScan{M4.fs.st(bd, rw, hs, he, ps, s1.qp(two, '"', buf), T.LStr{}, bk, T.QMulti{}, sk, 0, 0, ab)})  # noqa: S002
+  SCon{'"',
+    rest}}}), T.MScan{M4.fs.st(bd, rw, hs, he, ps, s1.qp(two, '"', buf), T.LStr{}, bk, T.QMulti{}, sk, 0, 0,
+      ab)})
   : T.Doc}:
   match gm:
     case D4.GmChar{kp}:
@@ -3843,7 +3858,8 @@ def s1.lb.qx(
   hbr: {D1.abnf.ml_literal_body(gl <> r2, True{}) == True{} : Bool}
 ) -> {T.doc.read(D4.g.mll.text(gl <> r2, SCon{'\'', SCon{'\'', SCon{'\'', rest}}}), T.MScan{M4.fs.st(bd, rw, hs, he, ps,
   buf, T.LMq{}, bk, T.QMultiLit{}, sk, 0, s1.ql(two), ab)}) == T.doc.read(D4.g.mll.text(gl <> r2, SCon{'\'',
-  SCon{'\'', SCon{'\'', rest}}}), T.MScan{M4.fs.st(bd, rw, hs, he, ps, s1.qp(two, '\'', buf), T.LStr{}, bk, T.QMultiLit{},  # noqa: S002
+  SCon{'\'', SCon{'\'', rest}}}), T.MScan{M4.fs.st(bd, rw, hs, he, ps, s1.qp(two, '\'',
+    buf), T.LStr{}, bk, T.QMultiLit{},
   sk, 0, 0, ab)}) : T.Doc}:
   match gl:
     case D4.GlChar{cc}:

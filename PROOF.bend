@@ -21,6 +21,7 @@ import ./proofs/BooleanParsesAsDenotedInArray.bend as PBooleanParsesAsDenotedInA
 import ./proofs/BooleanParsesAsDenotedInInlineTable.bend as PBooleanParsesAsDenotedInInlineTable
 import ./proofs/BooleanParsesExactly.bend as PBooleanParsesExactly
 import ./proofs/BooleanWordExact.bend as PBooleanWordExact
+import ./proofs/BuildersMakeValues.bend as PBuildersMakeValues
 import ./proofs/DateTimeReadExactly.bend as PDateTimeReadExactly
 import ./proofs/DefinesEachTableOnce.bend as PDefinesEachTableOnce
 import ./proofs/ErrorStays.bend as PErrorStays

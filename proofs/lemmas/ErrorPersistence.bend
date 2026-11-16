@@ -55,20 +55,22 @@ def sr.ff.bpush(
   +lf: U32,
   +at: Bool,
 
-) -> {T.read.fast.push(bad, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.push(bad, T.LStr{}, T.QBasic{}, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LStr{}, T.QBasic{}, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match bad:
     case True{}:
       {==}
     case False{}:
-      %Equal.sym(Bool, Char.is_eq(cc, '"'), False{}, eq) : {T.read.fast.cons(bd, rw, hs, he, pt, bf, T.LStr{}, bk,
-        T.QBasic{}, sk, un, lf, at, cc) == T.read.once2(T.lex.str.go(_, False{}, True{}, M2.sip.S(bd, rw, hs, he, pt,
+      %Equal.sym(Bool, Char.is_eq(cc, '"'), False{}, eq) : {T.read.fast.cons(T.LStr{}, T.QBasic{}, T.Fast{bd, rw, hs,
+        he, pt, bf, bk, sk, un, lf, at}, cc) == T.read.once2(T.lex.str.go(_, False{}, True{}, M2.sip.S(bd, rw, hs, he,
+        pt,
         bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at), cc, T.QBasic{})) : T.St}
-      %Equal.sym(Bool, Char.is_eq(cc, '\\'), False{}, eb) : {T.read.fast.cons(bd, rw, hs, he, pt, bf, T.LStr{}, bk,
-        T.QBasic{}, sk, un, lf, at, cc) == T.read.once2(T.lex.str.bs(_, False{}, M2.sip.S(bd, rw, hs, he, pt, bf,
+      %Equal.sym(Bool, Char.is_eq(cc, '\\'), False{}, eb) : {T.read.fast.cons(T.LStr{}, T.QBasic{}, T.Fast{bd, rw, hs,
+        he, pt, bf, bk, sk, un, lf, at}, cc) == T.read.once2(T.lex.str.bs(_, False{}, M2.sip.S(bd, rw, hs, he, pt, bf,
         T.LStr{}, bk, T.QBasic{}, sk, un, lf, at), cc, T.QBasic{})) : T.St}
-      %Equal.sym(Bool, T.str.bad(Char.to_u32(cc), False{}), False{}, ebad) : {T.read.fast.cons(bd, rw, hs, he, pt,
-        bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at, cc) == T.read.once2(T.lex.str.char.go(_, M2.sip.S(bd, rw, hs,
+      %Equal.sym(Bool, T.str.bad(Char.to_u32(cc), False{}), False{}, ebad) : {T.read.fast.cons(T.LStr{}, T.QBasic{},
+        T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) == T.read.once2(T.lex.str.char.go(_, M2.sip.S(bd, rw,
+        hs,
         he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at), cc)) : T.St}
       {==}
 
@@ -91,8 +93,8 @@ def sr.ff.basic(
   +lf: U32,
   +at: Bool,
 
-) -> {T.read.fast.basic(qt, bs, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.basic(qt, bs, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LStr{}, T.QBasic{}, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match qt:
     case True{}:
       {==}
@@ -122,17 +124,18 @@ def sr.ff.lpush(
   +lf: U32,
   +at: Bool,
 
-) -> {T.read.fast.push(bad, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.push(bad, T.LStr{}, T.QLit{}, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LStr{}, T.QLit{}, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match bad:
     case True{}:
       {==}
     case False{}:
-      %Equal.sym(Bool, Char.is_eq(cc, '\''), False{}, eq) : {T.read.fast.cons(bd, rw, hs, he, pt, bf, T.LStr{}, bk,
-        T.QLit{}, sk, un, lf, at, cc) == T.read.once2(T.lex.str.go(_, False{}, False{}, M2.sip.S(bd, rw, hs, he, pt,
+      %Equal.sym(Bool, Char.is_eq(cc, '\''), False{}, eq) : {T.read.fast.cons(T.LStr{}, T.QLit{}, T.Fast{bd, rw, hs, he,
+        pt, bf, bk, sk, un, lf, at}, cc) == T.read.once2(T.lex.str.go(_, False{}, False{}, M2.sip.S(bd, rw, hs, he, pt,
         bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at), cc, T.QLit{})) : T.St}
-      %Equal.sym(Bool, T.str.bad(Char.to_u32(cc), False{}), False{}, ebad) : {T.read.fast.cons(bd, rw, hs, he, pt,
-        bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at, cc) == T.read.once2(T.lex.str.char.go(_, M2.sip.S(bd, rw, hs,
+      %Equal.sym(Bool, T.str.bad(Char.to_u32(cc), False{}), False{}, ebad) : {T.read.fast.cons(T.LStr{}, T.QLit{},
+        T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) == T.read.once2(T.lex.str.char.go(_, M2.sip.S(bd, rw,
+        hs,
         he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at), cc)) : T.St}
       {==}
 
@@ -153,8 +156,8 @@ def sr.ff.lit(
   +lf: U32,
   +at: Bool,
 
-) -> {T.read.fast.lit(qt, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.lit(qt, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LStr{}, T.QLit{}, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match qt:
     case True{}:
       {==}
@@ -176,8 +179,8 @@ def sr.ff.str(
   +lf: U32,
   +at: Bool,
   +cc: Char
-) -> {T.read.fast.str(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LStr{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.str(qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LStr{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match qk:
     case T.QBasic{}:
       sr.ff.basic(Char.is_eq(cc, '"'), Char.is_eq(cc, '\\'), cc, {==}, {==}, bd, rw, hs, he, pt, bf, bk, sk, un, lf,
@@ -207,12 +210,12 @@ def sr.ff.key(
   +lf: U32,
   +at: Bool,
 
-) -> {T.read.fast.key(ok, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.key(ok, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LKey{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match ok:
     case True{}:
-      %Equal.sym(Bool, T.bare.at(cc), True{}, eo) : {T.read.fast.cons(bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk,
-        un, lf, at, cc) == T.read.once2(T.lex.key.go(_, T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='),
+      %Equal.sym(Bool, T.bare.at(cc), True{}, eo) : {T.read.fast.cons(T.LKey{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk,
+        sk, un, lf, at}, cc) == T.read.once2(T.lex.key.go(_, T.ch.sp(cc), Char.is_eq(cc, '.'), Char.is_eq(cc, '='),
         Char.is_eq(cc, '#'), T.ch.nl(cc), M2.sip.S(bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at), cc))
         : T.St}
       {==}
@@ -237,12 +240,13 @@ def sr.ff.bare(
   +lf: U32,
   +at: Bool,
 
-) -> {T.read.fast.bare(dl, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.bare(dl, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LBare{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match dl:
     case False{}:
-      %Equal.sym(Bool, T.ch.delim(cc), False{}, ed) : {T.read.fast.cons(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk,
-        sk, un, lf, at, cc) == T.read.once2(T.lex.bare.go(_, T.ch.space(cc), M2.sip.S(bd, rw, hs, he, pt, bf, T.LBare{},
+      %Equal.sym(Bool, T.ch.delim(cc), False{}, ed) : {T.read.fast.cons(T.LBare{}, qk, T.Fast{bd, rw, hs, he, pt, bf,
+        bk, sk, un, lf, at}, cc) == T.read.once2(T.lex.bare.go(_, T.ch.space(cc), M2.sip.S(bd, rw, hs, he, pt, bf,
+        T.LBare{},
         bk, qk, sk, un, lf, at), cc)) : T.St}
       {==}
     case True{}:
@@ -266,8 +270,8 @@ def sr.ff.com(
   +lf: U32,
   +at: Bool,
 
-) -> {T.read.fast.com(ct, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.com(ct, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LCom{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match ct:
     case False{}:
       %Equal.sym(Bool, T.ch.nl(cc), False{}, sr.nlctl(cc, ec)) : {M2.sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk,
@@ -299,27 +303,29 @@ def sr.ff.top(
   +un: U32,
   +lf: U32,
   +at: Bool
-) -> {T.read.fast.ws(sp, nl, True{}, bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.ws(sp, nl, True{}, T.LTop{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LTop{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match sp:
     case True{}:
       %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {M2.sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at) ==
-        T.read.once2(T.lex.top.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '['), Char.is_eq(cc, '"'),
-        Char.is_eq(cc, '\''), T.bare.at(cc), M2.sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at), cc)) :
+        T.read.once2(T.lex.top.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), T.TopCh{Char.is_eq(cc, '['), Char.is_eq(cc, '"'),
+          Char.is_eq(cc,
+          '\''), T.bare.at(cc)}, M2.sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at), cc)) :
         T.St}
       {==}
     case False{}:
       match nl:
         case True{}:
           %Equal.sym(Bool, T.ch.sp(cc), False{}, es) : {M2.sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf,
-            at) == T.read.once2(T.lex.top.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '['), Char.is_eq(cc,
-            '"'), Char.is_eq(cc, '\''), T.bare.at(cc), M2.sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf,
+            at) == T.read.once2(T.lex.top.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), T.TopCh{Char.is_eq(cc, '['),
+              Char.is_eq(cc,
+            '"'), Char.is_eq(cc, '\''), T.bare.at(cc)}, M2.sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf,
             at), cc)) : T.St}
           %Equal.sym(Bool, T.ch.nl(cc), True{}, en) : {M2.sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf,
               at)
-            == T.read.once2(T.lex.top.go(False{}, _, Char.is_eq(cc, '#'), Char.is_eq(cc, '['), Char.is_eq(cc, '"'),
-            Char.is_eq(cc, '\''), T.bare.at(cc), M2.sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf, at),
-                cc))
+            == T.read.once2(T.lex.top.go(False{}, _, Char.is_eq(cc, '#'), T.TopCh{Char.is_eq(cc, '['), Char.is_eq(cc,
+              '"'), Char.is_eq(cc, '\''), T.bare.at(cc)}, M2.sip.S(bd, rw, hs, he, pt, bf, T.LTop{}, bk, qk, sk, un, lf,
+                at), cc))
             : T.St}
           {==}
         case False{}:
@@ -344,8 +350,8 @@ def sr.ff.arr(
   +un: U32,
   +lf: U32,
   +at: Bool
-) -> {T.read.fast.ws(sp, nl, True{}, bd, rw, hs, he, pt, bf, T.LArr{}, bk, qk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LArr{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.ws(sp, nl, True{}, T.LArr{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LArr{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match sp:
     case True{}:
       %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {M2.sip.S(bd, rw, hs, he, pt, bf, T.LArr{}, bk, qk, sk, un, lf, at) ==
@@ -385,8 +391,8 @@ def sr.ff.arrc(
   +un: U32,
   +lf: U32,
   +at: Bool
-) -> {T.read.fast.ws(sp, nl, True{}, bd, rw, hs, he, pt, bf, T.LArrC{}, bk, qk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LArrC{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.ws(sp, nl, True{}, T.LArrC{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LArrC{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match sp:
     case True{}:
       %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {M2.sip.S(bd, rw, hs, he, pt, bf, T.LArrC{}, bk, qk, sk, un, lf,
@@ -425,8 +431,8 @@ def sr.ff.line(
   +un: U32,
   +lf: U32,
   +at: Bool
-) -> {T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, pt, bf, T.LLine{}, bk, qk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LLine{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.ws(sp, nl, False{}, T.LLine{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LLine{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match sp:
     case True{}:
       %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {M2.sip.S(bd, rw, hs, he, pt, bf, T.LLine{}, bk, qk, sk, un, lf,
@@ -459,13 +465,14 @@ def sr.ff.val(
   +un: U32,
   +lf: U32,
   +at: Bool
-) -> {T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, pt, bf, T.LVal{}, bk, qk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LVal{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.ws(sp, nl, False{}, T.LVal{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LVal{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match sp:
     case True{}:
       %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {M2.sip.S(bd, rw, hs, he, pt, bf, T.LVal{}, bk, qk, sk, un, lf, at) ==
-        T.read.once2(T.lex.val.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'), Char.is_eq(cc, '\''),
-        Char.is_eq(cc, '['), Char.is_eq(cc, Chr{123}), M2.sip.S(bd, rw, hs, he, pt, bf, T.LVal{}, bk, qk, sk, un, lf,
+        T.read.once2(T.lex.val.go(_, T.ch.nl(cc), Char.is_eq(cc, '#'), T.ValCh{Char.is_eq(cc, '"'), Char.is_eq(cc,
+          '\''), Char.is_eq(cc, '['), Char.is_eq(cc, Chr{123})}, M2.sip.S(bd, rw, hs, he, pt, bf, T.LVal{}, bk, qk, sk,
+            un, lf,
         at), cc)) : T.St}
       {==}
     case False{}:
@@ -493,8 +500,8 @@ def sr.ff.after(
   +un: U32,
   +lf: U32,
   +at: Bool
-) -> {T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.ws(sp, nl, False{}, T.LAfter{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LAfter{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match sp:
     case True{}:
       %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {M2.sip.S(bd, rw, hs, he, pt, bf, T.LAfter{}, bk, qk, sk, un, lf, at)
@@ -526,8 +533,8 @@ def sr.ff.inl(
   +un: U32,
   +lf: U32,
   +at: Bool
-) -> {T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, pt, bf, T.LInl{}, bk, qk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LInl{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.ws(sp, nl, False{}, T.LInl{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LInl{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match sp:
     case True{}:
       %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {M2.sip.S(bd, rw, hs, he, pt, bf, T.LInl{}, bk, qk, sk, un, lf, at) ==
@@ -560,8 +567,8 @@ def sr.ff.inlk(
   +un: U32,
   +lf: U32,
   +at: Bool
-) -> {T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, pt, bf, T.LInlK{}, bk, qk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LInlK{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.ws(sp, nl, False{}, T.LInlK{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LInlK{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match sp:
     case True{}:
       %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {M2.sip.S(bd, rw, hs, he, pt, bf, T.LInlK{}, bk, qk, sk, un, lf,
@@ -594,8 +601,8 @@ def sr.ff.inlc(
   +un: U32,
   +lf: U32,
   +at: Bool
-) -> {T.read.fast.ws(sp, nl, False{}, bd, rw, hs, he, pt, bf, T.LInlC{}, bk, qk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, T.LInlC{}, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.ws(sp, nl, False{}, T.LInlC{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(T.LInlC{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match sp:
     case True{}:
       %Equal.sym(Bool, T.ch.sp(cc), True{}, es) : {M2.sip.S(bd, rw, hs, he, pt, bf, T.LInlC{}, bk, qk, sk, un, lf,
@@ -626,8 +633,8 @@ def sr.ff(
   +lf: U32,
   +at: Bool,
   +cc: Char
-) -> {T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)
-  == T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc) : T.St}:
+) -> {T.read.fast.lex(lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)
+  == T.read.fast.old(lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc) : T.St}:
   match lx:
     case T.LStr{}:
       sr.ff.str(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)
@@ -825,7 +832,7 @@ def fz.top(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> {fz.p(T.take.top(sk, vv, bd, rw, hs, he, pt, bk, qk, un, lf, at, ld)) == FzP{SCon{b0, bs}, rr} : FzP}:
+) -> {fz.p(T.take.top(sk, vv, bd, rw, hs, he, pt, T.Keep{bk, qk, un, lf, at, ld})) == FzP{SCon{b0, bs}, rr} : FzP}:
   match sk:
     case []:
       %Equal.sym(T.End, T.tree.walk(T.path.cat(he, pt), T.Tw{rw, T.JPut{vv}, [], bd, "", hs, False{}}, T.path.len(he,
@@ -840,7 +847,7 @@ def fz.top(
       %Equal.sym(T.End, T.tree.walk(List.reverse(&2, String, pt), T.Tw{inl, T.JPut{vv}, [], bd, "", [], True{}}, 0),
         T.End{inl, bd, []}, L1.failed_walk_changes_nothing(List.reverse(&2, String, pt), inl, T.JPut{vv}, bd, "",
           [], True{}, 0, fz.ne(bd,
-        rw, b0, bs, rr, h))) : {fz.p(T.take.inl(_, rw, hs, at2, saved, rest, bk, qk, un, lf, at, ld))
+        rw, b0, bs, rr, h))) : {fz.p(T.take.inl(_, rw, hs, at2, saved, rest, T.Keep{bk, qk, un, lf, at, ld}))
         == FzP{SCon{b0, bs}, rr} : FzP}
       h
 
@@ -1061,7 +1068,7 @@ def fz.hjob(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> {fz.p(T.head.job(arr, bd, rw, hs, segs, bk, qk, un, lf, ld)) == FzP{SCon{b0, bs}, rr} : FzP}:
+) -> {fz.p(T.head.job(arr, bd, rw, hs, segs, T.HeadKeep{bk, qk, un, lf}, ld)) == FzP{SCon{b0, bs}, rr} : FzP}:
   match arr:
     case True{}:
       %Equal.sym(T.End, T.tree.walk(segs, T.Tw{rw, T.JAot{}, [], bd, "", hs, False{}}, 0), T.End{rw, bd, hs},
@@ -1149,7 +1156,7 @@ def fz.atop(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> {fz.p(T.arr.top(sk, bd, rw, hs, bk, qk, un, lf, at, ld)) == FzP{SCon{b0, bs}, rr} : FzP}:
+) -> {fz.p(T.arr.top(sk, bd, rw, hs, T.Keep{bk, qk, un, lf, at, ld})) == FzP{SCon{b0, bs}, rr} : FzP}:
   match sk:
     case []:
       fz.e(bd, rw, "unclosed", b0, bs, rr, h)
@@ -1187,7 +1194,7 @@ def fz.itop(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> {fz.p(T.inl.top(sk, bd, rw, hs, bk, qk, un, lf, at, ld)) == FzP{SCon{b0, bs}, rr} : FzP}:
+) -> {fz.p(T.inl.top(sk, bd, rw, hs, T.Keep{bk, qk, un, lf, at, ld})) == FzP{SCon{b0, bs}, rr} : FzP}:
   match sk:
     case []:
       fz.e(bd, rw, "unclosed", b0, bs, rr, h)
@@ -1224,7 +1231,7 @@ def fz.x.top(
   +bs: String,
   +rr: List<&2, T.Val>,
   h: fz.K(st, b0, bs, rr)
-) -> fz.K(T.lex.top.go(sp, nl, hash, br, qq, lit, bare, st, cc), b0, bs, rr):
+) -> fz.K(T.lex.top.go(sp, nl, hash, T.TopCh{br, qq, lit, bare}, st, cc), b0, bs, rr):
   match sp:
     case True{}:
       h
@@ -1779,7 +1786,7 @@ def fz.x.val(
   +bs: String,
   +rr: List<&2, T.Val>,
   h: fz.K(st, b0, bs, rr)
-) -> fz.K(T.lex.val.go(sp, nl, hash, qq, lit, br, inl, st, cc), b0, bs, rr):
+) -> fz.K(T.lex.val.go(sp, nl, hash, T.ValCh{qq, lit, br, inl}, st, cc), b0, bs, rr):
   match sp:
     case True{}:
       h
@@ -2476,7 +2483,7 @@ def fz.x.head(
   +bs: String,
   +rr: List<&2, T.Val>,
   h: fz.K(st, b0, bs, rr)
-) -> fz.K(T.lex.head.go(br, bare, sp, dot, end, qq, lit, hash, st, cc), b0, bs, rr):
+) -> fz.K(T.lex.head.go(br, bare, sp, dot, end, T.HeadCh{qq, lit, hash}, st, cc), b0, bs, rr):
   match br:
     case True{}:
       fz.x.hbr(st, b0, bs, rr, h)
@@ -3036,15 +3043,16 @@ def fz.flead(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> {fz.p(T.read.fast.lead(lead, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == FzP{SCon{b0, bs},
+) -> {fz.p(T.read.fast.lead(lead, lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == FzP{SCon{b0, bs},
   rr} : FzP}:
   match lead:
     case True{}:
       fz.once2(T.read.step(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}}, cc), b0, bs, rr,
         fz.step(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}}, cc, b0, bs, rr, h))
     case False{}:
-      %Equal.sym(T.St, T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc), T.read.fast.old(bd, rw,
-        hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc), sr.ff(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc))
+      %Equal.sym(T.St, T.read.fast.lex(lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc),
+        T.read.fast.old(lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc), sr.ff(lx, qk, bd, rw, hs, he,
+        pt, bf, bk, sk, un, lf, at, cc))
         : {fz.p(_) == FzP{SCon{b0, bs}, rr} : FzP}
       fz.once2(T.read.on.st(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, False{}}, cc), b0, bs,
         rr,
@@ -3072,7 +3080,8 @@ def fz.fhold(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> {fz.p(T.read.fast.hold(hold, lead, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == FzP{SCon{b0, bs},
+) -> {fz.p(T.read.fast.hold(hold, lead, lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == FzP{SCon{b0,
+  bs},
   rr} : FzP}:
   match hold:
     case T.HChar{held}:
@@ -3134,7 +3143,7 @@ def fz.skind(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.doc.scan.kind(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), b0, bs, rr):
+) -> fz.M(T.doc.scan.kind(qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}), b0, bs, rr):
   match qk:
     case T.QBasic{}:
       h
@@ -3164,7 +3173,7 @@ def fz.slead2(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.doc.scan.lead(lead, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), b0, bs, rr):
+) -> fz.M(T.doc.scan.lead(lead, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}), b0, bs, rr):
   match lead:
     case True{}:
       h
@@ -3191,7 +3200,7 @@ def fz.shold(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.doc.scan.hold(hold, lead, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at), b0, bs, rr):
+) -> fz.M(T.doc.scan.hold(hold, lead, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}), b0, bs, rr):
   match hold:
     case T.HChar{_held}:
       h
@@ -3219,7 +3228,7 @@ def fz.wlex(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.doc.wrap.lex(lex, bd, rw, hs, he, pt, bf, bk, qk, sk, hd, un, lf, at, ld), b0, bs, rr):
+) -> fz.M(T.doc.wrap.lex(lex, qk, hd, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, ld), b0, bs, rr):
   match lex:
     case T.LTop{}:
       h
@@ -3401,7 +3410,8 @@ def fz.lq(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> {fz.p(T.read.fast.lex(T.LQ{}, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == FzP{SCon{b0, bs}, rr} : FzP}:
+) -> {fz.p(T.read.fast.lex(T.LQ{}, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == FzP{SCon{b0, bs},
+  rr} : FzP}:
   fz.once2(T.read.on.st(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}, cc), b0, bs,
     rr, fz.onst(T.St{bd, rw, hs, he, pt, bf, T.LQ{}, bk, qk, sk, T.HNone{}, un, lf, at, False{}}, cc, b0, bs, rr, h))
 
@@ -3427,7 +3437,7 @@ def fz.obuf(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.doc.open.buf(basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail), b0, bs, rr):
+) -> fz.M(T.doc.open.buf(basic, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc, tail), b0, bs, rr):
   match bf:
     case []:
       h
@@ -3457,7 +3467,7 @@ def fz.ook(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.doc.open.ok(badc, basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail), b0, bs, rr):
+) -> fz.M(T.doc.open.ok(badc, basic, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc, tail), b0, bs, rr):
   match badc:
     case True{}:
       fz.lq(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, b0, bs, rr, h)
@@ -3486,7 +3496,7 @@ def fz.obs(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.doc.open.bs(bsl, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail), b0, bs, rr):
+) -> fz.M(T.doc.open.bs(bsl, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc, tail), b0, bs, rr):
   match bsl:
     case True{}:
       fz.lq(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, b0, bs, rr, h)
@@ -3516,7 +3526,7 @@ def fz.ob(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.doc.open.b(basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail), b0, bs, rr):
+) -> fz.M(T.doc.open.b(basic, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc, tail), b0, bs, rr):
   match basic:
     case False{}:
       fz.ook(T.str.bad(Char.to_u32(cc), False{}), False{}, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc,
@@ -3547,7 +3557,7 @@ def fz.oq(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.doc.open.q(same, basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail), b0, bs, rr):
+) -> fz.M(T.doc.open.q(same, basic, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc, tail), b0, bs, rr):
   match same:
     case True{}:
       fz.lq(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, b0, bs, rr, h)
@@ -3576,7 +3586,7 @@ def fz.open(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.doc.open(basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail), b0, bs, rr):
+) -> fz.M(T.doc.open(basic, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc, tail), b0, bs, rr):
   fz.oq(Char.is_eq(cc, qq), basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tail, b0, bs, rr, h)
 
 # a span's character: copied at a control, kept otherwise
@@ -3601,7 +3611,7 @@ def fz.ectrl(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.eat.ctrl(badc, basic, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), b0, bs, rr):
+) -> fz.M(T.eat.ctrl(badc, basic, qq, cc, cut, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}), b0, bs, rr):
   match badc:
     case True{}:
       fz.x.str(T.St{bd, rw, hs, he, pt, T.span.rev(cut, nn, U32.is_zero(nn), []), T.LStr{}, T.LStr{}, qk, sk,
@@ -3631,7 +3641,7 @@ def fz.ebs(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.eat.bs(bsl, basic, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), b0, bs, rr):
+) -> fz.M(T.eat.bs(bsl, basic, qq, cc, cut, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}), b0, bs, rr):
   match bsl:
     case True{}:
       fz.x.str(T.St{bd, rw, hs, he, pt, T.span.rev(cut, nn, U32.is_zero(nn), []), T.LStr{}, T.LStr{}, qk, sk,
@@ -3661,7 +3671,7 @@ def fz.ebasic(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.eat.basic(basic, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), b0, bs, rr):
+) -> fz.M(T.eat.basic(basic, qq, cc, cut, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}), b0, bs, rr):
   match basic:
     case False{}:
       fz.ectrl(T.str.bad(Char.to_u32(cc), False{}), False{}, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at,
@@ -3691,7 +3701,7 @@ def fz.eq(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.eat.feed.q(quote, basic, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), b0, bs, rr):
+) -> fz.M(T.eat.feed.q(quote, basic, qq, cc, cut, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}), b0, bs, rr):
   match quote:
     case True{}:
       fz.take(T.St{bd, rw, hs, he, pt, [], T.LStr{}, T.LStr{}, qk, sk, T.HNone{}, un, lf, at, False{}}, T.VSpan{cut,
@@ -3721,7 +3731,7 @@ def fz.eat(
   +bs: String,
   +rr: List<&2, T.Val>,
   +h: {FzP{bd, rw} == FzP{SCon{b0, bs}, rr} : FzP}
-) -> fz.M(T.eat.feed(basic, qq, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, cc), b0, bs, rr):
+) -> fz.M(T.eat.feed(basic, qq, cut, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}, cc), b0, bs, rr):
   fz.eq(Char.is_eq(cc, qq), basic, qq, cc, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, b0, bs, rr, h)
 
 # a token still open at the end
@@ -4006,10 +4016,10 @@ def fz.read(
       fz.read(t2, T.doc.cr(Char.is_eq(hh, '\n'), st, hh), b0, bs, rr, fz.cr(Char.is_eq(hh, '\n'), st, hh, b0, bs, rr,
         h))
     case SCon{+hh, +t2} T.MOpen{basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}:
-      fz.read(t2, T.doc.open(basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, hh, t2), b0, bs, rr,
+      fz.read(t2, T.doc.open(basic, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, hh, t2), b0, bs, rr,
         fz.open(basic, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, hh, t2, b0, bs, rr, h))
     case SCon{+hh, t2} T.MEat{basic, qq, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at}:
-      fz.read(t2, T.eat.feed(basic, qq, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh), b0, bs, rr,
+      fz.read(t2, T.eat.feed(basic, qq, cut, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}, hh), b0, bs, rr,
         fz.eat(basic, qq, cut, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at, hh, b0, bs, rr, h))
 
 def L2.error_stays(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, hold, uni, left, arrtab, lead, e, t):

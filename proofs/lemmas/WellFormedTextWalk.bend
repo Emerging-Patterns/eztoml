@@ -808,8 +808,8 @@ def gd.wk.hgo(
   +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
   kk: gd.K(stack, pre),
   ih: gd.wk.IH(rest, job, inl, skip)
-) -> {L2.gd.end(T.tree.walk(rest, T.tree.sub.head.go(shut, pp, rows, name, vs, job, stack, pre, heads,
-  inl, mark), skip)) == True{} : Bool}:
+) -> {L2.gd.end(T.tree.walk(rest, T.tree.sub.head.go(shut, pp, rows, name, vs, T.Walk{job, stack, pre, heads, inl},
+  mark), skip)) == True{} : Bool}:
   match shut:
     case True{}:
       ih(vs, stack, "duplicate table", pre, heads, {==}, kk)
@@ -843,8 +843,8 @@ def gd.wk.head(
   +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
   kk: gd.K(stack, pre),
   ih: gd.wk.IH(rest, job, inl, skip)
-) -> {L2.gd.end(T.tree.walk(rest, T.tree.sub.head(dot, pp, rows, name, vs, job, stack, pre, heads,
-  inl, mark), skip)) == True{} : Bool}:
+) -> {L2.gd.end(T.tree.walk(rest, T.tree.sub.head(dot, pp, rows, name, vs, T.Walk{job, stack, pre, heads, inl}, mark),
+  skip)) == True{} : Bool}:
   match dot:
     case True{}:
       gd.wk.hgo(T.heads.head(heads, T.tree.pre(pre, name)), pp, rows, name, vs, job, stack, pre, heads,
@@ -870,7 +870,7 @@ def gd.wk.last(
   +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
   kk: gd.K(stack, pre),
   ih: gd.wk.IH(rest, job, inl, skip)
-) -> {L2.gd.end(T.tree.walk(rest, T.tree.sub.aots(last, name, vs, job, stack, pre, heads, inl, pp),
+) -> {L2.gd.end(T.tree.walk(rest, T.tree.sub.aots(last, name, vs, T.Walk{job, stack, pre, heads, inl}, pp),
   skip)) == True{} : Bool}:
   match last:
     case T.LastSome{_q, +older, +rows}:
@@ -901,7 +901,7 @@ def gd.wk.arr(
   +ew: {T.wf.go(vs, T.WfRows{pre}) == True{} : Bool},
   kk: gd.K(stack, pre),
   ih: gd.wk.IH(rest, job, inl, skip)
-) -> {L2.gd.end(T.tree.walk(rest, T.tree.sub.arr(dot, pp, es, name, vs, job, stack, pre, heads, inl),
+) -> {L2.gd.end(T.tree.walk(rest, T.tree.sub.arr(dot, pp, es, name, vs, T.Walk{job, stack, pre, heads, inl}),
   skip)) == True{} : Bool}:
   match dot:
     case True{}:
@@ -934,7 +934,7 @@ def gd.wk.sub(
   +et: {T.wf.text(name) == True{} : Bool},
   kk: gd.K(stack, pre),
   ih: gd.wk.IH(rest, job, inl, skip)
-) -> {L2.gd.end(T.tree.walk(rest, T.tree.sub.look(hit, name, vs, job, stack, pre, heads, inl, mark),
+) -> {L2.gd.end(T.tree.walk(rest, T.tree.sub.look(hit, name, vs, T.Walk{job, stack, pre, heads, inl}, mark),
   skip)) == True{} : Bool}:
   match hit:
     case T.KMiss{}:
@@ -1559,7 +1559,7 @@ def gd.g.job(
   +lead: Bool,
   +ew: {L2.gd.ifok(String.is_empty(bad), T.wf.go(rows, T.WfRows{""})) == True{} : Bool},
   +es: {L2.gd.segs(segs) == True{} : Bool}
-) -> {L2.good(T.head.job(arr, bad, rows, heads, segs, back, qkind, uni, left, lead)) == True{} : Bool}:
+) -> {L2.good(T.head.job(arr, bad, rows, heads, segs, T.HeadKeep{back, qkind, uni, left}, lead)) == True{} : Bool}:
   match arr:
     case True{}:
       gd.g.apply(T.tree.walk(segs, T.Tw{rows, T.JAot{}, [], bad, "", heads, False{}}, 0), segs, back, qkind,
@@ -1899,7 +1899,7 @@ def gd.g.hbare(
   +cc: Char,
   +eg: {L2.good(st) == True{} : Bool},
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.lex.head.bare(bare, sp, dot, end, qq, lit, hash, st, cc)) == True{} : Bool}:
+) -> {L2.good(T.lex.head.bare(bare, sp, dot, end, T.HeadCh{qq, lit, hash}, st, cc)) == True{} : Bool}:
   match bare:
     case True{}:
       gd.g.ch(st, cc, eg, ec)
@@ -1919,7 +1919,7 @@ def gd.g.hgo(
   +cc: Char,
   +eg: {L2.good(st) == True{} : Bool},
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.lex.head.go(br, bare, sp, dot, end, qq, lit, hash, st, cc)) == True{} : Bool}:
+) -> {L2.good(T.lex.head.go(br, bare, sp, dot, end, T.HeadCh{qq, lit, hash}, st, cc)) == True{} : Bool}:
   match br:
     case True{}:
       gd.g.br(st, eg)
@@ -2162,7 +2162,7 @@ def gd.e.go(
   rr: Bool,
   uuu: Bool,
   uu: Bool
-) -> {gd.esc(T.esc.of.go(qq, bs, bb, tt, nn, ff, rr, uuu, uu, nl, sp)) == True{} : Bool}:
+) -> {gd.esc(T.esc.of.go(qq, bs, T.Letters{bb, tt, nn, ff, rr, uuu, uu}, nl, sp)) == True{} : Bool}:
   match qq:
     case True{}:
       {==}
@@ -2624,7 +2624,7 @@ def gd.g.tgo(
   +cc: Char,
   +eg: {L2.good(st) == True{} : Bool},
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.lex.top.go(sp, nl, hash, br, qq, lit, bare, st, cc)) == True{} : Bool}:
+) -> {L2.good(T.lex.top.go(sp, nl, hash, T.TopCh{br, qq, lit, bare}, st, cc)) == True{} : Bool}:
   match sp:
     case True{}:
       eg
@@ -3709,8 +3709,8 @@ def gd.nw.hgo(
   +ev: {L2.gd.na(vs) == True{} : Bool},
   kk: gd.Kn(stack),
   ih: gd.nIH(rest, val, inl, skip)
-) -> {gd.endn(T.tree.walk(rest, T.tree.sub.head.go(shut, pp, rows, name, vs, T.JPut{val}, stack, pre, heads,
-  inl, mark), skip)) == True{} : Bool}:
+) -> {gd.endn(T.tree.walk(rest, T.tree.sub.head.go(shut, pp, rows, name, vs, T.Walk{T.JPut{val}, stack, pre, heads,
+  inl}, mark), skip)) == True{} : Bool}:
   match shut:
     case True{}:
       ih(vs, stack, "duplicate table", pre, heads, {==}, kk)
@@ -3737,8 +3737,8 @@ def gd.nw.head(
   +ev: {L2.gd.na(vs) == True{} : Bool},
   kk: gd.Kn(stack),
   ih: gd.nIH(rest, val, inl, skip)
-) -> {gd.endn(T.tree.walk(rest, T.tree.sub.head(dot, pp, rows, name, vs, T.JPut{val}, stack, pre, heads,
-  inl, mark), skip)) == True{} : Bool}:
+) -> {gd.endn(T.tree.walk(rest, T.tree.sub.head(dot, pp, rows, name, vs, T.Walk{T.JPut{val}, stack, pre, heads, inl},
+  mark), skip)) == True{} : Bool}:
   match dot:
     case True{}:
       gd.nw.hgo(T.heads.head(heads, T.tree.pre(pre, name)), pp, rows, name, vs, val, stack, pre, heads,
@@ -3762,7 +3762,7 @@ def gd.nw.sub(
   +ev: {L2.gd.na(vs) == True{} : Bool},
   kk: gd.Kn(stack),
   ih: gd.nIH(rest, val, inl, skip)
-) -> {gd.endn(T.tree.walk(rest, T.tree.sub.look(hit, name, vs, T.JPut{val}, stack, pre, heads, inl, mark),
+) -> {gd.endn(T.tree.walk(rest, T.tree.sub.look(hit, name, vs, T.Walk{T.JPut{val}, stack, pre, heads, inl}, mark),
   skip)) == True{} : Bool}:
   match hit:
     case T.KMiss{}:
@@ -3776,8 +3776,8 @@ def gd.nw.sub(
     case T.KInl{}:
       ih(vs, stack, "inline table is closed", pre, heads, {==}, kk)
     case T.KAots{+pp, +es}:
-      Eq.bit.absurd(&2, {gd.endn(T.tree.walk(rest, T.tree.sub.look(T.KAots{pp, es}, name, vs, T.JPut{val},
-        stack, pre, heads, inl, mark), skip)) == True{} : Bool}, eh)
+      Eq.bit.absurd(&2, {gd.endn(T.tree.walk(rest, T.tree.sub.look(T.KAots{pp, es}, name, vs, T.Walk{T.JPut{val}, stack,
+        pre, heads, inl}, mark), skip)) == True{} : Bool}, eh)
     case T.KNo{+why}:
       ih(vs, stack, why, pre, heads, gd.ifok.any(String.is_empty(why), L2.gd.na(vs), ev), kk)
 
@@ -4211,7 +4211,7 @@ def gd.g.tinl(
   +en: {gd.endn(end) == True{} : Bool},
   +eo: {Bool.and(T.wf.go(rows, T.WfRows{""}), L2.gd.vals(rest)) == True{} : Bool},
   +ek: {Bool.and(L2.gd.segs(saved), Bool.and(L2.gd.segs(at), L2.gd.keys(rest))) == True{} : Bool}
-) -> {L2.good(T.take.inl(end, rows, heads, at, saved, rest, back, qkind, uni, left, arrtab, lead))
+) -> {L2.good(T.take.inl(end, rows, heads, at, saved, rest, T.Keep{back, qkind, uni, left, arrtab, lead}))
     == True{} : Bool}:
   match end:
     case T.End{+inl, +bad, +hs}:
@@ -4246,7 +4246,7 @@ def gd.g.tinl.bad(
   +ek: {Bool.and(L2.gd.segs(saved), Bool.and(L2.gd.segs(at), L2.gd.keys(rest))) == True{} : Bool},
   +ev: {L2.gd.ifok(String.is_empty(bad), L2.gd.vok(val)) == True{} : Bool}
 ) -> {L2.good(T.take.inl(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{val}, [], bad, "", [],
-  True{}}, 0), rows, heads, at, saved, rest, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+  True{}}, 0), rows, heads, at, saved, rest, T.Keep{back, qkind, uni, left, arrtab, lead})) == True{} : Bool}:
   match bad:
     case SNil{}:
       gd.g.tinl(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{val}, [], "", "", [], True{}}, 0),
@@ -4273,12 +4273,12 @@ def gd.g.tinl.bad(
     case SCon{+hh, +tt}:
       Equal.trans(Bool,
         L2.good(T.take.inl(T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{val}, [], SCon{hh, tt},
-          "", [], True{}}, 0), rows, heads, at, saved, rest, back, qkind, uni, left, arrtab, lead)),
-        L2.good(T.take.inl(T.End{inl, SCon{hh, tt}, []}, rows, heads, at, saved, rest, back, qkind, uni, left,
-          arrtab, lead)),
+          "", [], True{}}, 0), rows, heads, at, saved, rest, T.Keep{back, qkind, uni, left, arrtab, lead})),
+        L2.good(T.take.inl(T.End{inl, SCon{hh, tt}, []}, rows, heads, at, saved, rest, T.Keep{back, qkind, uni, left,
+          arrtab, lead})),
         True{},
-        Equal.cong(T.End, Bool, ee => L2.good(T.take.inl(ee, rows, heads, at, saved, rest, back, qkind, uni, left,
-          arrtab, lead)),
+        Equal.cong(T.End, Bool, ee => L2.good(T.take.inl(ee, rows, heads, at, saved, rest, T.Keep{back, qkind, uni,
+          left, arrtab, lead})),
           T.tree.walk(List.reverse(&2, String, parts), T.Tw{inl, T.JPut{val}, [], SCon{hh, tt}, "", [], True{}}, 0),
           T.End{inl, SCon{hh, tt}, []},
           L1.failed_walk_changes_nothing(List.reverse(&2, String, parts), inl, T.JPut{val}, SCon{hh, tt}, "", [],
@@ -4356,7 +4356,7 @@ def gd.g.ttop(
   +et: {L2.gd.tr(bad, rows, stack) == True{} : Bool},
   +el: {L2.gd.lx(here, parts, buf, stack, hold) == True{} : Bool},
   +ev: {L2.gd.ifok(String.is_empty(bad), L2.gd.vok(val)) == True{} : Bool}
-) -> {L2.good(T.take.top(stack, val, bad, rows, heads, here, parts, back, qkind, uni, left, arrtab, lead))
+) -> {L2.good(T.take.top(stack, val, bad, rows, heads, here, parts, T.Keep{back, qkind, uni, left, arrtab, lead}))
   == True{} : Bool}:
   match stack:
     case []:
@@ -4683,7 +4683,7 @@ def gd.g.arrtop(
   +lead: Bool,
   +et: {L2.gd.tr(bad, rows, stack) == True{} : Bool},
   +ek: {L2.gd.keys(stack) == True{} : Bool}
-) -> {L2.good(T.arr.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+) -> {L2.good(T.arr.top(stack, bad, rows, heads, T.Keep{back, qkind, uni, left, arrtab, lead})) == True{} : Bool}:
   match stack:
     case []:
       gd.tt(L2.gd.tr(T.err.first(bad, "unclosed"), rows, []), True{},
@@ -4719,7 +4719,7 @@ def gd.g.inltop(
   +lead: Bool,
   +et: {L2.gd.tr(bad, rows, stack) == True{} : Bool},
   +ek: {L2.gd.keys(stack) == True{} : Bool}
-) -> {L2.good(T.inl.top(stack, bad, rows, heads, back, qkind, uni, left, arrtab, lead)) == True{} : Bool}:
+) -> {L2.good(T.inl.top(stack, bad, rows, heads, T.Keep{back, qkind, uni, left, arrtab, lead})) == True{} : Bool}:
   match stack:
     case []:
       gd.tt(L2.gd.tr(T.err.first(bad, "unclosed"), rows, []), True{},
@@ -4890,7 +4890,7 @@ def gd.g.vgo(
   +cc: Char,
   +eg: {L2.good(st) == True{} : Bool},
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.lex.val.go(sp, nl, hash, qq, lit, br, inl, st, cc)) == True{} : Bool}:
+) -> {L2.good(T.lex.val.go(sp, nl, hash, T.ValCh{qq, lit, br, inl}, st, cc)) == True{} : Bool}:
   match sp:
     case True{}:
       eg
@@ -9429,11 +9429,11 @@ def gd.fold(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.old(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab,
+) -> {L2.good(T.read.fast.old(lex, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab},
   cc)) == True{} : Bool}:
-  gd.once2(T.read.on.st(T.read.fast.st(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
-    arrtab), cc), gd.onst(T.read.fast.st(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
-      arrtab), cc, eg, ec))
+  gd.once2(T.read.on.st(T.read.fast.st(lex, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left,
+    arrtab}), cc), gd.onst(T.read.fast.st(lex, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left,
+      arrtab}), cc, eg, ec))
 
 # the character joins the buffer
 def gd.fcons(
@@ -9453,7 +9453,7 @@ def gd.fcons(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.cons(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab,
+) -> {L2.good(T.read.fast.cons(lex, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab},
   cc)) == True{} : Bool}:
   gd.tt(L2.gd.tr(bad, rows, stack), L2.gd.lx(here, parts, cc <> buf, stack, T.HNone{}),
     gd.l(L2.gd.tr(bad, rows, stack), L2.gd.lx(here, parts, buf, stack, T.HNone{}), eg),
@@ -9487,8 +9487,8 @@ def gd.fpush(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.push(ctrl, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab,
-  cc)) == True{} : Bool}:
+) -> {L2.good(T.read.fast.push(ctrl, lex, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left,
+  arrtab}, cc)) == True{} : Bool}:
   match ctrl:
     case False{}:
       gd.fcons(bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
@@ -9512,7 +9512,7 @@ def gd.fbbs(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.basic.bs(bs, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+) -> {L2.good(T.read.fast.basic.bs(bs, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab},
   cc)) == True{} : Bool}:
   match bs:
     case True{}:
@@ -9539,7 +9539,7 @@ def gd.fbasic(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.basic(quote, bs, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+) -> {L2.good(T.read.fast.basic(quote, bs, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab},
   cc)) == True{} : Bool}:
   match quote:
     case True{}:
@@ -9564,7 +9564,7 @@ def gd.flit(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.lit(quote, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+) -> {L2.good(T.read.fast.lit(quote, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab},
   cc)) == True{} : Bool}:
   match quote:
     case True{}:
@@ -9590,7 +9590,7 @@ def gd.fstr(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.str(qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+) -> {L2.good(T.read.fast.str(qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab},
   cc)) == True{} : Bool}:
   match qkind:
     case T.QBasic{}:
@@ -9621,7 +9621,7 @@ def gd.fkey(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.key(ok, bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab,
+) -> {L2.good(T.read.fast.key(ok, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab},
   cc)) == True{} : Bool}:
   match ok:
     case True{}:
@@ -9647,7 +9647,7 @@ def gd.fbare(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.bare(delim, bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab,
+) -> {L2.good(T.read.fast.bare(delim, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab},
   cc)) == True{} : Bool}:
   match delim:
     case True{}:
@@ -9673,7 +9673,7 @@ def gd.fcom(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.com(ctl, bad, rows, heads, here, parts, buf, back, qkind, stack, uni, left, arrtab,
+) -> {L2.good(T.read.fast.com(ctl, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab},
   cc)) == True{} : Bool}:
   match ctl:
     case True{}:
@@ -9700,8 +9700,8 @@ def gd.fkeep(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.ws.keep(keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
-  arrtab, cc)) == True{} : Bool}:
+) -> {L2.good(T.read.fast.ws.keep(keep, lex, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left,
+  arrtab}, cc)) == True{} : Bool}:
   match keep:
     case True{}:
       eg
@@ -9728,8 +9728,8 @@ def gd.fwsnl(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.ws.nl(nl, keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
-  arrtab, cc)) == True{} : Bool}:
+) -> {L2.good(T.read.fast.ws.nl(nl, keep, lex, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left,
+  arrtab}, cc)) == True{} : Bool}:
   match nl:
     case True{}:
       gd.fkeep(keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left, arrtab, eg, cc, ec)
@@ -9757,8 +9757,8 @@ def gd.fws(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.ws(sp, nl, keep, bad, rows, heads, here, parts, buf, lex, back, qkind, stack, uni, left,
-  arrtab, cc)) == True{} : Bool}:
+) -> {L2.good(T.read.fast.ws(sp, nl, keep, lex, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni,
+  left, arrtab}, cc)) == True{} : Bool}:
   match sp:
     case True{}:
       eg
@@ -9783,7 +9783,7 @@ def gd.flex(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.lex(lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
+) -> {L2.good(T.read.fast.lex(lex, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab},
   cc)) == True{} : Bool}:
   match lex:
     case T.LTop{}:
@@ -9885,8 +9885,8 @@ def gd.flead(
   +eg: {gd.gf(bad, rows, here, parts, buf, stack) == True{} : Bool},
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool}
-) -> {L2.good(T.read.fast.lead(lead, lex, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab,
-  cc)) == True{} : Bool}:
+) -> {L2.good(T.read.fast.lead(lead, lex, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left,
+  arrtab}, cc)) == True{} : Bool}:
   match lead:
     case True{}:
       gd.once(T.St{bad, rows, heads, here, parts, buf, lex, back, qkind, stack, T.HNone{}, uni, left, arrtab, True{}},
@@ -9914,7 +9914,8 @@ def gd.fhold(
   +cc: Char,
   +ec: {T.wf.char(cc) == True{} : Bool},
   +eg: {L2.good(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}) == True{} : Bool}
-) -> {L2.good(T.read.fast.hold(hd, ld, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {L2.good(T.read.fast.hold(hd, ld, lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at},
+  cc)) == True{} : Bool}:
   match hd:
     case T.HChar{+held}:
       gd.once(T.read.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, ld}), cc,

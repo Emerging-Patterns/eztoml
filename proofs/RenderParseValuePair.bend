@@ -153,7 +153,8 @@ def rv.fin(
   +hh: {L2.cv.own1(vv) == L2.cv.raw1(ww) : T.Val},
   +hw: {D1.cv.wf(ww) == True{} : Bool},
   +w: {T.wf.go([T.VPair{kk, ww}], T.WfRows{""}) == True{} : Bool}
-) -> rv.Ok(T.doc.read("\n", T.MScan{T.take.top([], vv, "", [], [], [], [kk], bk, qk, un, lf, False{}, False{})}),
+) -> rv.Ok(T.doc.read("\n", T.MScan{T.take.top([], vv, "", [], [], [], [kk], T.Keep{bk, qk, un, lf, False{},
+  False{}})}),
   T.Doc{ee, [T.VPair{kk, ww}]}):
   rv.same(ee, kk, vv, ww, M6.rv.own(kk, vv, ww, hh, hw, rv.r2i(kk, ww, hw, w)), w)
 

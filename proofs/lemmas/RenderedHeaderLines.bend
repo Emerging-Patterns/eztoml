@@ -208,19 +208,19 @@ def kl.ws(
   +cc: Char,
   hs: {sp == False{} : Bool},
   hn: {nl == False{} : Bool}
-) -> {T.read.fast.ws(sp, nl, True{}, "", rows, heads, here, parts, buf, lex, back, qkind, [], 0, 0, arrtab, cc)
-  == T.read.fast.old("", rows, heads, here, parts, buf, lex, back, qkind, [], 0, 0, arrtab, cc) : T.St}:
+) -> {T.read.fast.ws(sp, nl, True{}, lex, qkind, T.Fast{"", rows, heads, here, parts, buf, back, [], 0, 0, arrtab}, cc)
+  == T.read.fast.old(lex, qkind, T.Fast{"", rows, heads, here, parts, buf, back, [], 0, 0, arrtab}, cc) : T.St}:
   match sp:
     case True{}:
-      Eq.bit.absurd2(&2, {T.read.fast.ws(True{}, nl, True{}, "", rows, heads, here, parts, buf, lex, back,
-        qkind, [], 0, 0, arrtab, cc) == T.read.fast.old("", rows, heads, here, parts, buf, lex, back, qkind,
-        [], 0, 0, arrtab, cc) : T.St}, hs)
+      Eq.bit.absurd2(&2, {T.read.fast.ws(True{}, nl, True{}, lex, qkind, T.Fast{"", rows, heads, here, parts, buf, back,
+        [], 0, 0, arrtab}, cc) == T.read.fast.old(lex, qkind, T.Fast{"", rows, heads, here, parts, buf, back, [], 0, 0,
+          arrtab}, cc) : T.St}, hs)
     case False{}:
       match nl:
         case True{}:
-          Eq.bit.absurd2(&2, {T.read.fast.ws(False{}, True{}, True{}, "", rows, heads, here, parts, buf, lex,
-            back, qkind, [], 0, 0, arrtab, cc) == T.read.fast.old("", rows, heads, here, parts, buf, lex,
-            back, qkind, [], 0, 0, arrtab, cc) : T.St}, hn)
+          Eq.bit.absurd2(&2, {T.read.fast.ws(False{}, True{}, True{}, lex, qkind, T.Fast{"", rows, heads, here, parts,
+            buf, back, [], 0, 0, arrtab}, cc) == T.read.fast.old(lex, qkind, T.Fast{"", rows, heads, here, parts, buf,
+              back, [], 0, 0, arrtab}, cc) : T.St}, hn)
         case False{}:
           {==}
 
@@ -242,15 +242,15 @@ def kl.b1.fast(
     case False{}:
       Equal.trans(T.St,
         T.read.fast(M7.wh.st(rows, heads, here, [], [], T.LTop{}, back, qkind, arrtab), Chr{xx}),
-        T.read.fast.old("", rows, heads, here, [], [], T.LTop{}, back, qkind, [], 0, 0, arrtab, Chr{xx}),
+        T.read.fast.old(T.LTop{}, qkind, T.Fast{"", rows, heads, here, [], [], back, [], 0, 0, arrtab}, Chr{xx}),
         M7.wh.st(rows, heads, here, [], [Chr{xx}], T.LKey{}, back, qkind, arrtab),
         kl.ws(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), rows, heads, here, [], [], T.LTop{}, back, qkind, arrtab,
           Chr{xx}, M7.kl.no2(T.ch.sp(Chr{xx}), xx, 32, 9, {==}, ee, {==}, {==}),
           M7.kl.no2(T.ch.nl(Chr{xx}), xx, 10, 13, {==}, ee, {==}, {==})),
         Equal.cong(T.St, T.St, st => T.read.once2(st),
-          T.lex.top.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'),
-            Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''),
-            T.bare.at(Chr{xx}), M7.wh.st(rows, heads, here, [], [], T.LTop{}, back, qkind, arrtab), Chr{xx}),
+          T.lex.top.go(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'), T.TopCh{Char.is_eq(Chr{xx}, '['),
+            Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx},
+            '\''), T.bare.at(Chr{xx})}, M7.wh.st(rows, heads, here, [], [], T.LTop{}, back, qkind, arrtab), Chr{xx}),
           T.st.push(M7.wh.st(rows, heads, here, [], [], T.LTop{}, back, qkind, arrtab), Chr{xx}, T.LKey{}),
           M13.key.top(T.ch.sp(Chr{xx}), T.ch.nl(Chr{xx}), Char.is_eq(Chr{xx}, '#'),
             Char.is_eq(Chr{xx}, '['), Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''),
@@ -402,7 +402,8 @@ def qh.fast(
   +buf: List<&2, Char>
 ) -> {T.read.fast(M1.qh(rw, hs, he, ps, sk, ab, bk, un, lf, buf), Chr{uu}) == T.read.once2(T.lex.kq.go(U32.is_eq(uu,
     34),
-  U32.is_eq(uu, 92), True{}, Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), M1.qh(rw, hs, he, ps, sk, ab, bk, un, lf, buf),  # noqa: S002
+  U32.is_eq(uu, 92), True{}, Bool.or(U32.is_eq(uu, 10), U32.is_eq(uu, 13)), M1.qh(rw, hs, he, ps, sk, ab, bk, un, lf,
+    buf),
   Chr{uu}, T.LHeadGap{}, T.LHeadQ{})) : T.St}:
   {==}
 
@@ -881,8 +882,8 @@ def hm.b1.fast(
     case False{}:
       Equal.cong(T.St, T.St, st => T.read.once2(st),
         T.lex.head.go(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}), Char.is_eq(Chr{xx}, '.'),
-          Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), Char.is_eq(Chr{xx}, '#'),
-          hm.st(rows, heads, here, [], [], T.LHead{}, back, qkind, un, lf, arrtab), Chr{xx}),
+          Char.is_eq(Chr{xx}, ']'), T.HeadCh{Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), Char.is_eq(Chr{xx},
+          '#')}, hm.st(rows, heads, here, [], [], T.LHead{}, back, qkind, un, lf, arrtab), Chr{xx}),
         T.lex.head.ch(hm.st(rows, heads, here, [], [], T.LHead{}, back, qkind, un, lf, arrtab), Chr{xx}),
         M7.wh.go.bare(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}), Char.is_eq(Chr{xx}, '.'),
           Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), Char.is_eq(Chr{xx}, '#'),
@@ -967,15 +968,15 @@ def hm.b2(
     Equal.cong(T.St, T.Mode, s2 => T.MScan{s2}, T.read.fast(st, Chr{xx}),
       hm.st(rows, heads, here, parts, Chr{xx} <> dd <> bb, T.LHead{}, back, qkind, un, lf, arrtab),
       Equal.trans(T.St,
-        T.read.once2(T.lex.head.go(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}),
-          Char.is_eq(Chr{xx}, '.'), Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''),
-          Char.is_eq(Chr{xx}, '#'), st, Chr{xx})),
+        T.read.once2(T.lex.head.go(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}), Char.is_eq(Chr{xx},
+          '.'), Char.is_eq(Chr{xx}, ']'), T.HeadCh{Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx},
+          '\''), Char.is_eq(Chr{xx}, '#')}, st, Chr{xx})),
         T.read.once2(T.lex.head.ch(st, Chr{xx})),
         hm.st(rows, heads, here, parts, Chr{xx} <> dd <> bb, T.LHead{}, back, qkind, un, lf, arrtab),
         Equal.cong(T.St, T.St, s2 => T.read.once2(s2),
           T.lex.head.go(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}), Char.is_eq(Chr{xx}, '.'),
-            Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), Char.is_eq(Chr{xx}, '#'), st,
-            Chr{xx}),
+            Char.is_eq(Chr{xx}, ']'), T.HeadCh{Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), Char.is_eq(Chr{xx},
+            '#')}, st, Chr{xx}),
           T.lex.head.ch(st, Chr{xx}),
           M7.wh.go.bare(Char.is_eq(Chr{xx}, '['), T.bare.at(Chr{xx}), T.ch.sp(Chr{xx}), Char.is_eq(Chr{xx}, '.'),
             Char.is_eq(Chr{xx}, ']'), Char.is_eq(Chr{xx}, '"'), Char.is_eq(Chr{xx}, '\''), Char.is_eq(Chr{xx}, '#'), st,

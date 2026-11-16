@@ -440,9 +440,9 @@ def gd.md(mode: T.Mode, +text: String) -> Bool:
 def gd.next(mode: T.Mode, +hh: Char, tt: String) -> T.Mode:
   match mode:
     case T.MOpen{basic, qq, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab}:
-      T.doc.open(basic, qq, qkind, bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab, hh, tt)
+      T.doc.open(basic, qq, qkind, T.Fast{bad, rows, heads, here, parts, buf, back, stack, uni, left, arrtab}, hh, tt)
     case T.MEat{basic, qq, cut, nn, bad, rows, heads, here, parts, qkind, stack, uni, left, arrtab}:
-      T.eat.feed(basic, qq, cut, nn, bad, rows, heads, here, parts, qkind, stack, uni, left, arrtab, hh)
+      T.eat.feed(basic, qq, cut, nn, T.Carry{bad, rows, heads, here, parts, qkind, stack, uni, left, arrtab}, hh)
     case T.MScan{st}:
       T.doc.scan(st, hh)
     case T.MCr{st}:

@@ -25,8 +25,8 @@ def wd.fast(
 ) -> {T.MScan{T.read.fast(D2.vst(fx, buf, T.LBare{}), cc)} == T.MScan{D2.vst(fx, cc <> buf, T.LBare{})} : T.Mode}:
   match fx:
     case D2.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}:
-      Equal.cong(Bool, T.Mode, bb => T.MScan{T.read.fast.bare(bb, bad, rows, heads, here, parts, buf, back,
-        qkind, stack, uni, left, arrtab, cc)}, T.ch.delim(cc), False{}, hd)
+      Equal.cong(Bool, T.Mode, bb => T.MScan{T.read.fast.bare(bb, qkind, T.Fast{bad, rows, heads, here, parts, buf,
+        back, stack, uni, left, arrtab}, cc)}, T.ch.delim(cc), False{}, hd)
 
 # a later character of a bare value is pushed and the value goes on
 def wd.step(
@@ -87,41 +87,41 @@ def wd.go(
   hlt: {lit == False{} : Bool},
   hbr: {br == False{} : Bool},
   hin: {inl == False{} : Bool}
-) -> {T.lex.val.go(sp, nl, hash, qq, lit, br, inl, st, cc) == T.st.push(st, cc, T.LBare{}) : T.St}:
+) -> {T.lex.val.go(sp, nl, hash, T.ValCh{qq, lit, br, inl}, st, cc) == T.st.push(st, cc, T.LBare{}) : T.St}:
   match sp:
     case True{}:
-      Eq.bit.absurd2(&2, {T.lex.val.go(True{}, nl, hash, qq, lit, br, inl, st, cc)
+      Eq.bit.absurd2(&2, {T.lex.val.go(True{}, nl, hash, T.ValCh{qq, lit, br, inl}, st, cc)
         == T.st.push(st, cc, T.LBare{}) : T.St}, hsp)
     case False{}:
       match nl:
         case True{}:
-          Eq.bit.absurd2(&2, {T.lex.val.go(False{}, True{}, hash, qq, lit, br, inl, st, cc)
+          Eq.bit.absurd2(&2, {T.lex.val.go(False{}, True{}, hash, T.ValCh{qq, lit, br, inl}, st, cc)
             == T.st.push(st, cc, T.LBare{}) : T.St}, hnl)
         case False{}:
           match hash:
             case True{}:
-              Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, True{}, qq, lit, br, inl, st, cc)
+              Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, True{}, T.ValCh{qq, lit, br, inl}, st, cc)
                 == T.st.push(st, cc, T.LBare{}) : T.St}, hhs)
             case False{}:
               match qq:
                 case True{}:
-                  Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, False{}, True{}, lit, br, inl, st, cc)
+                  Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, False{}, T.ValCh{True{}, lit, br, inl}, st, cc)
                     == T.st.push(st, cc, T.LBare{}) : T.St}, hqq)
                 case False{}:
                   match lit:
                     case True{}:
-                      Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, False{}, False{}, True{}, br, inl, st,
+                      Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, False{}, T.ValCh{False{}, True{}, br, inl}, st,
                         cc) == T.st.push(st, cc, T.LBare{}) : T.St}, hlt)
                     case False{}:
                       match br:
                         case True{}:
-                          Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, False{}, False{}, False{}, True{},
-                            inl, st, cc) == T.st.push(st, cc, T.LBare{}) : T.St}, hbr)
+                          Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, False{}, T.ValCh{False{}, False{}, True{},
+                            inl}, st, cc) == T.st.push(st, cc, T.LBare{}) : T.St}, hbr)
                         case False{}:
                           match inl:
                             case True{}:
-                              Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, False{}, False{}, False{},
-                                False{}, True{}, st, cc) == T.st.push(st, cc, T.LBare{}) : T.St}, hin)
+                              Eq.bit.absurd2(&2, {T.lex.val.go(False{}, False{}, False{}, T.ValCh{False{}, False{},
+                                False{}, True{}}, st, cc) == T.st.push(st, cc, T.LBare{}) : T.St}, hin)
                             case False{}:
                               {==}
 
@@ -151,24 +151,24 @@ def wd.ws(
   flt: {Char.is_eq(cc, '\'') == False{} : Bool},
   fbr: {Char.is_eq(cc, '[') == False{} : Bool},
   fin: {Char.is_eq(cc, '{') == False{} : Bool}
-) -> {T.read.fast.ws(sp, nl, False{}, bad, rows, heads, here, parts, [], T.LVal{}, back, qkind, stack, uni, left,
-  arrtab, cc) == T.St{bad, rows, heads, here, parts, [cc], T.LBare{}, back, qkind, stack, T.HNone{}, uni, left, arrtab,
+) -> {T.read.fast.ws(sp, nl, False{}, T.LVal{}, qkind, T.Fast{bad, rows, heads, here, parts, [], back, stack, uni, left,
+  arrtab}, cc) == T.St{bad, rows, heads, here, parts, [cc], T.LBare{}, back, qkind, stack, T.HNone{}, uni, left, arrtab,
   False{}} : T.St}:
   match sp:
     case True{}:
-      Eq.bit.absurd2(&2, {T.read.fast.ws(True{}, nl, False{}, bad, rows, heads, here, parts, [], T.LVal{}, back,
-        qkind, stack, uni, left, arrtab, cc) == T.St{bad, rows, heads, here, parts, [cc], T.LBare{}, back, qkind,
+      Eq.bit.absurd2(&2, {T.read.fast.ws(True{}, nl, False{}, T.LVal{}, qkind, T.Fast{bad, rows, heads, here, parts, [],
+        back, stack, uni, left, arrtab}, cc) == T.St{bad, rows, heads, here, parts, [cc], T.LBare{}, back, qkind,
         stack, T.HNone{}, uni, left, arrtab, False{}} : T.St}, hsp)
     case False{}:
       match nl:
         case True{}:
-          Eq.bit.absurd2(&2, {T.read.fast.ws(False{}, True{}, False{}, bad, rows, heads, here, parts, [],
-            T.LVal{}, back, qkind, stack, uni, left, arrtab, cc) == T.St{bad, rows, heads, here, parts, [cc],
+          Eq.bit.absurd2(&2, {T.read.fast.ws(False{}, True{}, False{}, T.LVal{}, qkind, T.Fast{bad, rows, heads, here,
+            parts, [], back, stack, uni, left, arrtab}, cc) == T.St{bad, rows, heads, here, parts, [cc],
             T.LBare{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}} : T.St}, hnl)
         case False{}:
           Equal.cong(T.St, T.St, ss => T.read.once2(ss),
-            T.lex.val.go(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), Char.is_eq(cc, '"'),
-              Char.is_eq(cc, '\''), Char.is_eq(cc, '['), Char.is_eq(cc, '{'), T.St{bad, rows, heads, here, parts,
+            T.lex.val.go(T.ch.sp(cc), T.ch.nl(cc), Char.is_eq(cc, '#'), T.ValCh{Char.is_eq(cc, '"'), Char.is_eq(cc,
+              '\''), Char.is_eq(cc, '['), Char.is_eq(cc, '{')}, T.St{bad, rows, heads, here, parts,
               [], T.LVal{}, back, qkind, stack, T.HNone{}, uni, left, arrtab, False{}}, cc),
             T.st.push(T.St{bad, rows, heads, here, parts, [], T.LVal{}, back, qkind, stack, T.HNone{}, uni, left,
               arrtab, False{}}, cc, T.LBare{}),
@@ -191,8 +191,8 @@ def wd.lval(
   match fx:
     case D2.Vf{bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab}:
       Equal.cong(T.St, T.Mode, ss => T.MScan{ss},
-        T.read.fast.ws(T.ch.sp(cc), T.ch.nl(cc), False{}, bad, rows, heads, here, parts, [], T.LVal{}, back,
-          qkind, stack, uni, left, arrtab, cc),
+        T.read.fast.ws(T.ch.sp(cc), T.ch.nl(cc), False{}, T.LVal{}, qkind, T.Fast{bad, rows, heads, here, parts, [],
+          back, stack, uni, left, arrtab}, cc),
         T.St{bad, rows, heads, here, parts, [cc], T.LBare{}, back, qkind, stack, T.HNone{}, uni, left, arrtab,
           False{}},
         wd.ws(T.ch.sp(cc), T.ch.nl(cc), bad, rows, heads, here, parts, back, qkind, stack, uni, left, arrtab, cc,

@@ -203,7 +203,7 @@ def sip.fold(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.old(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.old(lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == True{} : Bool}:
   _oo(gg, T.read.on.st(sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at), cc), _os(gg, sip.S(bd, rw, hs, he,
     pt, bf,
     lx, bk, qk, sk, un, lf, at), eg, cc, ec))
@@ -233,7 +233,7 @@ def sip.fcons(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.cons(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.cons(lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == True{} : Bool}:
   _oc(gg, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc, eg, ec)
 
 # a control takes the full step; a plain character is kept
@@ -262,7 +262,7 @@ def sip.fpush(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.push(ctrl, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.push(ctrl, lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == True{} : Bool}:
   match ctrl:
     case False{}:
       sip.fcons(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg, cc, ec)
@@ -293,7 +293,7 @@ def sip.fbbs(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.basic.bs(bs, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.basic.bs(bs, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == True{} : Bool}:
   match bs:
     case True{}:
       sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf,
@@ -328,7 +328,7 @@ def sip.fbasic(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QBasic{}, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.basic(quote, Char.is_eq(cc, '\\'), bd, rw, hs, he, pt, bf, bk, sk, un, lf, at,
+) -> {_ii(gg, T.read.fast.basic(quote, Char.is_eq(cc, '\\'), T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at},
   cc)) == True{} : Bool}:
   match quote:
     case True{}:
@@ -364,7 +364,7 @@ def sip.flit(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.lit(quote, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.lit(quote, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == True{} : Bool}:
   match quote:
     case True{}:
       sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LStr{}, bk, T.QLit{}, sk, un, lf, at,
@@ -398,7 +398,7 @@ def sip.fstr(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LStr{}, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.str(qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.str(qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == True{} : Bool}:
   match qk:
     case T.QBasic{}:
       sip.fbasic(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, Char.is_eq(cc, '"'), bd, rw, hs, he, pt, bf, bk, sk, un, lf,
@@ -442,7 +442,7 @@ def sip.fkey(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.key(ok, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.key(ok, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == True{} : Bool}:
   match ok:
     case True{}:
       sip.fcons(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LKey{}, bk, qk, sk, un, lf, at, eg,
@@ -476,7 +476,7 @@ def sip.fbare(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.bare(delim, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.bare(delim, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == True{} : Bool}:
   match delim:
     case True{}:
       sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LBare{}, bk, qk, sk, un, lf, at, eg,
@@ -510,7 +510,7 @@ def sip.fcom(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.com(ctl, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.com(ctl, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == True{} : Bool}:
   match ctl:
     case True{}:
       sip.fold(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, bd, rw, hs, he, pt, bf, T.LCom{}, bk, qk, sk, un, lf, at, eg,
@@ -544,7 +544,8 @@ def sip.fkeep(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.ws.keep(keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.ws.keep(keep, lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at},
+  cc)) == True{} : Bool}:
   match keep:
     case True{}:
       eg
@@ -578,7 +579,8 @@ def sip.fwsnl(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.ws.nl(nl, keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.ws.nl(nl, keep, lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at},
+  cc)) == True{} : Bool}:
   match nl:
     case True{}:
       sip.fkeep(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, eg,
@@ -614,7 +616,8 @@ def sip.fws(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.ws(_sp, nl, keep, bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.ws(_sp, nl, keep, lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at},
+  cc)) == True{} : Bool}:
   match _sp:
     case True{}:
       eg
@@ -647,7 +650,7 @@ def sip.flex(
   +eg: {_ii(gg, sip.S(bd, rw, hs, he, pt, bf, lx, bk, qk, sk, un, lf, at)) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.lex(lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.lex(lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == True{} : Bool}:
   match lx:
     case T.LTop{}:
       sip.fws(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.ch.sp(cc), T.ch.nl(cc), True{}, bd, rw, hs, he, pt, bf,
@@ -790,7 +793,7 @@ def sip.flead(
   +eg: {_ii(gg, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, lead}) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.lead(lead, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.lead(lead, lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc)) == True{} : Bool}:
   match lead:
     case True{}:
       _oo(gg, T.read.step(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HNone{}, un, lf, at, True{}}, cc), _os(gg,
@@ -826,7 +829,8 @@ def sip.fhold(
   +eg: {_ii(gg, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hold, un, lf, at, lead}) == True{} : Bool},
   +cc: Char,
   +ec: {_cp(cc) == True{} : Bool}
-) -> {_ii(gg, T.read.fast.hold(hold, lead, lx, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc)) == True{} : Bool}:
+) -> {_ii(gg, T.read.fast.hold(hold, lead, lx, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at},
+  cc)) == True{} : Bool}:
   match hold:
     case T.HChar{+held}:
       _oo(gg, T.read.step(T.read.once2(T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, T.HChar{held}, un, lf, at, lead}),
@@ -897,7 +901,8 @@ def sip.wlex(
   +at: Bool,
   +tl: String,
   +eg: {_ii(gg, T.St{bd, rw, hs, he, pt, bf, lx, bk, qk, sk, hd, un, lf, at, ld}) == True{} : Bool}
-) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.wrap.lex(lx, bd, rw, hs, he, pt, bf, bk, qk, sk, hd, un, lf, at, ld), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.wrap.lex(lx, qk, hd, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at},
+  ld), tl):
   match lx:
     case T.LTop{}:
       eg
@@ -1211,7 +1216,8 @@ def sip.obuf(
   +tl: String,
   +ec: {_cp(cc) == True{} : Bool},
   +et: {_tx(SCon{cc, tl}) == True{} : Bool}
-) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.buf(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.buf(ba, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc,
+  tl), tl):
   match bf:
     case []:
       M1.gd.tt(_ii(gg, si.str(bd, rw, hs, he, pt, [], qk, sk, un, lf, at)), _sp(gg, SCon{cc, tl}, 1, tl),
@@ -1262,7 +1268,8 @@ def sip.ook(
   +tl: String,
   +ec: {_cp(cc) == True{} : Bool},
   +et: {_tx(SCon{cc, tl}) == True{} : Bool}
-) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.ok(badc, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl),
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.ok(badc, ba, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc,
+  tl),
   tl):
   match badc:
     case True{}:
@@ -1314,7 +1321,8 @@ def sip.obs(
   +tl: String,
   +ec: {_cp(cc) == True{} : Bool},
   +et: {_tx(SCon{cc, tl}) == True{} : Bool}
-) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.bs(bs, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.bs(bs, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc,
+  tl), tl):
   match bs:
     case True{}:
       sip.flex(~_GG, ~_ii, ~_cp, ~_os, ~_oo, ~_oc, gg, T.LQ{}, bd, rw, hs, he, pt, bf, bk, qk, sk, un, lf, at, eg, cc,
@@ -1367,7 +1375,8 @@ def sip.ob(
   +tl: String,
   +ec: {_cp(cc) == True{} : Bool},
   +et: {_tx(SCon{cc, tl}) == True{} : Bool}
-) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.b(ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl), tl):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.b(ba, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc,
+  tl), tl):
   match ba:
     case False{}:
       sip.ook(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
@@ -1421,7 +1430,8 @@ def sip.oq(
   +tl: String,
   +ec: {_cp(cc) == True{} : Bool},
   +et: {_tx(SCon{cc, tl}) == True{} : Bool}
-) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.q(same, ba, qq, qk, bd, rw, hs, he, pt, bf, bk, sk, un, lf, at, cc, tl),
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.doc.open.q(same, ba, qq, qk, T.Fast{bd, rw, hs, he, pt, bf, bk, sk, un, lf, at}, cc,
+  tl),
   tl):
   match same:
     case True{}:
@@ -1471,7 +1481,7 @@ def sip.ecopy(
   +ep: {_sp(gg, ct, nn, SCon{hh, tt}) == True{} : Bool},
   +eh: {_cp(hh) == True{} : Bool},
   +_et: {_tx(SCon{hh, tt}) == True{} : Bool}
-) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.copy(hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.copy(hh, ct, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}), tt):
   _os(gg, si.str(bd, rw, hs, he, pt, T.span.rev(ct, nn, U32.is_zero(nn), []), qk, sk, un, lf, at),
     _oy(gg, bd, rw, hs, he, pt, qk, sk, un, lf, at, ct, nn, SCon{hh, tt}, eg, ep), hh, eh)
 
@@ -1564,7 +1574,8 @@ def sip.ectrl(
   +ep: {_sp(gg, ct, nn, SCon{hh, tt}) == True{} : Bool},
   +eh: {_cp(hh) == True{} : Bool},
   +et: {_tx(SCon{hh, tt}) == True{} : Bool}
-) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.ctrl(badc, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.ctrl(badc, ba, qq, hh, ct, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf,
+  at}), tt):
   match badc:
     case True{}:
       sip.ecopy(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
@@ -1618,7 +1629,7 @@ def sip.ebs(
   +ep: {_sp(gg, ct, nn, SCon{hh, tt}) == True{} : Bool},
   +eh: {_cp(hh) == True{} : Bool},
   +et: {_tx(SCon{hh, tt}) == True{} : Bool}
-) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.bs(bs, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.bs(bs, ba, qq, hh, ct, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}), tt):
   match bs:
     case True{}:
       sip.ecopy(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
@@ -1673,7 +1684,7 @@ def sip.ebasic(
   +ep: {_sp(gg, ct, nn, SCon{hh, tt}) == True{} : Bool},
   +eh: {_cp(hh) == True{} : Bool},
   +et: {_tx(SCon{hh, tt}) == True{} : Bool}
-) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.basic(ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.basic(ba, qq, hh, ct, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf, at}), tt):
   match ba:
     case False{}:
       sip.ectrl(~_GG, ~_ii, ~_sp, ~_cp, ~_tx, ~_pd, ~_os, ~_oo, ~_oc, ~_oe, ~_oq, ~_o1, ~_oi, ~_ol, ~_oy, ~_of, ~_ou,
@@ -1729,7 +1740,8 @@ def sip.eq(
   +ep: {_sp(gg, ct, nn, SCon{hh, tt}) == True{} : Bool},
   +eh: {_cp(hh) == True{} : Bool},
   +et: {_tx(SCon{hh, tt}) == True{} : Bool}
-) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.feed.q(quote, ba, qq, hh, ct, nn, bd, rw, hs, he, pt, qk, sk, un, lf, at), tt):
+) -> si.md(~_GG, ~_ii, ~_sp, gg, T.eat.feed.q(quote, ba, qq, hh, ct, nn, T.Carry{bd, rw, hs, he, pt, qk, sk, un, lf,
+  at}), tt):
   match quote:
     case True{}:
       _ol(gg, bd, rw, hs, he, pt, qk, sk, un, lf, at, ct, nn, SCon{hh, tt}, eg, ep)
