@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.10.0...v0.11.0) (2026-11-16)
+
+
+### Bug Fixes
+
+* **lint:** clear bolt 1.65 findings (ez 1.16.0, bolt 1.65.0) ([f2fa497](https://github.com/Emerging-Patterns/eztoml/commit/f2fa4976f914eacc4d1480e4153798720fd64edc))
+
 ## [0.10.0](https://github.com/Emerging-Patterns/eztoml/compare/v0.9.0...v0.10.0) (2026-10-25)
 
 
